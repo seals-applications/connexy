@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>案件応募</title>
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+    <div class="header">
+        <h1>案件応募</h1>
+    </div>
+    <div class="container">
+        <h2>応募する従業員を選択してください</h2>
+        <form id="applicationForm">
+            <select id="employeeSelect" name="employeeId" required>
+                <option value="">従業員を選択してください</option>
+            </select>
+            <button type="submit">応募する</button>
+        </form>
+        <button onclick="goBack()">戻る</button>
+        <button id="viewProjectsButton">案件募集状況</button>
+    </div>
+
+    <script>
+        const projectId = window.location.pathname.split('/').pop();
+
+        async function loadEmployees() {
+            try {
+                const response = await fetch('/api/employees');
+                if (response.ok) {
+                    const employees = await response.json();
+                    const select = document.getElementById('employeeSelect');
+                    employees.forEach(employee => {
+                        const option = document.createElement('option');
+                        option.value = employee.id;
+                        option.textContent = employee.name;
+                        select.appendChild(option);
+                    });
+                } else {
+                    console.error('従業員一覧の取得に失敗しました');
+                }
+            } catch (error) {
+                console.error('従業員一覧の取得エラー:', error);
+            }
+        }
+
+        document.getElementById('applicationForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const employeeId = document.getElementById('employeeSelect').value;
+            try {
+                const response = await fetch(`/api/project-application/${projectId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ employeeId }),
+                });
+                if (response.ok) {
+                    const result = await response.json();
+                    alert(result.message);
+                    window.location.href = '/mypage';
+                } else {
+                    const error = await response.json();
+                    alert(error.error);
+                }
+            } catch (error) {
+                console.error('応募エラー:', error);
+                alert('応募に失敗しました');
+            }
+        });
+
+        function goBack() {
+            window.history.back();
+        }
+
+        document.getElementById('viewProjectsButton').addEventListener('click', function() {
+            window.location.href = '/projects'; // 案件一覧ページに遷移
+        });
+
+        loadEmployees();
+    </script>
+</body>
+</html>

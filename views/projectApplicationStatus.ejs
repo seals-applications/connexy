@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>案件募集状況</title>
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+    <div class="header">
+        <h1>案件募集状況</h1>
+    </div>
+    <div class="container">
+        <div id="project"></div>
+        <button onclick="goBack()">戻る</button>
+    </div>
+
+    <script>
+        async function loadProjectApplications() {
+            try {
+                const response = await fetch('/api/project-applications');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const projects = await response.json();
+                const project = document.getElementById('project');
+                if (projects.length === 0) {
+                    project.innerHTML = '<p>応募された案件はありません。</p>';
+                } else {
+                    project.innerHTML = projects.map(project => `
+                        <div class="project-item">
+                            <h2>${project.projectName}</h2>
+                            <p>応募数: ${project.applications.length}</p>
+                            <h3>応募一覧:</h3>
+                            <ul>
+                                ${project.applications.map(app => `
+                                    <li>
+                                        会社名: ${app.applicantCompanyName}<br>
+                                        従業員名: ${app.employeeName}<br>
+                                        応募時間: ${new Date(app.appliedAt).toLocaleString()}
+                                    </li>
+                                `).join('')}
+                            </ul>
+                        </div>
+                    `).join('');
+                }
+            } catch (error) {
+                console.error('案件応募状況の取得エラー:', error);
+                document.getElementById('project').innerHTML = '<p>案件応募状況の取得に失敗しました。後でもう一度お試しください。</p>';
+            }
+        }
+
+        function goBack() {
+            window.location.href = '/mypage';
+        }
+
+        loadProjectApplications();
+    </script>
+</body>
+</html>

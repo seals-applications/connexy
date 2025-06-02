@@ -1,0 +1,39 @@
+/* footers.css */
+
+/* フッターのスタイル */
+.footer {
+    text-align: center;
+    padding: 10px; /* パディングを減らす */
+    background-color: blue; /* 背景色を青に変更 */
+    position: fixed;
+    bottom: 0;
+    left: 0; /* 左側の余白をなくす */
+    width: 96%; /* 幅を100%に設定 */
+    display: flex; /* フレックスボックスを使用 */
+    justify-content: space-around; /* ボタンを均等に配置 */
+    margin: 0; /* 余白をなくす */
+}
+
+.footer button {
+    flex: 1; /* ボタンを均等に広げる */
+    margin: 0 2px; /* ボタン間のマージンを減らす */
+    padding: 8px; /* ボタンのパディングを調整 */
+    font-size: 12px; /* フォントサイズを小さくする */
+    color: white; /* ボタンの文字色を白に変更 */
+    background-color: transparent; /* ボタンの背景色を透明に */
+    border: 1px solid transparent; /* ボタンの枠線を白に */
+    border-radius: 5px; /* ボタンの角を丸くする */
+    cursor: pointer; /* カーソルをポインターに変更 */
+    display: flex; /* フレックスボックスを使用 */
+    flex-direction: column; /* 縦に並べる */
+    align-items: center; /* 中央揃え */
+}
+
+.footer button i {
+    font-size: 20px; /* アイコンのサイズを調整 */
+    margin-bottom: 5px; /* アイコンとテキストの間にスペースを追加 */
+}
+
+.footer button:hover {
+    background-color: rgba(255, 255, 255, 0.2); /* ホバー時の背景色を設定 */
+}

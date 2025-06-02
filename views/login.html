@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
+</head>
+<body>
+    <h1>Login</h1>
+    <form id="loginForm" method="POST" action="/login">
+        <label for="username">Username:</label><br>
+        <input type="text" id="username" name="username" required><br>
+        <label for="password">Password:</label><br>
+        <input type="password" id="password" name="password" required><br><br>
+        <input type="submit" value="Login">
+    </form>
+    <div id="errorMessage" style="color: red;"></div>
+
+    <br>
+    <a href="/register">新規登録はこちら</a> <!-- 新規登録ページへのリンク -->
+    <script>
+        document.getElementById('loginForm').onsubmit = async function(event) {
+            event.preventDefault();
+            const formData = new FormData(this);
+            const response = await fetch('/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: new URLSearchParams(formData)
+            });
+
+            // レスポンスをJSONとして処理
+            const result = await response.json();
+            if (response.status !== 200) {
+                document.getElementById('errorMessage').textContent = result.error;
+            } else {
+                window.location.href = '/project';
+            }
+        };
+    </script>
+</body>
+</html>

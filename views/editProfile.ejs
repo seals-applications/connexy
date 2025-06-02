@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Profile</title>
+</head>
+<body>
+    <h1>Edit Profile</h1>
+    <form id="editProfileForm">
+        <label for="companyName">Company Name:</label><br>
+        <input type="text" id="companyName" name="companyName" value="<%= user.companyName %>"><br>
+        <label for="representativeName">Representative Name:</label><br>
+        <input type="text" id="representativeName" name="representativeName" value="<%= user.representativeName %>"><br>
+        <label for="phoneNumber">Phone Number:</label><br>
+        <input type="text" id="phoneNumber" name="phoneNumber" value="<%= user.phoneNumber %>"><br><br>
+        <input type="submit" value="変更">
+        <input type="button" value="戻る" onclick="window.location.href='/mypage'">
+    </form>
+    <div id="message" style="color: green;"></div>
+
+    <script>
+        document.getElementById('editProfileForm').onsubmit = async function(event) {
+            event.preventDefault();
+            const formData = new FormData(this);
+            const response = await fetch('/update-profile', {
+                method: 'POST',
+                body: formData
+            });
+            const result = await response.json();
+            if (response.status === 200) {
+                document.getElementById('message').textContent = 'Profile updated successfully';
+            } else {
+                document.getElementById('message').textContent = 'Failed to update profile';
+            }
+        };
+    </script>
+</body>
+</html>

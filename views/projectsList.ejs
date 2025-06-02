@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>案件一覧</title>
+    <link rel="stylesheet" href="/project.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        /* テーブルのスタイル */
+        table {
+            width: 100%;
+            border-collapse: collapse; /* セルの境界を重ねる */
+        }
+
+        th, td {
+            padding: 10px; /* セル内の余白 */
+            text-align: left; /* 左寄せ */
+            border-bottom: 1px solid #ccc; /* 下線を追加 */
+        }
+
+        th {
+            background-color: #f2f2f2; /* ヘッダーの背景色 */
+        }
+
+        tr:hover {
+            background-color: #f9f9f9; /* ホバー時の背景色 */
+        }
+
+        /* ヘッダーの下にコンテンツを配置するためのスタイル調整 */
+        body {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        .content {
+            padding-top: 120px; /* ヘッダーの高さに応じて調整 */
+        }
+
+        .footer {
+            text-align: center;
+            padding: 10px; /* パディングを減らす */
+            background-color: blue; /* 背景色を青に変更 */
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            display: flex; /* フレックスボックスを使用 */
+            justify-content: space-around; /* ボタンを均等に配置 */
+        }
+
+        .footer button {
+            flex: 1; /* ボタンを均等に広げる */
+            margin: 0 2px; /* ボタン間のマージンを減らす */
+            padding: 8px; /* ボタンのパディングを調整 */
+            font-size: 12px; /* フォントサイズを小さくする */
+            color: white; /* ボタンの文字色を白に変更 */
+            background-color: transparent; /* ボタンの背景色を透明に */
+            border: 1px solid white; /* ボタンの枠線を白に */
+            border-radius: 5px; /* ボタンの角を丸くする */
+            cursor: pointer; /* カーソルをポインターに変更 */
+            display: flex; /* フレックスボックスを使用 */
+            flex-direction: column; /* 縦に並べる */
+            align-items: center; /* 中央揃え */
+        }
+
+        .footer button i {
+            font-size: 20px; /* アイコンのサイズを調整 */
+            margin-bottom: 5px; /* アイコンとテキストの間にスペースを追加 */
+        }
+
+        .footer button:hover {
+            background-color: rgba(255, 255, 255, 0.2); /* ホバー時の背景色を設定 */
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-project-title">
+            <h1>案件リスト</h1>
+        </div>
+    </div>
+
+    <div class="content">
+        <h1>登録した案件の一覧</h1>
+        <table>
+            <thead>
+                <tr>
+                    <th>案件名</th>
+                    <th>エリア</th>
+                    <th>登録日</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                <% projects.forEach(project => { %>
+                    <tr>
+                        <td><%= project.projectName %></td>
+                        <td><%= project.prefecture + project.city %></td>
+                        <td><%= new Date(project.createdAt).toLocaleDateString() %></td>
+                        <td>
+                            <a href="/projects/edit/<%= project.id %>">編集</a>
+                        </td>
+                    </tr>
+                <% }); %>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="footer">
+        <button onclick="window.location.href='/project'"><i class="fas fa-search"></i>案件リスト</button>
+        <button onclick="window.location.href='/mypage'"><i class="fas fa-user"></i>マイページ</button>
+        <button onclick="window.location.href='/project-registration'"><i class="fas fa-plus"></i>案件登録</button>
+        <button onclick="window.location.href='/project-status'"><i class="fas fa-info-circle"></i>案件状況</button>
+    </div>
+
+    <script>
+        // JavaScriptのコードはそのまま
+    </script>
+</body>
+</html>

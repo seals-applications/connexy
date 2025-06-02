@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>案件登録</title>
+    <link rel="stylesheet" href="/project.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="/footers.css">
+    <style>
+        /* ヘッダーの下にコンテンツを配置するためのスタイル調整 */
+        body {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            padding-top: 80px; /* ヘッダーの高さに応じて余白を追加 */
+        }
+
+        .step {
+            display: none; /* 初期状態ではすべてのステップを非表示 */
+        }
+        .active {
+            display: block; /* アクティブなステップのみ表示 */
+        }
+
+        .draft-info {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            background-color: #f9f9f9;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-project-title">
+            <h1>案件登録</h1>
+        </div>
+    </div>
+
+    <div class="content">
+        <form id="projectForm">
+            <!-- ステップ0: 案件登録の選択 -->
+            <div id="step0" class="step active">
+                <h2>案件登録の選択</h2>
+                <button type="button" onclick="nextStep(0)">案件登録する</button>
+                <button type="button" onclick="loadDraft()">下書き</button>
+                <button type="button" onclick="setAvailable()">募集中</button>
+            </div>
+
+            <!-- ステップ1: 基本情報の入力 -->
+            <div id="step1" class="step">
+                <h2>ステップ1/3: 基本情報の入力</h2>
+                <label for="projectName">店舗名:</label>
+                <input type="text" id="projectName" name="projectName" required>
+                <br>
+                <label for="prefecture">都道府県:</label>
+                <select id="prefecture" name="prefecture" required>
+                    <option value="">選択してください</option>
+                    <option value="北海道">北海道</option>
+                    <option value="青森県">青森県</option>
+                    <option value="岩手県">岩手県</option>
+                    <option value="宮城県">宮城県</option>
+                    <option value="秋田県">秋田県</option>
+                    <option value="山形県">山形県</option>
+                    <option value="福島県">福島県</option>
+                    <option value="茨城県">茨城県</option>
+                    <option value="栃木県">栃木県</option>
+                    <option value="群馬県">群馬県</option>
+                    <option value="埼玉県">埼玉県</option>
+                    <option value="千葉県">千葉県</option>
+                    <option value="東京都">東京都</option>
+                    <option value="神奈川県">神奈川県</option>
+                    <option value="新潟県">新潟県</option>
+                    <option value="富山県">富山県</option>
+                    <option value="石川県">石川県</option>
+                    <option value="福井県">福井県</option>
+                    <option value="山梨県">山梨県</option>
+                    <option value="長野県">長野県</option>
+                    <option value="岐阜県">岐阜県</option>
+                    <option value="静岡県">静岡県</option>
+                    <option value="愛知県">愛知県</option>
+                    <option value="三重県">三重県</option>
+                    <option value="滋賀県">滋賀県</option>
+                    <option value="京都府">京都府</option>
+                    <option value="大阪府">大阪府</option>
+                    <option value="兵庫県">兵庫県</option>
+                    <option value="奈良県">奈良県</option>
+                    <option value="和歌山県">和歌山県</option>
+                    <option value="鳥取県">鳥取県</option>
+                    <option value="島根県">島根県</option>
+                    <option value="岡山県">岡山県</option>
+                    <option value="広島県">広島県</option>
+                    <option value="山口県">山口県</option>
+                    <option value="徳島県">徳島県</option>
+                    <option value="香川県">香川県</option>
+                    <option value="愛媛県">愛媛県</option>
+                    <option value="高知県">高知県</option>
+                    <option value="福岡県">福岡県</option>
+                    <option value="佐賀県">佐賀県</option>
+                    <option value="長崎県">長崎県</option>
+                    <option value="熊本県">熊本県</option>
+                    <option value="大分県">大分県</option>
+                    <option value="宮崎県">宮崎県</option>
+                    <option value="鹿児島県">鹿児島県</option>
+                    <option value="沖縄県">沖縄県</option>
+                </select>
+                <br>
+                <label for="city">市町村:</label>
+                <input type="text" id="city" name="city" required>
+                <br>
+                <label for="workingDate">稼働日:</label>
+                <input type="date" id="workingDate" name="workingDate" required>
+                <br>
+                <label for="startTime">開始時刻:</label>
+                <select id="startHour" name="startHour" required>
+                    <!-- 時間のオプションを生成 -->
+                    <script>
+                        const startHourSelect = document.getElementById('startHour');
+                        for (let hour = 0; hour < 24; hour++) {
+                            const option = document.createElement('option');
+                            option.value = hour;
+                            option.textContent = String(hour).padStart(2, '0');
+                            startHourSelect.appendChild(option);
+                        }
+                        // 初期値を11に設定
+                        startHourSelect.value = 11;
+                    </script>
+                </select>
+                時 
+                <select id="startMinute" name="startMinute" required>
+                    <!-- 15分刻みのオプションを生成 -->
+                    <script>
+                        const startMinuteSelect = document.getElementById('startMinute');
+                        for (let minute = 0; minute < 60; minute += 15) {
+                            const option = document.createElement('option');
+                            option.value = minute;
+                            option.textContent = String(minute).padStart(2, '0');
+                            startMinuteSelect.appendChild(option);
+                        }
+                    </script>
+                </select>
+                分
+                <br>
+                <label for="endTime">終了時刻:</label>
+                <select id="endHour" name="endHour" required>
+                    <!-- 時間のオプションを生成 -->
+                    <script>
+                        const endHourSelect = document.getElementById('endHour');
+                        for (let hour = 0; hour < 24; hour++) {
+                            const option = document.createElement('option');
+                            option.value = hour;
+                            option.textContent = String(hour).padStart(2, '0');
+                            endHourSelect.appendChild(option);
+                        }
+                        // 初期値を19に設定
+                        endHourSelect.value = 19;
+                    </script>
+                </select>
+                時 
+                <select id="endMinute" name="endMinute" required>
+                    <!-- 15分刻みのオプションを生成 -->
+                    <script>
+                        const endMinuteSelect = document.getElementById('endMinute');
+                        for (let minute = 0; minute < 60; minute += 15) {
+                            const option = document.createElement('option');
+                            option.value = minute;
+                            option.textContent = String(minute).padStart(2, '0');
+                            endMinuteSelect.appendChild(option);
+                        }
+                    </script>
+                </select>
+                分
+                <br>
+                <button type="button" onclick="saveDraft()">下書きに保存する</button>
+                <button type="button" onclick="prevStep(1)">戻る</button>
+                <button type="button" onclick="nextStep(1)">次へ</button>
+            </div>
+
+            <!-- ステップ2: 詳細情報の入力 -->
+            <div id="step2" class="step">
+                <h2>ステップ2/3: 詳細情報の入力</h2>
+                <label for="projectDescription">案件概要:</label>
+                <textarea id="projectDescription" name="projectDescription" required></textarea>
+                <br>
+                <label for="projectDetail">案件詳細:</label>
+                <textarea id="projectDetail" name="projectDetail" required></textarea>
+                <br>
+                <label for="skills">必要なスキル:</label>
+                <input type="text" id="skills" name="skills" required>
+                <br>
+                <label for="reward">単価:</label>
+                <input type="text" id="reward" name="reward" required>
+                <br>
+                <label for="deadline">募集期限:</label>
+                <input type="date" id="deadline" name="deadline" required>
+                <br>
+                <label for="projectGenre">案件ジャンル:</label>
+                <select id="projectGenre" name="projectGenre" required>
+                    <option value="スポット案件">スポット案件</option>
+                    <option value="常勤案件">常勤案件</option>
+                    <option value="その他">その他</option>
+                </select>
+                <br>
+                <button type="button" onclick="saveDraft()">下書きに保存する</button>
+                <button type="button" onclick="prevStep(2)">戻る</button>
+                <button type="button" onclick="nextStep(2)">次へ</button>
+            </div>
+
+            <!-- ステップ3: 確認・登録 -->
+            <div id="step3" class="step">
+                <h2>ステップ3/3: 入力内容の確認</h2>
+                <div id="summary"></div>
+                <button type="button" onclick="saveDraft()">下書きに保存する</button>
+                <button type="button" onclick="prevStep(3)">戻る</button>
+                <button type="submit">登録する</button>
+            </div>
+        </form>
+
+        <!-- 下書き情報表示エリア -->
+        <div id="draftInfo" class="draft-info" style="display: none;">
+            <h3>保存された下書き情報</h3>
+            <div id="draftDetails"></div>
+        </div>
+    </div>
+
+    <div class="footer">
+        <button onclick="window.location.href='/project'"><i class="fas fa-search"></i>案件リスト</button>
+        <button onclick="window.location.href='/mypage'"><i class="fas fa-user"></i>マイページ</button>
+        <button onclick="window.location.href='/project-registration'"><i class="fas fa-plus"></i>案件登録</button>
+        <button onclick="window.location.href='/project-status'"><i class="fas fa-info-circle"></i>案件状況</button>
+    </div>
+
+    <script>
+        // ページが読み込まれたときに初期値を設定
+        window.onload = function() {
+            const today = new Date();
+            const tomorrow = new Date();
+            const dayAfterTomorrow = new Date();
+
+            // 明日の日付を設定
+            tomorrow.setDate(today.getDate() + 1);
+            // 明後日の日付を設定
+            dayAfterTomorrow.setDate(today.getDate() + 2);
+
+            // 日付をYYYY-MM-DD形式に変換
+            const formatDate = (date) => {
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0'); // 月は0から始まるため+1
+                const day = String(date.getDate()).padStart(2, '0');
+                return `${year}-${month}-${day}`;
+            };
+
+            // 初期値を設定
+            document.getElementById('workingDate').value = formatDate(dayAfterTomorrow); // 稼働日
+            document.getElementById('deadline').value = formatDate(tomorrow); // 期限
+        };
+
+        function nextStep(currentStep) {
+            const currentDiv = document.getElementById(`step${currentStep}`);
+            const nextDiv = document.getElementById(`step${currentStep + 1}`);
+            currentDiv.classList.remove('active');
+            nextDiv.classList.add('active');
+
+            const projectName = document.getElementById('projectName').value;
+            const prefecture = document.getElementById('prefecture').value;
+            const city = document.getElementById('city').value;
+            const workingDate = document.getElementById('workingDate').value;
+            const startHour = document.getElementById('startHour').value;
+            const startMinute = document.getElementById('startMinute').value;
+            const endHour = document.getElementById('endHour').value;
+            const endMinute = document.getElementById('endMinute').value;
+            const projectDescription = document.getElementById('projectDescription').value;
+            const projectDetail = document.getElementById('projectDetail').value;
+            const skills = document.getElementById('skills').value;
+            const reward = document.getElementById('reward').value;
+            const deadline = document.getElementById('deadline').value;
+            const projectGenre = document.getElementById('projectGenre').value;
+
+            // 2桁のフォーマットを適用
+            const formattedStartTime = `${String(startHour).padStart(2, '0')}:${String(startMinute).padStart(2, '0')}`;
+            const formattedEndTime = `${String(endHour).padStart(2, '0')}:${String(endMinute).padStart(2, '0')}`;
+
+            document.getElementById('summary').innerHTML = `
+                <h3>基本情報の確認</h3>
+                <p><strong>店舗名:</strong> ${projectName}</p>
+                <p><strong>勤務地:</strong> ${prefecture}${city}</p>
+                <p><strong>勤務日:</strong> ${workingDate}</p>
+                <p><strong>勤務時間:</strong> ${formattedStartTime} ～ ${formattedEndTime}</p>
+                <h3>詳細情報の確認</h3>
+                <p><strong>案件概要:</strong> ${projectDescription}</p>
+                <p><strong>案件詳細:</strong> ${projectDetail}</p>
+                <p><strong>必要なスキル:</strong> ${skills}</p>
+                <p><strong>単価:</strong> ${reward}</p>
+                <p><strong>募集期限:</strong> ${deadline}</p>
+                <p><strong>案件ジャンル:</strong> ${projectGenre}</p>
+            `;
+        }
+
+        function prevStep(currentStep) {
+            const currentDiv = document.getElementById(`step${currentStep}`);
+            const prevDiv = document.getElementById(`step${currentStep - 1}`);
+            if (confirm("下書きに保存しますか？")) {
+                saveDraft(); // 下書き保存
+            }
+            currentDiv.classList.remove('active');
+            prevDiv.classList.add('active');
+        }
+
+        function saveDraft() {
+            const draftData = {
+                projectName: document.getElementById('projectName').value,
+                prefecture: document.getElementById('prefecture').value,
+                city: document.getElementById('city').value,
+                workingDate: document.getElementById('workingDate').value,
+                startHour: document.getElementById('startHour').value,
+                startMinute: document.getElementById('startMinute').value,
+                endHour: document.getElementById('endHour').value,
+                endMinute: document.getElementById('endMinute').value,
+                projectDescription: document.getElementById('projectDescription').value,
+                projectDetail: document.getElementById('projectDetail').value,
+                skills: document.getElementById('skills').value,
+                reward: document.getElementById('reward').value,
+                deadline: document.getElementById('deadline').value,
+                projectGenre: document.getElementById('projectGenre').value
+            };
+
+            localStorage.setItem('draft', JSON.stringify(draftData));
+            alert("下書きが保存されました。");
+        }
+
+        function loadDraft() {
+            const draft = localStorage.getItem('draft');
+            if (draft) {
+                const draftData = JSON.parse(draft);
+                document.getElementById('projectName').value = draftData.projectName || '';
+                document.getElementById('prefecture').value = draftData.prefecture || '';
+                document.getElementById('city').value = draftData.city || '';
+                document.getElementById('workingDate').value = draftData.workingDate || '';
+                document.getElementById('startHour').value = draftData.startHour || '11';
+                document.getElementById('startMinute').value = draftData.startMinute || '00';
+                document.getElementById('endHour').value = draftData.endHour || '19';
+                document.getElementById('endMinute').value = draftData.endMinute || '00';
+                document.getElementById('projectDescription').value = draftData.projectDescription || '';
+                document.getElementById('projectDetail').value = draftData.projectDetail || '';
+                document.getElementById('skills').value = draftData.skills || '';
+                document.getElementById('reward').value = draftData.reward || '';
+                document.getElementById('deadline').value = draftData.deadline || '';
+                document.getElementById('projectGenre').value = draftData.projectGenre || 'スポット案件';
+                
+                // 下書き情報を表示
+                displayDraftInfo(draftData);
+                alert("下書きが読み込まれました。");
+            } else {
+                alert("下書きは保存されていません。");
+            }
+        }
+
+        function displayDraftInfo(draftData) {
+            const draftDetails = document.getElementById('draftDetails');
+            draftDetails.innerHTML = `
+                <p><strong>店舗名:</strong> ${draftData.projectName}</p>
+                <p><strong>都道府県:</strong> ${draftData.prefecture}</p>
+                <p><strong>市町村:</strong> ${draftData.city}</p>
+                <p><strong>稼働日:</strong> ${draftData.workingDate}</p>
+                <p><strong>開始時刻:</strong> ${draftData.startHour}:${draftData.startMinute}</p>
+                <p><strong>終了時刻:</strong> ${draftData.endHour}:${draftData.endMinute}</p>
+                <p><strong>案件概要:</strong> ${draftData.projectDescription}</p>
+                <p><strong>案件詳細:</strong> ${draftData.projectDetail}</p>
+                <p><strong>必要なスキル:</strong> ${draftData.skills}</p>
+                <p><strong>単価:</strong> ${draftData.reward}</p>
+                <p><strong>募集期限:</strong> ${draftData.deadline}</p>
+                <p><strong>案件ジャンル:</strong> ${draftData.projectGenre}</p>
+            `;
+            document.getElementById('draftInfo').style.display = 'block'; // 下書き情報を表示
+        }
+
+        document.getElementById('projectForm').onsubmit = async function(event) {
+            event.preventDefault();
+            const formData = new FormData(this);
+            const response = await fetch('/api/projects', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    projectName: formData.get('projectName'),
+                    prefecture: formData.get('prefecture'),
+                    city: formData.get('city'),
+                    workingDate: formData.get('workingDate'),
+                    startTime: `${formData.get('startHour')}:${formData.get('startMinute')}`,
+                    endTime: `${formData.get('endHour')}:${formData.get('endMinute')}`,
+                    projectDescription: formData.get('projectDescription'),
+                    projectDetail: formData.get('projectDetail'),
+                    skills: formData.get('skills'),
+                    reward: formData.get('reward'),
+                    deadline: formData.get('deadline'),
+                    projectGenre: formData.get('projectGenre')
+                })
+            });
+
+            if (response.ok) {
+                alert('案件が登録されました！');
+                localStorage.removeItem('draft'); // 登録後に下書きを削除
+                window.location.href = '/project';
+            } else {
+                const errorText = await response.text();
+                console.error('Error:', errorText);
+                alert('登録に失敗しました。');
+            }
+        };
+
+        function setAvailable() {
+            alert("案件が募集中に設定されました。");
+            // 募集中の処理をここに追加
+        }
+    </script>
+</body>
+</html>

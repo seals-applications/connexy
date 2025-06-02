@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register User</title>
+</head>
+<body>
+    <h1>Register User</h1>
+    <form id="registerForm" method="POST" action="/register">
+        <label for="username">Username:</label><br>
+        <input type="text" id="username" name="username" required><br>
+        <span id="usernameError" style="color: red;"></span><br>
+        <label for="password">Password:</label><br>
+        <input type="password" id="password" name="password" required><br>
+        <label for="companyName">Company Name:</label><br>
+        <input type="text" id="companyName" name="companyName"><br>
+        <label for="representativeName">Representative Name:</label><br>
+        <input type="text" id="representativeName" name="representativeName"><br>
+        <label for="phoneNumber">Phone Number:</label><br>
+        <input type="text" id="phoneNumber" name="phoneNumber"><br><br>
+        <input type="submit" value="新規登録">
+    </form>
+    <button onclick="goToLogin()">戻る</button> <!-- 戻るボタンを追加 -->
+    <div id="errorMessage" style="color: red;"></div>
+
+    <script>
+        document.getElementById('username').addEventListener('input', async function() {
+            const username = this.value;
+            if (username) {
+                const response = await fetch(`/check-username?username=${encodeURIComponent(username)}`);
+                const result = await response.json();
+                if (result.exists) {
+                    document.getElementById('usernameError').textContent = '既に登録されているユーザー名です';
+                } else {
+                    document.getElementById('usernameError').textContent = '';
+                }
+            } else {
+                document.getElementById('usernameError').textContent = '';
+            }
+        });
+
+        document.getElementById('registerForm').onsubmit = async function(event) {
+            event.preventDefault();
+            const formData = new FormData(this);
+            const response = await fetch('/register', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: new URLSearchParams(formData)
+            });
+
+            const result = await response.json();
+            if (response.status !== 200) {
+                document.getElementById('errorMessage').textContent = result.error;
+            } else {
+                alert('Registration successful!');
+                window.location.href = '/login';
+            }
+        };
+
+        function goToLogin() {
+            window.location.href = '/login'; // ログインページに遷移
+        }
+    </script>
+</body>
+</html>

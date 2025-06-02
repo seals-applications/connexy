@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>従業員一覧</title>
+    <link rel="stylesheet" href="/styles.css">
+    <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>従業員一覧</h1>
+    </div>
+    <div class="container">
+        <table id="employeeTable">
+            <thead>
+                <tr>
+                    <th>氏名</th>
+                    <th>電話番号</th>
+                    <th>最寄り駅</th>
+                </tr>
+            </thead>
+            <tbody id="employeeList">
+                <!-- ここに従業員データが挿入されます -->
+            </tbody>
+        </table>
+        <button onclick="goBack()">戻る</button>
+    </div>
+
+    <script>
+        async function loadEmployees() {
+            try {
+                const response = await fetch('/api/employees');
+                if (response.ok) {
+                    const employees = await response.json();
+                    const employeeList = document.getElementById('employeeList');
+                    employeeList.innerHTML = employees.map(employee => `
+                        <tr>
+                            <td>${employee.lastName} ${employee.firstName}</td> <!-- 名前を組み合わせて表示 -->
+                            <td>${employee.phoneNumber}</td>
+                            <td>${employee.nearestStation}</td>
+                        </tr>
+                    `).join('');
+                } else {
+                    console.error('従業員一覧の取得に失敗しました');
+                }
+            } catch (error) {
+                console.error('従業員一覧の取得エラー:', error);
+            }
+        }
+
+        function goBack() {
+            window.location.href = '/mypage';
+        }
+
+        // ページ読み込み時に従業員一覧を表示
+        loadEmployees();
+    </script>
+</body>
+</html>

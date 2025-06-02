@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>案件編集</title>
+    <link rel="stylesheet" href="/project.css">
+</head>
+<body>
+    <h1>案件編集</h1>
+    <form id="editProjectForm">
+        <label for="projectName">案件名:</label>
+        <input type="text" id="projectName" name="projectName" value="<%= project.projectName %>" required><br>
+
+        <label for="prefecture">都道府県:</label>
+        <input type="text" id="prefecture" name="prefecture" value="<%= project.prefecture %>" required><br>
+
+        <label for="city">市区町村:</label>
+        <input type="text" id="city" name="city" value="<%= project.city %>" required><br>
+
+        <label for="workingDate">稼働日:</label>
+        <input type="date" id="workingDate" name="workingDate" value="<%= project.workingDate ? project.workingDate.slice(0, 10) : '' %>" required><br>
+
+        <label for="startTime">開始時刻:</label>
+        <input type="time" id="startTime" name="startTime" value="<%= project.startTime %>" required><br>
+
+        <label for="endTime">終了時刻:</label>
+        <input type="time" id="endTime" name="endTime" value="<%= project.endTime %>" required><br>
+
+        <label for="projectDescription">プロジェクトの説明:</label>
+        <textarea id="projectDescription" name="projectDescription"><%= project.projectDescription %></textarea><br>
+
+        <label for="projectDetail">プロジェクトの詳細:</label>
+        <textarea id="projectDetail" name="projectDetail"><%= project.projectDetail %></textarea><br>
+
+        <label for="skills">必要なスキル:</label>
+        <input type="text" id="skills" name="skills" value="<%= project.skills %>"><br>
+
+        <label for="reward">報酬:</label>
+        <input type="text" id="reward" name="reward" value="<%= project.reward %>"><br>
+
+        <label for="deadline">期限:</label>
+        <input type="date" id="deadline" name="deadline" value="<%= project.deadline ? project.deadline.slice(0, 10) : '' %>"><br>
+
+        <label for="projectGenre">案件ジャンル:</label>
+        <input type="text" id="projectGenre" name="projectGenre" value="<%= project.projectGenre %>"><br>
+
+        <button type="submit">更新</button>
+    </form>
+
+    <button onclick="confirmDelete()">削除</button>
+    <button onclick="window.history.back()">戻る</button>
+
+    <script>
+        document.getElementById('editProjectForm').onsubmit = async function(event) {
+            event.preventDefault(); // デフォルトのフォーム送信を防ぐ
+
+            const formData = new FormData(this);
+            const data = Object.fromEntries(formData.entries());
+
+            const projectId = window.location.pathname.split('/').pop(); // URLからプロジェクトIDを取得
+
+            const response = await fetch(`/api/projects/${projectId}`, {
+                method: 'PUT', // 更新のためのHTTPメソッド
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data) // JSON形式でデータを送信
+            });
+
+            if (response.ok) {
+                alert('案件が更新されました。');
+                window.location.href = '/projects'; // 案件一覧ページにリダイレクト
+            } else {
+                const errorText = await response.text();
+                alert('更新に失敗しました: ' + errorText);
+            }
+        };
+
+        function confirmDelete() {
+            if (confirm('本当にこの案件を削除しますか？')) {
+                deleteProject();
+            }
+        }
+
+        async function deleteProject() {
+            const projectId = window.location.pathname.split('/').pop(); // URLからプロジェクトIDを取得
+
+            const response = await fetch(`/api/projects/${projectId}`, {
+                method: 'DELETE'
+            });
+
+            if (response.ok) {
+                alert('プロジェクトが削除されました。');
+                window.location.href = '/projects'; // 案件一覧ページにリダイレクト
+            } else {
+                const errorText = await response.text();
+                alert('削除に失敗しました: ' + errorText);
+            }
+        }
+    </script>
+</body>
+</html>

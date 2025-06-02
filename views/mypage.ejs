@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Page</title>
+    <link rel="stylesheet" href="/project.css"> <!-- スタイルシートを追加 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"> <!-- Font AwesomeのCDN -->
+    <link rel="stylesheet" href="/footers.css">
+    <style>
+        /* ヘッダーの下にコンテンツを配置するためのスタイル調整 */
+        body {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            padding-top: 80px; /* ヘッダーの高さに応じて余白を追加 */
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-project-title">
+            <h1>マイページ</h1>
+        </div>
+    </div>
+
+    <div class="content">
+        <p>会社名： <%= user.companyName %></p>
+        <p>代表者名： <%= user.representativeName %></p>
+        <p>電話番号： <%= user.phoneNumber %></p>
+        <button onclick="window.location.href='/edit-profile'">プロフィール変更</button>
+        <button onclick="window.location.href='/edit-profile'">振込予定</button>
+        <button onclick="window.location.href='/employee-registration'">従業員登録</button>
+    </div>
+
+    <div class="container">
+        <a href="/employee-registration" class="button">従業員登録</a>
+        <a href="/employee-list" class="button">従業員一覧</a>
+    </div>
+
+    <div id="employeeRegistrationForm" style="display: none;">
+        <h2>従業員登録</h2>
+        <form id="employeeForm">
+            <label for="name">氏名:</label>
+            <input type="text" id="name" name="name" required><br>
+
+            <label for="phoneNumber">電話番号:</label>
+            <input type="tel" id="phoneNumber" name="phoneNumber" required><br>
+
+            <label for="nearestStation">最寄り駅:</label>
+            <input type="text" id="nearestStation" name="nearestStation" required><br>
+
+            <button type="submit">登録</button>
+        </form>
+    </div>
+
+    <div class="footer">
+        <button onclick="window.location.href='/project'"><i class="fas fa-search"></i>案件リスト</button>
+        <button onclick="window.location.href='/mypage'"><i class="fas fa-user"></i>マイページ</button>
+        <button onclick="window.location.href='/project-registration'"><i class="fas fa-plus"></i>案件登録</button>
+        <button onclick="window.location.href='/project-status'"><i class="fas fa-info-circle"></i>案件状況</button>
+    </div>
+</body>
+</html>

@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>メインページ</title>
+    <link rel="icon" href="/favicon.ico" type="image/x-icon">
+    <link rel="stylesheet" href="/project.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"> <!-- Font AwesomeのCDN -->
+    <link rel="stylesheet" href="/footers.css">
+    <style>
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+        }
+
+        .sort-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0px 0;
+            @media screen and (max-width: 600px) {
+                font-size: 11px;
+                padding: 0px; /* ボタンの内側の余白を調整 */
+            }
+    
+            @media screen and (min-width: 601px) and (max-width: 1024px) {
+                padding: 30px;
+            }
+    
+            @media screen and (min-width: 1025px) {
+                padding: 50px;
+            }
+        }
+
+        .sort-container span,
+        .sort-container select,
+        .sort-container button {
+            margin: 0 10px; /* 左右の余白を追加 */
+            @media screen and (max-width: 600px) {
+                font-size: 12px;
+            }
+    
+            @media screen and (min-width: 601px) and (max-width: 1024px) {
+            }
+    
+            @media screen and (min-width: 1025px) {
+            }
+        }
+
+        .project-item {
+            border: 1px solid #ccc; /* 枠線 */
+            padding: 10px; /* 内側の余白 */
+            margin-bottom: 10px; /* 下の余白 */
+            background-color: #f9f9f9; /* 背景色 */
+            border-radius: 5px; /* 角を丸くする */
+            cursor: pointer; /* マウスカーソルをポインタにする */
+            transition: background-color 0.3s; /* ホバー時のアニメーション */
+        }
+    
+        .project-item:hover {
+            background-color: #e0e0e0; /* ホバー時の背景色 */
+        }
+
+        .footer {
+            text-align: center;
+            padding: 10px; /* パディングを減らす */
+            background-color: blue; /* 背景色を青に変更 */
+            position: fixed;
+            bottom: 0;
+            left: 0; /* 左側の余白をなくす */
+            width: 96%;
+            display: flex; /* フレックスボックスを使用 */
+            justify-content: space-around; /* ボタンを均等に配置 */
+            margin: 0; /* 余白をなくす */
+        }
+
+        .footer button {
+            flex: 1; /* ボタンを均等に広げる */
+            margin: 0 2px; /* ボタン間のマージンを減らす */
+            padding: 8px; /* ボタンのパディングを調整 */
+            font-size: 12px; /* フォントサイズを小さくする */
+            color: white; /* ボタンの文字色を白に変更 */
+            background-color: transparent; /* ボタンの背景色を透明に */
+            border: 1px solid transparent; /* ボタンの枠線を透明に */
+            border-radius: 5px; /* ボタンの角を丸くする */
+            cursor: pointer; /* カーソルをポインターに変更 */
+            display: flex; /* フレックスボックスを使用 */
+            flex-direction: column; /* 縦に並べる */
+            align-items: center; /* 中央揃え */
+        }
+
+        .footer button i {
+            font-size: 20px; /* アイコンのサイズを調整 */
+            margin-bottom: 5px; /* アイコンとテキストの間にスペースを追加 */
+        }
+
+        .footer button:hover {
+            background-color: rgba(255, 255, 255, 0.2); /* ホバー時の背景色を設定 */
+        }
+
+        .project-list {
+            width: 100%; /* 横幅を100%に設定 */
+            max-width: 1500px; /* 最大幅を設定（必要に応じて調整） */
+            margin: 0 auto; /* 中央揃え */
+        }
+
+        .container {
+            width: 100%; /* 横幅を100%に設定 */
+            max-width: 1500px; /* 最大幅を設定（必要に応じて調整） */
+            margin: 0 auto; /* 中央揃え */
+        }
+
+        body {
+            margin: 0; /* デフォルトのマージンをリセット */
+            padding-top: 80px; /* ヘッダーの高さに応じて余白を追加 */
+            padding-bottom: 80px; /* フッターの高さに応じて余白を追加 */
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-project-title">
+            <h1>案件リスト</h1>
+        </div>
+    </div>
+
+    <div class="sort-container">
+        <span id="projectCount" class="search-count">検索結果: 0件</span> <!-- 検索件数を表示する要素 -->
+        <label for="sortOptions" class="sort-label">並び替え:</label>
+        <select id="sortOptions" class="sort-select" onchange="sortProjects(this.value)">
+            <option value="newest">新着順</option>
+            <option value="highReward">高単価順</option>
+            <option value="date">日付順</option>
+        </select>
+        <button class="filter-button" onclick="showFilterPopup()">絞り込み</button>
+    </div>
+
+    <div class="container">
+        <div id="project" class="project-list"></div>
+    </div>
+
+    <!-- 絞り込みポップアップ -->
+    <div id="filterPopup" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); background-color:white; border:1px solid #ccc; padding:20px; z-index:1000;">
+        <h3>絞り込み条件</h3>
+        <label for="area">エリア（都道府県）:</label>
+        <input type="text" id="area" placeholder="例: 東京都">
+        <br>
+        <label for="workingDate">稼働日:</label>
+        <input type="date" id="workingDate">
+        <br>
+        <label for="minReward">単価（下限）:</label>
+        <input type="number" id="minReward" placeholder="0">
+        <br>
+        <label for="maxReward">単価（上限）:</label>
+        <input type="number" id="maxReward" placeholder="上限">
+        <br>
+        <button onclick="applyFilters()">適用</button>
+        <button onclick="closeFilterPopup()">キャンセル</button>
+    </div>
+
+    <script>
+        let projects = []; // プロジェクトデータを格納する配列
+
+        async function loadProjects() {
+            try {
+                const response = await fetch('/api/projects');
+                projects = await response.json();
+                
+                console.log(projects); // レスポンスを表示
+            
+                if (!Array.isArray(projects)) {
+                    throw new Error('Projects is not an array'); // 配列でない場合にエラーをスロー
+                }
+
+                displayProjects(projects);
+            } catch (error) {
+                console.error('Error loading projects:', error);
+                alert(`Error loading projects: ${error.message}`); // エラーメッセージを表示
+            }
+        }
+
+        function displayProjects(projects) {
+            const projectElement = document.getElementById('project');
+            projectElement.innerHTML = ''; // 初期化
+
+            // 検索件数を更新
+            document.getElementById('projectCount').textContent = `検索結果: ${projects.length}件`;
+
+            projects.forEach(project => {
+                const button = document.createElement('button');
+                button.className = 'project-button'; // クラスを追加
+
+                const workingDate = new Date(project.workingDate);
+                const formattedDate = workingDate.toLocaleDateString('ja-JP', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    weekday: 'short'
+                });
+                const formattedTime = workingDate.toLocaleTimeString('ja-JP', {
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+
+                button.innerHTML = `
+                    <h3>${project.projectName}</h3>
+                    <p>日時： ${formattedDate}</p>
+                    <p>　　　 ${project.startTime}-${project.endTime}</p>
+                    <p>報酬： ¥${project.reward}</p>
+                    <p>期限： ${new Date(project.deadline).toLocaleDateString()}</p>
+                `;
+                button.onclick = () => {
+                    window.location.href = `/project-detail/${project.id}`; // 詳細ページに遷移
+                };
+
+                projectElement.appendChild(button);
+            });
+        }
+
+        // ソート機能
+        function sortProjects(criteria) {
+            let sortedProjects;
+
+            if (criteria === 'newest') {
+                sortedProjects = projects.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+            } else if (criteria === 'highReward') {
+                sortedProjects = projects.sort((a, b) => b.reward - a.reward);
+            } else if (criteria === 'date') {
+                sortedProjects = projects.sort((a, b) => new Date(a.workingDate) - new Date(b.workingDate));
+            }
+
+            displayProjects(sortedProjects);
+        }
+
+        // 絞り込みポップアップを表示
+        function showFilterPopup() {
+            document.getElementById('filterPopup').style.display = 'block';
+        }
+
+        // 絞り込みポップアップを閉じる
+        function closeFilterPopup() {
+            document.getElementById('filterPopup').style.display = 'none';
+        }
+
+        // 絞り込み条件を適用
+        function applyFilters() {
+            const area = document.getElementById('area').value.toLowerCase();
+            const workingDate = document.getElementById('workingDate').value;
+            const minReward = parseFloat(document.getElementById('minReward').value) || 0;
+            const maxReward = parseFloat(document.getElementById('maxReward').value) || Infinity;
+
+            const filteredProjects = projects.filter(project => {
+                const projectArea = project.prefecture.toLowerCase();
+                const projectDate = new Date(project.workingDate).toISOString().split('T')[0]; // YYYY-MM-DD形式
+                const isAreaMatch = area ? projectArea.includes(area) : true;
+                const isDateMatch = workingDate ? projectDate === workingDate : true;
+                const isRewardMatch = project.reward >= minReward && project.reward <= maxReward;
+
+                return isAreaMatch && isDateMatch && isRewardMatch;
+            });
+
+            displayProjects(filteredProjects);
+            closeFilterPopup(); // ポップアップを閉じる
+        }
+
+        // ページロード時に案件を表示
+        loadProjects();
+    </script>
+
+    <script>
+
+        function submitManualEntry() {
+            const manualDate = document.getElementById('manualDate').value;
+            const actionType = document.getElementById('actionType').value;
+
+            if (!manualDate) {
+                alert('日付と時間を選択してください。');
+                return;
+            }
+
+            fetch('/manual-entry', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    timestamp: new Date(manualDate).toISOString(),
+                    action: actionType
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert(data.message || 'エントリが追加されました！');
+                closeManualEntryPopup();
+            })
+            .catch(error => console.error('Error:', error));
+        }
+
+        function showRegisterPopup() {
+            document.getElementById('registerPopup').style.display = 'block';
+        }
+
+        function closeRegisterPopup() {
+            document.getElementById('registerPopup').style.display = 'none';
+        }
+
+        function submitProject() {
+            const projectName = document.getElementById('projectName').value;
+            const prefecture = document.getElementById('prefecture').value;
+            const city = document.getElementById('city').value;
+            const workingDate = document.getElementById('workingDate').value;
+            const projectTime = document.getElementById('projectTime').value;
+            const projectDescription = document.getElementById('projectDescription').value;
+            const skills = document.getElementById('skills').value;
+            const reward = document.getElementById('reward').value;
+            const deadline = document.getElementById('deadline').value;
+
+            fetch('/api/projects', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ projectName, prefecture, city, workingDate, projectTime, projectDescription, skills, reward, deadline })
+            })
+            .then(response => {
+                if (response.ok) {
+                    alert('案件が登録されました！');
+                    loadProjects(); // 案件を再読み込み
+                    closeRegisterPopup();
+                } else {
+                    alert('登録に失敗しました。');
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        }
+    </script>
+
+    <div class="footer">
+        <button onclick="window.location.href='/project'"><i class="fas fa-search"></i>案件リスト</button>
+        <button onclick="window.location.href='/mypage'"><i class="fas fa-user"></i>マイページ</button>
+        <button onclick="window.location.href='/project-registration'"><i class="fas fa-plus"></i>案件登録</button>
+        <button onclick="window.location.href='/project-status'"><i class="fas fa-info-circle"></i>案件状況</button>
+    </div>
+</body>
+</html>

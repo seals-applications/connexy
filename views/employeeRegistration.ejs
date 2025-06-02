@@ -1,0 +1,91 @@
+<!-- views/employeeRegistration.ejs -->
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>従業員登録</title>
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+    <div class="header">
+        <h1>従業員登録</h1>
+    </div>
+    <div class="container">
+        <div id="employeeRegistrationForm" style="display: none;">
+            <h2>従業員登録</h2>
+            <form id="employeeForm">
+                <label for="lastName">性:</label>
+                <input type="text" id="lastName" name="lastName" required><br>
+
+                <label for="firstName">名:</label>
+                <input type="text" id="firstName" name="firstName" required><br>
+
+                <label for="furigana">フリガナ:</label>
+                <input type="text" id="furigana" name="furigana" required><br>
+
+                <label for="gender">性別:</label>
+                <select id="gender" name="gender" required>
+                    <option value="">選択してください</option>
+                    <option value="male">男性</option>
+                    <option value="female">女性</option>
+                    <option value="other">その他</option>
+                </select><br>
+
+                <label for="birthdate">生年月日:</label>
+                <input type="date" id="birthdate" name="birthdate" required><br>
+
+                <label for="address">住所:</label>
+                <input type="text" id="address" name="address" required><br>
+
+                <label for="phoneNumber">電話番号:</label>
+                <input type="tel" id="phoneNumber" name="phoneNumber" required><br>
+
+                <label for="nearestStation">最寄り駅:</label>
+                <input type="text" id="nearestStation" name="nearestStation" required><br>
+
+                <button type="submit">登録</button>
+            </form>
+        </div>
+        <button onclick="goBack()">戻る</button>
+    </div>
+
+    <script>
+        document.getElementById('employeeForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const employeeData = {
+                lastName: document.getElementById('lastName').value,
+                firstName: document.getElementById('firstName').value,
+                // 他のフィールドも追加
+            };
+
+            console.log('Sending employee registration data:', employeeData); // 送信するデータをログに出力
+
+            try {
+                const response = await fetch('/api/employees/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(employeeData),
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const result = await response.json();
+                alert(result.message);
+                e.target.reset();
+            } catch (error) {
+                console.error('従業員登録エラー:', error);
+                alert('従業員の登録に失敗しました');
+            }
+        });
+
+        function goBack() {
+            window.location.href = '/mypage';
+        }
+    </script>
+</body>
+</html>

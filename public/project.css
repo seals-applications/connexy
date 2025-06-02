@@ -1,0 +1,237 @@
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f0f4f7;
+    margin: 0;
+    padding: 0 20px; /* 左右に20pxの余白を追加 */
+}
+
+.header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    background-color: #007bff;
+    color: white;
+    padding: 10px 20px; /* ヘッダーのパディングを調整 */
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    display: flex;
+    justify-content: space-between; /* ヘッダー内の要素を左右に配置 */
+    align-items: center; /* 垂直方向に中央揃え */
+    z-index: 1000; /* ヘッダーを最前面に */
+}
+
+.header-project-title {
+    text-align: center;
+    margin: 0; /* マージンをゼロに */
+    font-size: 10px;
+    @media screen and (max-width: 600px) {
+        font-size: 8px;
+    }
+    
+    @media screen and (min-width: 601px) and (max-width: 1024px) {
+        font-size: 14px;
+    }
+    
+    @media screen and (min-width: 1025px) {
+        font-size: 16px;
+    }
+}
+
+/* ボタンをヘッダーに配置 */
+.header-project-button {
+    display: flex;
+    justify-content: flex-end; /* ボタンを右寄せ */
+    gap: 10px; /* ボタン間の余白を追加 */
+    padding-right: 20px; /* 右側の余白を追加 */
+}
+
+.header-project-button button {
+    margin-left: 10px; /* 各ボタンの左側に余白を追加 */
+    padding: 10px 15px; /* ボタンの内側の余白を調整 */
+    border: none;
+    background-color: #007bff;
+    color: white;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    font-size: 14px;
+
+    @media screen and (max-width: 600px) {
+        font-size: 14px;
+        margin-left: 0px;
+        padding: 0px 0px; /* ボタンの内側の余白を調整 */
+    }
+    
+    @media screen and (min-width: 601px) and (max-width: 1024px) {
+        font-size: 16px;
+    }
+    
+    @media screen and (min-width: 1025px) {
+        font-size: 18px;
+    }
+}
+
+.header-project-button button:hover {
+    background-color: #0056b3;
+}
+
+button {
+    background-color: #007bff;
+    color: white;
+    padding: 10px 20px; /* ボタンのパディングを調整 */
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px; /* フォントサイズを調整 */
+    transition: background-color 0.3s ease;
+}
+
+button:hover {
+    background-color: #0056b3;
+}
+
+button:active {
+    background-color: #00408a;
+}
+
+button:focus {
+    outline: none;
+}
+
+.date-time {
+    margin-top: 80px; /* ヘッダーからのスペースを確保 */
+    text-align: center;
+    font-size: 18px;
+    color: #333;
+}
+
+#currentDate {
+    display: none;
+}
+
+#username {
+    display: none;
+}
+
+.container {
+    background-color: transparent; /* 背景を透明にする */
+    padding: 0px;
+    text-align: center;
+    width: 80%;
+    max-width: 600px;
+    margin-top: 10px; /* ヘッダーの下にスペースを確保 */
+}
+
+.popup {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.popup-content {
+    background-color: white;
+    padding: 20px;
+    border-radius: 10px;
+    width: 300px;
+    text-align: center;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+}
+
+.popup-content h3 {
+    margin-bottom: 15px;
+}
+
+.popup-content input,
+.popup-content select {
+    margin-bottom: 15px;
+    width: 100%;
+    padding: 8px;
+    box-sizing: border-box;
+}
+
+.popup-content button {
+    margin: 5px;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+.popup-content button:hover {
+    background-color: #0056b3;
+    color: white;
+}
+
+.project-list {
+    margin-top: 20px; /* 上部にスペースを追加 */
+}
+
+.project-list div {
+    border: 1px solid #007bff; /* 青色の枠線 */
+    padding: 15px; /* 内側の余白 */
+    margin: 10px 0; /* 下部にスペースを追加 */
+    border-radius: 8px; /* 角を丸くする */
+    background-color: #f8f9fa; /* 背景色を薄いグレーに */
+}
+
+.project-list h3 {
+    margin: 0; /* タイトルのマージンをリセット */
+    color: #007bff; /* タイトルの色を青に */
+
+    @media screen and (max-width: 600px) {
+        font-size: 16px;
+    }
+    
+    @media screen and (min-width: 601px) and (max-width: 1024px) {
+        font-size: 18px;
+    }
+    
+    @media screen and (min-width: 1025px) {
+        font-size: 20px;
+    }
+}
+
+.project-list p {
+    margin: 5px 0; /* 各段落のマージンを調整 */
+}
+
+.project-item {
+    cursor: pointer; /* カーソルをポインターに変更 */
+    border: 1px solid #ccc; /* 枠線を追加 */
+    padding: 10px; /* 内側の余白 */
+    margin: 10px 0; /* 外側の余白 */
+    transition: background-color 0.3s; /* ホバー時の効果 */
+}
+
+.project-item:hover {
+    background-color: #f0f0f0; /* ホバー時の背景色 */
+}
+
+.project-button {
+    display: block; /* ボタンをブロック要素として表示 */
+    width: 100%; /* 幅を100%に */
+    padding: 10px; /* パディングを追加 */
+    margin: 10px 0; /* 上下にマージン */
+    border: none; /* ボーダーを消去 */
+    background-color: #e4e5eb; /* 背景色 */
+    color: black; /* 文字色 */
+    text-align: left; /* テキストを左揃え */
+    cursor: pointer; /* カーソルをポインタに */
+}
+
+.project-button:hover {
+    background-color: #a0a0a7; /* ホバー時の色 */
+}
+
+i {
+    color: #007bff; /* アイコンの色を青に */
+    margin-right: 5px; /* アイコンとテキストの間に余白を追加 */
+}
