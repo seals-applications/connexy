@@ -1,26 +1,26 @@
 {
   "development": {
-    "username": "root",
+    "username": "connexy_db_user",
     "password": null,
-    "database": "database_development",
-    "host": "127.0.0.1",
-    "dialect": "sqlite",
-    "storage": "project.db"
+    "database": "connexy_db",
+    "host": "dpg-d0utsteuk2gs73aun370-a",
+    "dialect": "postgres",
+    "storage": "connexy_db"
   },
   "test": {
-    "username": "root",
+    "username": "connexy_db_user",
     "password": null,
-    "database": "database_test",
-    "host": "127.0.0.1",
-    "dialect": "sqlite",
+    "database": "connexy_db",
+    "host": "dpg-d0utsteuk2gs73aun370-a",
+    "dialect": "postgres",
     "storage": "test.db"
   },
   "production": {
-    "username": "root",
+    "username": "connexy_db_user",
     "password": null,
-    "database": "database_production",
-    "host": "127.0.0.1",
-    "dialect": "sqlite",
+    "database": "connexy_db",
+    "host": "dpg-d0utsteuk2gs73aun370-a",
+    "dialect": "postgres",
     "storage": "production.db"
   }
 }
