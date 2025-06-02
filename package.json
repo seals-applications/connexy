@@ -22,5 +22,8 @@
   },
   "devDependencies": {
     "sequelize-cli": "^6.6.2"
+  },
+  "scripts": {
+  "start": "node server.js"
   }
 }
