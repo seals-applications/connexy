@@ -1,0 +1,838 @@
+import { useEffect, useRef, useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+import { api } from '../data/mockDb';
+import type { Job, Talent, Staff } from '../data/mockDb';
+import { CalendarPicker } from '../components/CalendarPicker';
+
+export function SearchPage() {
+  const navigate = useNavigate();
+  const mapRef = useRef<L.Map | null>(null);
+  const markersGroupRef = useRef<L.LayerGroup | null>(null);
+
+  const [mode, setMode] = useState<'talent' | 'job'>('job');
+  const [viewMode, setViewMode] = useState<'map' | 'list'>('map');
+  
+  const [jobs, setJobs] = useState<Job[]>([]);
+  const [talents, setTalents] = useState<Talent[]>([]);
+  const [filterArea, setFilterArea] = useState<string>('all');
+
+  const [selectedTalent, setSelectedTalent] = useState<Talent | null>(null);
+  const [selectedJob, setSelectedJob] = useState<Job | null>(null);
+
+  // 新規作成フォーム用のState
+  const [isCreateFormOpen, setIsCreateFormOpen] = useState(false);
+  const [createFormType, setCreateFormType] = useState<'job' | 'talent'>('job');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // スタッフ関連のState
+  const [myStaffs, setMyStaffs] = useState<Staff[]>([]);
+  const [selectedStaffId, setSelectedStaffId] = useState<string>('');
+
+  
+  // 汎用フォームState (Job用) + Talent用希望勤務日
+  const [formData, setFormData] = useState({
+    title: '', description: '', price: 15000, 
+    locationName: '', // 案件時は住所
+    roleType: 'キャンペーンクルー', storeType: 'ショップ', carrier: 'docomo',
+    availableDates: '', // 案件用など（未使用になるかも）
+    selectedDates: [] as string[] // カレンダーで選択された日付
+  });
+
+  const handleOpenCreateForm = async () => {
+    const currentUser = await api.getCurrentUser();
+    const staffs = await api.getStaffsByUserId(currentUser.id);
+    setMyStaffs(staffs);
+    if (staffs.length > 0) setSelectedStaffId(staffs[0].id);
+    setCreateFormType(mode);
+    setIsCreateFormOpen(true);
+  };
+
+  const geocodeAddress = async (address: string): Promise<{lat: number, lng: number}> => {
+    try {
+      const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}`);
+      const data = await response.json();
+      if (data && data.length > 0) {
+        return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+      }
+    } catch (e) {
+      console.warn("Geocoding failed", e);
+    }
+    return { lat: 35.6812, lng: 139.7671 }; // Fallback to Tokyo Station
+  };
+
+  const handleCreateSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    
+    const addressToGeocode = createFormType === 'job' ? formData.locationName : '東京';
+    let coords = { lat: 35.6812, lng: 139.7671 };
+    if (createFormType === 'job') {
+      coords = await geocodeAddress(addressToGeocode);
+    }
+
+    if (createFormType === 'job') {
+      const newJob: Omit<Job, 'id'> = {
+        title: formData.title,
+        description: formData.description,
+        price: Number(formData.price),
+        locationName: formData.locationName,
+        lat: coords.lat,
+        lng: coords.lng,
+        authorId: 'u1',
+        roleType: formData.roleType as Job['roleType'],
+        storeType: formData.storeType as Job['storeType'],
+        carrier: formData.carrier as Job['carrier'],
+        detailedDescription: formData.description
+      };
+      const savedJob = await api.addJob(newJob);
+      setJobs(prev => [...prev, savedJob]);
+    } else {
+      const selectedStaff = myStaffs.find(s => s.id === selectedStaffId);
+      if (!selectedStaff) {
+        alert('スタッフを選択してください');
+        setIsSubmitting(false);
+        return;
+      }
+      const coords = await geocodeAddress(selectedStaff.baseLocation);
+      const currentUser = await api.getCurrentUser();
+      
+      // selectedDates (YYYY-MM-DD) を "M/D" のカンマ区切りに変換
+      const sortedDates = [...formData.selectedDates].sort();
+      const formattedDates = sortedDates.map(d => {
+        const [_, month, day] = d.split('-');
+        return `${parseInt(month)}/${parseInt(day)}`;
+      }).join(', ');
+
+      const newTalent: Omit<Talent, 'id'> = {
+        name: selectedStaff.name,
+        maskedName: selectedStaff.maskedName,
+        companyName: currentUser.name, 
+        description: selectedStaff.prText || '',
+        price: selectedStaff.price,
+        locationName: selectedStaff.baseLocation, // Group by baseLocation
+        baseLocation: selectedStaff.baseLocation,
+        nearestStation: selectedStaff.nearestStation,
+        preferredArea: selectedStaff.preferredArea, 
+        lat: coords.lat,
+        lng: coords.lng,
+        userId: currentUser.id,
+        skills: selectedStaff.skills,
+        carriers: selectedStaff.carriers,
+        experience: selectedStaff.experience,
+        prText: selectedStaff.prText,
+        availableDates: formattedDates
+      };
+      const savedTalent = await api.addTalent(newTalent);
+      setTalents(prev => [...prev, savedTalent]);
+    }
+    
+    setIsSubmitting(false);
+    setIsCreateFormOpen(false);
+    alert(`${createFormType === 'job' ? '案件' : '人材'}を登録しました`);
+  };
+
+  // 初回データフェッチとマップ初期化
+  useEffect(() => {
+    const mapContainer = document.getElementById('map-area');
+    if (!mapContainer || mapRef.current) return;
+
+    const defaultLocation: [number, number] = [35.6812, 139.7671];
+
+    mapRef.current = L.map('map-area', {
+      zoomControl: false,
+    }).setView(defaultLocation, 14);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+    }).addTo(mapRef.current);
+
+    L.control.zoom({ position: 'bottomright' }).addTo(mapRef.current);
+    markersGroupRef.current = L.layerGroup().addTo(mapRef.current);
+
+    const loadData = async () => {
+      try {
+        const [fetchedJobs, fetchedTalents] = await Promise.all([
+          api.getJobs(),
+          api.getTalents()
+        ]);
+        setJobs(fetchedJobs);
+        setTalents(fetchedTalents);
+      } catch (error) {
+        console.error('データの取得に失敗しました', error);
+      }
+    };
+
+    loadData();
+
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const lat = position.coords.latitude;
+          const lng = position.coords.longitude;
+          const currentLocation: [number, number] = [lat, lng];
+
+          if (mapRef.current) {
+            mapRef.current.setView(currentLocation, 14);
+            const customIcon = L.divIcon({
+              className: 'current-location-marker',
+              html: `<div style="
+                width: 16px;
+                height: 16px;
+                background-color: #2563EB;
+                border: 3px solid white;
+                border-radius: 50%;
+                box-shadow: 0 0 10px rgba(0,0,0,0.3);
+              "></div>`,
+              iconSize: [16, 16],
+              iconAnchor: [8, 8],
+            });
+
+            const marker = L.marker(currentLocation, { icon: customIcon }).addTo(mapRef.current);
+            marker.bindPopup('<b>現在地</b>').openPopup();
+          }
+        },
+        (error) => {
+          console.warn('位置情報の取得に失敗しました:', error.message);
+        },
+        { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+      );
+    }
+
+    const resizeObserver = new ResizeObserver(() => {
+        if(mapRef.current) mapRef.current.invalidateSize();
+    });
+    resizeObserver.observe(mapContainer);
+
+    return () => {
+      resizeObserver.disconnect();
+      if (mapRef.current) {
+        mapRef.current.remove();
+        mapRef.current = null;
+      }
+    };
+  }, []);
+
+  // talentsやjobsが更新されたときにドキュメントレベルのイベントリスナーを設定
+  useEffect(() => {
+    const handleDocumentClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (target && target.classList.contains('view-profile-btn')) {
+        const talentId = target.getAttribute('data-id');
+        const talent = talents.find(t => t.id === talentId);
+        if (talent) setSelectedTalent(talent);
+      } else if (target && target.classList.contains('view-job-btn')) {
+        const jobId = target.getAttribute('data-id');
+        const job = jobs.find(j => j.id === jobId);
+        if (job) setSelectedJob(job);
+      } else if (target && target.classList.contains('view-area-btn')) {
+        const areaName = target.getAttribute('data-area');
+        if (areaName) {
+          if (areaName.includes('渋谷')) setFilterArea('shibuya');
+          else if (areaName.includes('新宿')) setFilterArea('shinjuku');
+          else if (areaName.includes('池袋') || areaName.includes('豊島')) setFilterArea('ikebukuro');
+          else setFilterArea('all');
+          setViewMode('list');
+        }
+      }
+    };
+    document.addEventListener('click', handleDocumentClick);
+    return () => document.removeEventListener('click', handleDocumentClick);
+  }, [talents, jobs]);
+
+  // 人材をエリアごとにグループ化する
+  const groupedTalents = useMemo(() => {
+    const groups: Record<string, { locationName: string, lat: number, lng: number, talents: Talent[] }> = {};
+    talents.forEach(talent => {
+      if (!groups[talent.locationName]) {
+        groups[talent.locationName] = {
+          locationName: talent.locationName,
+          lat: talent.lat,
+          lng: talent.lng,
+          talents: []
+        };
+      }
+      groups[talent.locationName].talents.push(talent);
+    });
+    return Object.values(groups);
+  }, [talents]);
+
+  // mode と data の変更を検知してマップのピンを出し分ける
+  useEffect(() => {
+    if (!mapRef.current || !markersGroupRef.current) return;
+    markersGroupRef.current.clearLayers();
+
+    if (mode === 'job') {
+      jobs.forEach((job) => {
+        const jobIcon = L.divIcon({
+          className: 'job-location-marker',
+          html: `<div style="
+            width: 24px; height: 24px; background-color: #EF4444; border: 3px solid white; border-radius: 50%; box-shadow: 0 4px 6px rgba(239, 68, 68, 0.4); display: flex; align-items: center; justify-content: center; color: white;
+          "><span class="material-symbols-outlined" style="font-size: 14px;">work</span></div>`,
+          iconSize: [24, 24],
+          iconAnchor: [12, 12],
+        });
+
+        const marker = L.marker([job.lat, job.lng], { icon: jobIcon });
+        marker.bindPopup(`
+          <div style="font-family: 'Inter', sans-serif;">
+            <b style="font-size: 14px;">${job.title}</b>
+            <p style="margin: 4px 0; font-size: 12px; color: #666;">${job.description}</p>
+            <div style="font-size: 13px; color: var(--primary); font-weight: bold;">単価: ¥${job.price.toLocaleString()}</div>
+            <button class="view-job-btn" data-id="${job.id}" style="margin-top: 8px; width: 100%; padding: 4px; background: var(--primary); color: white; border: none; border-radius: 4px; cursor: pointer;">詳細を見る</button>
+          </div>
+        `);
+        markersGroupRef.current?.addLayer(marker);
+      });
+    } else {
+      groupedTalents.forEach((group) => {
+        const talentGroupIcon = L.divIcon({
+          className: 'talent-group-location-marker',
+          html: `<div style="
+            width: 32px; height: 32px; background-color: #10B981; border: 3px solid white; border-radius: 50%; box-shadow: 0 4px 6px rgba(16, 185, 129, 0.4); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 14px;
+          ">${group.talents.length}</div>`,
+          iconSize: [32, 32],
+          iconAnchor: [16, 16],
+        });
+
+        const marker = L.marker([group.lat, group.lng], { icon: talentGroupIcon });
+        marker.bindPopup(`
+          <div style="font-family: 'Inter', sans-serif; text-align: center;">
+            <b style="font-size: 15px; display: block; margin-bottom: 8px;">${group.locationName}</b>
+            <div style="font-size: 14px; color: #10B981; font-weight: bold; margin-bottom: 12px;">人材: ${group.talents.length}名</div>
+            <button class="view-area-btn" data-area="${group.locationName}" style="width: 100%; padding: 6px; background: #10B981; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">リストを見る</button>
+          </div>
+        `);
+        markersGroupRef.current?.addLayer(marker);
+      });
+    }
+  }, [mode, jobs, groupedTalents]);
+
+  const filteredJobs = jobs.filter(job => {
+    if (filterArea === 'all') return true;
+    if (filterArea === 'shinjuku') return job.locationName?.includes('新宿');
+    if (filterArea === 'shibuya') return job.locationName?.includes('渋谷');
+    if (filterArea === 'ikebukuro') return job.locationName?.includes('池袋') || job.locationName?.includes('豊島');
+    return true;
+  });
+
+  const filteredTalentGroups = groupedTalents.filter(group => {
+    if (filterArea === 'all') return true;
+    if (filterArea === 'shinjuku') return group.locationName.includes('新宿');
+    if (filterArea === 'shibuya') return group.locationName.includes('渋谷');
+    if (filterArea === 'ikebukuro') return group.locationName.includes('池袋') || group.locationName.includes('豊島');
+    return true;
+  });
+
+  return (
+    <div className="view active" style={{ display: 'flex', flexDirection: 'column' }}>
+      <header className="glass-header" style={{ zIndex: 1000, position: 'relative' }}>
+        <div className="header-top">
+          <div className="toggle-switch">
+            <input
+              type="radio"
+              id="mode-job"
+              name="search-mode"
+              checked={mode === 'job'}
+              onChange={() => {
+                setMode('job');
+                setFilterArea('all');
+              }}
+            />
+            <label htmlFor="mode-job">案件を探す</label>
+            <input
+              type="radio"
+              id="mode-talent"
+              name="search-mode"
+              checked={mode === 'talent'}
+              onChange={() => {
+                setMode('talent');
+                setFilterArea('all');
+              }}
+            />
+            <label htmlFor="mode-talent">人材を探す</label>
+            <div className="toggle-slider"></div>
+          </div>
+        </div>
+        <div className="header-search">
+          <div className="search-bar">
+            <span className="material-symbols-outlined icon">search</span>
+            <input type="text" placeholder="現在地周辺・エリア名など" />
+          </div>
+          <button 
+            className="filter-btn" 
+            onClick={() => setViewMode(viewMode === 'map' ? 'list' : 'map')}
+            style={{ 
+              backgroundColor: viewMode === 'list' ? 'var(--primary)' : 'white',
+              color: viewMode === 'list' ? 'white' : 'var(--text-main)',
+              border: 'none',
+              boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+              transition: 'all 0.2s ease'
+            }}
+          >
+            <span className="material-symbols-outlined">
+              {viewMode === 'map' ? 'format_list_bulleted' : 'map'}
+            </span>
+          </button>
+        </div>
+      </header>
+
+      <div 
+        className="map-area" 
+        id="map-area" 
+        style={{ display: viewMode === 'map' ? 'block' : 'none', flex: 1, zIndex: 1, position: 'relative' }}
+      ></div>
+
+      {viewMode === 'list' && (
+        <main className="list-area bg-gray" style={{ flex: 1, overflowY: 'auto', zIndex: 2, paddingBottom: '80px' }}>
+          <div style={{ padding: '16px', background: 'white', borderBottom: '1px solid var(--border-color)', position: 'sticky', top: 0, zIndex: 10 }}>
+            <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '4px' }}>
+              {['all', 'shinjuku', 'shibuya', 'ikebukuro'].map((area) => (
+                <button
+                  key={area}
+                  onClick={() => setFilterArea(area)}
+                  style={{
+                    padding: '6px 12px',
+                    borderRadius: '20px',
+                    border: filterArea === area ? 'none' : '1px solid #ddd',
+                    background: filterArea === area ? 'var(--primary)' : 'white',
+                    color: filterArea === area ? 'white' : 'var(--text-main)',
+                    fontSize: '13px',
+                    whiteSpace: 'nowrap',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                    boxShadow: filterArea === area ? '0 2px 4px rgba(59, 130, 246, 0.3)' : 'none'
+                  }}
+                >
+                  {area === 'all' ? 'すべて' : area === 'shinjuku' ? '新宿周辺' : area === 'shibuya' ? '渋谷周辺' : '池袋周辺'}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {mode === 'job' ? (
+              filteredJobs.length > 0 ? (
+                filteredJobs.map(job => (
+                  <div key={job.id} style={{ background: 'white', borderRadius: '8px', padding: '16px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', animation: 'fadeIn 0.3s ease' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                      <h3 style={{ margin: '0 0 8px 0', fontSize: '15px' }}>{job.title}</h3>
+                      <span className="status-badge badge-negotiating" style={{ margin: 0, fontSize: '11px' }}>募集中</span>
+                    </div>
+                    <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '8px' }}>
+                      {job.carrier && <span style={{ fontSize: '11px', padding: '2px 8px', background: '#E0E7FF', color: '#4338CA', borderRadius: '12px', fontWeight: 'bold' }}>{job.carrier}</span>}
+                      {job.storeType && <span style={{ fontSize: '11px', padding: '2px 8px', background: '#FEF3C7', color: '#D97706', borderRadius: '12px', fontWeight: 'bold' }}>{job.storeType}</span>}
+                      {job.roleType && <span style={{ fontSize: '11px', padding: '2px 8px', background: '#DCFCE7', color: '#15803D', borderRadius: '12px', fontWeight: 'bold' }}>{job.roleType}</span>}
+                    </div>
+                    <p style={{ margin: '0 0 12px 0', fontSize: '13px', color: 'var(--text-sub)' }}>{job.description}</p>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div style={{ fontSize: '14px', color: 'var(--primary)', fontWeight: 'bold' }}>
+                        ¥{job.price.toLocaleString()} <span style={{ fontSize: '11px', color: 'var(--text-sub)', fontWeight: 'normal' }}>/ 日</span>
+                      </div>
+                      <button className="btn-secondary btn-small" style={{ margin: 0 }} onClick={() => setSelectedJob(job)}>詳細を見る</button>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--text-sub)' }}>
+                  <span className="material-symbols-outlined" style={{ fontSize: '40px', marginBottom: '8px', opacity: 0.5 }}>search_off</span>
+                  <p>該当する案件が見つかりません</p>
+                </div>
+              )
+            ) : (
+              filteredTalentGroups.length > 0 ? (
+                filteredTalentGroups.map(group => (
+                  <div key={group.locationName} style={{ background: 'white', borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', animation: 'fadeIn 0.3s ease', overflow: 'hidden' }}>
+                    <div style={{ padding: '12px 16px', background: '#F9FAFB', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <h3 style={{ margin: 0, fontSize: '15px', color: 'var(--text-main)' }}>{group.locationName}</h3>
+                      <span style={{ fontSize: '13px', fontWeight: 'bold', color: '#10B981', background: '#D1FAE5', padding: '4px 10px', borderRadius: '12px' }}>{group.talents.length}名</span>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                      {group.talents.map((talent, idx) => (
+                        <div key={talent.id} style={{ padding: '16px', borderBottom: idx < group.talents.length - 1 ? '1px solid #f0f0f0' : 'none' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#10B981', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', fontWeight: 'bold' }}>
+                                {talent.maskedName.charAt(0)}
+                              </div>
+                              <div>
+                                <div style={{ fontSize: '12px', color: 'var(--text-sub)', marginBottom: '2px' }}>{talent.companyName}</div>
+                                <div style={{ fontSize: '15px', fontWeight: 'bold' }}>{talent.maskedName}</div>
+                              </div>
+                            </div>
+                            <span className="status-badge badge-contracted" style={{ margin: 0, fontSize: '11px', background: '#D1FAE5', color: '#065F46' }}>稼働可能</span>
+                          </div>
+                          
+                          {talent.availableDates && (
+                            <div style={{ fontSize: '12px', color: 'var(--primary)', fontWeight: 'bold', marginBottom: '8px' }}>
+                              希望勤務日: {talent.availableDates}
+                            </div>
+                          )}
+
+                          <div style={{ marginBottom: '12px', display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+                            {talent.carriers?.map(carrier => (
+                              <span key={carrier} style={{ fontSize: '10px', padding: '2px 6px', background: '#E0E7FF', color: '#4338CA', borderRadius: '4px', fontWeight: 'bold' }}>{carrier}</span>
+                            ))}
+                            {talent.skills.map(skill => (
+                              <span key={skill} style={{ fontSize: '11px', padding: '2px 8px', background: '#F3F4F6', color: '#4B5563', borderRadius: '12px' }}>{skill}</span>
+                            ))}
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div style={{ fontSize: '14px', color: '#10B981', fontWeight: 'bold' }}>
+                              ¥{talent.price.toLocaleString()} <span style={{ fontSize: '11px', color: 'var(--text-sub)', fontWeight: 'normal' }}>/ 日〜</span>
+                            </div>
+                            <button 
+                              className="btn-secondary btn-small" 
+                              onClick={() => setSelectedTalent(talent)}
+                              style={{ margin: 0, color: '#10B981', border: '1px solid #10B981' }}
+                            >
+                              プロフィール
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--text-sub)' }}>
+                  <span className="material-symbols-outlined" style={{ fontSize: '40px', marginBottom: '8px', opacity: 0.5 }}>search_off</span>
+                  <p>該当する人材が見つかりません</p>
+                </div>
+              )
+            )}
+          </div>
+        </main>
+      )}
+
+      {/* 人材プロフィール オーバーレイ */}
+      <div className={`overlay-view ${selectedTalent ? 'show' : ''}`} style={{ display: selectedTalent ? 'flex' : 'none', transform: selectedTalent ? 'translateX(0)' : 'translateX(100%)', zIndex: 2000 }}>
+        <header className="solid-header overlay-header">
+          <button className="icon-btn-dark" onClick={() => setSelectedTalent(null)}>
+            <span className="material-symbols-outlined">arrow_back_ios_new</span>
+          </button>
+          <h1 style={{ fontSize: '16px' }}>{selectedTalent?.maskedName}の詳細</h1>
+          <button className="icon-btn-dark">
+            <span className="material-symbols-outlined">more_vert</span>
+          </button>
+        </header>
+
+        <main className="list-area bg-gray" style={{ flex: 1, overflowY: 'auto', paddingBottom: '100px' }}>
+          {selectedTalent && (
+            <>
+              {/* 基本情報 */}
+              <div style={{ background: 'white', padding: '24px 16px', textAlign: 'center', borderBottom: '1px solid var(--border-color)' }}>
+                <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: '#10B981', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '32px', margin: '0 auto 12px auto', fontWeight: 'bold' }}>
+                  {selectedTalent.maskedName.charAt(0)}
+                </div>
+                <div style={{ fontSize: '13px', color: 'var(--text-sub)', marginBottom: '4px' }}>{selectedTalent.companyName}</div>
+                <h2 style={{ margin: '0 0 8px 0', fontSize: '20px' }}>{selectedTalent.maskedName}</h2>
+                <span className="status-badge badge-contracted" style={{ display: 'inline-block', background: '#D1FAE5', color: '#065F46', marginBottom: '16px' }}>稼働可能</span>
+                
+                <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                  {selectedTalent.carriers?.map(carrier => (
+                    <span key={carrier} style={{ fontSize: '12px', padding: '4px 10px', background: '#E0E7FF', color: '#4338CA', borderRadius: '4px', fontWeight: 'bold' }}>{carrier}</span>
+                  ))}
+                  {selectedTalent.skills.map(skill => (
+                    <span key={skill} style={{ fontSize: '12px', padding: '4px 10px', background: '#F3F4F6', color: '#4B5563', borderRadius: '16px' }}>{skill}</span>
+                  ))}
+                </div>
+              </div>
+
+              {/* 希望勤務日 */}
+              {selectedTalent.availableDates && (
+                <div style={{ background: 'white', padding: '16px', marginTop: '8px', borderTop: '1px solid var(--border-color)', borderBottom: '1px solid var(--border-color)' }}>
+                  <h3 style={{ fontSize: '14px', color: 'var(--text-sub)', margin: '0 0 16px 0', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>calendar_month</span>
+                    希望勤務日
+                  </h3>
+                  <p style={{ margin: 0, fontSize: '15px', fontWeight: 'bold', color: 'var(--primary)' }}>{selectedTalent.availableDates}</p>
+                </div>
+              )}
+
+              {/* 詳細情報 */}
+              <div style={{ background: 'white', padding: '16px', marginTop: '8px', borderTop: '1px solid var(--border-color)', borderBottom: '1px solid var(--border-color)' }}>
+                <h3 style={{ fontSize: '14px', color: 'var(--text-sub)', margin: '0 0 16px 0', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>monetization_on</span>
+                  希望単価
+                </h3>
+                <p style={{ margin: 0, fontSize: '16px', fontWeight: 'bold' }}>¥{selectedTalent.price.toLocaleString()} <span style={{ fontSize: '12px', fontWeight: 'normal', color: 'var(--text-sub)' }}>/ 日〜</span></p>
+              </div>
+
+              <div style={{ background: 'white', padding: '16px', marginTop: '8px', borderTop: '1px solid var(--border-color)', borderBottom: '1px solid var(--border-color)' }}>
+                <h3 style={{ fontSize: '14px', color: 'var(--text-sub)', margin: '0 0 16px 0', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>corporate_fare</span>
+                  拠点・最寄り駅
+                </h3>
+                <p style={{ margin: 0, fontSize: '14px', lineHeight: '1.5' }}>
+                  拠点: {selectedTalent.baseLocation || '未設定'}<br/>
+                  最寄り駅: {selectedTalent.nearestStation || '未設定'}
+                </p>
+              </div>
+
+              <div style={{ background: 'white', padding: '16px', marginTop: '8px', borderTop: '1px solid var(--border-color)', borderBottom: '1px solid var(--border-color)' }}>
+                <h3 style={{ fontSize: '14px', color: 'var(--text-sub)', margin: '0 0 16px 0', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>location_on</span>
+                  希望勤務エリア
+                </h3>
+                <p style={{ margin: 0, fontSize: '14px', lineHeight: '1.5' }}>{selectedTalent.preferredArea || '全国対応可能'}</p>
+              </div>
+
+              <div style={{ background: 'white', padding: '16px', marginTop: '8px', borderTop: '1px solid var(--border-color)', borderBottom: '1px solid var(--border-color)' }}>
+                <h3 style={{ fontSize: '14px', color: 'var(--text-sub)', margin: '0 0 16px 0', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>history</span>
+                  経歴・実績
+                </h3>
+                <p style={{ margin: 0, fontSize: '14px', lineHeight: '1.6' }}>{selectedTalent.experience || '記載なし'}</p>
+              </div>
+
+              <div style={{ background: 'white', padding: '16px', marginTop: '8px', borderTop: '1px solid var(--border-color)', borderBottom: '1px solid var(--border-color)' }}>
+                <h3 style={{ fontSize: '14px', color: 'var(--text-sub)', margin: '0 0 16px 0', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>edit_note</span>
+                  自己PR
+                </h3>
+                <p style={{ margin: 0, fontSize: '14px', lineHeight: '1.6', whiteSpace: 'pre-line' }}>{selectedTalent.prText || '記載なし'}</p>
+              </div>
+            </>
+          )}
+        </main>
+
+        <footer style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: 'white', padding: '16px', borderTop: '1px solid var(--border-color)', display: 'flex', gap: '12px', zIndex: 10 }}>
+          <button style={{ flex: 1, padding: '12px', background: '#10B981', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '14px', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}>
+            <span className="material-symbols-outlined">send</span>
+            メッセージを送る
+          </button>
+        </footer>
+      </div>
+
+      {/* 案件詳細 オーバーレイ */}
+      <div className={`overlay-view ${selectedJob ? 'show' : ''}`} style={{ display: selectedJob ? 'flex' : 'none', transform: selectedJob ? 'translateX(0)' : 'translateX(100%)', zIndex: 2000 }}>
+        <header className="solid-header overlay-header">
+          <button className="icon-btn-dark" onClick={() => setSelectedJob(null)}>
+            <span className="material-symbols-outlined">arrow_back_ios_new</span>
+          </button>
+          <h1 style={{ fontSize: '16px' }}>案件詳細</h1>
+          <button className="icon-btn-dark">
+            <span className="material-symbols-outlined">more_vert</span>
+          </button>
+        </header>
+
+        <main className="list-area bg-gray" style={{ flex: 1, overflowY: 'auto', paddingBottom: '100px' }}>
+          {selectedJob && (
+            <>
+              <div style={{ background: 'white', padding: '24px 16px', borderBottom: '1px solid var(--border-color)' }}>
+                <span className="status-badge badge-negotiating" style={{ display: 'inline-block', marginBottom: '12px' }}>募集中</span>
+                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '12px' }}>
+                  {selectedJob.carrier && <span style={{ fontSize: '12px', padding: '4px 10px', background: '#E0E7FF', color: '#4338CA', borderRadius: '16px', fontWeight: 'bold' }}>{selectedJob.carrier}</span>}
+                  {selectedJob.storeType && <span style={{ fontSize: '12px', padding: '4px 10px', background: '#FEF3C7', color: '#D97706', borderRadius: '16px', fontWeight: 'bold' }}>{selectedJob.storeType}</span>}
+                  {selectedJob.roleType && <span style={{ fontSize: '12px', padding: '4px 10px', background: '#DCFCE7', color: '#15803D', borderRadius: '16px', fontWeight: 'bold' }}>{selectedJob.roleType}</span>}
+                </div>
+                <h2 style={{ margin: '0 0 12px 0', fontSize: '20px', lineHeight: '1.4' }}>{selectedJob.title}</h2>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-sub)', fontSize: '14px' }}>
+                  <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>corporate_fare</span>
+                  {selectedJob.authorId === 'u1' ? '株式会社アルファ通信' : 'ベータエージェンシー'}
+                </div>
+              </div>
+
+              <div style={{ background: 'white', padding: '16px', marginTop: '8px', borderTop: '1px solid var(--border-color)', borderBottom: '1px solid var(--border-color)' }}>
+                <h3 style={{ fontSize: '14px', color: 'var(--text-sub)', margin: '0 0 16px 0', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>monetization_on</span>
+                  単価（報酬）
+                </h3>
+                <p style={{ margin: 0, fontSize: '18px', fontWeight: 'bold', color: 'var(--primary)' }}>¥{selectedJob.price.toLocaleString()} <span style={{ fontSize: '12px', fontWeight: 'normal', color: 'var(--text-main)' }}>/ 日</span></p>
+              </div>
+
+              <div style={{ background: 'white', padding: '16px', marginTop: '8px', borderTop: '1px solid var(--border-color)', borderBottom: '1px solid var(--border-color)' }}>
+                <h3 style={{ fontSize: '14px', color: 'var(--text-sub)', margin: '0 0 16px 0', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>location_on</span>
+                  勤務エリア
+                </h3>
+                <p style={{ margin: 0, fontSize: '15px' }}>{selectedJob.locationName || '記載なし'}</p>
+              </div>
+
+              <div style={{ background: 'white', padding: '16px', marginTop: '8px', borderTop: '1px solid var(--border-color)', borderBottom: '1px solid var(--border-color)' }}>
+                <h3 style={{ fontSize: '14px', color: 'var(--text-sub)', margin: '0 0 16px 0', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>schedule</span>
+                  勤務時間・期間
+                </h3>
+                <p style={{ margin: 0, fontSize: '15px' }}>{selectedJob.workHours || '記載なし'}</p>
+              </div>
+
+              {selectedJob.requirements && selectedJob.requirements.length > 0 && (
+                <div style={{ background: 'white', padding: '16px', marginTop: '8px', borderTop: '1px solid var(--border-color)', borderBottom: '1px solid var(--border-color)' }}>
+                  <h3 style={{ fontSize: '14px', color: 'var(--text-sub)', margin: '0 0 16px 0', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>psychology</span>
+                    求めるスキル・条件
+                  </h3>
+                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                    {selectedJob.requirements.map(req => (
+                      <span key={req} style={{ fontSize: '13px', padding: '6px 12px', background: '#F3F4F6', color: '#4B5563', borderRadius: '4px' }}>{req}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div style={{ background: 'white', padding: '16px', marginTop: '8px', borderTop: '1px solid var(--border-color)', borderBottom: '1px solid var(--border-color)' }}>
+                <h3 style={{ fontSize: '14px', color: 'var(--text-sub)', margin: '0 0 16px 0', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>description</span>
+                  業務内容の詳細
+                </h3>
+                <p style={{ margin: 0, fontSize: '14px', lineHeight: '1.6', whiteSpace: 'pre-line' }}>{selectedJob.detailedDescription || selectedJob.description}</p>
+              </div>
+            </>
+          )}
+        </main>
+
+        <footer style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: 'white', padding: '16px', borderTop: '1px solid var(--border-color)', display: 'flex', gap: '12px', zIndex: 10 }}>
+          <button style={{ flex: 1, padding: '12px', background: 'var(--primary)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '14px', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}>
+            応募画面へ進む
+          </button>
+        </footer>
+      </div>
+
+      {/* 新規作成 オーバーレイ */}
+      <div className={`overlay-view ${isCreateFormOpen ? 'show' : ''}`} style={{ display: isCreateFormOpen ? 'flex' : 'none', transform: isCreateFormOpen ? 'translateX(0)' : 'translateX(100%)', zIndex: 3000 }}>
+        <header className="solid-header overlay-header">
+          <button className="icon-btn-dark" onClick={() => setIsCreateFormOpen(false)} disabled={isSubmitting}>
+            <span className="material-symbols-outlined">close</span>
+          </button>
+          <h1 style={{ fontSize: '16px' }}>新規追加</h1>
+          <div style={{ width: '40px' }}></div>
+        </header>
+
+        <main className="list-area bg-gray" style={{ flex: 1, overflowY: 'auto', padding: '16px', paddingBottom: '100px' }}>
+          <div style={{ display: 'flex', gap: '8px', marginBottom: '24px' }}>
+            <button 
+              type="button"
+              onClick={() => setCreateFormType('job')}
+              disabled={isSubmitting}
+              style={{ flex: 1, padding: '10px', borderRadius: '8px', border: createFormType === 'job' ? '2px solid var(--primary)' : '1px solid var(--border-color)', background: createFormType === 'job' ? '#EFF6FF' : 'white', color: createFormType === 'job' ? 'var(--primary)' : 'var(--text-main)', fontWeight: 'bold' }}
+            >
+              案件情報を掲示
+            </button>
+            <button 
+              type="button"
+              onClick={() => setCreateFormType('talent')}
+              disabled={isSubmitting}
+              style={{ flex: 1, padding: '10px', borderRadius: '8px', border: createFormType === 'talent' ? '2px solid #10B981' : '1px solid var(--border-color)', background: createFormType === 'talent' ? '#ECFDF5' : 'white', color: createFormType === 'talent' ? '#10B981' : 'var(--text-main)', fontWeight: 'bold' }}
+            >
+              人材情報を掲示
+            </button>
+          </div>
+
+          <form onSubmit={handleCreateSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            {createFormType === 'job' ? (
+              <>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)' }}>案件タイトル *</label>
+                  <input type="text" required value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} disabled={isSubmitting} style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }} placeholder="例: auショップ新宿 イベントスタッフ" />
+                </div>
+                
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)' }}>エリア（住所や地名） *</label>
+                  <input type="text" required value={formData.locationName} onChange={e => setFormData({...formData, locationName: e.target.value})} disabled={isSubmitting} style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }} placeholder="例: 東京都港区六本木6丁目" />
+                  <span style={{ fontSize: '11px', color: 'var(--text-sub)' }}>※住所から自動でマップにピンが立ちます</span>
+                </div>
+
+                <div style={{ display: 'flex', gap: '12px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: 1 }}>
+                    <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)' }}>単価 (円) *</label>
+                    <input type="number" required value={formData.price} onChange={e => setFormData({...formData, price: Number(e.target.value)})} disabled={isSubmitting} style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }} />
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)' }}>職種 *</label>
+                  <select value={formData.roleType} onChange={e => setFormData({...formData, roleType: e.target.value})} disabled={isSubmitting} style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc', background: 'white' }}>
+                    <option value="キャンペーンクルー">キャンペーンクルー</option>
+                    <option value="クローザー">クローザー</option>
+                    <option value="ディレクター">ディレクター</option>
+                  </select>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)' }}>店舗種別 *</label>
+                  <select value={formData.storeType} onChange={e => setFormData({...formData, storeType: e.target.value})} disabled={isSubmitting} style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc', background: 'white' }}>
+                    <option value="量販店">量販店</option>
+                    <option value="ショップ">ショップ</option>
+                  </select>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)' }}>キャリア/回線 *</label>
+                  <select value={formData.carrier} onChange={e => setFormData({...formData, carrier: e.target.value})} disabled={isSubmitting} style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc', background: 'white' }}>
+                    <option value="docomo">docomo</option>
+                    <option value="au/UQmobile">au/UQmobile</option>
+                    <option value="SoftBank/Y!mobile">SoftBank/Y!mobile</option>
+                    <option value="BB">BB</option>
+                  </select>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)' }}>業務内容の詳細</label>
+                  <textarea rows={4} value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} disabled={isSubmitting} style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }} placeholder="具体的な仕事内容を記載してください"></textarea>
+                </div>
+              </>
+            ) : (
+              <>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '16px' }}>
+                  <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)' }}>掲示するスタッフを選択 *</label>
+                  {myStaffs.length > 0 ? (
+                    <select 
+                      value={selectedStaffId} 
+                      onChange={e => setSelectedStaffId(e.target.value)} 
+                      disabled={isSubmitting} 
+                      style={{ padding: '12px', borderRadius: '8px', border: '1px solid #ccc', background: 'white', fontSize: '15px' }}
+                    >
+                      {myStaffs.map(staff => (
+                        <option key={staff.id} value={staff.id}>{staff.name} ({staff.maskedName}) - {staff.baseLocation}</option>
+                      ))}
+                    </select>
+                  ) : (
+                    <div style={{ padding: '16px', background: '#FEE2E2', color: '#991B1B', borderRadius: '8px', fontSize: '14px' }}>
+                      登録されているスタッフがいません。先にスタッフを登録してください。
+                    </div>
+                  )}
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '16px' }}>
+                  <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)' }}>希望勤務日 *</label>
+                  <CalendarPicker 
+                    selectedDates={formData.selectedDates}
+                    onChange={(dates) => setFormData({...formData, selectedDates: dates})}
+                  />
+                  <span style={{ fontSize: '11px', color: 'var(--text-sub)', marginTop: '4px' }}>※連続した日程や飛び石の日程もタップして複数選択できます。</span>
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'center', marginTop: '8px', marginBottom: '16px' }}>
+                  <button 
+                    type="button" 
+                    onClick={() => {
+                      setIsCreateFormOpen(false);
+                      navigate('/settings', { state: { openStaffOverlay: true } });
+                    }}
+                    style={{ background: 'none', border: 'none', color: 'var(--primary)', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', fontSize: '14px' }}
+                  >
+                    <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>person_add</span>
+                    ＋新しいスタッフを登録する
+                  </button>
+                </div>
+              </>
+            )}
+
+            <button type="submit" disabled={isSubmitting || (createFormType === 'talent' && (myStaffs.length === 0 || formData.selectedDates.length === 0))} style={{ padding: '14px', background: createFormType === 'job' ? 'var(--primary)' : '#10B981', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '16px', cursor: (isSubmitting || (createFormType === 'talent' && (myStaffs.length === 0 || formData.selectedDates.length === 0))) ? 'not-allowed' : 'pointer', marginTop: '16px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', opacity: (isSubmitting || (createFormType === 'talent' && (myStaffs.length === 0 || formData.selectedDates.length === 0))) ? 0.7 : 1 }}>
+              {isSubmitting ? '登録中...' : '掲示する'}
+            </button>
+          </form>
+        </main>
+      </div>
+
+      <div className="fab-container">
+        <button className="fab-main" onClick={handleOpenCreateForm}>
+          <span className="material-symbols-outlined">add</span>
+        </button>
+      </div>
+    </div>
+  );
+}

@@ -73,33 +73,88 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ==========================================
-  // 探す(マップ): トグルスイッチによるモック処理
+  // 探す(マップ): マップの初期化と現在地取得
   // ==========================================
   const modeJob = document.getElementById('mode-job');
   const modeTalent = document.getElementById('mode-talent');
-  const mapPins = document.querySelectorAll('.map-pin .material-symbols-outlined');
   
-  if (modeJob && modeTalent) {
-    const updatePins = () => {
-      if (modeJob.checked) {
-        // 案件モード
-        mapPins.forEach(pin => {
-          pin.textContent = 'location_on';
-          pin.style.color = '#EF4444';
-          pin.style.filter = 'drop-shadow(0 4px 6px rgba(239, 68, 68, 0.3))';
-        });
-      } else {
-        // 人材モード
-        mapPins.forEach(pin => {
-          pin.textContent = 'person_pin';
-          pin.style.color = '#2563EB';
-          pin.style.filter = 'drop-shadow(0 4px 6px rgba(37, 99, 235, 0.3))';
-        });
-      }
-    };
+  let map = null;
+  let userMarker = null;
 
-    modeJob.addEventListener('change', updatePins);
-    modeTalent.addEventListener('change', updatePins);
+  const initMap = () => {
+    const mapArea = document.getElementById('map-area');
+    if (!mapArea || typeof L === 'undefined') return;
+
+    // デフォルト位置 (東京)
+    const defaultLocation = [35.6812, 139.7671];
+
+    map = L.map('map-area', {
+      zoomControl: false // デフォルトの左上のズームコントロールを無効化
+    }).setView(defaultLocation, 14);
+
+    // OpenStreetMapタイルレイヤーを追加
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(map);
+
+    // ズームコントロールの位置を右下に変更（FABの邪魔にならないように）
+    L.control.zoom({
+      position: 'bottomright'
+    }).addTo(map);
+
+    // 現在地を取得
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition((position) => {
+        const lat = position.coords.latitude;
+        const lng = position.coords.longitude;
+        const currentLocation = [lat, lng];
+
+        // マップの視点を現在地に移動
+        map.setView(currentLocation, 15);
+
+        // 現在地にマーカーを追加 (カスタムアイコン)
+        const customIcon = L.divIcon({
+          className: 'current-location-marker',
+          html: `<div style="
+            width: 20px;
+            height: 20px;
+            background-color: var(--primary);
+            border: 3px solid white;
+            border-radius: 50%;
+            box-shadow: 0 0 10px rgba(0,0,0,0.3);
+          "></div>`,
+          iconSize: [20, 20],
+          iconAnchor: [10, 10]
+        });
+
+        userMarker = L.marker(currentLocation, { icon: customIcon }).addTo(map);
+        userMarker.bindPopup('<b>現在地</b>').openPopup();
+
+      }, (error) => {
+        console.warn('位置情報の取得に失敗しました:', error.message);
+      }, {
+        enableHighAccuracy: true,
+        timeout: 5000,
+        maximumAge: 0
+      });
+    }
+  };
+
+  initMap();
+
+  // タブ切り替え時にマップのサイズを再計算
+  const viewSearch = document.getElementById('view-search');
+  if (viewSearch) {
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.target.classList.contains('active') && map) {
+          setTimeout(() => {
+            map.invalidateSize();
+          }, 100);
+        }
+      });
+    });
+    observer.observe(viewSearch, { attributes: true, attributeFilter: ['class'] });
   }
 
   // ==========================================

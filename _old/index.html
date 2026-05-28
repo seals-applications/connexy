@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>通信業界BtoBマッチングアプリ</title>
+  <link rel="stylesheet" href="style.css">
+  <!-- Google Material Symbols -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+  <!-- Google Fonts: Inter & Noto Sans JP -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
+</head>
+<body>
+  <!-- App Container -->
+  <div id="app-container">
+
+    <!-- 1. 探す（マップ＆検索）画面 -->
+    <div id="view-search" class="view active">
+      <!-- ヘッダー -->
+      <header class="glass-header">
+        <div class="header-top">
+          <div class="toggle-switch">
+            <input type="radio" id="mode-talent" name="search-mode" checked>
+            <label for="mode-talent">人材を探す</label>
+            <input type="radio" id="mode-job" name="search-mode">
+            <label for="mode-job">案件を探す</label>
+            <div class="toggle-slider"></div>
+          </div>
+        </div>
+        <div class="header-search">
+          <div class="search-bar">
+            <span class="material-symbols-outlined icon">search</span>
+            <input type="text" placeholder="現在地周辺・エリア名など">
+          </div>
+          <button class="filter-btn">
+            <span class="material-symbols-outlined">tune</span>
+          </button>
+        </div>
+      </header>
+      
+      <!-- メインマップ領域 -->
+      <main class="map-area" id="map-area">
+      </main>
+
+      <!-- FAB (フローティングアクションボタン) -->
+      <div class="fab-container">
+        <button class="fab-main">
+          <span class="material-symbols-outlined">add</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- 2. メッセージ＆契約画面 -->
+    <div id="view-message" class="view">
+      <header class="solid-header">
+        <h1>メッセージ</h1>
+        <div class="header-search chat-search">
+          <div class="search-bar">
+            <span class="material-symbols-outlined icon">search</span>
+            <input type="text" placeholder="メッセージ・案件名で検索">
+          </div>
+        </div>
+      </header>
+      <main class="list-area">
+        <div class="chat-list">
+          <div class="chat-item">
+            <div class="chat-avatar bg-blue">A</div>
+            <div class="chat-content">
+              <div class="chat-header">
+                <span class="company-name">株式会社アルファ通信</span>
+                <span class="chat-time">10:42</span>
+              </div>
+              <div class="chat-title">週末キャンペーンスタッフ2名</div>
+              <p class="chat-preview">明日の待ち合わせ時間は10時でお願いします。</p>
+            </div>
+            <div class="status-badge badge-negotiating">商談中</div>
+          </div>
+          <div class="chat-item">
+            <div class="chat-avatar bg-green">B</div>
+            <div class="chat-content">
+              <div class="chat-header">
+                <span class="company-name">ベータエージェンシー</span>
+                <span class="chat-time">昨日</span>
+              </div>
+              <div class="chat-title">光回線クローザー募集</div>
+              <p class="chat-preview">発注書を発行しました。ご確認お願いします。</p>
+            </div>
+            <div class="status-badge badge-waiting">契約待ち</div>
+          </div>
+          <div class="chat-item">
+            <div class="chat-avatar bg-purple">G</div>
+            <div class="chat-content">
+              <div class="chat-header">
+                <span class="company-name">ガンマモバイル</span>
+                <span class="chat-time">月曜日</span>
+              </div>
+              <div class="chat-title">ドコモショップ応援（3日間）</div>
+              <p class="chat-preview">よろしくお願いします。</p>
+            </div>
+            <div class="status-badge badge-contracted">契約成立</div>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <!-- 3. 現場(GPS)画面 -->
+    <div id="view-field" class="view">
+      <header class="solid-header">
+        <h1>本日の現場</h1>
+      </header>
+      <main class="list-area p-16">
+        <div class="task-card">
+          <div class="task-header">
+            <span class="task-status active">稼働予定</span>
+            <span class="task-time">10:00 - 19:00</span>
+          </div>
+          <h2 class="task-title">auショップ新宿西口店 イベント</h2>
+          <p class="task-address">
+            <span class="material-symbols-outlined icon-small">location_on</span>
+            東京都新宿区西新宿1-1-1
+          </p>
+          <div class="checkin-container">
+            <!-- Radius status can be updated via JS -->
+            <p class="radius-status success">
+              <span class="material-symbols-outlined">my_location</span>
+              エリア内にいます
+            </p>
+            <button class="btn-checkin active">
+              <span class="material-symbols-outlined">login</span>
+              出勤を打刻する
+            </button>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <!-- 4. ダッシュボード画面 -->
+    <div id="view-dashboard" class="view">
+      <header class="solid-header">
+        <h1>ダッシュボード</h1>
+      </header>
+      <main class="list-area p-16">
+        
+        <!-- ウォレットカード -->
+        <div class="wallet-card">
+          <div class="wallet-header">
+            <span>現在の売上残高</span>
+            <button id="toggle-balance" class="icon-btn">
+              <span class="material-symbols-outlined" id="eye-icon">visibility_off</span>
+            </button>
+          </div>
+          <div class="wallet-balance">
+            <span class="currency">¥</span>
+            <span id="balance-amount" class="amount hidden">***,***</span>
+            <span id="balance-real" class="amount" style="display:none;">482,500</span>
+          </div>
+          <button class="btn-primary mt-16">
+            <span class="material-symbols-outlined">account_balance</span>
+            銀行口座へ引き出し申請
+          </button>
+          <p class="wallet-note">※引き出しは週1回まで。手数料330円</p>
+        </div>
+
+        <!-- タスクサマリー -->
+        <h3 class="section-title">タスク概況</h3>
+        <div class="summary-grid">
+          <div class="summary-card">
+            <span class="summary-num text-orange">3</span>
+            <span class="summary-label">商談中</span>
+          </div>
+          <div class="summary-card">
+            <span class="summary-num text-blue">1</span>
+            <span class="summary-label">契約待ち</span>
+          </div>
+          <div class="summary-card">
+            <span class="summary-num text-green">2</span>
+            <span class="summary-label">稼働中</span>
+          </div>
+        </div>
+
+      </main>
+    </div>
+
+    <!-- 5. 設定画面 -->
+    <div id="view-settings" class="view">
+      <header class="solid-header">
+        <h1>設定</h1>
+      </header>
+      <main class="list-area bg-gray">
+        
+        <div class="profile-section">
+          <div class="profile-avatar">S</div>
+          <div class="profile-info">
+            <h2>株式会社シグマ通信</h2>
+            <div class="premium-badge">
+              <span class="material-symbols-outlined">stars</span>
+              プレミアムプラン
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-list">
+          <div class="settings-group">
+            <div class="settings-item" id="btn-edit-profile">
+              <span class="material-symbols-outlined item-icon">business</span>
+              <span>自社プロフィール編集</span>
+              <span class="material-symbols-outlined item-arrow">chevron_right</span>
+            </div>
+            <div class="settings-item">
+              <span class="material-symbols-outlined item-icon">payments</span>
+              <span>決済連携 (Stripe)</span>
+              <span class="material-symbols-outlined item-arrow">chevron_right</span>
+            </div>
+          </div>
+          
+          <div class="settings-group">
+            <div class="settings-item" id="btn-staff-register">
+              <span class="material-symbols-outlined item-icon">groups</span>
+              <span>スタッフ登録</span>
+              <span class="material-symbols-outlined item-arrow">chevron_right</span>
+            </div>
+            <div class="settings-item">
+              <span class="material-symbols-outlined item-icon">file_copy</span>
+              <span>案件テンプレート管理</span>
+              <span class="material-symbols-outlined item-arrow">chevron_right</span>
+            </div>
+            <div class="settings-item">
+              <span class="material-symbols-outlined item-icon">badge</span>
+              <span>スタッフへの「現場権限」付与</span>
+              <span class="material-symbols-outlined item-arrow">chevron_right</span>
+            </div>
+          </div>
+        </div>
+
+      </main>
+    </div>
+
+    <!-- 6. プロフィール編集オーバーレイ (Sub-view) -->
+    <div id="overlay-profile" class="overlay-view">
+      <header class="solid-header overlay-header">
+        <button id="btn-close-profile" class="icon-btn-dark">
+          <span class="material-symbols-outlined">arrow_back_ios_new</span>
+        </button>
+        <h1>自社プロフィール編集</h1>
+        <button class="text-btn primary-text" id="btn-save-profile">保存</button>
+      </header>
+      <main class="list-area bg-gray p-16 pb-80 form-container">
+        
+        <div class="form-section">
+          <div class="form-avatar-edit">
+            <div class="profile-avatar large">S</div>
+            <button class="btn-secondary mt-8">画像を変更</button>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <h3>基本情報</h3>
+          <div class="form-group">
+            <label>法人名（屋号） <span class="required">必須</span></label>
+            <input type="text" class="form-control" value="株式会社シグマ通信">
+          </div>
+          <div class="form-group">
+            <label>代表者名</label>
+            <input type="text" class="form-control" value="山田 太郎">
+          </div>
+          <div class="form-group">
+            <label>担当者名 <span class="required">必須</span></label>
+            <input type="text" class="form-control" value="佐藤 健一">
+          </div>
+        </div>
+
+        <div class="form-section">
+          <h3>連絡先・所在地</h3>
+          <div class="form-group">
+            <label>電話番号</label>
+            <input type="tel" class="form-control" value="03-1234-5678">
+          </div>
+          <div class="form-group">
+            <label>メールアドレス <span class="required">必須</span></label>
+            <input type="email" class="form-control" value="info@sigma-telecom.example.com">
+          </div>
+          <div class="form-group">
+            <label>本社所在地</label>
+            <input type="text" class="form-control" value="東京都渋谷区1-1-1 シグマビル3F">
+          </div>
+        </div>
+
+        <div class="form-section">
+          <h3>事業・マッチング関連情報</h3>
+          <div class="form-group">
+            <label>メイン事業領域（複数選択可）</label>
+            <div class="checkbox-group">
+              <label class="checkbox-label"><input type="checkbox" checked> モバイル回線販売</label>
+              <label class="checkbox-label"><input type="checkbox" checked> 固定回線</label>
+              <label class="checkbox-label"><input type="checkbox"> イベント企画</label>
+              <label class="checkbox-label"><input type="checkbox"> コールセンター</label>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>対応可能エリア</label>
+            <select class="form-control">
+              <option>全国対応</option>
+              <option selected>関東一円</option>
+              <option>関西エリア</option>
+              <option>東京都のみ</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>自社の強み・PR文</label>
+            <textarea class="form-control" rows="4">光回線のクローザーが5名在籍しています。
+週末のイベント稼働はお任せください。フットワークの軽さが強みです。</textarea>
+          </div>
+          <div class="form-group">
+            <label>会社HPリンク</label>
+            <input type="url" class="form-control" value="https://sigma-telecom.example.com" placeholder="https://...">
+          </div>
+        </div>
+
+        <div class="form-section">
+          <h3>企業情報・コンプライアンス</h3>
+          <div class="form-row">
+            <div class="form-group half">
+              <label>設立年</label>
+              <input type="text" class="form-control" value="2015年">
+            </div>
+            <div class="form-group half">
+              <label>従業員数</label>
+              <input type="text" class="form-control" value="15名">
+            </div>
+          </div>
+          <div class="form-group mt-16">
+            <label>適格請求書発行事業者（インボイス）</label>
+            <div class="radio-group">
+              <label class="radio-label"><input type="radio" name="invoice" checked> 登録あり</label>
+              <label class="radio-label"><input type="radio" name="invoice"> 登録なし</label>
+            </div>
+          </div>
+        </div>
+
+      </main>
+    </div>
+
+    <!-- 7. スタッフ登録オーバーレイ (Sub-view) -->
+    <div id="overlay-staff" class="overlay-view">
+      <header class="solid-header overlay-header">
+        <button id="btn-close-staff" class="icon-btn-dark">
+          <span class="material-symbols-outlined">arrow_back_ios_new</span>
+        </button>
+        <h1>スタッフ登録</h1>
+        <button class="text-btn primary-text" id="btn-save-staff">保存</button>
+      </header>
+      <main class="list-area bg-gray p-16 pb-80 form-container">
+        
+        <!-- スタッフ登録フォームのコンテナ -->
+        <div id="staff-forms-wrapper">
+          <!-- 1人目のフォーム -->
+          <div class="form-section staff-form-block">
+            <div class="staff-block-header">
+              <h3 class="staff-block-title">1人目のスタッフ登録</h3>
+              <button class="btn-delete-staff icon-btn-dark"><span class="material-symbols-outlined">delete</span></button>
+            </div>
+            <div class="form-row">
+              <div class="form-group half">
+                <label>名前 <span class="required">必須</span></label>
+                <input type="text" class="form-control" placeholder="例: 佐藤 健一">
+              </div>
+              <div class="form-group half">
+                <label>フリガナ <span class="required">必須</span></label>
+                <input type="text" class="form-control" placeholder="サトウ ケンイチ">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group half">
+                <label>性別</label>
+                <select class="form-control">
+                  <option>男性</option>
+                  <option>女性</option>
+                  <option>回答しない</option>
+                </select>
+              </div>
+              <div class="form-group half">
+                <label>生年月日</label>
+                <input type="date" class="form-control">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group half">
+                <label>住所（都道府県・市区町村）</label>
+                <input type="text" class="form-control" placeholder="例: 東京都新宿区">
+              </div>
+              <div class="form-group half">
+                <label>最寄り駅</label>
+                <input type="text" class="form-control" placeholder="例: 新宿駅">
+              </div>
+            </div>
+            <div class="form-group">
+              <label>役割・ポジション</label>
+              <select class="form-control">
+                <option>ディレクター</option>
+                <option>クローザー</option>
+                <option>イベントスタッフ</option>
+                <option>コールセンタースタッフ</option>
+                <option>その他</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>得意な業務・スキル</label>
+              <input type="text" class="form-control" placeholder="例: モバイル回線獲得、光回線ご案内">
+            </div>
+            <div class="form-row">
+              <div class="form-group half">
+                <label>電話番号</label>
+                <input type="tel" class="form-control" placeholder="090-XXXX-XXXX">
+              </div>
+              <div class="form-group half">
+                <label>自家用車（持込）</label>
+                <div class="radio-group" style="flex-direction: row; gap: 16px; margin-top: 8px;">
+                  <label class="radio-label"><input type="radio" name="car_1" checked> なし</label>
+                  <label class="radio-label"><input type="radio" name="car_1"> あり</label>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <button id="btn-add-next-staff" class="btn-primary mt-16" style="background: white; color: var(--primary); border: 2px solid var(--primary); box-shadow: none;">
+          <span class="material-symbols-outlined">person_add</span>
+          <span id="next-staff-text">2人目を追加する</span>
+        </button>
+
+      </main>
+    </div>
+
+    <!-- 8. チャットルーム・契約詳細オーバーレイ (Sub-view) -->
+    <div id="overlay-chat" class="overlay-view">
+      <header class="solid-header overlay-header chat-header-fixed">
+        <div class="chat-header-top" style="display: flex; align-items: center; justify-content: space-between;">
+          <button id="btn-close-chat" class="icon-btn-dark">
+            <span class="material-symbols-outlined">arrow_back_ios_new</span>
+          </button>
+          <div class="chat-header-title" style="text-align: center; flex: 1; overflow: hidden; padding: 0 8px;">
+            <h1 id="chat-partner-name" style="font-size: 15px; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">株式会社アルファ通信</h1>
+            <div id="chat-project-title" style="font-size: 12px; color: var(--text-sub); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">週末キャンペーンスタッフ2名</div>
+          </div>
+          <button class="icon-btn-dark">
+            <span class="material-symbols-outlined">more_vert</span>
+          </button>
+        </div>
+        <!-- 契約条件ピン留め -->
+        <div class="chat-conditions-pin" style="margin-top: 4px;">
+          <div class="condition-summary">
+            <span id="chat-pin-badge" class="status-badge badge-negotiating">商談中</span>
+            <div class="condition-details">
+              <span class="text-gray text-small">単価: 15,000円 / 期間: 10/14 - 10/15</span>
+            </div>
+          </div>
+          <button class="btn-secondary btn-small">条件を編集</button>
+        </div>
+      </header>
+      
+      <main class="list-area bg-gray p-16 chat-timeline" id="chat-timeline">
+        <!-- システムメッセージ -->
+        <div class="chat-system-message">
+          <span>チャットを開始しました</span>
+        </div>
+
+        <!-- 相手のメッセージ -->
+        <div class="message-row received">
+          <div class="chat-avatar bg-blue">A</div>
+          <div class="message-bubble">
+            <p>お世話になっております。週末のキャンペーンスタッフ2名の件ですが、まだ募集されていますでしょうか？</p>
+            <span class="message-time">10:30</span>
+          </div>
+        </div>
+
+        <!-- 自分のメッセージ -->
+        <div class="message-row sent">
+          <div class="message-bubble">
+            <p>お世話になっております！はい、まだ募集しております。<br>単価15,000円でお願いしたいのですが、いかがでしょうか？</p>
+            <span class="message-time">10:35</span>
+          </div>
+        </div>
+
+        <!-- 相手のメッセージ -->
+        <div class="message-row received">
+          <div class="chat-avatar bg-blue">A</div>
+          <div class="message-bubble">
+            <p>承知いたしました。明日の待ち合わせ時間は10時でお願いします。</p>
+            <span class="message-time">10:42</span>
+          </div>
+        </div>
+        
+        <!-- モックで追加される要素のプレースホルダー -->
+      </main>
+
+      <!-- チャット入力フッター -->
+      <footer class="chat-footer">
+        <div class="chat-actions-top">
+          <button id="btn-propose-contract" class="btn-primary btn-small w-full">
+            <span class="material-symbols-outlined icon-small">edit_document</span>
+            この条件で発注（契約提案）
+          </button>
+        </div>
+        <div class="chat-input-area">
+          <button class="icon-btn-dark text-gray">
+            <span class="material-symbols-outlined">add_circle</span>
+          </button>
+          <textarea id="chat-input" class="form-control chat-textarea" placeholder="メッセージを入力..." rows="1"></textarea>
+          <button id="btn-send-message" class="icon-btn-dark primary-text" disabled>
+            <span class="material-symbols-outlined">send</span>
+          </button>
+        </div>
+      </footer>
+    </div>
+
+    <!-- ボトムナビゲーション (タブバー) -->
+    <nav class="bottom-nav">
+      <div class="nav-item active" data-target="view-search">
+        <div class="nav-icon-wrapper">
+          <span class="material-symbols-outlined nav-icon">location_on</span>
+        </div>
+        <span class="nav-label">探す</span>
+      </div>
+      <div class="nav-item" data-target="view-message">
+        <div class="nav-icon-wrapper">
+          <span class="material-symbols-outlined nav-icon">chat</span>
+          <span class="badge">2</span>
+        </div>
+        <span class="nav-label">メッセージ</span>
+      </div>
+      <div class="nav-item" data-target="view-field">
+        <div class="nav-icon-wrapper">
+          <span class="material-symbols-outlined nav-icon">camera_alt</span>
+        </div>
+        <span class="nav-label">現場</span>
+      </div>
+      <div class="nav-item" data-target="view-dashboard">
+        <div class="nav-icon-wrapper">
+          <span class="material-symbols-outlined nav-icon">bar_chart</span>
+        </div>
+        <span class="nav-label">ダッシュボード</span>
+      </div>
+      <div class="nav-item" data-target="view-settings">
+        <div class="nav-icon-wrapper">
+          <span class="material-symbols-outlined nav-icon">settings</span>
+        </div>
+        <span class="nav-label">設定</span>
+      </div>
+    </nav>
+  </div>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+  <script src="app.js"></script>
+</body>
+</html>
