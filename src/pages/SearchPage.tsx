@@ -5,6 +5,7 @@ import 'leaflet/dist/leaflet.css';
 import { api } from '../data/mockDb';
 import type { Job, Talent, Staff, Training, User } from '../data/mockDb';
 import { CalendarPicker } from '../components/CalendarPicker';
+import { formatJobDates } from '../utils/dateFormatter';
 
 export function SearchPage() {
   const navigate = useNavigate();
@@ -966,39 +967,57 @@ export function SearchPage() {
             {mode === 'job' ? (
               sortedJobs.length > 0 ? (
                 sortedJobs.map(job => (
-                  <div key={job.id} style={{ background: 'white', borderRadius: '12px', padding: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.03)', border: job.isUrgent ? '2.5px solid #FCA5A5' : '1px solid var(--border-color)', animation: 'fadeIn 0.3s ease', position: 'relative' }}>
+                  <div key={job.id} 
+                    className={`job-card-modern ${job.isUrgent ? 'job-card-urgent' : ''}`}
+                    onClick={() => setSelectedJob(job)}
+                  >
                     
                     {job.isUrgent && (
-                      <span style={{ position: 'absolute', top: '-10px', right: '12px', fontSize: '10px', padding: '2px 8px', background: '#EF4444', color: 'white', borderRadius: '12px', fontWeight: 'bold', boxShadow: '0 2px 4px rgba(239, 68, 68, 0.2)' }}>
-                        ⚠️ 緊急募集
-                      </span>
-                    )}
-
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                      <h3 style={{ margin: '0 0 8px 0', fontSize: '15px', color: 'var(--text-main)' }}>{job.title}</h3>
-                      <span className="status-badge badge-negotiating" style={{ margin: 0, fontSize: '11px' }}>募集中</span>
-                    </div>
-
-                    <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '8px' }}>
-                      {job.carrier && <span style={{ fontSize: '11px', padding: '2px 8px', background: '#E0E7FF', color: '#4338CA', borderRadius: '12px', fontWeight: 'bold' }}>{job.carrier}</span>}
-                      {job.salesChannel && <span style={{ fontSize: '11px', padding: '2px 8px', background: '#FEF3C7', color: '#D97706', borderRadius: '12px', fontWeight: 'bold' }}>{job.salesChannel}</span>}
-                      {job.roleType && <span style={{ fontSize: '11px', padding: '2px 8px', background: '#DCFCE7', color: '#15803D', borderRadius: '12px', fontWeight: 'bold' }}>{job.roleType}</span>}
-                      {job.workLocation && <span style={{ fontSize: '11px', padding: '2px 8px', background: '#F3F4F6', color: '#374151', borderRadius: '12px' }}>{job.workLocation}</span>}
-                    </div>
-
-                    {job.eventDate && (
-                      <div style={{ fontSize: '12px', color: '#2563EB', fontWeight: 'bold', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                        <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>calendar_today</span>
-                        開催日: {job.eventDate} {job.applicationDeadline && <span style={{ color: '#EF4444', marginLeft: '8px' }}>(応募締切: {job.applicationDeadline})</span>}
+                      <div className="job-card-urgent-ribbon">
+                        緊急募集
                       </div>
                     )}
 
-                    <p style={{ margin: '0 0 12px 0', fontSize: '13px', color: 'var(--text-sub)' }}>{job.description}</p>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <div style={{ fontSize: '14px', color: 'var(--primary)', fontWeight: 'bold' }}>
-                        ¥{job.price.toLocaleString()} <span style={{ fontSize: '11px', color: 'var(--text-sub)', fontWeight: 'normal' }}>/ 日</span>
+                    <div className="job-title-row">
+                      <h3>{job.title}</h3>
+                      <span className="status-badge badge-negotiating" style={{ margin: 0, fontSize: '11px', whiteSpace: 'nowrap' }}>募集中</span>
+                    </div>
+
+                    {job.locationName && (
+                      <div className="job-location">
+                        <span className="material-symbols-outlined" style={{ fontSize: '14px', color: '#EF4444' }}>location_on</span>
+                        {job.locationName.split(' ').pop()} {/* Show only the last part or keep it short. For now keep as is */}
                       </div>
-                      <button className="btn-secondary btn-small" style={{ margin: 0 }} onClick={() => setSelectedJob(job)}>詳細を見る</button>
+                    )}
+
+                    <div className="job-tags-container">
+                      {job.carrier && <span className="modern-tag tag-carrier">{job.carrier}</span>}
+                      {job.salesChannel && <span className="modern-tag tag-channel">{job.salesChannel}</span>}
+                      {job.roleType && <span className="modern-tag tag-role">{job.roleType}</span>}
+                      {job.workLocation && <span className="modern-tag tag-location">{job.workLocation}</span>}
+                    </div>
+
+                    <p className="job-desc">{job.description}</p>
+                    
+                    <div className="job-stats-row">
+                      <div className="job-stat-item">
+                        <span className="job-stat-label">日程</span>
+                        <span className="job-stat-value">
+                          <span className="material-symbols-outlined" style={{ fontSize: '14px', color: '#2563EB' }}>calendar_today</span>
+                          {job.eventDate ? formatJobDates(job.eventDate) : '未定'}
+                        </span>
+                      </div>
+                      <div className="job-stat-item" style={{ alignItems: 'flex-end' }}>
+                        <span className="job-stat-label">単価</span>
+                        <span className="job-stat-value">
+                          <span className="job-price">¥{job.price.toLocaleString()}</span>
+                          <span className="job-price-unit">/ 日</span>
+                        </span>
+                      </div>
+                    </div>
+                    
+                    <div className="job-card-arrow">
+                      <span className="material-symbols-outlined" style={{ fontSize: '24px' }}>arrow_forward</span>
                     </div>
                   </div>
                 ))
@@ -1017,46 +1036,53 @@ export function SearchPage() {
                       <span style={{ fontSize: '13px', fontWeight: 'bold', color: '#10B981', background: '#D1FAE5', padding: '4px 10px', borderRadius: '12px' }}>{group.talents.length}名</span>
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column' }}>
-                      {group.talents.map((talent, idx) => (
-                        <div key={talent.id} style={{ padding: '16px', borderBottom: idx < group.talents.length - 1 ? '1px solid #f0f0f0' : 'none' }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                      {group.talents.map((talent) => (
+                        <div key={talent.id} 
+                          className="job-card-modern"
+                          onClick={() => setSelectedTalent(talent)}
+                          style={{ margin: '8px 16px', borderBottom: 'none' }}
+                        >
+                          <div className="job-title-row" style={{ paddingRight: '0' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                               <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#10B981', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', fontWeight: 'bold' }}>
                                 {talent.maskedName.charAt(0)}
                               </div>
                               <div>
                                 <div style={{ fontSize: '12px', color: 'var(--text-sub)', marginBottom: '2px' }}>{talent.companyName}</div>
-                                <div style={{ fontSize: '15px', fontWeight: 'bold' }}>{talent.maskedName}</div>
+                                <h3 style={{ fontSize: '15px', color: 'var(--text-main)', margin: 0 }}>{talent.maskedName}</h3>
                               </div>
                             </div>
-                            <span className="status-badge badge-contracted" style={{ margin: 0, fontSize: '11px', background: '#D1FAE5', color: '#065F46' }}>稼働可能</span>
+                            <span className="status-badge badge-contracted" style={{ margin: 0, fontSize: '11px', background: '#D1FAE5', color: '#065F46', whiteSpace: 'nowrap' }}>稼働可能</span>
                           </div>
                           
                           {talent.availableDates && (
-                            <div style={{ fontSize: '12px', color: 'var(--primary)', fontWeight: 'bold', marginBottom: '8px' }}>
-                              希望勤務日: {talent.availableDates}
+                            <div className="job-location" style={{ color: 'var(--primary)', marginTop: '8px' }}>
+                              <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>calendar_month</span>
+                              希望勤務日: {formatJobDates(talent.availableDates)}
                             </div>
                           )}
 
-                          <div style={{ marginBottom: '12px', display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+                          <div className="job-tags-container" style={{ marginTop: '8px' }}>
                             {talent.carriers?.map(carrier => (
-                              <span key={carrier} style={{ fontSize: '10px', padding: '2px 6px', background: '#E0E7FF', color: '#4338CA', borderRadius: '4px', fontWeight: 'bold' }}>{carrier}</span>
+                              <span key={carrier} className="modern-tag tag-carrier">{carrier}</span>
                             ))}
                             {talent.skills.map(skill => (
-                              <span key={skill} style={{ fontSize: '11px', padding: '2px 8px', background: '#F3F4F6', color: '#4B5563', borderRadius: '12px' }}>{skill}</span>
+                              <span key={skill} className="modern-tag tag-location">{skill}</span>
                             ))}
                           </div>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <div style={{ fontSize: '14px', color: '#10B981', fontWeight: 'bold' }}>
-                              ¥{talent.price.toLocaleString()} <span style={{ fontSize: '11px', color: 'var(--text-sub)', fontWeight: 'normal' }}>/ 日〜</span>
+                          
+                          <div className="job-stats-row">
+                            <div className="job-stat-item">
+                              <span className="job-stat-label">単価</span>
+                              <span className="job-stat-value">
+                                <span className="job-price" style={{ color: '#10B981' }}>¥{talent.price.toLocaleString()}</span>
+                                <span className="job-price-unit">/ 日〜</span>
+                              </span>
                             </div>
-                            <button 
-                              className="btn-secondary btn-small" 
-                              onClick={() => setSelectedTalent(talent)}
-                              style={{ margin: 0, color: '#10B981', border: '1px solid #10B981' }}
-                            >
-                              プロフィール
-                            </button>
+                          </div>
+
+                          <div className="job-card-arrow" style={{ color: '#10B981' }}>
+                            <span className="material-symbols-outlined" style={{ fontSize: '24px' }}>arrow_forward</span>
                           </div>
                         </div>
                       ))}
