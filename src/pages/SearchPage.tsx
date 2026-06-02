@@ -75,10 +75,10 @@ export function SearchPage() {
 
   // 汎用フォームState (Job用) + Talent用希望勤務日
   const [formData, setFormData] = useState({
-    title: '', description: '', price: 15000, 
+    title: '', description: '', price: '' as unknown as number, 
     locationName: '', // 公開用の表示名
     exactLocation: '', // 正確な店舗名・住所
-    roleType: 'キャンペーンクルー', salesChannel: 'ショップ', carrier: 'docomo',
+    roleType: '' as any, salesChannel: '' as any, carrier: '' as any,
     availableDates: '', // 案件用など（未使用になるかも）
     selectedDates: [] as string[], // カレンダーで選択された日付
     eventDate: '',
@@ -1411,8 +1411,30 @@ export function SearchPage() {
                 </div>
                 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)' }}>キャリア/回線 *</label>
+                  <select required value={formData.carrier} onChange={e => setFormData({...formData, carrier: e.target.value as any, locationName: formData.exactLocation ? generateMaskedLocation(formData.exactLocation, formData.exactLocation, formData.salesChannel, e.target.value, formData.workLocation) : formData.locationName})} disabled={isSubmitting} style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc', background: 'white' }}>
+                    <option value="" disabled>選択してください</option>
+                    <option value="docomo">docomo</option>
+                    <option value="au/UQmobile">au/UQmobile</option>
+                    <option value="SoftBank/Y!mobile">SoftBank/Y!mobile</option>
+                    <option value="BB">BB</option>
+                  </select>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)' }}>職種 *</label>
+                  <select required value={formData.roleType} onChange={e => setFormData({...formData, roleType: e.target.value})} disabled={isSubmitting} style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc', background: 'white' }}>
+                    <option value="" disabled>選択してください</option>
+                    <option value="キャンペーンクルー">キャンペーンクルー</option>
+                    <option value="クローザー">クローザー</option>
+                    <option value="ディレクター">ディレクター</option>
+                  </select>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                   <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)' }}>販路 *</label>
-                  <select value={formData.salesChannel} onChange={e => setFormData({...formData, salesChannel: e.target.value as any, locationName: formData.exactLocation ? generateMaskedLocation(formData.exactLocation, formData.exactLocation, e.target.value, formData.carrier, formData.workLocation) : formData.locationName})} disabled={isSubmitting} style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc', background: 'white' }}>
+                  <select required value={formData.salesChannel} onChange={e => setFormData({...formData, salesChannel: e.target.value as any, locationName: formData.exactLocation ? generateMaskedLocation(formData.exactLocation, formData.exactLocation, e.target.value, formData.carrier, formData.workLocation) : formData.locationName})} disabled={isSubmitting} style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc', background: 'white' }}>
+                    <option value="" disabled>選択してください</option>
                     <option value="量販店">量販店</option>
                     <option value="ショップ">ショップ</option>
                   </select>
@@ -1420,21 +1442,12 @@ export function SearchPage() {
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                   <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)' }}>稼働場所 *</label>
-                  <select value={formData.workLocation} onChange={e => setFormData({...formData, workLocation: e.target.value as any, locationName: formData.exactLocation ? generateMaskedLocation(formData.exactLocation, formData.exactLocation, formData.salesChannel, formData.carrier, e.target.value) : formData.locationName})} disabled={isSubmitting} style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc', background: 'white' }}>
+                  <select required value={formData.workLocation} onChange={e => setFormData({...formData, workLocation: e.target.value as any, locationName: formData.exactLocation ? generateMaskedLocation(formData.exactLocation, formData.exactLocation, formData.salesChannel, formData.carrier, e.target.value) : formData.locationName})} disabled={isSubmitting} style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc', background: 'white' }}>
+                    <option value="" disabled>選択してください</option>
                     <option value="店内">店内</option>
                     <option value="外販（複合施設など）">外販（複合施設など）</option>
                     <option value="外販（スーパーなど）">外販（スーパーなど）</option>
                     <option value="外販（その他）">外販（その他）</option>
-                  </select>
-                </div>
-
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                  <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)' }}>キャリア/回線 *</label>
-                  <select value={formData.carrier} onChange={e => setFormData({...formData, carrier: e.target.value as any, locationName: formData.exactLocation ? generateMaskedLocation(formData.exactLocation, formData.exactLocation, formData.salesChannel, e.target.value, formData.workLocation) : formData.locationName})} disabled={isSubmitting} style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc', background: 'white' }}>
-                    <option value="docomo">docomo</option>
-                    <option value="au/UQmobile">au/UQmobile</option>
-                    <option value="SoftBank/Y!mobile">SoftBank/Y!mobile</option>
-                    <option value="BB">BB</option>
                   </select>
                 </div>
 
@@ -1562,15 +1575,6 @@ export function SearchPage() {
                     <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)' }}>応募締切日 *</label>
                     <input type="date" required value={formData.applicationDeadline} onChange={e => setFormData({...formData, applicationDeadline: e.target.value})} disabled={isSubmitting} style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }} />
                   </div>
-                </div>
-
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                  <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)' }}>職種 *</label>
-                  <select value={formData.roleType} onChange={e => setFormData({...formData, roleType: e.target.value})} disabled={isSubmitting} style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc', background: 'white' }}>
-                    <option value="キャンペーンクルー">キャンペーンクルー</option>
-                    <option value="クローザー">クローザー</option>
-                    <option value="ディレクター">ディレクター</option>
-                  </select>
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '4px' }}>
