@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { api } from '../data/mockDb';
-import type { Job, Talent, Staff, Training } from '../data/mockDb';
+import type { Job, Talent, Staff, Training, User } from '../data/mockDb';
 import { CalendarPicker } from '../components/CalendarPicker';
 
 export function SearchPage() {
@@ -39,6 +39,11 @@ export function SearchPage() {
   const [isSelectingLocationOnMap, setIsSelectingLocationOnMap] = useState(false);
   const [tempSelectedLocation, setTempSelectedLocation] = useState<{ lat: number, lng: number } | null>(null);
   const tempMarkerRef = useRef<L.Marker | null>(null);
+
+  // ログインユーザーおよび限定公開先の動的管理用State
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [allUsers, setAllUsers] = useState<User[]>([]);
+  const [targetCompanyId, setTargetCompanyId] = useState<string>('');
 
   // 汎用フォームState (Job用) + Talent用希望勤務日
   const [formData, setFormData] = useState({
@@ -105,7 +110,7 @@ export function SearchPage() {
         locationName: formData.locationName,
         lat: coords.lat,
         lng: coords.lng,
-        authorId: 'u1',
+        authorId: currentUser?.id || 'sigma',
         roleType: formData.roleType as Job['roleType'],
         salesChannel: formData.salesChannel as Job['salesChannel'],
         carrier: formData.carrier as Job['carrier'],
@@ -114,7 +119,7 @@ export function SearchPage() {
         applicationDeadline: formData.applicationDeadline,
         workLocation: formData.workLocation as Job['workLocation'],
         isUrgent: formData.isUrgent,
-        allowedCompanyIds: formData.isLimited ? ['u2'] : undefined
+        allowedCompanyIds: formData.isLimited && targetCompanyId ? [targetCompanyId] : undefined
       };
       const savedJob = await api.addJob(newJob);
       setJobs(prev => [...prev, savedJob]);
@@ -204,14 +209,25 @@ export function SearchPage() {
 
     const loadData = async () => {
       try {
-        const [fetchedJobs, fetchedTalents, fetchedTrainings] = await Promise.all([
+        const [fetchedJobs, fetchedTalents, fetchedTrainings, user, users] = await Promise.all([
           api.getJobs(),
           api.getTalents(),
-          api.getTrainings()
+          api.getTrainings(),
+          api.getCurrentUser(),
+          api.getUsers()
         ]);
         setJobs(fetchedJobs);
         setTalents(fetchedTalents);
         setAllTrainings(fetchedTrainings);
+        setCurrentUser(user);
+        setAllUsers(users);
+        
+        if (user && users.length > 0) {
+          const otherUsers = users.filter(u => u.id !== user.id);
+          if (otherUsers.length > 0) {
+            setTargetCompanyId(otherUsers[0].id);
+          }
+        }
       } catch (error) {
         console.error('データの取得に失敗しました', error);
       }
@@ -469,15 +485,19 @@ export function SearchPage() {
       else if (filterArea === 'shibuya') matchesArea = !!job.locationName?.includes('渋谷');
       else if (filterArea === 'ikebukuro') matchesArea = !!job.locationName?.includes('池袋') || !!job.locationName?.includes('豊島');
 
-      // 2. 限定公開フィルタ (モック自社ID: u1)
-      const matchesLimited = job.allowedCompanyIds === undefined || job.allowedCompanyIds.includes('u1') || job.authorId === 'u1';
+      // 2. 限定公開フィルタ
+      const matchesLimited = currentUser
+        ? (job.allowedCompanyIds === undefined || 
+           job.allowedCompanyIds.includes(currentUser.id) || 
+           job.authorId === currentUser.id)
+        : true;
 
       // 3. 緊急募集フィルタ
       const matchesUrgent = includeUrgent || !job.isUrgent;
 
       return matchesArea && matchesLimited && matchesUrgent;
     });
-  }, [jobs, filterArea, includeUrgent]);
+  }, [jobs, filterArea, includeUrgent, currentUser]);
 
   const sortedJobs = useMemo(() => {
     return [...filteredJobs].sort((a, b) => {
@@ -1090,15 +1110,35 @@ export function SearchPage() {
                   </select>
                 </div>
 
-                <div style={{ display: 'flex', gap: '20px', marginTop: '4px' }}>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold' }}>
-                    <input type="checkbox" checked={formData.isUrgent} onChange={e => setFormData({...formData, isUrgent: e.target.checked})} disabled={isSubmitting} style={{ width: '16px', height: '16px' }} />
-                    <span style={{ color: '#EF4444' }}>🚨 緊急募集にする (最優先表示)</span>
-                  </label>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold' }}>
-                    <input type="checkbox" checked={formData.isLimited} onChange={e => setFormData({...formData, isLimited: e.target.checked})} disabled={isSubmitting} style={{ width: '16px', height: '16px' }} />
-                    <span style={{ color: 'var(--primary)' }}>🔒 限定公開 (親しい取引先のみ)</span>
-                  </label>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '4px' }}>
+                  <div style={{ display: 'flex', gap: '20px' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold' }}>
+                      <input type="checkbox" checked={formData.isUrgent} onChange={e => setFormData({...formData, isUrgent: e.target.checked})} disabled={isSubmitting} style={{ width: '16px', height: '16px' }} />
+                      <span style={{ color: '#EF4444' }}>🚨 緊急募集にする (最優先表示)</span>
+                    </label>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold' }}>
+                      <input type="checkbox" checked={formData.isLimited} onChange={e => setFormData({...formData, isLimited: e.target.checked})} disabled={isSubmitting} style={{ width: '16px', height: '16px' }} />
+                      <span style={{ color: 'var(--primary)' }}>🔒 限定公開 (親しい取引先のみ)</span>
+                    </label>
+                  </div>
+
+                  {formData.isLimited && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '4px', background: '#F8FAFC', padding: '12px', borderRadius: '8px', border: '1px solid #E2E8F0' }}>
+                      <label style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--text-main)' }}>公開先企業を選択してください *</label>
+                      <select 
+                        value={targetCompanyId} 
+                        onChange={e => setTargetCompanyId(e.target.value)} 
+                        disabled={isSubmitting} 
+                        style={{ padding: '8px', borderRadius: '6px', border: '1px solid #CBD5E1', background: 'white', fontSize: '14px', outline: 'none' }}
+                      >
+                        {allUsers
+                          .filter(u => u.id !== currentUser?.id)
+                          .map(u => (
+                            <option key={u.id} value={u.id}>{u.name}</option>
+                          ))}
+                      </select>
+                    </div>
+                  )}
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>

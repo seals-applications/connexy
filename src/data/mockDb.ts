@@ -807,5 +807,14 @@ export const api = {
         resolve(task);
       }, 300);
     });
+  },
+
+  // すべてのユーザー（会社）を取得
+  getUsers: async (): Promise<User[]> => {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        resolve([...mockUsers]);
+      }, 100);
+    });
   }
 };
