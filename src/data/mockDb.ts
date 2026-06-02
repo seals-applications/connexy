@@ -3,6 +3,8 @@ export interface User {
   id: string;
   name: string;
   role: 'contractor' | 'worker' | 'admin';
+  loginId?: string;
+  password?: string;
 }
 
 // 評価(Evaluation)の型定義
@@ -107,9 +109,11 @@ export interface ContractTask {
 
 // モックデータベース
 const mockUsers: User[] = [
-  { id: 'u1', name: '株式会社アルファ通信', role: 'contractor' },
-  { id: 'u2', name: 'ベータエージェンシー', role: 'contractor' },
-  { id: 'u3', name: '佐藤 健一', role: 'worker' },
+  { id: 'sigma', name: '株式会社シグマ通信', loginId: 'sigma', password: 'pass', role: 'contractor' },
+  { id: 'alpha', name: '株式会社アルファ', loginId: 'alpha', password: 'pass', role: 'contractor' },
+  { id: 'beta', name: 'ベータ株式会社', loginId: 'beta', password: 'pass', role: 'contractor' },
+  { id: 'gamma', name: '合同会社ガンマ', loginId: 'gamma', password: 'pass', role: 'contractor' },
+  { id: 'delta', name: 'デルタ合同会社', loginId: 'delta', password: 'pass', role: 'contractor' },
 ];
 
 const mockJobs: Job[] = [
@@ -588,6 +592,12 @@ const mockContractTasks: ContractTask[] = [
   }
 ];
 
+// セッション管理用変数 (ブラウザ環境のみ localStorage に書き込む)
+let currentUserId = typeof window !== 'undefined' ? (localStorage.getItem('connexy_current_user_id') || 'sigma') : 'sigma';
+if (typeof window !== 'undefined' && !localStorage.getItem('connexy_current_user_id')) {
+  localStorage.setItem('connexy_current_user_id', 'sigma');
+}
+
 // データベースAPIを模倣した関数 (非同期でデータを返す)
 export const api = {
   // すべての案件を取得
@@ -607,7 +617,6 @@ export const api = {
       }, 500);
     });
   },
-
   // 特定のユーザーを取得
   getUserById: async (id: string): Promise<User | undefined> => {
     return new Promise((resolve) => {
@@ -618,11 +627,39 @@ export const api = {
   },
 
   // 現在ログインしているユーザーを取得
-  getCurrentUser: async (): Promise<User> => {
+  getCurrentUser: async (): Promise<User | null> => {
     return new Promise((resolve) => {
       setTimeout(() => {
-        resolve(mockUsers[0]); // デフォルトで 株式会社アルファ通信 を返す
+        const user = mockUsers.find((u) => u.id === currentUserId);
+        resolve(user || null);
+      }, 100);
+    });
+  },
+
+  // ログイン処理
+  login: async (loginId: string, password: string): Promise<User | null> => {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        const user = mockUsers.find((u) => u.loginId === loginId && u.password === password);
+        if (user) {
+          currentUserId = user.id;
+          localStorage.setItem('connexy_current_user_id', user.id);
+          resolve(user);
+        } else {
+          resolve(null);
+        }
       }, 300);
+    });
+  },
+
+  // ログアウト処理
+  logout: async (): Promise<void> => {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        currentUserId = '';
+        localStorage.removeItem('connexy_current_user_id');
+        resolve();
+      }, 100);
     });
   },
 

@@ -32,6 +32,7 @@ export function TaskPage() {
       setTrainings(fetchedTrainings);
 
       const currentUser = await api.getCurrentUser();
+      if (!currentUser) return;
       const fetchedStaffs = await api.getStaffsByUserId(currentUser.id);
       if (fetchedStaffs.length > 0) {
         setMyStaff(fetchedStaffs[0]);

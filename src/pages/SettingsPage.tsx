@@ -1,9 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { api } from '../data/mockDb';
-import type { Staff } from '../data/mockDb';
+import type { Staff, User } from '../data/mockDb';
 
-export function SettingsPage() {
+interface SettingsPageProps {
+  onLogoutSuccess: () => void;
+}
+
+export function SettingsPage({ onLogoutSuccess }: SettingsPageProps) {
   const location = useLocation();
   const [showProfileOverlay, setShowProfileOverlay] = useState(false);
   const [showStaffOverlay, setShowStaffOverlay] = useState(false);
@@ -12,6 +16,7 @@ export function SettingsPage() {
   const [staffSaving, setStaffSaving] = useState(false);
 
   const [staffs, setStaffs] = useState<Staff[]>([]);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
 
   const [formData, setFormData] = useState({
     name: '', maskedName: '', baseLocation: '', nearestStation: '',
@@ -23,21 +28,29 @@ export function SettingsPage() {
   const availableCarriers = ['docomo', 'au/UQmobile', 'SoftBank/Y!mobile', 'BB'];
 
   useEffect(() => {
-    // 他のページから「スタッフ登録を開く」指示があった場合
     if (location.state?.openStaffOverlay) {
       setShowStaffOverlay(true);
     }
   }, [location.state]);
 
   useEffect(() => {
-    // 登録済みスタッフ一覧を取得
-    const loadStaffs = async () => {
-      const currentUser = await api.getCurrentUser();
-      const fetchedStaffs = await api.getStaffsByUserId(currentUser.id);
-      setStaffs(fetchedStaffs);
+    const loadData = async () => {
+      const user = await api.getCurrentUser();
+      setCurrentUser(user);
+      if (user) {
+        const fetchedStaffs = await api.getStaffsByUserId(user.id);
+        setStaffs(fetchedStaffs);
+      }
     };
-    loadStaffs();
+    loadData();
   }, []);
+
+  const handleLogout = async () => {
+    if (confirm('ログアウトしますか？')) {
+      await api.logout();
+      onLogoutSuccess();
+    }
+  };
 
   const toggleSkill = (skill: string) => {
     setFormData(prev => ({
@@ -65,9 +78,11 @@ export function SettingsPage() {
     e.preventDefault();
     setStaffSaving(true);
 
-    const currentUser = await api.getCurrentUser();
+    const user = await api.getCurrentUser();
+    if (!user) return;
+    
     const newStaff: Omit<Staff, 'id'> = {
-      userId: currentUser.id,
+      userId: user.id,
       name: formData.name,
       maskedName: formData.maskedName,
       baseLocation: formData.baseLocation,
@@ -101,9 +116,9 @@ export function SettingsPage() {
       </header>
       <main className="list-area bg-gray" style={{ flex: 1, overflowY: 'auto', paddingBottom: '80px' }}>
         <div className="profile-section">
-          <div className="profile-avatar">S</div>
+          <div className="profile-avatar">{currentUser?.name.charAt(0) || '株'}</div>
           <div className="profile-info">
-            <h2>株式会社シグマ通信</h2>
+            <h2>{currentUser?.name || '会社名読み込み中...'}</h2>
             <div className="premium-badge">
               <span className="material-symbols-outlined">stars</span>
               プレミアムプラン
@@ -140,6 +155,14 @@ export function SettingsPage() {
               <span className="material-symbols-outlined item-icon">badge</span>
               <span>スタッフへの「現場権限」付与</span>
               <span className="material-symbols-outlined item-arrow">chevron_right</span>
+            </div>
+          </div>
+
+          <div className="settings-group" style={{ marginTop: '24px' }}>
+            <div className="settings-item" onClick={handleLogout} style={{ color: '#EF4444' }}>
+              <span className="material-symbols-outlined item-icon" style={{ color: '#EF4444' }}>logout</span>
+              <span style={{ fontWeight: 'bold' }}>ログアウト</span>
+              <span className="material-symbols-outlined item-arrow" style={{ color: '#EF4444' }}>chevron_right</span>
             </div>
           </div>
         </div>

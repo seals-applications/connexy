@@ -50,6 +50,7 @@ export function SearchPage() {
 
   const handleOpenCreateForm = async () => {
     const currentUser = await api.getCurrentUser();
+    if (!currentUser) return;
     const staffs = await api.getStaffsByUserId(currentUser.id);
     setMyStaffs(staffs);
     if (staffs.length > 0) setSelectedStaffId(staffs[0].id);
@@ -110,6 +111,11 @@ export function SearchPage() {
       }
       const coords = await geocodeAddress(selectedStaff.baseLocation);
       const currentUser = await api.getCurrentUser();
+      if (!currentUser) {
+        alert('ログインが必要です');
+        setIsSubmitting(false);
+        return;
+      }
       
       // selectedDates (YYYY-MM-DD) を "M/D" のカンマ区切りに変換
       const sortedDates = [...formData.selectedDates].sort();
