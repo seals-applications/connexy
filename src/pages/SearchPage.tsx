@@ -1778,12 +1778,43 @@ export function SearchPage() {
           </div>
           
           <div className="filter-sheet-footer" style={{ display: 'flex', gap: '12px', padding: '16px', borderTop: '1px solid var(--border-color)', background: 'white' }}>
-            <button className="btn-secondary" style={{ flex: 1, margin: 0 }} onClick={clearAllFilters}>
+            <button
+              style={{
+                flex: 1,
+                margin: 0,
+                padding: '12px',
+                background: 'white',
+                border: '1px solid var(--border-color)',
+                color: 'var(--text-main)',
+                borderRadius: '10px',
+                fontWeight: '600',
+                fontSize: '14px',
+                cursor: 'pointer',
+                fontFamily: 'inherit'
+              }}
+              onClick={clearAllFilters}
+            >
               すべてクリア
             </button>
             <button
-              className="btn-primary"
-              style={{ flex: 1, margin: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+              style={{
+                flex: 1,
+                margin: 0,
+                padding: '12px',
+                background: 'var(--primary)',
+                border: 'none',
+                color: 'white',
+                borderRadius: '10px',
+                fontWeight: '700',
+                fontSize: '14px',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '6px',
+                boxShadow: '0 4px 12px rgba(37,99,235,0.3)',
+                fontFamily: 'inherit'
+              }}
               onClick={() => {
                 setSearchKeyword(tempKeyword);
                 setIsFilterSheetOpen(false);
