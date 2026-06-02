@@ -7,6 +7,7 @@ import type { Job, Talent, Staff, Training, User } from '../data/mockDb';
 import { CalendarPicker } from '../components/CalendarPicker';
 import { formatJobDates } from '../utils/dateFormatter';
 import { generateMaskedLocation } from '../utils/maskingUtils';
+import Autocomplete from 'react-google-autocomplete';
 
 export function SearchPage() {
   const navigate = useNavigate();
@@ -1412,18 +1413,62 @@ export function SearchPage() {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                   <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)' }}>正確な店舗名・住所 (非公開) *</label>
                   <div style={{ display: 'flex', gap: '8px' }}>
-                    <input 
-                      type="text" 
-                      required 
-                      value={formData.exactLocation} 
-                      onChange={e => {
-                        const newExact = e.target.value;
-                        setFormData({...formData, exactLocation: newExact, locationName: generateMaskedLocation(newExact, newExact, formData.salesChannel, formData.carrier)});
-                      }} 
-                      disabled={isSubmitting} 
-                      style={{ flex: 1, padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }} 
-                      placeholder="例: ヤマダデンキ 新宿西口店 (東京都新宿区...)" 
-                    />
+                    {import.meta.env.VITE_GOOGLE_MAPS_API_KEY ? (
+                      <Autocomplete
+                        apiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY}
+                        onPlaceSelected={(place: any) => {
+                          if (place.geometry) {
+                            const lat = place.geometry.location.lat();
+                            const lng = place.geometry.location.lng();
+                            const address = place.name || place.formatted_address || '';
+                            const fullAddress = place.formatted_address || address;
+                            
+                            setTempSelectedLocation({ lat, lng });
+                            setFormData(prev => ({
+                              ...prev,
+                              exactLocation: address,
+                              locationName: generateMaskedLocation(fullAddress, address, prev.salesChannel, prev.carrier)
+                            }));
+                            
+                            if (mapRef.current) {
+                              if (tempMarkerRef.current) tempMarkerRef.current.remove();
+                              const customIcon = L.divIcon({
+                                className: 'temp-location-marker',
+                                html: `<div style="width: 20px; height: 20px; background-color: #EF4444; border: 3px solid white; border-radius: 50%; box-shadow: 0 0 10px rgba(0,0,0,0.5);"></div>`,
+                                iconSize: [20, 20], iconAnchor: [10, 10],
+                              });
+                              tempMarkerRef.current = L.marker([lat, lng], { icon: customIcon }).addTo(mapRef.current);
+                              mapRef.current.setView([lat, lng], 16);
+                            }
+                          }
+                        }}
+                        options={{
+                          types: ['establishment', 'geocode'],
+                          componentRestrictions: { country: 'jp' },
+                        }}
+                        defaultValue={formData.exactLocation}
+                        onChange={(e: any) => {
+                          const newExact = e.target.value;
+                          setFormData({...formData, exactLocation: newExact, locationName: generateMaskedLocation(newExact, newExact, formData.salesChannel, formData.carrier)});
+                        }}
+                        disabled={isSubmitting} 
+                        style={{ flex: 1, padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }} 
+                        placeholder="例: ヤマダデンキ 新宿西口店" 
+                      />
+                    ) : (
+                      <input 
+                        type="text" 
+                        required 
+                        value={formData.exactLocation} 
+                        onChange={e => {
+                          const newExact = e.target.value;
+                          setFormData({...formData, exactLocation: newExact, locationName: generateMaskedLocation(newExact, newExact, formData.salesChannel, formData.carrier)});
+                        }} 
+                        disabled={isSubmitting} 
+                        style={{ flex: 1, padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }} 
+                        placeholder="※APIキー未設定: 手動で入力してください" 
+                      />
+                    )}
                     <button
                       type="button"
                       onClick={startMapSelection}
