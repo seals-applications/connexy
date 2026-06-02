@@ -390,14 +390,9 @@ export function SearchPage() {
         const data = await response.json();
         
         let addressText = '';
-        if (data && data.address) {
-          const addr = data.address;
-          const state = addr.province || addr.state || '';
-          const city = addr.city || addr.town || addr.village || addr.city_district || '';
-          const suburb = addr.suburb || addr.subdivision || addr.quarter || addr.neighbourhood || '';
-          const road = addr.road || '';
-          const houseNumber = addr.house_number || '';
-          addressText = `${state}${city}${suburb}${road}${houseNumber}`.trim();
+        if (data && data.display_name) {
+          const parts = data.display_name.split(', ').reverse();
+          addressText = parts.filter((p: string) => p !== '日本' && !p.match(/^\d{3}-\d{4}$/)).join('');
         }
         
         if (!addressText) {
@@ -731,6 +726,7 @@ export function SearchPage() {
           </button>
         </div>
       )}
+      {!isSelectingLocationOnMap && (
       <header className="glass-header" style={{ zIndex: 1000, position: 'relative' }}>
         <div className="header-top">
           <div className="toggle-switch">
@@ -832,14 +828,15 @@ export function SearchPage() {
           </button>
         </div>
       </header>
+      )}
 
       <div 
         className="map-area" 
         id="map-area" 
-        style={{ display: viewMode === 'map' ? 'block' : 'none', flex: 1, zIndex: 1, position: 'relative' }}
+        style={{ display: viewMode === 'map' || isSelectingLocationOnMap ? 'block' : 'none', flex: 1, zIndex: 1, position: 'relative' }}
       ></div>
 
-      {viewMode === 'list' && (
+      {viewMode === 'list' && !isSelectingLocationOnMap && (
         <main className="list-area bg-gray" style={{ flex: 1, overflowY: 'auto', zIndex: 2, paddingBottom: '80px' }}>
           <div style={{ padding: '16px', background: 'white', borderBottom: '1px solid var(--border-color)', position: 'sticky', top: 0, zIndex: 10 }}>
             <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '4px', flexWrap: 'wrap', alignItems: 'center' }}>
