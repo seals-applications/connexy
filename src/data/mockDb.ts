@@ -116,7 +116,7 @@ const mockUsers: User[] = [
   { id: 'delta', name: 'デルタ合同会社', loginId: 'delta', password: 'pass', role: 'contractor' },
 ];
 
-const mockJobs: Job[] = [
+let mockJobs: Job[] = [
   {
     id: 'j1',
     title: 'auショップ新宿西口店 キャンペーンクルー',
@@ -311,7 +311,7 @@ const mockJobs: Job[] = [
   }
 ];
 
-const mockTalents: Talent[] = [
+let mockTalents: Talent[] = [
   {
     id: 't1',
     name: '田中 太郎',
@@ -504,7 +504,7 @@ const mockTalents: Talent[] = [
   }
 ];
 
-const mockStaffs: Staff[] = [
+let mockStaffs: Staff[] = [
   {
     id: 's1',
     userId: 'u1', // 株式会社アルファ通信 のスタッフ
@@ -540,7 +540,7 @@ const mockTrainings: Training[] = [
   }
 ];
 
-const mockContractTasks: ContractTask[] = [
+let mockContractTasks: ContractTask[] = [
   {
     id: 'ct1',
     jobId: 'j1',
@@ -591,6 +591,55 @@ const mockContractTasks: ContractTask[] = [
     }
   }
 ];
+
+// localStorage とのデータ同期
+if (typeof window !== 'undefined') {
+  try {
+    const sJobs = localStorage.getItem('connexy_jobs');
+    if (sJobs) {
+      mockJobs = JSON.parse(sJobs);
+    } else {
+      localStorage.setItem('connexy_jobs', JSON.stringify(mockJobs));
+    }
+
+    const sTalents = localStorage.getItem('connexy_talents');
+    if (sTalents) {
+      mockTalents = JSON.parse(sTalents);
+    } else {
+      localStorage.setItem('connexy_talents', JSON.stringify(mockTalents));
+    }
+
+    const sStaffs = localStorage.getItem('connexy_staffs');
+    if (sStaffs) {
+      mockStaffs = JSON.parse(sStaffs);
+    } else {
+      localStorage.setItem('connexy_staffs', JSON.stringify(mockStaffs));
+    }
+
+    const sTasks = localStorage.getItem('connexy_contract_tasks');
+    if (sTasks) {
+      mockContractTasks = JSON.parse(sTasks);
+    } else {
+      localStorage.setItem('connexy_contract_tasks', JSON.stringify(mockContractTasks));
+    }
+  } catch (e) {
+    console.error('Failed to sync connexy database from localStorage', e);
+  }
+}
+
+// 永続化用保存ヘルパー
+const saveJobs = () => {
+  if (typeof window !== 'undefined') localStorage.setItem('connexy_jobs', JSON.stringify(mockJobs));
+};
+const saveTalents = () => {
+  if (typeof window !== 'undefined') localStorage.setItem('connexy_talents', JSON.stringify(mockTalents));
+};
+const saveStaffs = () => {
+  if (typeof window !== 'undefined') localStorage.setItem('connexy_staffs', JSON.stringify(mockStaffs));
+};
+const saveContractTasks = () => {
+  if (typeof window !== 'undefined') localStorage.setItem('connexy_contract_tasks', JSON.stringify(mockContractTasks));
+};
 
 // セッション管理用変数 (ブラウザ環境のみ localStorage に書き込む)
 let currentUserId = typeof window !== 'undefined' ? (localStorage.getItem('connexy_current_user_id') || 'sigma') : 'sigma';
@@ -678,6 +727,7 @@ export const api = {
       setTimeout(() => {
         const newJob = { ...job, id: `j${mockJobs.length + 1}` };
         mockJobs.push(newJob);
+        saveJobs();
         resolve(newJob);
       }, 300);
     });
@@ -689,6 +739,7 @@ export const api = {
       setTimeout(() => {
         const newTalent = { ...talent, id: `t${mockTalents.length + 1}` };
         mockTalents.push(newTalent);
+        saveTalents();
         resolve(newTalent);
       }, 300);
     });
@@ -700,6 +751,7 @@ export const api = {
       setTimeout(() => {
         const newStaff = { ...staff, id: `s${mockStaffs.length + 1}`, completedTrainings: [] };
         mockStaffs.push(newStaff);
+        saveStaffs();
         resolve(newStaff);
       }, 300);
     });
@@ -732,6 +784,8 @@ export const api = {
               talent.completedTrainings.push(trainingId);
             }
           }
+          saveStaffs();
+          saveTalents();
         }
         resolve();
       }, 300);
@@ -783,6 +837,7 @@ export const api = {
           task.status = 'completed'; // 完了状態へ
         }
 
+        saveContractTasks();
         resolve(task);
       }, 300);
     });
@@ -804,6 +859,7 @@ export const api = {
           task.status = 'disputed';
           task.disputedReason = reason || '内容が事実と異なります。'; // 拒否して運営ヒアリングへ
         }
+        saveContractTasks();
         resolve(task);
       }, 300);
     });
