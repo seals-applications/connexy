@@ -59,6 +59,33 @@ export function SearchPage() {
     isLimited: false
   });
 
+  // データ更新State & 処理
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const handleRefresh = async () => {
+    if (isRefreshing) return;
+    setIsRefreshing(true);
+    try {
+      const [fetchedJobs, fetchedTalents, fetchedTrainings, user, users] = await Promise.all([
+        api.getJobs(),
+        api.getTalents(),
+        api.getTrainings(),
+        api.getCurrentUser(),
+        api.getUsers()
+      ]);
+      setJobs(fetchedJobs);
+      setTalents(fetchedTalents);
+      setAllTrainings(fetchedTrainings);
+      setCurrentUser(user);
+      setAllUsers(users);
+      // アニメーションを自然に見せるために、わずかにディレイをかける
+      await new Promise(resolve => setTimeout(resolve, 400));
+    } catch (error) {
+      console.error('データの更新に失敗しました', error);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
   const handleOpenCreateForm = async () => {
     const currentUser = await api.getCurrentUser();
     if (!currentUser) return;
@@ -603,6 +630,23 @@ export function SearchPage() {
           >
             <span className="material-symbols-outlined">
               {viewMode === 'map' ? 'format_list_bulleted' : 'map'}
+            </span>
+          </button>
+          <button 
+            className="filter-btn" 
+            onClick={handleRefresh}
+            style={{ 
+              backgroundColor: 'white',
+              color: 'var(--text-main)',
+              border: 'none',
+              boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+              transition: 'all 0.2s ease',
+              marginLeft: '4px'
+            }}
+            title="データを更新"
+          >
+            <span className={`material-symbols-outlined ${isRefreshing ? 'spin-anim' : ''}`}>
+              refresh
             </span>
           </button>
         </div>
