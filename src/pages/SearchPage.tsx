@@ -516,7 +516,6 @@ export function SearchPage() {
     return list;
   }, [talents, filterTalentSkills, filterTalentCarriers, filterTalentTrainings, talentSortOrder, searchKeyword]);
 
-  // 人材をエリアごとにグループ化する
   const groupedTalents = useMemo(() => {
     const groups: Record<string, { locationName: string, lat: number, lng: number, talents: Talent[] }> = {};
     filteredTalents.forEach(talent => {
@@ -533,58 +532,6 @@ export function SearchPage() {
     return Object.values(groups);
   }, [filteredTalents]);
 
-  // mode と data の変更を検知してマップのピンを出し分ける
-  useEffect(() => {
-    if (!mapRef.current || !markersGroupRef.current) return;
-    markersGroupRef.current.clearLayers();
-
-    if (mode === 'job') {
-      filteredJobs.forEach((job) => {
-        const circleColor = job.isUrgent ? '#EF4444' : '#3B82F6';
-        
-        // エリア（円）を描画。中心は市区町村の中心
-        const circle = L.circle([job.lat, job.lng], {
-          radius: 1200, // 半径1.2km
-          color: circleColor,
-          fillColor: circleColor,
-          fillOpacity: 0.2,
-          weight: 2
-        });
-
-        circle.bindPopup(`
-          <div style="font-family: 'Inter', sans-serif;">
-            <b style="font-size: 14px;">${job.isUrgent ? '【緊急】' : ''}${job.title}</b>
-            <div style="font-size: 12px; font-weight: bold; margin-top: 4px; color: #4B5563;">📍 ${job.locationName}</div>
-            <p style="margin: 4px 0; font-size: 12px; color: #666;">${job.description}</p>
-            <div style="font-size: 13px; color: var(--primary); font-weight: bold;">単価: ¥${job.price.toLocaleString()}</div>
-            <button class="view-job-btn" data-id="${job.id}" style="margin-top: 8px; width: 100%; padding: 4px; background: var(--primary); color: white; border: none; border-radius: 4px; cursor: pointer;">詳細を見る</button>
-          </div>
-        `);
-        markersGroupRef.current?.addLayer(circle);
-      });
-    } else {
-      filteredTalentGroups.forEach((group) => {
-        const talentGroupIcon = L.divIcon({
-          className: 'talent-group-location-marker',
-          html: `<div style="
-            width: 32px; height: 32px; background-color: #10B981; border: 3px solid white; border-radius: 50%; box-shadow: 0 4px 6px rgba(16, 185, 129, 0.4); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 14px;
-          ">${group.talents.length}</div>`,
-          iconSize: [32, 32],
-          iconAnchor: [16, 16],
-        });
-
-        const marker = L.marker([group.lat, group.lng], { icon: talentGroupIcon });
-        marker.bindPopup(`
-          <div style="font-family: 'Inter', sans-serif; text-align: center;">
-            <b style="font-size: 15px; display: block; margin-bottom: 8px;">${group.locationName}</b>
-            <div style="font-size: 14px; color: #10B981; font-weight: bold; margin-bottom: 12px;">人材: ${group.talents.length}名</div>
-            <button class="view-area-btn" data-area="${group.locationName}" style="width: 100%; padding: 6px; background: #10B981; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">リストを見る</button>
-          </div>
-        `);
-        markersGroupRef.current?.addLayer(marker);
-      });
-    }
-  }, [mode, jobs, includeUrgent, filterArea, talents]);
 
   const filteredJobs = useMemo(() => {
     return jobs.filter(job => {
@@ -683,6 +630,90 @@ export function SearchPage() {
       return true;
     });
   }, [groupedTalents, filterArea]);
+
+  // 案件をエリア（座標）ごとにグループ化する
+  const groupedJobs = useMemo(() => {
+    const groups: Record<string, { lat: number, lng: number, jobs: Job[], hasUrgent: boolean }> = {};
+    filteredJobs.forEach(job => {
+      const key = `${job.lat.toFixed(4)},${job.lng.toFixed(4)}`; // 座標でグループ化
+      if (!groups[key]) {
+        groups[key] = {
+          lat: job.lat,
+          lng: job.lng,
+          jobs: [],
+          hasUrgent: false
+        };
+      }
+      groups[key].jobs.push(job);
+      if (job.isUrgent) {
+        groups[key].hasUrgent = true;
+      }
+    });
+    return Object.values(groups);
+  }, [filteredJobs]);
+
+  // mode と data の変更を検知してマップのピンを出し分ける
+  useEffect(() => {
+    if (!mapRef.current || !markersGroupRef.current) return;
+    markersGroupRef.current.clearLayers();
+
+    if (mode === 'job') {
+      groupedJobs.forEach((group) => {
+        const circleColor = group.hasUrgent ? '#EF4444' : '#3B82F6';
+        
+        const jobGroupIcon = L.divIcon({
+          className: 'job-group-location-marker',
+          html: `<div style="
+            width: 32px; height: 32px; background-color: ${circleColor}; border: 3px solid white; border-radius: 50%; box-shadow: 0 4px 6px ${group.hasUrgent ? 'rgba(239, 68, 68, 0.4)' : 'rgba(59, 130, 246, 0.4)'}; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 14px;
+          ">${group.jobs.length}</div>`,
+          iconSize: [32, 32],
+          iconAnchor: [16, 16],
+        });
+
+        const marker = L.marker([group.lat, group.lng], { icon: jobGroupIcon });
+        
+        // ポップアップ内に全案件のリストを描画
+        const jobsHtml = group.jobs.map(job => `
+          <div style="border-bottom: 1px solid #E5E7EB; padding-bottom: 8px; margin-bottom: 8px;">
+            <b style="font-size: 14px; display: block;">${job.isUrgent ? '【緊急】' : ''}${job.title}</b>
+            <div style="font-size: 12px; font-weight: bold; margin-top: 4px; color: #4B5563;">📍 ${job.locationName}</div>
+            <div style="font-size: 13px; color: var(--primary); font-weight: bold; margin-top: 4px;">単価: ¥${job.price.toLocaleString()}</div>
+            <button class="view-job-btn" data-id="${job.id}" style="margin-top: 6px; width: 100%; padding: 6px; background: var(--primary); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold;">詳細を見る</button>
+          </div>
+        `).join('');
+
+        marker.bindPopup(`
+          <div style="font-family: 'Inter', sans-serif; max-height: 250px; overflow-y: auto; padding-right: 8px; width: 220px;">
+            <div style="font-size: 13px; font-weight: bold; color: #6B7280; margin-bottom: 8px; text-align: center; border-bottom: 2px solid #E5E7EB; padding-bottom: 4px;">このエリアの募集: ${group.jobs.length}件</div>
+            ${jobsHtml}
+          </div>
+        `);
+        markersGroupRef.current?.addLayer(marker);
+      });
+    } else {
+      filteredTalentGroups.forEach((group) => {
+        const talentGroupIcon = L.divIcon({
+          className: 'talent-group-location-marker',
+          html: `<div style="
+            width: 32px; height: 32px; background-color: #10B981; border: 3px solid white; border-radius: 50%; box-shadow: 0 4px 6px rgba(16, 185, 129, 0.4); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 14px;
+          ">${group.talents.length}</div>`,
+          iconSize: [32, 32],
+          iconAnchor: [16, 16],
+        });
+
+        const marker = L.marker([group.lat, group.lng], { icon: talentGroupIcon });
+        marker.bindPopup(`
+          <div style="font-family: 'Inter', sans-serif; text-align: center;">
+            <b style="font-size: 15px; display: block; margin-bottom: 8px;">${group.locationName}</b>
+            <div style="font-size: 14px; color: #10B981; font-weight: bold; margin-bottom: 12px;">人材: ${group.talents.length}名</div>
+            <button class="view-area-btn" data-area="${group.locationName}" style="width: 100%; padding: 6px; background: #10B981; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">リストを見る</button>
+          </div>
+        `);
+        markersGroupRef.current?.addLayer(marker);
+      });
+    }
+  }, [mode, groupedJobs, filteredTalentGroups]);
+
 
   const activeFiltersCount = useMemo(() => {
     let count = 0;
