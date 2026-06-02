@@ -45,6 +45,22 @@ export function SearchPage() {
   const [allUsers, setAllUsers] = useState<User[]>([]);
   const [targetCompanyId, setTargetCompanyId] = useState<string>('');
 
+  // フィルター・ソート用State
+  const [isFilterSheetOpen, setIsFilterSheetOpen] = useState(false);
+  
+  // 案件用フィルター & ソート
+  const [jobSortOrder, setJobSortOrder] = useState<'newest' | 'priceHigh' | 'dateNear'>('newest');
+  const [filterJobRoles, setFilterJobRoles] = useState<string[]>([]);
+  const [filterCarriers, setFilterCarriers] = useState<string[]>([]);
+  const [filterChannels, setFilterChannels] = useState<string[]>([]);
+  const [filterMinPrice, setFilterMinPrice] = useState<number>(0);
+  
+  // 人材用フィルター & ソート
+  const [talentSortOrder, setTalentSortOrder] = useState<'priceLow' | 'priceHigh'>('priceLow');
+  const [filterTalentSkills, setFilterTalentSkills] = useState<string[]>([]);
+  const [filterTalentCarriers, setFilterTalentCarriers] = useState<string[]>([]);
+  const [filterTalentTrainings, setFilterTalentTrainings] = useState<string[]>([]);
+
   // 汎用フォームState (Job用) + Talent用希望勤務日
   const [formData, setFormData] = useState({
     title: '', description: '', price: 15000, 
@@ -434,10 +450,40 @@ export function SearchPage() {
     return () => document.removeEventListener('click', handleDocumentClick);
   }, [talents, jobs]);
 
+  // 人材をフィルタリング＆ソートする
+  const filteredTalents = useMemo(() => {
+    let list = talents.filter(talent => {
+      // 1. スキル（職種）フィルター
+      if (filterTalentSkills.length > 0 && !talent.skills.some(s => filterTalentSkills.includes(s))) {
+        return false;
+      }
+      // 2. 対応キャリア
+      if (filterTalentCarriers.length > 0 && !talent.carriers?.some(c => filterTalentCarriers.includes(c))) {
+        return false;
+      }
+      // 3. 受講済み研修
+      if (filterTalentTrainings.length > 0 && !(talent.completedTrainings && filterTalentTrainings.every(tid => talent.completedTrainings?.includes(tid)))) {
+        return false;
+      }
+      return true;
+    });
+
+    // ソート処理
+    list.sort((a, b) => {
+      if (talentSortOrder === 'priceLow') {
+        return a.price - b.price;
+      } else {
+        return b.price - a.price;
+      }
+    });
+
+    return list;
+  }, [talents, filterTalentSkills, filterTalentCarriers, filterTalentTrainings, talentSortOrder]);
+
   // 人材をエリアごとにグループ化する
   const groupedTalents = useMemo(() => {
     const groups: Record<string, { locationName: string, lat: number, lng: number, talents: Talent[] }> = {};
-    talents.forEach(talent => {
+    filteredTalents.forEach(talent => {
       if (!groups[talent.locationName]) {
         groups[talent.locationName] = {
           locationName: talent.locationName,
@@ -449,7 +495,7 @@ export function SearchPage() {
       groups[talent.locationName].talents.push(talent);
     });
     return Object.values(groups);
-  }, [talents]);
+  }, [filteredTalents]);
 
   // mode と data の変更を検知してマップのピンを出し分ける
   useEffect(() => {
@@ -522,17 +568,46 @@ export function SearchPage() {
       // 3. 緊急募集フィルタ
       const matchesUrgent = includeUrgent || !job.isUrgent;
 
+      // 4. 職種フィルター
+      if (filterJobRoles.length > 0 && !filterJobRoles.includes(job.roleType || '')) {
+        return false;
+      }
+
+      // 5. 対象キャリア
+      if (filterCarriers.length > 0 && !filterCarriers.includes(job.carrier || '')) {
+        return false;
+      }
+
+      // 6. 販路（店舗種別）
+      if (filterChannels.length > 0 && !filterChannels.includes(job.salesChannel || '')) {
+        return false;
+      }
+
+      // 7. 日給下限
+      if (job.price < filterMinPrice) {
+        return false;
+      }
+
       return matchesArea && matchesLimited && matchesUrgent;
     });
-  }, [jobs, filterArea, includeUrgent, currentUser]);
+  }, [jobs, filterArea, includeUrgent, currentUser, filterJobRoles, filterCarriers, filterChannels, filterMinPrice]);
 
   const sortedJobs = useMemo(() => {
-    return [...filteredJobs].sort((a, b) => {
-      if (a.isUrgent && !b.isUrgent) return -1;
-      if (!a.isUrgent && b.isUrgent) return 1;
-      return 0;
-    });
-  }, [filteredJobs]);
+    let list = [...filteredJobs];
+    if (jobSortOrder === 'priceHigh') {
+      list.sort((a, b) => b.price - a.price);
+    } else if (jobSortOrder === 'dateNear') {
+      list.sort((a, b) => {
+        const dateA = a.eventDate || '9999-12-31';
+        const dateB = b.eventDate || '9999-12-31';
+        return dateA.localeCompare(dateB);
+      });
+    } else {
+      // 'newest' (新着順：モックのため配列の逆順)
+      list.reverse();
+    }
+    return list;
+  }, [filteredJobs, jobSortOrder]);
 
   const filteredTalentGroups = useMemo(() => {
     return groupedTalents.filter(group => {
@@ -543,6 +618,29 @@ export function SearchPage() {
       return true;
     });
   }, [groupedTalents, filterArea]);
+
+  const hasActiveFilters = useMemo(() => {
+    if (mode === 'job') {
+      return jobSortOrder !== 'newest' || filterJobRoles.length > 0 || filterCarriers.length > 0 || filterChannels.length > 0 || filterMinPrice > 0;
+    } else {
+      return talentSortOrder !== 'priceLow' || filterTalentSkills.length > 0 || filterTalentCarriers.length > 0 || filterTalentTrainings.length > 0;
+    }
+  }, [mode, jobSortOrder, filterJobRoles, filterCarriers, filterChannels, filterMinPrice, talentSortOrder, filterTalentSkills, filterTalentCarriers, filterTalentTrainings]);
+
+  const clearAllFilters = () => {
+    if (mode === 'job') {
+      setJobSortOrder('newest');
+      setFilterJobRoles([]);
+      setFilterCarriers([]);
+      setFilterChannels([]);
+      setFilterMinPrice(0);
+    } else {
+      setTalentSortOrder('priceLow');
+      setFilterTalentSkills([]);
+      setFilterTalentCarriers([]);
+      setFilterTalentTrainings([]);
+    }
+  };
 
   return (
     <div className="view active" style={{ display: 'flex', flexDirection: 'column' }}>
@@ -649,6 +747,44 @@ export function SearchPage() {
               refresh
             </span>
           </button>
+          <button 
+            className="filter-btn" 
+            onClick={() => setIsFilterSheetOpen(true)}
+            style={{ 
+              backgroundColor: hasActiveFilters ? 'var(--primary)' : 'white',
+              color: hasActiveFilters ? 'white' : 'var(--text-main)',
+              border: 'none',
+              boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+              transition: 'all 0.2s ease',
+              marginLeft: '4px',
+              position: 'relative'
+            }}
+            title="詳細フィルター"
+          >
+            <span className="material-symbols-outlined">
+              tune
+            </span>
+            {hasActiveFilters && (
+              <span style={{
+                position: 'absolute',
+                top: '-4px',
+                right: '-4px',
+                background: '#EF4444',
+                color: 'white',
+                borderRadius: '50%',
+                width: '16px',
+                height: '16px',
+                fontSize: '10px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontWeight: 'bold',
+                border: '2px solid white'
+              }}>
+                !
+              </span>
+            )}
+          </button>
         </div>
       </header>
 
@@ -661,27 +797,95 @@ export function SearchPage() {
       {viewMode === 'list' && (
         <main className="list-area bg-gray" style={{ flex: 1, overflowY: 'auto', zIndex: 2, paddingBottom: '80px' }}>
           <div style={{ padding: '16px', background: 'white', borderBottom: '1px solid var(--border-color)', position: 'sticky', top: 0, zIndex: 10 }}>
-            <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '4px' }}>
-              {['all', 'shinjuku', 'shibuya', 'ikebukuro'].map((area) => (
-                <button
-                  key={area}
-                  onClick={() => setFilterArea(area)}
-                  style={{
-                    padding: '6px 12px',
-                    borderRadius: '20px',
-                    border: filterArea === area ? 'none' : '1px solid #ddd',
-                    background: filterArea === area ? 'var(--primary)' : 'white',
-                    color: filterArea === area ? 'white' : 'var(--text-main)',
-                    fontSize: '13px',
-                    whiteSpace: 'nowrap',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s ease',
-                    boxShadow: filterArea === area ? '0 2px 4px rgba(59, 130, 246, 0.3)' : 'none'
-                  }}
-                >
-                  {area === 'all' ? 'すべて' : area === 'shinjuku' ? '新宿周辺' : area === 'shibuya' ? '渋谷周辺' : '池袋周辺'}
-                </button>
-              ))}
+            <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '4px', flexWrap: 'wrap', alignItems: 'center' }}>
+              {!hasActiveFilters ? (
+                <span style={{ fontSize: '13px', color: 'var(--text-sub)' }}>フィルター未設定</span>
+              ) : (
+                <>
+                  {mode === 'job' ? (
+                    <>
+                      {filterJobRoles.map(role => (
+                        <div key={role} className="filter-chip">
+                          <span>{role}</span>
+                          <button onClick={() => setFilterJobRoles(prev => prev.filter(r => r !== role))}>
+                            <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>close</span>
+                          </button>
+                        </div>
+                      ))}
+                      {filterCarriers.map(carrier => (
+                        <div key={carrier} className="filter-chip">
+                          <span>{carrier}</span>
+                          <button onClick={() => setFilterCarriers(prev => prev.filter(c => c !== carrier))}>
+                            <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>close</span>
+                          </button>
+                        </div>
+                      ))}
+                      {filterChannels.map(channel => (
+                        <div key={channel} className="filter-chip">
+                          <span>{channel}</span>
+                          <button onClick={() => setFilterChannels(prev => prev.filter(c => c !== channel))}>
+                            <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>close</span>
+                          </button>
+                        </div>
+                      ))}
+                      {filterMinPrice > 0 && (
+                        <div className="filter-chip">
+                          <span>¥{filterMinPrice.toLocaleString()}以上</span>
+                          <button onClick={() => setFilterMinPrice(0)}>
+                            <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>close</span>
+                          </button>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      {filterTalentSkills.map(skill => (
+                        <div key={skill} className="filter-chip">
+                          <span>{skill}</span>
+                          <button onClick={() => setFilterTalentSkills(prev => prev.filter(s => s !== skill))}>
+                            <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>close</span>
+                          </button>
+                        </div>
+                      ))}
+                      {filterTalentCarriers.map(carrier => (
+                        <div key={carrier} className="filter-chip">
+                          <span>{carrier}</span>
+                          <button onClick={() => setFilterTalentCarriers(prev => prev.filter(c => c !== carrier))}>
+                            <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>close</span>
+                          </button>
+                        </div>
+                      ))}
+                      {filterTalentTrainings.map(tid => {
+                        const tr = allTrainings.find(t => t.id === tid);
+                        return (
+                          <div key={tid} className="filter-chip">
+                            <span>{tr?.title || '研修'}</span>
+                            <button onClick={() => setFilterTalentTrainings(prev => prev.filter(t => t !== tid))}>
+                              <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>close</span>
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </>
+                  )}
+                  <button 
+                    onClick={clearAllFilters}
+                    style={{
+                      padding: '4px 10px',
+                      borderRadius: '12px',
+                      border: '1px solid #EF4444',
+                      background: 'none',
+                      color: '#EF4444',
+                      fontSize: '12px',
+                      cursor: 'pointer',
+                      fontWeight: 'bold',
+                      whiteSpace: 'nowrap'
+                    }}
+                  >
+                    すべてクリア
+                  </button>
+                </>
+              )}
             </div>
             
             {mode === 'job' && (
@@ -1242,6 +1446,265 @@ export function SearchPage() {
             </button>
           </form>
         </main>
+      </div>
+
+      {/* フィルターボトムシート */}
+      <div className={`filter-sheet-backdrop ${isFilterSheetOpen ? 'show' : ''}`} onClick={() => setIsFilterSheetOpen(false)} style={{ zIndex: 3500 }}>
+        <div className={`filter-sheet ${isFilterSheetOpen ? 'show' : ''}`} onClick={e => e.stopPropagation()}>
+          <div className="filter-sheet-header">
+            <span className="filter-sheet-title">絞り込み・ソート</span>
+            <button className="filter-sheet-close" onClick={() => setIsFilterSheetOpen(false)}>
+              <span className="material-symbols-outlined">close</span>
+            </button>
+          </div>
+          
+          <div className="filter-sheet-body">
+            {mode === 'job' ? (
+              <>
+                {/* ソート順 */}
+                <div className="filter-group">
+                  <span className="filter-group-title">並び替え</span>
+                  <div className="filter-options-grid">
+                    <label className={`filter-radio-label ${jobSortOrder === 'newest' ? 'active' : ''}`}>
+                      <input 
+                        type="radio" 
+                        name="jobSort" 
+                        value="newest" 
+                        checked={jobSortOrder === 'newest'} 
+                        onChange={() => setJobSortOrder('newest')} 
+                      />
+                      新着順
+                    </label>
+                    <label className={`filter-radio-label ${jobSortOrder === 'priceHigh' ? 'active' : ''}`}>
+                      <input 
+                        type="radio" 
+                        name="jobSort" 
+                        value="priceHigh" 
+                        checked={jobSortOrder === 'priceHigh'} 
+                        onChange={() => setJobSortOrder('priceHigh')} 
+                      />
+                      単価の高い順
+                    </label>
+                    <label className={`filter-radio-label ${jobSortOrder === 'dateNear' ? 'active' : ''}`}>
+                      <input 
+                        type="radio" 
+                        name="jobSort" 
+                        value="dateNear" 
+                        checked={jobSortOrder === 'dateNear'} 
+                        onChange={() => setJobSortOrder('dateNear')} 
+                      />
+                      開催日の近い順
+                    </label>
+                  </div>
+                </div>
+
+                {/* 職種 */}
+                <div className="filter-group">
+                  <span className="filter-group-title">職種</span>
+                  <div className="filter-options-flex">
+                    {['キャンペーンクルー', 'クローザー', 'ディレクター'].map(role => {
+                      const isChecked = filterJobRoles.includes(role);
+                      return (
+                        <label key={role} className={`filter-checkbox-label ${isChecked ? 'active' : ''}`}>
+                          <input 
+                            type="checkbox" 
+                            checked={isChecked} 
+                            onChange={() => {
+                              setFilterJobRoles(prev => 
+                                isChecked ? prev.filter(r => r !== role) : [...prev, role]
+                              );
+                            }} 
+                          />
+                          {role}
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* 対応キャリア */}
+                <div className="filter-group">
+                  <span className="filter-group-title">キャリア/回線</span>
+                  <div className="filter-options-flex">
+                    {['docomo', 'au/UQmobile', 'SoftBank/Y!mobile', 'BB'].map(carrier => {
+                      const isChecked = filterCarriers.includes(carrier);
+                      return (
+                        <label key={carrier} className={`filter-checkbox-label ${isChecked ? 'active' : ''}`}>
+                          <input 
+                            type="checkbox" 
+                            checked={isChecked} 
+                            onChange={() => {
+                              setFilterCarriers(prev => 
+                                isChecked ? prev.filter(c => c !== carrier) : [...prev, carrier]
+                              );
+                            }} 
+                          />
+                          {carrier}
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* 販路（店舗種別） */}
+                <div className="filter-group">
+                  <span className="filter-group-title">販路</span>
+                  <div className="filter-options-flex">
+                    {['ショップ', '量販店'].map(channel => {
+                      const isChecked = filterChannels.includes(channel);
+                      return (
+                        <label key={channel} className={`filter-checkbox-label ${isChecked ? 'active' : ''}`}>
+                          <input 
+                            type="checkbox" 
+                            checked={isChecked} 
+                            onChange={() => {
+                              setFilterChannels(prev => 
+                                isChecked ? prev.filter(c => c !== channel) : [...prev, channel]
+                              );
+                            }} 
+                          />
+                          {channel}
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* 日給下限 */}
+                <div className="filter-group">
+                  <span className="filter-group-title">日給下限</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <input 
+                      type="number" 
+                      value={filterMinPrice || ''} 
+                      onChange={e => setFilterMinPrice(Number(e.target.value))} 
+                      placeholder="下限なし"
+                      className="filter-input-price"
+                      style={{
+                        padding: '10px',
+                        borderRadius: '8px',
+                        border: '1px solid var(--border-color)',
+                        width: '120px',
+                        outline: 'none'
+                      }}
+                    />
+                    <span style={{ fontSize: '14px', color: 'var(--text-main)' }}>円以上</span>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <>
+                {/* 人材のソート順 */}
+                <div className="filter-group">
+                  <span className="filter-group-title">並び替え</span>
+                  <div className="filter-options-grid">
+                    <label className={`filter-radio-label ${talentSortOrder === 'priceLow' ? 'active' : ''}`}>
+                      <input 
+                        type="radio" 
+                        name="talentSort" 
+                        value="priceLow" 
+                        checked={talentSortOrder === 'priceLow'} 
+                        onChange={() => setTalentSortOrder('priceLow')} 
+                      />
+                      単価の安い順
+                    </label>
+                    <label className={`filter-radio-label ${talentSortOrder === 'priceHigh' ? 'active' : ''}`}>
+                      <input 
+                        type="radio" 
+                        name="talentSort" 
+                        value="priceHigh" 
+                        checked={talentSortOrder === 'priceHigh'} 
+                        onChange={() => setTalentSortOrder('priceHigh')} 
+                      />
+                      単価の高い順
+                    </label>
+                  </div>
+                </div>
+
+                {/* スキル */}
+                <div className="filter-group">
+                  <span className="filter-group-title">対応職種</span>
+                  <div className="filter-options-flex">
+                    {['キャンペーンクルー', 'クローザー', 'ディレクター'].map(skill => {
+                      const isChecked = filterTalentSkills.includes(skill);
+                      return (
+                        <label key={skill} className={`filter-checkbox-label ${isChecked ? 'active' : ''}`}>
+                          <input 
+                            type="checkbox" 
+                            checked={isChecked} 
+                            onChange={() => {
+                              setFilterTalentSkills(prev => 
+                                isChecked ? prev.filter(s => s !== skill) : [...prev, skill]
+                              );
+                            }} 
+                          />
+                          {skill}
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* キャリア */}
+                <div className="filter-group">
+                  <span className="filter-group-title">対応キャリア</span>
+                  <div className="filter-options-flex">
+                    {['docomo', 'au/UQmobile', 'SoftBank/Y!mobile', 'BB'].map(carrier => {
+                      const isChecked = filterTalentCarriers.includes(carrier);
+                      return (
+                        <label key={carrier} className={`filter-checkbox-label ${isChecked ? 'active' : ''}`}>
+                          <input 
+                            type="checkbox" 
+                            checked={isChecked} 
+                            onChange={() => {
+                              setFilterTalentCarriers(prev => 
+                                isChecked ? prev.filter(c => c !== carrier) : [...prev, carrier]
+                              );
+                            }} 
+                          />
+                          {carrier}
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* 研修実績 */}
+                <div className="filter-group">
+                  <span className="filter-group-title">受講済み研修</span>
+                  <div className="filter-options-flex">
+                    {allTrainings.map(tr => {
+                      const isChecked = filterTalentTrainings.includes(tr.id);
+                      return (
+                        <label key={tr.id} className={`filter-checkbox-label ${isChecked ? 'active' : ''}`}>
+                          <input 
+                            type="checkbox" 
+                            checked={isChecked} 
+                            onChange={() => {
+                              setFilterTalentTrainings(prev => 
+                                isChecked ? prev.filter(t => t !== tr.id) : [...prev, tr.id]
+                              );
+                            }} 
+                          />
+                          {tr.title}
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+          
+          <div className="filter-sheet-footer" style={{ display: 'flex', gap: '12px', padding: '16px', borderTop: '1px solid var(--border-color)', background: 'white' }}>
+            <button className="btn-secondary" style={{ flex: 1, margin: 0 }} onClick={clearAllFilters}>
+              すべてクリア
+            </button>
+            <button className="btn-primary" style={{ flex: 1, margin: 0 }} onClick={() => setIsFilterSheetOpen(false)}>
+              適用する
+            </button>
+          </div>
+        </div>
       </div>
 
       <div className="fab-container">
