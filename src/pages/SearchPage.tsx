@@ -57,6 +57,7 @@ export function SearchPage() {
   const [filterCarriers, setFilterCarriers] = useState<string[]>([]);
   const [filterChannels, setFilterChannels] = useState<string[]>([]);
   const [filterMinPrice, setFilterMinPrice] = useState<number>(0);
+  const [filterDeadlineDays, setFilterDeadlineDays] = useState<number | null>(null);
   
   // 人材用フィルター & ソート
   const [talentSortOrder, setTalentSortOrder] = useState<'priceLow' | 'priceHigh'>('priceLow');
@@ -603,7 +604,25 @@ export function SearchPage() {
         return false;
       }
 
-      // 8. キーワード検索
+      // 8. 締切フィルター＆期限切れ非表示
+      let remainingDays = 999;
+      if (job.applicationDeadline) {
+        const dl = new Date(job.applicationDeadline);
+        const today = new Date();
+        dl.setHours(0, 0, 0, 0);
+        today.setHours(0, 0, 0, 0);
+        remainingDays = Math.ceil((dl.getTime() - today.getTime()) / (1000 * 3600 * 24));
+      }
+
+      if (remainingDays < 0) {
+        return false; // 締切過ぎの案件は表示しない
+      }
+
+      if (filterDeadlineDays !== null && remainingDays > filterDeadlineDays) {
+        return false;
+      }
+
+      // 9. キーワード検索
       if (searchKeyword.trim() !== '') {
         const kw = searchKeyword.toLowerCase();
         const titleMatch = job.title?.toLowerCase().includes(kw);
@@ -616,7 +635,7 @@ export function SearchPage() {
 
       return matchesArea && matchesLimited && matchesUrgent;
     });
-  }, [jobs, filterArea, includeUrgent, currentUser, filterJobRoles, filterCarriers, filterChannels, filterMinPrice, searchKeyword]);
+  }, [jobs, filterArea, includeUrgent, currentUser, filterJobRoles, filterCarriers, filterChannels, filterMinPrice, filterDeadlineDays, searchKeyword]);
 
   const sortedJobs = useMemo(() => {
     let list = [...filteredJobs];
@@ -652,6 +671,7 @@ export function SearchPage() {
       count += filterCarriers.length;
       count += filterChannels.length;
       if (filterMinPrice > 0) count += 1;
+      if (filterDeadlineDays !== null) count += 1;
       if (searchKeyword.trim() !== '') count += 1;
     } else {
       count += filterTalentSkills.length;
@@ -660,7 +680,7 @@ export function SearchPage() {
       if (searchKeyword.trim() !== '') count += 1;
     }
     return count;
-  }, [mode, filterJobRoles, filterCarriers, filterChannels, filterMinPrice, filterTalentSkills, filterTalentCarriers, filterTalentTrainings, searchKeyword]);
+  }, [mode, filterJobRoles, filterCarriers, filterChannels, filterMinPrice, filterDeadlineDays, filterTalentSkills, filterTalentCarriers, filterTalentTrainings, searchKeyword]);
 
   const hasActiveFilters = useMemo(() => {
     if (mode === 'job') {
@@ -679,6 +699,7 @@ export function SearchPage() {
       setFilterCarriers([]);
       setFilterChannels([]);
       setFilterMinPrice(0);
+      setFilterDeadlineDays(null);
     } else {
       setTalentSortOrder('priceLow');
       setFilterTalentSkills([]);
@@ -890,6 +911,14 @@ export function SearchPage() {
                           </button>
                         </div>
                       )}
+                      {filterDeadlineDays !== null && (
+                        <div className="filter-chip">
+                          <span>締切{filterDeadlineDays}日以内</span>
+                          <button onClick={() => setFilterDeadlineDays(null)}>
+                            <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>close</span>
+                          </button>
+                        </div>
+                      )}
                     </>
                   ) : (
                     <>
@@ -966,7 +995,23 @@ export function SearchPage() {
           <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {mode === 'job' ? (
               sortedJobs.length > 0 ? (
-                sortedJobs.map(job => (
+                sortedJobs.map(job => {
+                  let remainingDaysText = '';
+                  let remainingDaysColor = '#059669';
+                  let remainingDaysBg = '#ECFDF5';
+                  if (job.applicationDeadline) {
+                    const dl = new Date(job.applicationDeadline);
+                    const today = new Date();
+                    dl.setHours(0, 0, 0, 0);
+                    today.setHours(0, 0, 0, 0);
+                    const diff = Math.ceil((dl.getTime() - today.getTime()) / (1000 * 3600 * 24));
+                    if (diff === 0) { remainingDaysText = '本日締切'; remainingDaysColor = '#DC2626'; remainingDaysBg = '#FEF2F2'; }
+                    else if (diff <= 3) { remainingDaysText = `あと${diff}日`; remainingDaysColor = '#D97706'; remainingDaysBg = '#FFFBEB'; }
+                    else if (diff <= 7) { remainingDaysText = `あと${diff}日`; }
+                    else { remainingDaysText = '1週間以上'; }
+                  }
+
+                  return (
                   <div key={job.id} 
                     className={`job-card-modern ${job.isUrgent ? 'job-card-urgent' : ''}`}
                     onClick={() => setSelectedJob(job)}
@@ -980,7 +1025,11 @@ export function SearchPage() {
 
                     <div className="job-title-row">
                       <h3>{job.title}</h3>
-                      <span className="status-badge badge-negotiating" style={{ margin: 0, fontSize: '11px', whiteSpace: 'nowrap' }}>募集中</span>
+                      {remainingDaysText && (
+                        <span style={{ margin: 0, fontSize: '11px', whiteSpace: 'nowrap', padding: '4px 8px', borderRadius: '8px', color: remainingDaysColor, backgroundColor: remainingDaysBg, fontWeight: 'bold' }}>
+                          {remainingDaysText}
+                        </span>
+                      )}
                     </div>
 
                     {job.locationName && (
@@ -1020,7 +1069,7 @@ export function SearchPage() {
                       <span className="material-symbols-outlined" style={{ fontSize: '24px' }}>arrow_forward</span>
                     </div>
                   </div>
-                ))
+                )})
               ) : (
                 <div style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--text-sub)' }}>
                   <span className="material-symbols-outlined" style={{ fontSize: '40px', marginBottom: '8px', opacity: 0.5 }}>search_off</span>
@@ -1693,6 +1742,28 @@ export function SearchPage() {
                       }}
                     />
                     <span style={{ fontSize: '14px', color: 'var(--text-main)' }}>円以上</span>
+                  </div>
+                </div>
+
+                {/* 締切までの日数 */}
+                <div className="filter-group">
+                  <span className="filter-group-title">応募締切</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <input 
+                      type="number" 
+                      value={filterDeadlineDays !== null ? filterDeadlineDays : ''} 
+                      onChange={e => setFilterDeadlineDays(e.target.value ? Number(e.target.value) : null)} 
+                      placeholder="指定なし"
+                      className="filter-input-price"
+                      style={{
+                        padding: '10px',
+                        borderRadius: '8px',
+                        border: '1px solid var(--border-color)',
+                        width: '120px',
+                        outline: 'none'
+                      }}
+                    />
+                    <span style={{ fontSize: '14px', color: 'var(--text-main)' }}>日以内</span>
                   </div>
                 </div>
               </>
