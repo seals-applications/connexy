@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { api } from '../data/mockDb';
-import type { ContractTask, Training, Staff } from '../data/mockDb';
+import type { ContractTask, Training, Staff, Job, Talent } from '../data/mockDb';
 
 export function TaskPage() {
   const [tasks, setTasks] = useState<ContractTask[]>([]);
@@ -23,6 +23,12 @@ export function TaskPage() {
   const [isTrainingCompleted, setIsTrainingCompleted] = useState<Record<string, boolean>>({});
   const [completedTrainingList, setCompletedTrainingList] = useState<string[]>([]);
 
+  // 自社募集案件・人材State
+  const [myJobs, setMyJobs] = useState<Job[]>([]);
+  const [myTalents, setMyTalents] = useState<Talent[]>([]);
+  const [isMyJobsOpen, setIsMyJobsOpen] = useState(false);
+  const [isMyTalentsOpen, setIsMyTalentsOpen] = useState(false);
+
   const loadData = async () => {
     try {
       const fetchedTasks = await api.getContractTasks();
@@ -31,13 +37,20 @@ export function TaskPage() {
       const fetchedTrainings = await api.getTrainings();
       setTrainings(fetchedTrainings);
 
-      const currentUser = await api.getCurrentUser();
-      if (!currentUser) return;
-      const fetchedStaffs = await api.getStaffsByUserId(currentUser.id);
+      const user = await api.getCurrentUser();
+      if (!user) return;
+
+      const fetchedStaffs = await api.getStaffsByUserId(user.id);
       if (fetchedStaffs.length > 0) {
         setMyStaff(fetchedStaffs[0]);
         setCompletedTrainingList(fetchedStaffs[0].completedTrainings || []);
       }
+
+      // 自社募集中の案件と人材をフェッチ
+      const allJobs = await api.getJobs();
+      const allTalents = await api.getTalents();
+      setMyJobs(allJobs.filter(j => j.authorId === user.id));
+      setMyTalents(allTalents.filter(t => t.userId === user.id));
     } catch (e) {
       console.error(e);
     }
@@ -157,6 +170,108 @@ export function TaskPage() {
           <div className="summary-card" style={{ background: 'white', borderRadius: '12px', padding: '16px', textAlign: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
             <span className="summary-num" style={{ fontSize: '24px', fontWeight: 'bold', color: '#10B981', display: 'block' }}>{completedCount}</span>
             <span className="summary-label" style={{ fontSize: '11px', color: 'var(--text-sub)' }}>完了済</span>
+          </div>
+        </div>
+
+        {/* 自社の募集状況セクション */}
+        <h3 className="section-title">自社の募集状況</h3>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '24px' }}>
+          {/* 募集中の案件 */}
+          <div style={{ background: 'white', borderRadius: '12px', border: '1px solid var(--border-color)', overflow: 'hidden' }}>
+            <button 
+              onClick={() => setIsMyJobsOpen(!isMyJobsOpen)}
+              style={{
+                width: '100%',
+                padding: '16px',
+                background: 'none',
+                border: 'none',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                cursor: 'pointer',
+                textAlign: 'left'
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 'bold', color: 'var(--text-main)' }}>
+                <span className="material-symbols-outlined" style={{ color: 'var(--primary)' }}>work</span>
+                募集中の案件 ({myJobs.length}件)
+              </div>
+              <span className="material-symbols-outlined" style={{ transform: isMyJobsOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>
+                expand_more
+              </span>
+            </button>
+            
+            {isMyJobsOpen && (
+              <div style={{ padding: '0 16px 16px 16px', borderTop: '1px solid #f3f4f6', display: 'flex', flexDirection: 'column', gap: '10px', paddingTop: '12px' }}>
+                {myJobs.length > 0 ? (
+                  myJobs.map(job => (
+                    <div key={job.id} style={{ padding: '10px', background: '#F8FAFC', borderRadius: '8px', border: '1px solid #E2E8F0' }}>
+                      <div style={{ fontWeight: 'bold', fontSize: '14px', marginBottom: '4px' }}>{job.title}</div>
+                      <div style={{ display: 'flex', gap: '8px', fontSize: '11px', color: 'var(--text-sub)' }}>
+                        <span>単価: ¥{job.price.toLocaleString()}</span>
+                        <span>•</span>
+                        <span>エリア: {job.locationName || '未指定'}</span>
+                        {job.allowedCompanyIds && (
+                          <>
+                            <span>•</span>
+                            <span style={{ color: '#F59E0B', fontWeight: 'bold' }}>限定公開</span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div style={{ fontSize: '12px', color: 'var(--text-sub)', textAlign: 'center', padding: '8px 0' }}>現在募集中の案件はありません。</div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* 募集中の人材 */}
+          <div style={{ background: 'white', borderRadius: '12px', border: '1px solid var(--border-color)', overflow: 'hidden' }}>
+            <button 
+              onClick={() => setIsMyTalentsOpen(!isMyTalentsOpen)}
+              style={{
+                width: '100%',
+                padding: '16px',
+                background: 'none',
+                border: 'none',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                cursor: 'pointer',
+                textAlign: 'left'
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 'bold', color: 'var(--text-main)' }}>
+                <span className="material-symbols-outlined" style={{ color: '#10B981' }}>group</span>
+                募集中の人材 ({myTalents.length}件)
+              </div>
+              <span className="material-symbols-outlined" style={{ transform: isMyTalentsOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>
+                expand_more
+              </span>
+            </button>
+            
+            {isMyTalentsOpen && (
+              <div style={{ padding: '0 16px 16px 16px', borderTop: '1px solid #f3f4f6', display: 'flex', flexDirection: 'column', gap: '10px', paddingTop: '12px' }}>
+                {myTalents.length > 0 ? (
+                  myTalents.map(talent => (
+                    <div key={talent.id} style={{ padding: '10px', background: '#F8FAFC', borderRadius: '8px', border: '1px solid #E2E8F0' }}>
+                      <div style={{ fontWeight: 'bold', fontSize: '14px', marginBottom: '4px' }}>{talent.name} ({talent.maskedName})</div>
+                      <div style={{ display: 'flex', gap: '8px', fontSize: '11px', color: 'var(--text-sub)', flexWrap: 'wrap' }}>
+                        <span>単価: ¥{talent.price.toLocaleString()}〜</span>
+                        <span>•</span>
+                        <span>エリア: {talent.locationName}</span>
+                        <span>•</span>
+                        <span>勤務日: {talent.availableDates || '未定'}</span>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div style={{ fontSize: '12px', color: 'var(--text-sub)', textAlign: 'center', padding: '8px 0' }}>現在募集中の人材はありません。</div>
+                )}
+              </div>
+            )}
           </div>
         </div>
 

@@ -908,7 +908,7 @@ export function SearchPage() {
                 <h2 style={{ margin: '0 0 12px 0', fontSize: '20px', lineHeight: '1.4' }}>{selectedJob.title}</h2>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-sub)', fontSize: '14px' }}>
                   <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>corporate_fare</span>
-                  {selectedJob.authorId === 'u1' ? '株式会社アルファ通信' : 'ベータエージェンシー'}
+                  {allUsers.find(u => u.id === selectedJob.authorId)?.name || '不明な会社'}
                 </div>
               </div>
 

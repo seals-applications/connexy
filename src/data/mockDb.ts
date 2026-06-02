@@ -123,7 +123,7 @@ let mockJobs: Job[] = [
     description: '週末のイベント集客スタッフ。元気な方大歓迎！',
     lat: 35.6895, // 新宿駅周辺
     lng: 139.6917,
-    authorId: 'u1',
+    authorId: 'alpha',
     price: 15000,
     locationName: '東京都新宿区',
     workHours: '土日祝 10:00〜19:00 (休憩1時間)',
@@ -143,7 +143,7 @@ let mockJobs: Job[] = [
     description: '量販店でのBB回線獲得業務。成約率に応じてインセンティブあり。',
     lat: 35.6580, // 渋谷駅周辺
     lng: 139.7016,
-    authorId: 'u2',
+    authorId: 'beta',
     price: 20000,
     locationName: '東京都渋谷区',
     workHours: '土日のみ 11:00〜20:00 (シフト制)',
@@ -162,7 +162,7 @@ let mockJobs: Job[] = [
     description: '家電量販店でのモバイル回線イベントの全体統括です。',
     lat: 35.7295, // 池袋駅周辺
     lng: 139.7109,
-    authorId: 'u1',
+    authorId: 'alpha',
     price: 22000,
     locationName: '東京都豊島区',
     workHours: '週末 09:30〜18:30',
@@ -181,7 +181,7 @@ let mockJobs: Job[] = [
     description: 'ショップ併売店でのMNP獲得業務。',
     lat: 35.6581, // 港区周辺
     lng: 139.7414,
-    authorId: 'u2',
+    authorId: 'beta',
     price: 18000,
     locationName: '東京都港区',
     workHours: '土日祝 10:00〜19:00',
@@ -200,7 +200,7 @@ let mockJobs: Job[] = [
     description: 'ビンゴ大会や抽選会の盛り上げ役です。',
     lat: 35.6706, // 中央区周辺
     lng: 139.7719,
-    authorId: 'u1',
+    authorId: 'alpha',
     price: 14000,
     locationName: '東京都中央区',
     workHours: '土日祝 10:00〜18:00',
@@ -219,7 +219,7 @@ let mockJobs: Job[] = [
     description: 'ショッピングモールでの出張販売の運営統括。',
     lat: 35.6836, // 千代田区周辺
     lng: 139.7536,
-    authorId: 'u2',
+    authorId: 'beta',
     price: 25000,
     locationName: '東京都千代田区',
     workHours: '土日 09:00〜18:00',
@@ -238,7 +238,7 @@ let mockJobs: Job[] = [
     description: '量販店の名簿を活用した光回線のアウトバウンド・訪問獲得。',
     lat: 35.6895, // 新宿駅周辺
     lng: 139.6917,
-    authorId: 'u1',
+    authorId: 'alpha',
     price: 21000,
     locationName: '東京都新宿区',
     workHours: '平日 11:00〜20:00',
@@ -257,7 +257,7 @@ let mockJobs: Job[] = [
     description: 'スマホ教室の受付・ご案内スタッフ。',
     lat: 35.6580, // 渋谷駅周辺
     lng: 139.7016,
-    authorId: 'u2',
+    authorId: 'beta',
     price: 13500,
     locationName: '東京都渋谷区',
     workHours: '平日 10:00〜19:00',
@@ -276,7 +276,7 @@ let mockJobs: Job[] = [
     description: '新店舗の立ち上げ・オープニングイベントの責任者',
     lat: 35.6240, // 品川駅周辺
     lng: 139.7400,
-    authorId: 'u1',
+    authorId: 'alpha',
     price: 24000,
     locationName: '東京都品川区',
     workHours: '10:00〜19:00',
@@ -296,7 +296,7 @@ let mockJobs: Job[] = [
     description: 'スマホと光回線のセット提案に特化したクローザー',
     lat: 35.6580, // 渋谷駅周辺
     lng: 139.7016,
-    authorId: 'u2',
+    authorId: 'beta',
     price: 23000,
     locationName: '東京都渋谷区',
     workHours: '土日祝 10:00〜19:00',
