@@ -34,6 +34,12 @@ export function SearchPage() {
   // フィルタ関連のState
   const [includeUrgent, setIncludeUrgent] = useState(true);
 
+  // 案件作成用の新規State
+  const [selectedJobDates, setSelectedJobDates] = useState<string[]>([]);
+  const [isSelectingLocationOnMap, setIsSelectingLocationOnMap] = useState(false);
+  const [tempSelectedLocation, setTempSelectedLocation] = useState<{ lat: number, lng: number } | null>(null);
+  const tempMarkerRef = useRef<L.Marker | null>(null);
+
   // 汎用フォームState (Job用) + Talent用希望勤務日
   const [formData, setFormData] = useState({
     title: '', description: '', price: 15000, 
@@ -75,10 +81,20 @@ export function SearchPage() {
     e.preventDefault();
     setIsSubmitting(true);
     
+    if (createFormType === 'job' && selectedJobDates.length === 0) {
+      alert('開催日を1日以上選択してください。');
+      setIsSubmitting(false);
+      return;
+    }
+
     const addressToGeocode = createFormType === 'job' ? formData.locationName : '東京';
     let coords = { lat: 35.6812, lng: 139.7671 };
     if (createFormType === 'job') {
-      coords = await geocodeAddress(addressToGeocode);
+      if (tempSelectedLocation) {
+        coords = tempSelectedLocation;
+      } else {
+        coords = await geocodeAddress(addressToGeocode);
+      }
     }
 
     if (createFormType === 'job') {
@@ -94,7 +110,7 @@ export function SearchPage() {
         salesChannel: formData.salesChannel as Job['salesChannel'],
         carrier: formData.carrier as Job['carrier'],
         detailedDescription: formData.description,
-        eventDate: formData.eventDate,
+        eventDate: [...selectedJobDates].sort().join(', '),
         applicationDeadline: formData.applicationDeadline,
         workLocation: formData.workLocation as Job['workLocation'],
         isUrgent: formData.isUrgent,
@@ -102,6 +118,14 @@ export function SearchPage() {
       };
       const savedJob = await api.addJob(newJob);
       setJobs(prev => [...prev, savedJob]);
+
+      // クリーンアップ
+      if (tempMarkerRef.current) {
+        tempMarkerRef.current.remove();
+        tempMarkerRef.current = null;
+      }
+      setTempSelectedLocation(null);
+      setSelectedJobDates([]);
     } else {
       const selectedStaff = myStaffs.find(s => s.id === selectedStaffId);
       if (!selectedStaff) {
@@ -248,6 +272,98 @@ export function SearchPage() {
     };
   }, []);
 
+  const startMapSelection = () => {
+    if (tempMarkerRef.current) {
+      tempMarkerRef.current.remove();
+      tempMarkerRef.current = null;
+    }
+    setIsCreateFormOpen(false);
+    setIsSelectingLocationOnMap(true);
+  };
+
+  const cancelMapSelection = () => {
+    setIsSelectingLocationOnMap(false);
+    if (tempMarkerRef.current) {
+      tempMarkerRef.current.remove();
+      tempMarkerRef.current = null;
+    }
+    setIsCreateFormOpen(true);
+  };
+
+  useEffect(() => {
+    if (!mapRef.current) return;
+
+    const handleMapClick = async (e: L.LeafletMouseEvent) => {
+      if (!isSelectingLocationOnMap || !mapRef.current) return;
+
+      const { lat, lng } = e.latlng;
+
+      if (tempMarkerRef.current) {
+        tempMarkerRef.current.remove();
+      }
+      
+      const customIcon = L.divIcon({
+        className: 'temp-location-marker',
+        html: `<div style="
+          width: 20px;
+          height: 20px;
+          background-color: #EF4444;
+          border: 3px solid white;
+          border-radius: 50%;
+          box-shadow: 0 0 10px rgba(0,0,0,0.5);
+        "></div>`,
+        iconSize: [20, 20],
+        iconAnchor: [10, 10],
+      });
+
+      tempMarkerRef.current = L.marker([lat, lng], { icon: customIcon }).addTo(mapRef.current);
+
+      try {
+        const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&accept-language=ja`);
+        const data = await response.json();
+        
+        let addressText = '';
+        if (data && data.address) {
+          const addr = data.address;
+          const state = addr.province || addr.state || '';
+          const city = addr.city || addr.town || addr.village || addr.city_district || '';
+          const suburb = addr.suburb || addr.subdivision || addr.quarter || addr.neighbourhood || '';
+          const road = addr.road || '';
+          const houseNumber = addr.house_number || '';
+          addressText = `${state}${city}${suburb}${road}${houseNumber}`.trim();
+        }
+        
+        if (!addressText) {
+          addressText = data?.display_name || `ピンを指定した地点 (${lat.toFixed(4)}, ${lng.toFixed(4)})`;
+        }
+
+        setFormData(prev => ({ ...prev, locationName: addressText }));
+        setTempSelectedLocation({ lat, lng });
+      } catch (err) {
+        console.warn('逆ジオコーディングに失敗しました', err);
+        setFormData(prev => ({ ...prev, locationName: `ピンを指定した地点 (${lat.toFixed(4)}, ${lng.toFixed(4)})` }));
+        setTempSelectedLocation({ lat, lng });
+      } finally {
+        setIsSelectingLocationOnMap(false);
+        setIsCreateFormOpen(true);
+      }
+    };
+
+    if (isSelectingLocationOnMap) {
+      mapRef.current.on('click', handleMapClick);
+      const mapDiv = document.getElementById('map-area');
+      if (mapDiv) mapDiv.style.cursor = 'crosshair';
+    }
+
+    return () => {
+      if (mapRef.current) {
+        mapRef.current.off('click', handleMapClick);
+      }
+      const mapDiv = document.getElementById('map-area');
+      if (mapDiv) mapDiv.style.cursor = '';
+    };
+  }, [isSelectingLocationOnMap]);
+
   // talentsやjobsが更新されたときにドキュメントレベルのイベントリスナーを設定
   useEffect(() => {
     const handleDocumentClick = (e: MouseEvent) => {
@@ -383,6 +499,44 @@ export function SearchPage() {
 
   return (
     <div className="view active" style={{ display: 'flex', flexDirection: 'column' }}>
+      {isSelectingLocationOnMap && (
+        <div style={{
+          position: 'fixed',
+          top: '20px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          background: 'rgba(15, 23, 42, 0.95)',
+          backdropFilter: 'blur(8px)',
+          color: 'white',
+          padding: '12px 24px',
+          borderRadius: '30px',
+          zIndex: 4000,
+          display: 'flex',
+          alignItems: 'center',
+          gap: '16px',
+          boxShadow: '0 10px 25px rgba(0,0,0,0.3)',
+          border: '1px solid rgba(255,255,255,0.15)'
+        }}>
+          <span className="material-symbols-outlined" style={{ color: '#EF4444' }}>pin_drop</span>
+          <span style={{ fontSize: '14px', fontWeight: 'bold' }}>地図上をクリックしてピンを立ててください</span>
+          <button 
+            type="button" 
+            onClick={cancelMapSelection} 
+            style={{
+              background: 'rgba(255,255,255,0.2)',
+              border: 'none',
+              color: 'white',
+              padding: '6px 12px',
+              borderRadius: '16px',
+              fontSize: '12px',
+              fontWeight: 'bold',
+              cursor: 'pointer'
+            }}
+          >
+            キャンセル
+          </button>
+        </div>
+      )}
       <header className="glass-header" style={{ zIndex: 1000, position: 'relative' }}>
         <div className="header-top">
           <div className="toggle-switch">
@@ -836,10 +990,44 @@ export function SearchPage() {
                   <input type="text" required value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} disabled={isSubmitting} style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }} placeholder="例: auショップ新宿 イベントスタッフ" />
                 </div>
                 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                  <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)' }}>エリア（住所や地名） *</label>
-                  <input type="text" required value={formData.locationName} onChange={e => setFormData({...formData, locationName: e.target.value})} disabled={isSubmitting} style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }} placeholder="例: 東京都港区六本木6丁目" />
-                  <span style={{ fontSize: '11px', color: 'var(--text-sub)' }}>※住所から自動でマップにピンが立ちます</span>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)' }}>住所 *</label>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <input 
+                      type="text" 
+                      required 
+                      value={formData.locationName} 
+                      onChange={e => setFormData({...formData, locationName: e.target.value})} 
+                      disabled={isSubmitting} 
+                      style={{ flex: 1, padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }} 
+                      placeholder="例: 東京都港区六本木6丁目" 
+                    />
+                    <button
+                      type="button"
+                      onClick={startMapSelection}
+                      disabled={isSubmitting}
+                      style={{
+                        padding: '10px 14px',
+                        background: 'var(--primary)',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '4px',
+                        fontWeight: 'bold',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        fontSize: '13px',
+                        boxShadow: '0 2px 4px rgba(37,99,235,0.2)'
+                      }}
+                    >
+                      <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>map</span>
+                      地図から選択
+                    </button>
+                  </div>
+                  <span style={{ fontSize: '11px', color: 'var(--text-sub)' }}>
+                    ※手動入力、または地図からピンを立てて住所を自動取得できます
+                  </span>
                 </div>
 
                 <div style={{ display: 'flex', gap: '12px' }}>
@@ -849,12 +1037,17 @@ export function SearchPage() {
                   </div>
                 </div>
 
-                <div style={{ display: 'flex', gap: '12px' }}>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: 1 }}>
-                    <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)' }}>開催日 *</label>
-                    <input type="date" required value={formData.eventDate} onChange={e => setFormData({...formData, eventDate: e.target.value})} disabled={isSubmitting} style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }} />
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)', marginBottom: '4px' }}>開催日 (複数選択可) *</label>
+                    <CalendarPicker selectedDates={selectedJobDates} onChange={dates => setSelectedJobDates(dates)} />
+                    {selectedJobDates.length > 0 && (
+                      <div style={{ fontSize: '12px', color: 'var(--primary)', fontWeight: 'bold', marginTop: '4px' }}>
+                        選択中: {selectedJobDates.length}日間 ({[...selectedJobDates].sort().join(', ')})
+                      </div>
+                    )}
                   </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: 1 }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                     <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)' }}>応募締切日 *</label>
                     <input type="date" required value={formData.applicationDeadline} onChange={e => setFormData({...formData, applicationDeadline: e.target.value})} disabled={isSubmitting} style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }} />
                   </div>
