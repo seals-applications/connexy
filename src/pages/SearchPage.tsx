@@ -574,7 +574,7 @@ export function SearchPage() {
 
       // 2. 限定公開フィルタ
       const matchesLimited = currentUser
-        ? (job.allowedCompanyIds === undefined || 
+        ? (!job.allowedCompanyIds || job.allowedCompanyIds.length === 0 ||
            job.allowedCompanyIds.includes(currentUser.id) || 
            job.authorId === currentUser.id)
         : true;
