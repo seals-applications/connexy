@@ -182,7 +182,7 @@ export function SettingsPage({ onLogoutSuccess }: SettingsPageProps) {
         <main className="list-area bg-gray p-16 pb-80 form-container">
           <div className="form-section">
             <div className="form-avatar-edit">
-              <div className="profile-avatar large">S</div>
+              <div className="profile-avatar large">{currentUser?.name.charAt(0) || '株'}</div>
               <button className="btn-secondary mt-8">画像を変更</button>
             </div>
           </div>
@@ -190,7 +190,7 @@ export function SettingsPage({ onLogoutSuccess }: SettingsPageProps) {
             <h3>基本情報</h3>
             <div className="form-group">
               <label>法人名（屋号） <span className="required">必須</span></label>
-              <input type="text" className="form-control" defaultValue="株式会社シグマ通信" />
+              <input type="text" className="form-control" key={currentUser?.id} defaultValue={currentUser?.name || ''} />
             </div>
             <div className="form-group">
               <label>代表者名</label>
