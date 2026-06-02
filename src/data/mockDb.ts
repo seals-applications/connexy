@@ -642,9 +642,9 @@ const saveContractTasks = () => {
 };
 
 // セッション管理用変数 (ブラウザ環境のみ localStorage に書き込む)
-let currentUserId = typeof window !== 'undefined' ? (localStorage.getItem('connexy_current_user_id') || 'sigma') : 'sigma';
-if (typeof window !== 'undefined' && !localStorage.getItem('connexy_current_user_id')) {
-  localStorage.setItem('connexy_current_user_id', 'sigma');
+let currentUserId = typeof window !== 'undefined' ? (sessionStorage.getItem('connexy_current_user_id') || 'sigma') : 'sigma';
+if (typeof window !== 'undefined' && !sessionStorage.getItem('connexy_current_user_id')) {
+  sessionStorage.setItem('connexy_current_user_id', 'sigma');
 }
 
 // データベースAPIを模倣した関数 (非同期でデータを返す)
@@ -692,7 +692,7 @@ export const api = {
         const user = mockUsers.find((u) => u.loginId === loginId && u.password === password);
         if (user) {
           currentUserId = user.id;
-          localStorage.setItem('connexy_current_user_id', user.id);
+          sessionStorage.setItem('connexy_current_user_id', user.id);
           resolve(user);
         } else {
           resolve(null);
@@ -706,7 +706,7 @@ export const api = {
     return new Promise((resolve) => {
       setTimeout(() => {
         currentUserId = '';
-        localStorage.removeItem('connexy_current_user_id');
+        sessionStorage.removeItem('connexy_current_user_id');
         resolve();
       }, 100);
     });
