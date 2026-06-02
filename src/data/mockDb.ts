@@ -46,6 +46,7 @@ export interface Job {
   workLocation?: '店内' | '外販（複合施設など）' | '外販（スーパーなど）' | '外販（その他）';
   isUrgent?: boolean;
   allowedCompanyIds?: string[];
+  exactLocation?: string;
 }
 
 // 人材(Talent)の型定義
@@ -148,7 +149,8 @@ const mapJob = (row: any): Job => ({
   applicationDeadline: row.application_deadline,
   workLocation: row.work_location,
   isUrgent: row.is_urgent,
-  allowedCompanyIds: row.allowed_company_ids
+  allowedCompanyIds: row.allowed_company_ids,
+  exactLocation: row.exact_location
 });
 
 const unmapJob = (job: Partial<Job>): any => {
@@ -164,6 +166,7 @@ const unmapJob = (job: Partial<Job>): any => {
   if ('workLocation' in job) { row.work_location = job.workLocation; delete row.workLocation; }
   if ('isUrgent' in job) { row.is_urgent = job.isUrgent; delete row.isUrgent; }
   if ('allowedCompanyIds' in job) { row.allowed_company_ids = job.allowedCompanyIds; delete row.allowedCompanyIds; }
+  if ('exactLocation' in job) { row.exact_location = job.exactLocation; delete row.exactLocation; }
   return row;
 };
 

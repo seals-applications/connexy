@@ -6,6 +6,7 @@ import { api } from '../data/mockDb';
 import type { Job, Talent, Staff, Training, User } from '../data/mockDb';
 import { CalendarPicker } from '../components/CalendarPicker';
 import { formatJobDates } from '../utils/dateFormatter';
+import { generateMaskedLocation } from '../utils/maskingUtils';
 
 export function SearchPage() {
   const navigate = useNavigate();
@@ -74,7 +75,8 @@ export function SearchPage() {
   // 汎用フォームState (Job用) + Talent用希望勤務日
   const [formData, setFormData] = useState({
     title: '', description: '', price: 15000, 
-    locationName: '', // 案件時は住所
+    locationName: '', // 公開用の表示名
+    exactLocation: '', // 正確な店舗名・住所
     roleType: 'キャンペーンクルー', salesChannel: 'ショップ', carrier: 'docomo',
     availableDates: '', // 案件用など（未使用になるかも）
     selectedDates: [] as string[], // カレンダーで選択された日付
@@ -401,11 +403,21 @@ export function SearchPage() {
           addressText = data?.display_name || `ピンを指定した地点 (${lat.toFixed(4)}, ${lng.toFixed(4)})`;
         }
 
-        setFormData(prev => ({ ...prev, locationName: addressText }));
+        // Populate exactLocation with the full address, and auto-generate locationName
+        setFormData(prev => ({ 
+          ...prev, 
+          exactLocation: addressText,
+          locationName: generateMaskedLocation(addressText, addressText, prev.salesChannel, prev.carrier)
+        }));
         setTempSelectedLocation({ lat, lng });
       } catch (err) {
         console.warn('逆ジオコーディングに失敗しました', err);
-        setFormData(prev => ({ ...prev, locationName: `ピンを指定した地点 (${lat.toFixed(4)}, ${lng.toFixed(4)})` }));
+        const fallbackText = `ピンを指定した地点 (${lat.toFixed(4)}, ${lng.toFixed(4)})`;
+        setFormData(prev => ({ 
+          ...prev, 
+          exactLocation: fallbackText,
+          locationName: generateMaskedLocation(fallbackText, fallbackText, prev.salesChannel, prev.carrier)
+        }));
         setTempSelectedLocation({ lat, lng });
       } finally {
         setIsSelectingLocationOnMap(false);
@@ -1398,16 +1410,19 @@ export function SearchPage() {
                 </div>
                 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)' }}>住所 *</label>
+                  <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)' }}>正確な店舗名・住所 (非公開) *</label>
                   <div style={{ display: 'flex', gap: '8px' }}>
                     <input 
                       type="text" 
                       required 
-                      value={formData.locationName} 
-                      onChange={e => setFormData({...formData, locationName: e.target.value})} 
+                      value={formData.exactLocation} 
+                      onChange={e => {
+                        const newExact = e.target.value;
+                        setFormData({...formData, exactLocation: newExact, locationName: generateMaskedLocation(newExact, newExact, formData.salesChannel, formData.carrier)});
+                      }} 
                       disabled={isSubmitting} 
                       style={{ flex: 1, padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }} 
-                      placeholder="例: 東京都港区六本木6丁目" 
+                      placeholder="例: ヤマダデンキ 新宿西口店 (東京都新宿区...)" 
                     />
                     <button
                       type="button"
@@ -1433,7 +1448,23 @@ export function SearchPage() {
                     </button>
                   </div>
                   <span style={{ fontSize: '11px', color: 'var(--text-sub)' }}>
-                    ※手動入力、または地図からピンを立てて住所を自動取得できます
+                    ※地図をクリックすると住所が自動入力され、公開用の表示名も自動生成されます
+                  </span>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', background: '#F9FAFB', padding: '12px', borderRadius: '8px', border: '1px dashed #ccc' }}>
+                  <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)' }}>公開用の表示名 (マスキング済) *</label>
+                  <input 
+                    type="text" 
+                    required 
+                    value={formData.locationName} 
+                    onChange={e => setFormData({...formData, locationName: e.target.value})} 
+                    disabled={isSubmitting} 
+                    style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }} 
+                    placeholder="例: 新宿区のYデンキ" 
+                  />
+                  <span style={{ fontSize: '11px', color: 'var(--primary)' }}>
+                    ※アプリ上にはこの名称のみが表示されます。必要に応じて手動で調整してください。
                   </span>
                 </div>
 
