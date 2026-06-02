@@ -1,7 +1,10 @@
-export function generateMaskedLocation(address: string, exactStoreName: string, channel: string, carrier: string, workLocation?: string): string {
-  // 住所から市区町村を抽出（例：東京都新宿区西新宿 -> 新宿区）
+export function extractArea(address: string): string {
   const cityMatch = address.match(/([^都道府県\s]+?[市区町村])/);
-  const area = cityMatch ? cityMatch[1] : '非公開エリア';
+  return cityMatch ? cityMatch[1] : '非公開エリア';
+}
+
+export function generateMaskedLocation(address: string, exactStoreName: string, channel: string, carrier: string, workLocation?: string): string {
+  const area = extractArea(address);
 
   if (workLocation === '外販（スーパーなど）') return `${area}のスーパーマーケット`;
   if (workLocation === '外販（複合施設など）') return `${area}の大型ショッピングモール`;

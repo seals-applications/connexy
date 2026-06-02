@@ -30,8 +30,10 @@ export interface Job {
   id: string;
   title: string;
   description: string;
-  lat: number;
-  lng: number;
+  lat: number; // 曖昧な緯度（市区町村の中心）
+  lng: number; // 曖昧な経度（市区町村の中心）
+  exactLat?: number; // 正確な緯度
+  exactLng?: number; // 正確な経度
   authorId: string;
   price: number;
   locationName?: string;

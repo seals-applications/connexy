@@ -6,7 +6,7 @@ import { api } from '../data/mockDb';
 import type { Job, Talent, Staff, Training, User } from '../data/mockDb';
 import { CalendarPicker } from '../components/CalendarPicker';
 import { formatJobDates } from '../utils/dateFormatter';
-import { generateMaskedLocation } from '../utils/maskingUtils';
+import { generateMaskedLocation, extractArea } from '../utils/maskingUtils';
 import Autocomplete from 'react-google-autocomplete';
 
 export function SearchPage() {
@@ -148,13 +148,17 @@ export function SearchPage() {
       return;
     }
 
-    const addressToGeocode = createFormType === 'job' ? formData.locationName : '東京';
-    let coords = { lat: 35.6812, lng: 139.7671 };
+    let ambiguousCoords = { lat: 35.6812, lng: 139.7671 };
+    let exactCoords = tempSelectedLocation || { lat: 35.6812, lng: 139.7671 };
+
     if (createFormType === 'job') {
-      if (tempSelectedLocation) {
-        coords = tempSelectedLocation;
-      } else {
-        coords = await geocodeAddress(addressToGeocode);
+      const area = extractArea(formData.exactLocation || formData.locationName);
+      if (area && area !== '非公開エリア') {
+        const geocoded = await geocodeAddress(area);
+        if (geocoded) ambiguousCoords = geocoded;
+      } else if (tempSelectedLocation) {
+        // Fallback to exact if area extraction fails (though this defeats masking, it's a fallback)
+        ambiguousCoords = tempSelectedLocation;
       }
     }
 
@@ -164,8 +168,11 @@ export function SearchPage() {
         description: formData.description,
         price: Number(formData.price),
         locationName: formData.locationName,
-        lat: coords.lat,
-        lng: coords.lng,
+        exactLocation: formData.exactLocation,
+        lat: ambiguousCoords.lat,
+        lng: ambiguousCoords.lng,
+        exactLat: exactCoords.lat,
+        exactLng: exactCoords.lng,
         authorId: currentUser?.id || '',
         roleType: formData.roleType as Job['roleType'],
         salesChannel: formData.salesChannel as Job['salesChannel'],
@@ -533,27 +540,27 @@ export function SearchPage() {
 
     if (mode === 'job') {
       filteredJobs.forEach((job) => {
-        const jobIcon = L.divIcon({
-          className: 'job-location-marker',
-          html: job.isUrgent ? `<div style="
-            width: 28px; height: 28px; background-color: #EF4444; border: 3px solid #FDE68A; border-radius: 50%; box-shadow: 0 0 10px rgba(239, 68, 68, 0.8); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 11px;
-          ">急</div>` : `<div style="
-            width: 24px; height: 24px; background-color: #EF4444; border: 3px solid white; border-radius: 50%; box-shadow: 0 4px 6px rgba(239, 68, 68, 0.4); display: flex; align-items: center; justify-content: center; color: white;
-          "><span class="material-symbols-outlined" style="font-size: 14px;">work</span></div>`,
-          iconSize: job.isUrgent ? [28, 28] : [24, 24],
-          iconAnchor: job.isUrgent ? [14, 14] : [12, 12],
+        const circleColor = job.isUrgent ? '#EF4444' : '#3B82F6';
+        
+        // エリア（円）を描画。中心は市区町村の中心
+        const circle = L.circle([job.lat, job.lng], {
+          radius: 1200, // 半径1.2km
+          color: circleColor,
+          fillColor: circleColor,
+          fillOpacity: 0.2,
+          weight: 2
         });
 
-        const marker = L.marker([job.lat, job.lng], { icon: jobIcon });
-        marker.bindPopup(`
+        circle.bindPopup(`
           <div style="font-family: 'Inter', sans-serif;">
             <b style="font-size: 14px;">${job.isUrgent ? '【緊急】' : ''}${job.title}</b>
+            <div style="font-size: 12px; font-weight: bold; margin-top: 4px; color: #4B5563;">📍 ${job.locationName}</div>
             <p style="margin: 4px 0; font-size: 12px; color: #666;">${job.description}</p>
             <div style="font-size: 13px; color: var(--primary); font-weight: bold;">単価: ¥${job.price.toLocaleString()}</div>
             <button class="view-job-btn" data-id="${job.id}" style="margin-top: 8px; width: 100%; padding: 4px; background: var(--primary); color: white; border: none; border-radius: 4px; cursor: pointer;">詳細を見る</button>
           </div>
         `);
-        markersGroupRef.current?.addLayer(marker);
+        markersGroupRef.current?.addLayer(circle);
       });
     } else {
       filteredTalentGroups.forEach((group) => {
