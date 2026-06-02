@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { api } from '../data/mockDb';
-import type { Job, Talent, Staff } from '../data/mockDb';
+import type { Job, Talent, Staff, Training } from '../data/mockDb';
 import { CalendarPicker } from '../components/CalendarPicker';
 
 export function SearchPage() {
@@ -17,6 +17,7 @@ export function SearchPage() {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [talents, setTalents] = useState<Talent[]>([]);
   const [filterArea, setFilterArea] = useState<string>('all');
+  const [allTrainings, setAllTrainings] = useState<Training[]>([]);
 
   const [selectedTalent, setSelectedTalent] = useState<Talent | null>(null);
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
@@ -30,14 +31,21 @@ export function SearchPage() {
   const [myStaffs, setMyStaffs] = useState<Staff[]>([]);
   const [selectedStaffId, setSelectedStaffId] = useState<string>('');
 
-  
+  // フィルタ関連のState
+  const [includeUrgent, setIncludeUrgent] = useState(true);
+
   // 汎用フォームState (Job用) + Talent用希望勤務日
   const [formData, setFormData] = useState({
     title: '', description: '', price: 15000, 
     locationName: '', // 案件時は住所
-    roleType: 'キャンペーンクルー', storeType: 'ショップ', carrier: 'docomo',
+    roleType: 'キャンペーンクルー', salesChannel: 'ショップ', carrier: 'docomo',
     availableDates: '', // 案件用など（未使用になるかも）
-    selectedDates: [] as string[] // カレンダーで選択された日付
+    selectedDates: [] as string[], // カレンダーで選択された日付
+    eventDate: '',
+    applicationDeadline: '',
+    workLocation: '店内',
+    isUrgent: false,
+    isLimited: false
   });
 
   const handleOpenCreateForm = async () => {
@@ -82,9 +90,14 @@ export function SearchPage() {
         lng: coords.lng,
         authorId: 'u1',
         roleType: formData.roleType as Job['roleType'],
-        storeType: formData.storeType as Job['storeType'],
+        salesChannel: formData.salesChannel as Job['salesChannel'],
         carrier: formData.carrier as Job['carrier'],
-        detailedDescription: formData.description
+        detailedDescription: formData.description,
+        eventDate: formData.eventDate,
+        applicationDeadline: formData.applicationDeadline,
+        workLocation: formData.workLocation as Job['workLocation'],
+        isUrgent: formData.isUrgent,
+        allowedCompanyIds: formData.isLimited ? ['u2'] : undefined
       };
       const savedJob = await api.addJob(newJob);
       setJobs(prev => [...prev, savedJob]);
@@ -122,7 +135,8 @@ export function SearchPage() {
         carriers: selectedStaff.carriers,
         experience: selectedStaff.experience,
         prText: selectedStaff.prText,
-        availableDates: formattedDates
+        availableDates: formattedDates,
+        completedTrainings: selectedStaff.completedTrainings || []
       };
       const savedTalent = await api.addTalent(newTalent);
       setTalents(prev => [...prev, savedTalent]);
@@ -153,12 +167,14 @@ export function SearchPage() {
 
     const loadData = async () => {
       try {
-        const [fetchedJobs, fetchedTalents] = await Promise.all([
+        const [fetchedJobs, fetchedTalents, fetchedTrainings] = await Promise.all([
           api.getJobs(),
-          api.getTalents()
+          api.getTalents(),
+          api.getTrainings()
         ]);
         setJobs(fetchedJobs);
         setTalents(fetchedTalents);
+        setAllTrainings(fetchedTrainings);
       } catch (error) {
         console.error('データの取得に失敗しました', error);
       }
@@ -264,20 +280,22 @@ export function SearchPage() {
     markersGroupRef.current.clearLayers();
 
     if (mode === 'job') {
-      jobs.forEach((job) => {
+      filteredJobs.forEach((job) => {
         const jobIcon = L.divIcon({
           className: 'job-location-marker',
-          html: `<div style="
+          html: job.isUrgent ? `<div style="
+            width: 28px; height: 28px; background-color: #EF4444; border: 3px solid #FDE68A; border-radius: 50%; box-shadow: 0 0 10px rgba(239, 68, 68, 0.8); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 11px;
+          ">急</div>` : `<div style="
             width: 24px; height: 24px; background-color: #EF4444; border: 3px solid white; border-radius: 50%; box-shadow: 0 4px 6px rgba(239, 68, 68, 0.4); display: flex; align-items: center; justify-content: center; color: white;
           "><span class="material-symbols-outlined" style="font-size: 14px;">work</span></div>`,
-          iconSize: [24, 24],
-          iconAnchor: [12, 12],
+          iconSize: job.isUrgent ? [28, 28] : [24, 24],
+          iconAnchor: job.isUrgent ? [14, 14] : [12, 12],
         });
 
         const marker = L.marker([job.lat, job.lng], { icon: jobIcon });
         marker.bindPopup(`
           <div style="font-family: 'Inter', sans-serif;">
-            <b style="font-size: 14px;">${job.title}</b>
+            <b style="font-size: 14px;">${job.isUrgent ? '【緊急】' : ''}${job.title}</b>
             <p style="margin: 4px 0; font-size: 12px; color: #666;">${job.description}</p>
             <div style="font-size: 13px; color: var(--primary); font-weight: bold;">単価: ¥${job.price.toLocaleString()}</div>
             <button class="view-job-btn" data-id="${job.id}" style="margin-top: 8px; width: 100%; padding: 4px; background: var(--primary); color: white; border: none; border-radius: 4px; cursor: pointer;">詳細を見る</button>
@@ -286,7 +304,7 @@ export function SearchPage() {
         markersGroupRef.current?.addLayer(marker);
       });
     } else {
-      groupedTalents.forEach((group) => {
+      filteredTalentGroups.forEach((group) => {
         const talentGroupIcon = L.divIcon({
           className: 'talent-group-location-marker',
           html: `<div style="
@@ -307,23 +325,43 @@ export function SearchPage() {
         markersGroupRef.current?.addLayer(marker);
       });
     }
-  }, [mode, jobs, groupedTalents]);
+  }, [mode, jobs, includeUrgent, filterArea, talents]);
 
-  const filteredJobs = jobs.filter(job => {
-    if (filterArea === 'all') return true;
-    if (filterArea === 'shinjuku') return job.locationName?.includes('新宿');
-    if (filterArea === 'shibuya') return job.locationName?.includes('渋谷');
-    if (filterArea === 'ikebukuro') return job.locationName?.includes('池袋') || job.locationName?.includes('豊島');
-    return true;
-  });
+  const filteredJobs = useMemo(() => {
+    return jobs.filter(job => {
+      // 1. エリアフィルタ
+      let matchesArea = true;
+      if (filterArea === 'shinjuku') matchesArea = !!job.locationName?.includes('新宿');
+      else if (filterArea === 'shibuya') matchesArea = !!job.locationName?.includes('渋谷');
+      else if (filterArea === 'ikebukuro') matchesArea = !!job.locationName?.includes('池袋') || !!job.locationName?.includes('豊島');
 
-  const filteredTalentGroups = groupedTalents.filter(group => {
-    if (filterArea === 'all') return true;
-    if (filterArea === 'shinjuku') return group.locationName.includes('新宿');
-    if (filterArea === 'shibuya') return group.locationName.includes('渋谷');
-    if (filterArea === 'ikebukuro') return group.locationName.includes('池袋') || group.locationName.includes('豊島');
-    return true;
-  });
+      // 2. 限定公開フィルタ (モック自社ID: u1)
+      const matchesLimited = job.allowedCompanyIds === undefined || job.allowedCompanyIds.includes('u1') || job.authorId === 'u1';
+
+      // 3. 緊急募集フィルタ
+      const matchesUrgent = includeUrgent || !job.isUrgent;
+
+      return matchesArea && matchesLimited && matchesUrgent;
+    });
+  }, [jobs, filterArea, includeUrgent]);
+
+  const sortedJobs = useMemo(() => {
+    return [...filteredJobs].sort((a, b) => {
+      if (a.isUrgent && !b.isUrgent) return -1;
+      if (!a.isUrgent && b.isUrgent) return 1;
+      return 0;
+    });
+  }, [filteredJobs]);
+
+  const filteredTalentGroups = useMemo(() => {
+    return groupedTalents.filter(group => {
+      if (filterArea === 'all') return true;
+      if (filterArea === 'shinjuku') return group.locationName.includes('新宿');
+      if (filterArea === 'shibuya') return group.locationName.includes('渋谷');
+      if (filterArea === 'ikebukuro') return group.locationName.includes('池袋') || group.locationName.includes('豊島');
+      return true;
+    });
+  }, [groupedTalents, filterArea]);
 
   return (
     <div className="view active" style={{ display: 'flex', flexDirection: 'column' }}>
@@ -409,22 +447,48 @@ export function SearchPage() {
                 </button>
               ))}
             </div>
+            
+            {mode === 'job' && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '10px', borderTop: '1px solid #f3f4f6', paddingTop: '8px' }}>
+                <label style={{ fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', userSelect: 'none', color: 'var(--text-main)' }}>
+                  <input type="checkbox" checked={includeUrgent} onChange={(e) => setIncludeUrgent(e.target.checked)} style={{ width: '14px', height: '14px' }} />
+                  <strong>緊急募集の案件を表示する</strong>
+                </label>
+              </div>
+            )}
           </div>
 
           <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {mode === 'job' ? (
-              filteredJobs.length > 0 ? (
-                filteredJobs.map(job => (
-                  <div key={job.id} style={{ background: 'white', borderRadius: '8px', padding: '16px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', animation: 'fadeIn 0.3s ease' }}>
+              sortedJobs.length > 0 ? (
+                sortedJobs.map(job => (
+                  <div key={job.id} style={{ background: 'white', borderRadius: '12px', padding: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.03)', border: job.isUrgent ? '2.5px solid #FCA5A5' : '1px solid var(--border-color)', animation: 'fadeIn 0.3s ease', position: 'relative' }}>
+                    
+                    {job.isUrgent && (
+                      <span style={{ position: 'absolute', top: '-10px', right: '12px', fontSize: '10px', padding: '2px 8px', background: '#EF4444', color: 'white', borderRadius: '12px', fontWeight: 'bold', boxShadow: '0 2px 4px rgba(239, 68, 68, 0.2)' }}>
+                        ⚠️ 緊急募集
+                      </span>
+                    )}
+
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                      <h3 style={{ margin: '0 0 8px 0', fontSize: '15px' }}>{job.title}</h3>
+                      <h3 style={{ margin: '0 0 8px 0', fontSize: '15px', color: 'var(--text-main)' }}>{job.title}</h3>
                       <span className="status-badge badge-negotiating" style={{ margin: 0, fontSize: '11px' }}>募集中</span>
                     </div>
+
                     <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '8px' }}>
                       {job.carrier && <span style={{ fontSize: '11px', padding: '2px 8px', background: '#E0E7FF', color: '#4338CA', borderRadius: '12px', fontWeight: 'bold' }}>{job.carrier}</span>}
-                      {job.storeType && <span style={{ fontSize: '11px', padding: '2px 8px', background: '#FEF3C7', color: '#D97706', borderRadius: '12px', fontWeight: 'bold' }}>{job.storeType}</span>}
+                      {job.salesChannel && <span style={{ fontSize: '11px', padding: '2px 8px', background: '#FEF3C7', color: '#D97706', borderRadius: '12px', fontWeight: 'bold' }}>{job.salesChannel}</span>}
                       {job.roleType && <span style={{ fontSize: '11px', padding: '2px 8px', background: '#DCFCE7', color: '#15803D', borderRadius: '12px', fontWeight: 'bold' }}>{job.roleType}</span>}
+                      {job.workLocation && <span style={{ fontSize: '11px', padding: '2px 8px', background: '#F3F4F6', color: '#374151', borderRadius: '12px' }}>{job.workLocation}</span>}
                     </div>
+
+                    {job.eventDate && (
+                      <div style={{ fontSize: '12px', color: '#2563EB', fontWeight: 'bold', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>calendar_today</span>
+                        開催日: {job.eventDate} {job.applicationDeadline && <span style={{ color: '#EF4444', marginLeft: '8px' }}>(応募締切: {job.applicationDeadline})</span>}
+                      </div>
+                    )}
+
                     <p style={{ margin: '0 0 12px 0', fontSize: '13px', color: 'var(--text-sub)' }}>{job.description}</p>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <div style={{ fontSize: '14px', color: 'var(--primary)', fontWeight: 'bold' }}>
@@ -551,6 +615,26 @@ export function SearchPage() {
                 </div>
               )}
 
+              {/* 受講済み研修 */}
+              {selectedTalent.completedTrainings && selectedTalent.completedTrainings.length > 0 && (
+                <div style={{ background: 'white', padding: '16px', marginTop: '8px', borderTop: '1px solid var(--border-color)', borderBottom: '1px solid var(--border-color)' }}>
+                  <h3 style={{ fontSize: '14px', color: 'var(--text-sub)', margin: '0 0 12px 0', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <span className="material-symbols-outlined" style={{ fontSize: '18px', color: '#10B981' }}>verified</span>
+                    受講済み研修
+                  </h3>
+                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                    {selectedTalent.completedTrainings.map(tid => {
+                      const tr = allTrainings.find(t => t.id === tid);
+                      return (
+                        <span key={tid} style={{ fontSize: '12px', padding: '4px 10px', background: '#D1FAE5', color: '#065F46', borderRadius: '16px', fontWeight: 'bold' }}>
+                          ✓ {tr?.title || '受講済み研修'}
+                        </span>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
               {/* 詳細情報 */}
               <div style={{ background: 'white', padding: '16px', marginTop: '8px', borderTop: '1px solid var(--border-color)', borderBottom: '1px solid var(--border-color)' }}>
                 <h3 style={{ fontSize: '14px', color: 'var(--text-sub)', margin: '0 0 16px 0', display: 'flex', alignItems: 'center', gap: '4px' }}>
@@ -625,8 +709,9 @@ export function SearchPage() {
                 <span className="status-badge badge-negotiating" style={{ display: 'inline-block', marginBottom: '12px' }}>募集中</span>
                 <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '12px' }}>
                   {selectedJob.carrier && <span style={{ fontSize: '12px', padding: '4px 10px', background: '#E0E7FF', color: '#4338CA', borderRadius: '16px', fontWeight: 'bold' }}>{selectedJob.carrier}</span>}
-                  {selectedJob.storeType && <span style={{ fontSize: '12px', padding: '4px 10px', background: '#FEF3C7', color: '#D97706', borderRadius: '16px', fontWeight: 'bold' }}>{selectedJob.storeType}</span>}
+                  {selectedJob.salesChannel && <span style={{ fontSize: '12px', padding: '4px 10px', background: '#FEF3C7', color: '#D97706', borderRadius: '16px', fontWeight: 'bold' }}>{selectedJob.salesChannel}</span>}
                   {selectedJob.roleType && <span style={{ fontSize: '12px', padding: '4px 10px', background: '#DCFCE7', color: '#15803D', borderRadius: '16px', fontWeight: 'bold' }}>{selectedJob.roleType}</span>}
+                  {selectedJob.workLocation && <span style={{ fontSize: '12px', padding: '4px 10px', background: '#F3F4F6', color: '#374151', borderRadius: '16px' }}>{selectedJob.workLocation}</span>}
                 </div>
                 <h2 style={{ margin: '0 0 12px 0', fontSize: '20px', lineHeight: '1.4' }}>{selectedJob.title}</h2>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-sub)', fontSize: '14px' }}>
@@ -656,7 +741,11 @@ export function SearchPage() {
                   <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>schedule</span>
                   勤務時間・期間
                 </h3>
-                <p style={{ margin: 0, fontSize: '15px' }}>{selectedJob.workHours || '記載なし'}</p>
+                <p style={{ margin: 0, fontSize: '15px', lineHeight: '1.6' }}>
+                  {selectedJob.workHours || '記載なし'}<br/>
+                  {selectedJob.eventDate && <>開催日: {selectedJob.eventDate}<br/></>}
+                  {selectedJob.applicationDeadline && <span style={{ color: '#EF4444', fontWeight: 'bold' }}>応募締切: {selectedJob.applicationDeadline}</span>}
+                </p>
               </div>
 
               {selectedJob.requirements && selectedJob.requirements.length > 0 && (
@@ -742,6 +831,17 @@ export function SearchPage() {
                   </div>
                 </div>
 
+                <div style={{ display: 'flex', gap: '12px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: 1 }}>
+                    <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)' }}>開催日 *</label>
+                    <input type="date" required value={formData.eventDate} onChange={e => setFormData({...formData, eventDate: e.target.value})} disabled={isSubmitting} style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }} />
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: 1 }}>
+                    <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)' }}>応募締切日 *</label>
+                    <input type="date" required value={formData.applicationDeadline} onChange={e => setFormData({...formData, applicationDeadline: e.target.value})} disabled={isSubmitting} style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }} />
+                  </div>
+                </div>
+
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                   <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)' }}>職種 *</label>
                   <select value={formData.roleType} onChange={e => setFormData({...formData, roleType: e.target.value})} disabled={isSubmitting} style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc', background: 'white' }}>
@@ -752,10 +852,20 @@ export function SearchPage() {
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                  <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)' }}>店舗種別 *</label>
-                  <select value={formData.storeType} onChange={e => setFormData({...formData, storeType: e.target.value})} disabled={isSubmitting} style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc', background: 'white' }}>
+                  <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)' }}>販路 *</label>
+                  <select value={formData.salesChannel} onChange={e => setFormData({...formData, salesChannel: e.target.value as any})} disabled={isSubmitting} style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc', background: 'white' }}>
                     <option value="量販店">量販店</option>
                     <option value="ショップ">ショップ</option>
+                  </select>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)' }}>稼働場所 *</label>
+                  <select value={formData.workLocation} onChange={e => setFormData({...formData, workLocation: e.target.value})} disabled={isSubmitting} style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc', background: 'white' }}>
+                    <option value="店内">店内</option>
+                    <option value="外販（複合施設など）">外販（複合施設など）</option>
+                    <option value="外販（スーパーなど）">外販（スーパーなど）</option>
+                    <option value="外販（その他）">外販（その他）</option>
                   </select>
                 </div>
 
@@ -767,6 +877,17 @@ export function SearchPage() {
                     <option value="SoftBank/Y!mobile">SoftBank/Y!mobile</option>
                     <option value="BB">BB</option>
                   </select>
+                </div>
+
+                <div style={{ display: 'flex', gap: '20px', marginTop: '4px' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold' }}>
+                    <input type="checkbox" checked={formData.isUrgent} onChange={e => setFormData({...formData, isUrgent: e.target.checked})} disabled={isSubmitting} style={{ width: '16px', height: '16px' }} />
+                    <span style={{ color: '#EF4444' }}>🚨 緊急募集にする (最優先表示)</span>
+                  </label>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold' }}>
+                    <input type="checkbox" checked={formData.isLimited} onChange={e => setFormData({...formData, isLimited: e.target.checked})} disabled={isSubmitting} style={{ width: '16px', height: '16px' }} />
+                    <span style={{ color: 'var(--primary)' }}>🔒 限定公開 (親しい取引先のみ)</span>
+                  </label>
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>

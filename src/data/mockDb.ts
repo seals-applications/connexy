@@ -5,6 +5,22 @@ export interface User {
   role: 'contractor' | 'worker' | 'admin';
 }
 
+// 評価(Evaluation)の型定義
+export interface Evaluation {
+  id: string;
+  rating: 'good' | 'bad';
+  comment?: string;
+  evaluatorName: string;
+  createdAt: string;
+}
+
+// 研修(Training)の型定義
+export interface Training {
+  id: string;
+  title: string;
+  zoomLink: string;
+}
+
 // 案件(Job)の型定義
 export interface Job {
   id: string;
@@ -19,8 +35,13 @@ export interface Job {
   requirements?: string[];
   detailedDescription?: string;
   roleType?: 'キャンペーンクルー' | 'クローザー' | 'ディレクター';
-  storeType?: '量販店' | 'ショップ';
+  salesChannel?: '量販店' | 'ショップ'; // 旧 storeType からリネーム
   carrier?: 'docomo' | 'au/UQmobile' | 'SoftBank/Y!mobile' | 'BB';
+  eventDate?: string; // 開催日 (YYYY-MM-DD)
+  applicationDeadline?: string; // 締切日 (YYYY-MM-DD)
+  workLocation?: '店内' | '外販（複合施設など）' | '外販（スーパーなど）' | '外販（その他）'; // 稼働場所
+  isUrgent?: boolean; // 緊急募集フラグ
+  allowedCompanyIds?: string[]; // 限定公開先（空なら全体公開）
 }
 
 // 人材(Talent)の型定義
@@ -43,6 +64,7 @@ export interface Talent {
   nearestStation?: string;
   carriers?: string[];
   availableDates?: string; // 希望勤務日
+  completedTrainings?: string[]; // 受講済み研修ID
 }
 
 // 登録済みスタッフ(Staff)の型定義
@@ -59,6 +81,28 @@ export interface Staff {
   carriers: string[];
   experience?: string;
   prText?: string;
+  completedTrainings?: string[]; // 受講済み研修ID
+}
+
+// 契約タスク(ContractTask)の型定義
+export interface ContractTask {
+  id: string;
+  jobId: string;
+  jobTitle: string;
+  workerName: string; // 稼働したスタッフ名(E)
+  companyName: string; // 人材元会社(B)
+  clientName: string; // 案件元会社(A)
+  price: number;
+  date: string;
+  status: 'working' | 'report_pending' | 'completed' | 'disputed';
+  disputedReason?: string;
+  evaluations?: {
+    byClient?: Evaluation; // A社責任者C ➔ B社責任者D への評価
+    byWorker?: Evaluation; // B社責任者D ➔ A社責任者C への評価
+    byStaffToAgency?: Evaluation; // E ➔ D への評価
+    byAgencyToStaff?: Evaluation; // D ➔ E への評価
+    byStaffToField?: Evaluation; // E ➔ 現場 への評価
+  };
 }
 
 // モックデータベース
@@ -80,10 +124,14 @@ const mockJobs: Job[] = [
     locationName: '東京都新宿区',
     workHours: '土日祝 10:00〜19:00 (休憩1時間)',
     requirements: ['未経験歓迎', '接客経験あれば尚可', '明るく元気な対応ができる方'],
-    detailedDescription: 'auショップの店頭にて、ビンゴ大会や抽選会などのイベント運営補助をお願いします。お客様への声掛けや景品のお渡し、簡単なアンケートのご案内などがメインの業務です。ノルマは一切ありませんので、未経験の方でも安心してスタートできます。',
+    detailedDescription: 'auショップの店頭にて、ビンゴ大会や抽選会などのイベント運営補助をお願いします。お客様への声掛けや景品のお渡し、簡単なアンケートのご案内などがメイン of 業務です。ノルマは一切ありませんので、未経験の方でも安心してスタートできます。',
     roleType: 'キャンペーンクルー',
-    storeType: 'ショップ',
-    carrier: 'au/UQmobile'
+    salesChannel: 'ショップ',
+    carrier: 'au/UQmobile',
+    eventDate: '2026-06-06',
+    applicationDeadline: '2026-06-04',
+    workLocation: '店内',
+    isUrgent: true
   },
   {
     id: 'j2',
@@ -98,8 +146,11 @@ const mockJobs: Job[] = [
     requirements: ['通信回線の営業経験1年以上', 'クロージング経験'],
     detailedDescription: '大手家電量販店にて、スマホを見ているお客様にBB回線（光回線）のセット割をご案内し、ご契約（クロージング）を行っていただく業務です。成約1件につき別途高額インセンティブを支給します。',
     roleType: 'クローザー',
-    storeType: '量販店',
-    carrier: 'BB'
+    salesChannel: '量販店',
+    carrier: 'BB',
+    eventDate: '2026-06-07',
+    applicationDeadline: '2026-06-05',
+    workLocation: '外販（複合施設など）'
   },
   {
     id: 'j3',
@@ -114,8 +165,11 @@ const mockJobs: Job[] = [
     requirements: ['イベントディレクター経験', 'docomo商材の知識'],
     detailedDescription: '大型家電量販店のスマホコーナーにて、docomoの週末イベントをディレクションしていただきます。クルーの配置指示、モチベーション管理、売上進捗の報告など、現場の責任者としてご活躍いただきます。',
     roleType: 'ディレクター',
-    storeType: '量販店',
-    carrier: 'docomo'
+    salesChannel: '量販店',
+    carrier: 'docomo',
+    eventDate: '2026-06-06',
+    applicationDeadline: '2026-06-03',
+    workLocation: '店内'
   },
   {
     id: 'j4',
@@ -130,8 +184,11 @@ const mockJobs: Job[] = [
     requirements: ['携帯販売経験', 'MNP獲得が得意な方'],
     detailedDescription: '併売店ショップにて、ご来店されたお客様の料金見直しを実施し、Y!mobileへの乗り換え（MNP）をクロージングする業務です。提案力が直接成果につながるやりがいのある仕事です。',
     roleType: 'クローザー',
-    storeType: 'ショップ',
-    carrier: 'SoftBank/Y!mobile'
+    salesChannel: 'ショップ',
+    carrier: 'SoftBank/Y!mobile',
+    eventDate: '2026-06-13',
+    applicationDeadline: '2026-06-10',
+    workLocation: '店内'
   },
   {
     id: 'j5',
@@ -146,8 +203,11 @@ const mockJobs: Job[] = [
     requirements: ['大きな声が出せる方', '未経験大歓迎'],
     detailedDescription: 'au/UQmobileの合同イベントにて、マイクを使ったビンゴ大会の進行や、ティッシュ配りなどによる店舗への集客業務（キャッチ）をお願いします。元気の良さが一番の武器になります。',
     roleType: 'キャンペーンクルー',
-    storeType: '量販店',
-    carrier: 'au/UQmobile'
+    salesChannel: '量販店',
+    carrier: 'au/UQmobile',
+    eventDate: '2026-06-06',
+    applicationDeadline: '2026-06-04',
+    workLocation: '外販（スーパーなど）'
   },
   {
     id: 'j6',
@@ -162,8 +222,11 @@ const mockJobs: Job[] = [
     requirements: ['出張販売の運営経験', 'マネジメントスキル'],
     detailedDescription: '商業施設やスーパーなどの催事スペースで行うdocomoの出張販売イベントのディレクター業務です。クライアントや施設側との折衝、現場スタッフの指示出し、実績管理をワンストップでお任せします。',
     roleType: 'ディレクター',
-    storeType: 'ショップ',
-    carrier: 'docomo'
+    salesChannel: 'ショップ',
+    carrier: 'docomo',
+    eventDate: '2026-06-14',
+    applicationDeadline: '2026-06-11',
+    workLocation: '外販（複合施設など）'
   },
   {
     id: 'j7',
@@ -178,8 +241,11 @@ const mockJobs: Job[] = [
     requirements: ['光回線の知識', '訪問販売・クローザー経験'],
     detailedDescription: '量販店で家電を購入されたお客様に対して、提携するBB回線（光回線）のお得なキャンペーンをご案内し、ご自宅へ訪問して契約業務を行うクローザーです。単価に加えてインセンティブの支給があります。',
     roleType: 'クローザー',
-    storeType: '量販店',
-    carrier: 'BB'
+    salesChannel: '量販店',
+    carrier: 'BB',
+    eventDate: '2026-06-10',
+    applicationDeadline: '2026-06-08',
+    workLocation: '外販（その他）'
   },
   {
     id: 'j8',
@@ -194,8 +260,11 @@ const mockJobs: Job[] = [
     requirements: ['人と接するのが好きな方', 'スマホの基本操作ができる方'],
     detailedDescription: 'SoftBankショップにて開催されるシニア向けスマホ教室の受付や、参加者への簡単な操作補助を行うキャンペーンクルーです。販売ノルマなどはなく、お客様と丁寧にお話しできる方を求めています。',
     roleType: 'キャンペーンクルー',
-    storeType: 'ショップ',
-    carrier: 'SoftBank/Y!mobile'
+    salesChannel: 'ショップ',
+    carrier: 'SoftBank/Y!mobile',
+    eventDate: '2026-06-11',
+    applicationDeadline: '2026-06-09',
+    workLocation: '店内'
   },
   {
     id: 'j9',
@@ -210,8 +279,12 @@ const mockJobs: Job[] = [
     requirements: ['ショップ店長経験', 'ディレクター経験'],
     detailedDescription: '品川エリアに新しくオープンするau/UQmobileショップのオープニングイベントを仕切るディレクターです。店舗スタッフと連携し、最高のスタートダッシュを切れるように現場をコントロールしてください。',
     roleType: 'ディレクター',
-    storeType: 'ショップ',
-    carrier: 'au/UQmobile'
+    salesChannel: 'ショップ',
+    carrier: 'au/UQmobile',
+    eventDate: '2026-06-12',
+    applicationDeadline: '2026-06-09',
+    workLocation: '店内',
+    isUrgent: true
   },
   {
     id: 'j10',
@@ -226,8 +299,11 @@ const mockJobs: Job[] = [
     requirements: ['docomoおよび光回線の両方の知識', '高い成約率'],
     detailedDescription: '大型量販店にて、docomoのスマホと自宅のBB回線をセットで切り替える大型案件のクロージングを担当していただきます。複雑な料金シミュレーションを正確かつスピーディーに行える方を歓迎します。',
     roleType: 'クローザー',
-    storeType: '量販店',
-    carrier: 'docomo'
+    salesChannel: '量販店',
+    carrier: 'docomo',
+    eventDate: '2026-06-06',
+    applicationDeadline: '2026-06-03',
+    workLocation: '店内'
   }
 ];
 
@@ -437,7 +513,78 @@ const mockStaffs: Staff[] = [
     skills: ['キャンペーンクルー'],
     carriers: ['docomo'],
     experience: 'モバイルイベントでのMC経験2年',
-    prText: '明るい接客が得意です。'
+    prText: '明るい接客が得意です。',
+    completedTrainings: []
+  }
+];
+
+const mockTrainings: Training[] = [
+  {
+    id: 'tr1',
+    title: '【基礎】店頭イベント接客マナー研修',
+    zoomLink: 'https://zoom.us/j/mock-event-manner'
+  },
+  {
+    id: 'tr2',
+    title: '【応用】光回線獲得・クロージング研修',
+    zoomLink: 'https://zoom.us/j/mock-closing-skills'
+  },
+  {
+    id: 'tr3',
+    title: '【管理者向け】現場責任者（ディレクター）講習',
+    zoomLink: 'https://zoom.us/j/mock-director-training'
+  }
+];
+
+const mockContractTasks: ContractTask[] = [
+  {
+    id: 'ct1',
+    jobId: 'j1',
+    jobTitle: 'auショップ新宿西口店 キャンペーンクルー',
+    workerName: '伊藤 美咲',
+    companyName: '株式会社アルファ通信',
+    clientName: '株式会社アルファ通信',
+    price: 15000,
+    date: '2026-05-31',
+    status: 'report_pending'
+  },
+  {
+    id: 'ct2',
+    jobId: 'j2',
+    jobTitle: 'SoftBank 光回線クローザー募集 (渋谷エリア)',
+    workerName: '田中 太郎',
+    companyName: '株式会社アルファ通信',
+    clientName: 'ベータエージェンシー',
+    price: 20000,
+    date: '2026-06-03',
+    status: 'working'
+  },
+  {
+    id: 'ct3',
+    jobId: 'j3',
+    jobTitle: 'docomo 新機種イベント ディレクター (池袋)',
+    workerName: '高橋 健太',
+    companyName: '株式会社アルファ通信',
+    clientName: '株式会社アルファ通信',
+    price: 22000,
+    date: '2026-05-25',
+    status: 'completed',
+    evaluations: {
+      byClient: {
+        id: 'ev1',
+        rating: 'good',
+        comment: '真面目に勤務していただきました。またお願いします。',
+        evaluatorName: '株式会社アルファ通信 責任者C',
+        createdAt: '2026-05-25 19:30'
+      },
+      byWorker: {
+        id: 'ev2',
+        rating: 'good',
+        comment: '指示が明確で非常に動きやすかったです。',
+        evaluatorName: 'B社責任者D',
+        createdAt: '2026-05-25 20:00'
+      }
+    }
   }
 ];
 
@@ -445,7 +592,6 @@ const mockStaffs: Staff[] = [
 export const api = {
   // すべての案件を取得
   getJobs: async (): Promise<Job[]> => {
-    // ネットワークの遅延をシミュレート
     return new Promise((resolve) => {
       setTimeout(() => {
         resolve([...mockJobs]);
@@ -471,7 +617,7 @@ export const api = {
     });
   },
 
-  // (将来用) 現在ログインしているユーザーを取得
+  // 現在ログインしているユーザーを取得
   getCurrentUser: async (): Promise<User> => {
     return new Promise((resolve) => {
       setTimeout(() => {
@@ -515,9 +661,113 @@ export const api = {
   addStaff: async (staff: Omit<Staff, 'id'>): Promise<Staff> => {
     return new Promise((resolve) => {
       setTimeout(() => {
-        const newStaff = { ...staff, id: `s${mockStaffs.length + 1}` };
+        const newStaff = { ...staff, id: `s${mockStaffs.length + 1}`, completedTrainings: [] };
         mockStaffs.push(newStaff);
         resolve(newStaff);
+      }, 300);
+    });
+  },
+
+  // 研修マスタを取得
+  getTrainings: async (): Promise<Training[]> => {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        resolve([...mockTrainings]);
+      }, 300);
+    });
+  },
+
+  // スタッフの研修受講を完了させる
+  completeTraining: async (staffId: string, trainingId: string): Promise<void> => {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        const staff = mockStaffs.find(s => s.id === staffId);
+        if (staff) {
+          if (!staff.completedTrainings) staff.completedTrainings = [];
+          if (!staff.completedTrainings.includes(trainingId)) {
+            staff.completedTrainings.push(trainingId);
+          }
+          // 同名のTalentデータ（表示用）がある場合も同期する
+          const talent = mockTalents.find(t => t.name === staff.name || t.maskedName === staff.maskedName);
+          if (talent) {
+            if (!talent.completedTrainings) talent.completedTrainings = [];
+            if (!talent.completedTrainings.includes(trainingId)) {
+              talent.completedTrainings.push(trainingId);
+            }
+          }
+        }
+        resolve();
+      }, 300);
+    });
+  },
+
+  // 契約タスク（現場・完了報告一覧用）を取得
+  getContractTasks: async (): Promise<ContractTask[]> => {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        resolve([...mockContractTasks]);
+      }, 300);
+    });
+  },
+
+  // 完了報告＆評価を登録する
+  submitReport: async (
+    taskId: string,
+    rating: 'good' | 'bad',
+    comment: string,
+    evaluatorName: string,
+    target: 'byClient' | 'byWorker' | 'byStaffToField'
+  ): Promise<ContractTask> => {
+    return new Promise((resolve, reject) => {
+      setTimeout(() => {
+        const task = mockContractTasks.find(t => t.id === taskId);
+        if (!task) {
+          reject(new Error('タスクが見つかりません'));
+          return;
+        }
+
+        const newEval: Evaluation = {
+          id: `ev_${Date.now()}`,
+          rating,
+          comment,
+          evaluatorName,
+          createdAt: new Date().toISOString().replace('T', ' ').substring(0, 16)
+        };
+
+        if (!task.evaluations) task.evaluations = {};
+        task.evaluations[target] = newEval;
+
+        // 評価がbadの場合の初期ステータスは disputed (拒否待ち) または 相手承認待ち とし、
+        // goodの場合は即完了か、双方の報告待ちにします。
+        // ここでは仕様に基づき、報告が提出されたらステータスを更新します。
+        if (rating === 'bad') {
+          task.status = 'disputed'; // 相手の承認or拒否アクションが必要な状態
+        } else {
+          task.status = 'completed'; // 完了状態へ
+        }
+
+        resolve(task);
+      }, 300);
+    });
+  },
+
+  // bad評価に対するアクション (承認or拒否)
+  respondToDispute: async (taskId: string, action: 'approve' | 'reject', reason?: string): Promise<ContractTask> => {
+    return new Promise((resolve, reject) => {
+      setTimeout(() => {
+        const task = mockContractTasks.find(t => t.id === taskId);
+        if (!task) {
+          reject(new Error('タスクが見つかりません'));
+          return;
+        }
+
+        if (action === 'approve') {
+          task.status = 'completed'; // 承認して完了
+        } else {
+          task.status = 'disputed';
+          task.disputedReason = reason || '内容が事実と異なります。'; // 拒否して運営ヒアリングへ
+        }
+        resolve(task);
       }, 300);
     });
   }

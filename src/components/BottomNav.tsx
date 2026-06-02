@@ -1,7 +1,25 @@
+import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { api } from '../data/mockDb';
 
 export function BottomNav() {
   const location = useLocation();
+  const [pendingCount, setPendingCount] = useState(0);
+
+  useEffect(() => {
+    const checkPendingReports = async () => {
+      try {
+        const tasks = await api.getContractTasks();
+        const count = tasks.filter(t => t.status === 'report_pending').length;
+        setPendingCount(count);
+      } catch (e) {
+        console.error(e);
+      }
+    };
+    checkPendingReports();
+    const interval = setInterval(checkPendingReports, 2000);
+    return () => clearInterval(interval);
+  }, [location.pathname]);
 
   return (
     <nav className="bottom-nav">
@@ -11,11 +29,12 @@ export function BottomNav() {
         </div>
         <span className="nav-label">探す</span>
       </Link>
-      <Link to="/field" className={`nav-item ${location.pathname === '/field' ? 'active' : ''}`}>
+      <Link to="/task" className={`nav-item ${location.pathname === '/task' ? 'active' : ''}`}>
         <div className="nav-icon-wrapper">
-          <span className="material-symbols-outlined nav-icon">camera_alt</span>
+          <span className="material-symbols-outlined nav-icon">task_alt</span>
+          {pendingCount > 0 && <span className="badge" style={{ backgroundColor: '#EF4444' }}>{pendingCount}</span>}
         </div>
-        <span className="nav-label">現場</span>
+        <span className="nav-label">タスク</span>
       </Link>
       <Link to="/dashboard" className={`nav-item ${location.pathname === '/dashboard' ? 'active' : ''}`}>
         <div className="nav-icon-wrapper">
