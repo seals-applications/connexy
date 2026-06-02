@@ -1781,11 +1781,17 @@ export function SearchPage() {
             <button className="btn-secondary" style={{ flex: 1, margin: 0 }} onClick={clearAllFilters}>
               すべてクリア
             </button>
-            <button className="btn-primary" style={{ flex: 1, margin: 0 }} onClick={() => {
-              setSearchKeyword(tempKeyword);
-              setIsFilterSheetOpen(false);
-            }}>
-              適用する
+            <button
+              className="btn-primary"
+              style={{ flex: 1, margin: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+              onClick={() => {
+                setSearchKeyword(tempKeyword);
+                setIsFilterSheetOpen(false);
+                setViewMode('list');
+              }}
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>search</span>
+              実行
             </button>
           </div>
         </div>
