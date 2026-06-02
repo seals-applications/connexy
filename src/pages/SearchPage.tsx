@@ -47,6 +47,8 @@ export function SearchPage() {
 
   // フィルター・ソート用State
   const [isFilterSheetOpen, setIsFilterSheetOpen] = useState(false);
+  const [searchKeyword, setSearchKeyword] = useState<string>('');
+  const [tempKeyword, setTempKeyword] = useState<string>('');
   
   // 案件用フィルター & ソート
   const [jobSortOrder, setJobSortOrder] = useState<'newest' | 'priceHigh' | 'dateNear'>('newest');
@@ -60,6 +62,12 @@ export function SearchPage() {
   const [filterTalentSkills, setFilterTalentSkills] = useState<string[]>([]);
   const [filterTalentCarriers, setFilterTalentCarriers] = useState<string[]>([]);
   const [filterTalentTrainings, setFilterTalentTrainings] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (isFilterSheetOpen) {
+      setTempKeyword(searchKeyword);
+    }
+  }, [isFilterSheetOpen, searchKeyword]);
 
   // 汎用フォームState (Job用) + Talent用希望勤務日
   const [formData, setFormData] = useState({
@@ -465,6 +473,17 @@ export function SearchPage() {
       if (filterTalentTrainings.length > 0 && !(talent.completedTrainings && filterTalentTrainings.every(tid => talent.completedTrainings?.includes(tid)))) {
         return false;
       }
+      // 4. キーワード検索
+      if (searchKeyword.trim() !== '') {
+        const kw = searchKeyword.toLowerCase();
+        const nameMatch = talent.name?.toLowerCase().includes(kw) || talent.maskedName?.toLowerCase().includes(kw);
+        const companyMatch = talent.companyName?.toLowerCase().includes(kw);
+        const descMatch = talent.description?.toLowerCase().includes(kw) || talent.prText?.toLowerCase().includes(kw);
+        const locMatch = talent.locationName?.toLowerCase().includes(kw) || talent.baseLocation?.toLowerCase().includes(kw);
+        if (!nameMatch && !companyMatch && !descMatch && !locMatch) {
+          return false;
+        }
+      }
       return true;
     });
 
@@ -478,7 +497,7 @@ export function SearchPage() {
     });
 
     return list;
-  }, [talents, filterTalentSkills, filterTalentCarriers, filterTalentTrainings, talentSortOrder]);
+  }, [talents, filterTalentSkills, filterTalentCarriers, filterTalentTrainings, talentSortOrder, searchKeyword]);
 
   // 人材をエリアごとにグループ化する
   const groupedTalents = useMemo(() => {
@@ -588,9 +607,20 @@ export function SearchPage() {
         return false;
       }
 
+      // 8. キーワード検索
+      if (searchKeyword.trim() !== '') {
+        const kw = searchKeyword.toLowerCase();
+        const titleMatch = job.title?.toLowerCase().includes(kw);
+        const descMatch = job.description?.toLowerCase().includes(kw) || job.detailedDescription?.toLowerCase().includes(kw);
+        const locMatch = job.locationName?.toLowerCase().includes(kw);
+        if (!titleMatch && !descMatch && !locMatch) {
+          return false;
+        }
+      }
+
       return matchesArea && matchesLimited && matchesUrgent;
     });
-  }, [jobs, filterArea, includeUrgent, currentUser, filterJobRoles, filterCarriers, filterChannels, filterMinPrice]);
+  }, [jobs, filterArea, includeUrgent, currentUser, filterJobRoles, filterCarriers, filterChannels, filterMinPrice, searchKeyword]);
 
   const sortedJobs = useMemo(() => {
     let list = [...filteredJobs];
@@ -619,15 +649,34 @@ export function SearchPage() {
     });
   }, [groupedTalents, filterArea]);
 
+  const activeFiltersCount = useMemo(() => {
+    let count = 0;
+    if (mode === 'job') {
+      count += filterJobRoles.length;
+      count += filterCarriers.length;
+      count += filterChannels.length;
+      if (filterMinPrice > 0) count += 1;
+      if (searchKeyword.trim() !== '') count += 1;
+    } else {
+      count += filterTalentSkills.length;
+      count += filterTalentCarriers.length;
+      count += filterTalentTrainings.length;
+      if (searchKeyword.trim() !== '') count += 1;
+    }
+    return count;
+  }, [mode, filterJobRoles, filterCarriers, filterChannels, filterMinPrice, filterTalentSkills, filterTalentCarriers, filterTalentTrainings, searchKeyword]);
+
   const hasActiveFilters = useMemo(() => {
     if (mode === 'job') {
-      return jobSortOrder !== 'newest' || filterJobRoles.length > 0 || filterCarriers.length > 0 || filterChannels.length > 0 || filterMinPrice > 0;
+      return jobSortOrder !== 'newest' || activeFiltersCount > 0;
     } else {
-      return talentSortOrder !== 'priceLow' || filterTalentSkills.length > 0 || filterTalentCarriers.length > 0 || filterTalentTrainings.length > 0;
+      return talentSortOrder !== 'priceLow' || activeFiltersCount > 0;
     }
-  }, [mode, jobSortOrder, filterJobRoles, filterCarriers, filterChannels, filterMinPrice, talentSortOrder, filterTalentSkills, filterTalentCarriers, filterTalentTrainings]);
+  }, [mode, jobSortOrder, talentSortOrder, activeFiltersCount]);
 
   const clearAllFilters = () => {
+    setSearchKeyword('');
+    setTempKeyword('');
     if (mode === 'job') {
       setJobSortOrder('newest');
       setFilterJobRoles([]);
@@ -710,11 +759,7 @@ export function SearchPage() {
             <div className="toggle-slider"></div>
           </div>
         </div>
-        <div className="header-search">
-          <div className="search-bar">
-            <span className="material-symbols-outlined icon">search</span>
-            <input type="text" placeholder="現在地周辺・エリア名など" />
-          </div>
+        <div className="header-search" style={{ justifyContent: 'flex-end' }}>
           <button 
             className="filter-btn" 
             onClick={() => setViewMode(viewMode === 'map' ? 'list' : 'map')}
@@ -764,7 +809,7 @@ export function SearchPage() {
             <span className="material-symbols-outlined">
               tune
             </span>
-            {hasActiveFilters && (
+            {activeFiltersCount > 0 && (
               <span style={{
                 position: 'absolute',
                 top: '-4px',
@@ -781,7 +826,7 @@ export function SearchPage() {
                 fontWeight: 'bold',
                 border: '2px solid white'
               }}>
-                !
+                {activeFiltersCount}
               </span>
             )}
           </button>
@@ -804,6 +849,17 @@ export function SearchPage() {
                 <>
                   {mode === 'job' ? (
                     <>
+                      {searchKeyword.trim() !== '' && (
+                        <div className="filter-chip">
+                          <span>キーワード: "{searchKeyword}"</span>
+                          <button onClick={() => {
+                            setSearchKeyword('');
+                            setTempKeyword('');
+                          }}>
+                            <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>close</span>
+                          </button>
+                        </div>
+                      )}
                       {filterJobRoles.map(role => (
                         <div key={role} className="filter-chip">
                           <span>{role}</span>
@@ -839,6 +895,17 @@ export function SearchPage() {
                     </>
                   ) : (
                     <>
+                      {searchKeyword.trim() !== '' && (
+                        <div className="filter-chip">
+                          <span>キーワード: "{searchKeyword}"</span>
+                          <button onClick={() => {
+                            setSearchKeyword('');
+                            setTempKeyword('');
+                          }}>
+                            <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>close</span>
+                          </button>
+                        </div>
+                      )}
                       {filterTalentSkills.map(skill => (
                         <div key={skill} className="filter-chip">
                           <span>{skill}</span>
@@ -1459,6 +1526,20 @@ export function SearchPage() {
           </div>
           
           <div className="filter-sheet-body">
+            {/* キーワード・地名検索 (共通) */}
+            <div className="filter-group">
+              <span className="filter-group-title">キーワード・地名で検索</span>
+              <div className="search-bar" style={{ background: 'var(--bg-gray)', border: '1px solid var(--border-color)', width: '100%' }}>
+                <span className="material-symbols-outlined icon">search</span>
+                <input 
+                  type="text" 
+                  value={tempKeyword} 
+                  onChange={e => setTempKeyword(e.target.value)} 
+                  placeholder="キーワードやエリア名を入力"
+                />
+              </div>
+            </div>
+
             {mode === 'job' ? (
               <>
                 {/* ソート順 */}
@@ -1700,7 +1781,10 @@ export function SearchPage() {
             <button className="btn-secondary" style={{ flex: 1, margin: 0 }} onClick={clearAllFilters}>
               すべてクリア
             </button>
-            <button className="btn-primary" style={{ flex: 1, margin: 0 }} onClick={() => setIsFilterSheetOpen(false)}>
+            <button className="btn-primary" style={{ flex: 1, margin: 0 }} onClick={() => {
+              setSearchKeyword(tempKeyword);
+              setIsFilterSheetOpen(false);
+            }}>
               適用する
             </button>
           </div>
