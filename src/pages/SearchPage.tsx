@@ -1410,6 +1410,34 @@ export function SearchPage() {
                   <input type="text" required value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} disabled={isSubmitting} style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }} placeholder="例: auショップ新宿 イベントスタッフ" />
                 </div>
                 
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)' }}>販路 *</label>
+                  <select value={formData.salesChannel} onChange={e => setFormData({...formData, salesChannel: e.target.value as any, locationName: formData.exactLocation ? generateMaskedLocation(formData.exactLocation, formData.exactLocation, e.target.value, formData.carrier, formData.workLocation) : formData.locationName})} disabled={isSubmitting} style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc', background: 'white' }}>
+                    <option value="量販店">量販店</option>
+                    <option value="ショップ">ショップ</option>
+                  </select>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)' }}>稼働場所 *</label>
+                  <select value={formData.workLocation} onChange={e => setFormData({...formData, workLocation: e.target.value as any, locationName: formData.exactLocation ? generateMaskedLocation(formData.exactLocation, formData.exactLocation, formData.salesChannel, formData.carrier, e.target.value) : formData.locationName})} disabled={isSubmitting} style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc', background: 'white' }}>
+                    <option value="店内">店内</option>
+                    <option value="外販（複合施設など）">外販（複合施設など）</option>
+                    <option value="外販（スーパーなど）">外販（スーパーなど）</option>
+                    <option value="外販（その他）">外販（その他）</option>
+                  </select>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)' }}>キャリア/回線 *</label>
+                  <select value={formData.carrier} onChange={e => setFormData({...formData, carrier: e.target.value as any, locationName: formData.exactLocation ? generateMaskedLocation(formData.exactLocation, formData.exactLocation, formData.salesChannel, e.target.value, formData.workLocation) : formData.locationName})} disabled={isSubmitting} style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc', background: 'white' }}>
+                    <option value="docomo">docomo</option>
+                    <option value="au/UQmobile">au/UQmobile</option>
+                    <option value="SoftBank/Y!mobile">SoftBank/Y!mobile</option>
+                    <option value="BB">BB</option>
+                  </select>
+                </div>
+
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                   <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)' }}>正確な店舗名・住所 (非公開) *</label>
                   <div style={{ display: 'flex', gap: '8px' }}>
@@ -1427,7 +1455,7 @@ export function SearchPage() {
                             setFormData(prev => ({
                               ...prev,
                               exactLocation: address,
-                              locationName: generateMaskedLocation(fullAddress, address, prev.salesChannel, prev.carrier)
+                              locationName: generateMaskedLocation(fullAddress, address, prev.salesChannel, prev.carrier, prev.workLocation)
                             }));
                             
                             if (mapRef.current) {
@@ -1449,7 +1477,7 @@ export function SearchPage() {
                         defaultValue={formData.exactLocation}
                         onChange={(e: any) => {
                           const newExact = e.target.value;
-                          setFormData({...formData, exactLocation: newExact, locationName: generateMaskedLocation(newExact, newExact, formData.salesChannel, formData.carrier)});
+                          setFormData({...formData, exactLocation: newExact, locationName: generateMaskedLocation(newExact, newExact, formData.salesChannel, formData.carrier, formData.workLocation)});
                         }}
                         disabled={isSubmitting} 
                         style={{ flex: 1, padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }} 
@@ -1462,7 +1490,7 @@ export function SearchPage() {
                         value={formData.exactLocation} 
                         onChange={e => {
                           const newExact = e.target.value;
-                          setFormData({...formData, exactLocation: newExact, locationName: generateMaskedLocation(newExact, newExact, formData.salesChannel, formData.carrier)});
+                          setFormData({...formData, exactLocation: newExact, locationName: generateMaskedLocation(newExact, newExact, formData.salesChannel, formData.carrier, formData.workLocation)});
                         }} 
                         disabled={isSubmitting} 
                         style={{ flex: 1, padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }} 
@@ -1542,34 +1570,6 @@ export function SearchPage() {
                     <option value="キャンペーンクルー">キャンペーンクルー</option>
                     <option value="クローザー">クローザー</option>
                     <option value="ディレクター">ディレクター</option>
-                  </select>
-                </div>
-
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                  <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)' }}>販路 *</label>
-                  <select value={formData.salesChannel} onChange={e => setFormData({...formData, salesChannel: e.target.value as any})} disabled={isSubmitting} style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc', background: 'white' }}>
-                    <option value="量販店">量販店</option>
-                    <option value="ショップ">ショップ</option>
-                  </select>
-                </div>
-
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                  <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)' }}>稼働場所 *</label>
-                  <select value={formData.workLocation} onChange={e => setFormData({...formData, workLocation: e.target.value})} disabled={isSubmitting} style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc', background: 'white' }}>
-                    <option value="店内">店内</option>
-                    <option value="外販（複合施設など）">外販（複合施設など）</option>
-                    <option value="外販（スーパーなど）">外販（スーパーなど）</option>
-                    <option value="外販（その他）">外販（その他）</option>
-                  </select>
-                </div>
-
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                  <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)' }}>キャリア/回線 *</label>
-                  <select value={formData.carrier} onChange={e => setFormData({...formData, carrier: e.target.value})} disabled={isSubmitting} style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc', background: 'white' }}>
-                    <option value="docomo">docomo</option>
-                    <option value="au/UQmobile">au/UQmobile</option>
-                    <option value="SoftBank/Y!mobile">SoftBank/Y!mobile</option>
-                    <option value="BB">BB</option>
                   </select>
                 </div>
 
