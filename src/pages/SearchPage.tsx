@@ -171,6 +171,13 @@ export function SearchPage() {
     L.control.zoom({ position: 'bottomright' }).addTo(mapRef.current);
     markersGroupRef.current = L.layerGroup().addTo(mapRef.current);
 
+    // 初期マウント時のコンテナサイズ未確定に対応するための遅延サイズ更新
+    const timer = setTimeout(() => {
+      if (mapRef.current) {
+        mapRef.current.invalidateSize();
+      }
+    }, 200);
+
     const loadData = async () => {
       try {
         const [fetchedJobs, fetchedTalents, fetchedTrainings] = await Promise.all([
@@ -197,6 +204,7 @@ export function SearchPage() {
 
           if (mapRef.current) {
             mapRef.current.setView(currentLocation, 14);
+            mapRef.current.invalidateSize();
             const customIcon = L.divIcon({
               className: 'current-location-marker',
               html: `<div style="
@@ -217,6 +225,9 @@ export function SearchPage() {
         },
         (error) => {
           console.warn('位置情報の取得に失敗しました:', error.message);
+          if (mapRef.current) {
+            mapRef.current.invalidateSize();
+          }
         },
         { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
       );
@@ -228,6 +239,7 @@ export function SearchPage() {
     resizeObserver.observe(mapContainer);
 
     return () => {
+      clearTimeout(timer);
       resizeObserver.disconnect();
       if (mapRef.current) {
         mapRef.current.remove();
