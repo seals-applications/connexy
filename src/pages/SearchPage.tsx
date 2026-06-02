@@ -110,7 +110,7 @@ export function SearchPage() {
         locationName: formData.locationName,
         lat: coords.lat,
         lng: coords.lng,
-        authorId: currentUser?.id || 'sigma',
+        authorId: currentUser?.id || '',
         roleType: formData.roleType as Job['roleType'],
         salesChannel: formData.salesChannel as Job['salesChannel'],
         carrier: formData.carrier as Job['carrier'],
