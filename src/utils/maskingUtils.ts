@@ -8,7 +8,7 @@ export function generateMaskedLocation(address: string, exactStoreName: string, 
     return `${area}の${carrier}ショップ`;
   } else if (channel === '量販店') {
     let storeInit = '大手量販店';
-    const store = exactStoreName.normalize('NFKC').toLowerCase();
+    const store = (exactStoreName + ' ' + address).normalize('NFKC').toLowerCase();
     
     if (store.includes('ヤマダ')) storeInit = 'Yデンキ';
     else if (store.includes('ビック')) storeInit = 'Bカメラ';
