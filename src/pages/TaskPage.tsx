@@ -186,7 +186,7 @@ export function TaskPage() {
 
   const handleQuizSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!quizTrainingId || !myStaff) return;
+    if (!quizTrainingId) return;
     const questions = quizData[quizTrainingId];
     if (!questions) return;
 
@@ -204,8 +204,12 @@ export function TaskPage() {
     }
 
     try {
-      await api.completeTraining(myStaff.id, quizTrainingId);
-      alert('合格です！研修の受講完了が登録されました。\nスタッフ詳細プロフィールに実績バッジが反映されます。');
+      if (myStaff) {
+        await api.completeTraining(myStaff.id, quizTrainingId);
+        alert('合格です！研修の受講完了が登録されました。\nスタッフ詳細プロフィールに実績バッジが反映されます。');
+      } else {
+        alert('合格です！（デモ版：スタッフ未登録のため、画面表示のみ受講完了状態にします）');
+      }
       setShowQuizModal(false);
       setQuizTrainingId(null);
       setQuizAnswers({});
