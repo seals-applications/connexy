@@ -200,6 +200,10 @@ export function SettingsPage({ onLogoutSuccess }: SettingsPageProps) {
               <label>担当者名 <span className="required">必須</span></label>
               <input type="text" className="form-control" defaultValue="佐藤 健一" />
             </div>
+            <div className="form-group">
+              <label>インボイス登録番号</label>
+              <input type="text" className="form-control" key={currentUser?.invoiceNumber} defaultValue={currentUser?.invoiceNumber || ''} placeholder="T + 13桁の半角数字" />
+            </div>
           </div>
         </main>
       </div>

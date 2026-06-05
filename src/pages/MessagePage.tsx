@@ -1,7 +1,16 @@
 import { useState, useRef, useEffect } from 'react';
 
 export function MessagePage() {
-  const [activeChat, setActiveChat] = useState<{name: string, title: string} | null>(null);
+  const [activeChat, setActiveChat] = useState<{name: string, title: string, status: string} | null>(null);
+
+  const maskContactInfo = (text: string) => {
+    if (activeChat?.status === 'contracted') return text;
+    let masked = text.replace(/[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+/g, '[連絡先はマッチング完了まで非公開です]');
+    masked = masked.replace(/0\d{1,4}-\d{1,4}-\d{3,4}/g, '[連絡先はマッチング完了まで非公開です]');
+    masked = masked.replace(/0[789]0\d{8}/g, '[連絡先はマッチング完了まで非公開です]');
+    masked = masked.replace(/line\.me\/\S+/g, '[連絡先はマッチング完了まで非公開です]');
+    return masked;
+  };
   const [messages, setMessages] = useState<{type: 'system'|'sent'|'received', text: string, time: string, avatar?: string}[]>([
     { type: 'system', text: 'チャットを開始しました', time: '' },
     { type: 'received', text: 'お世話になっております。週末のキャンペーンスタッフ2名の件ですが、まだ募集されていますでしょうか？', time: '10:30', avatar: 'A' },
@@ -55,7 +64,7 @@ export function MessagePage() {
       </header>
       <main className="list-area">
         <div className="chat-list">
-          <div className="chat-item" onClick={() => setActiveChat({ name: '株式会社アルファ通信', title: '週末キャンペーンスタッフ2名' })}>
+          <div className="chat-item" onClick={() => setActiveChat({ name: '株式会社アルファ通信', title: '週末キャンペーンスタッフ2名', status: 'negotiating' })}>
             <div className="chat-avatar bg-blue">A</div>
             <div className="chat-content">
               <div className="chat-header">
@@ -67,7 +76,7 @@ export function MessagePage() {
             </div>
             <div className="status-badge badge-negotiating">商談中</div>
           </div>
-          <div className="chat-item">
+          <div className="chat-item" onClick={() => setActiveChat({ name: 'ベータエージェンシー', title: '光回線クローザー募集', status: 'waiting' })}>
             <div className="chat-avatar bg-green">B</div>
             <div className="chat-content">
               <div className="chat-header">
@@ -79,7 +88,7 @@ export function MessagePage() {
             </div>
             <div className="status-badge badge-waiting">契約待ち</div>
           </div>
-          <div className="chat-item">
+          <div className="chat-item" onClick={() => setActiveChat({ name: 'ガンマモバイル', title: 'ドコモショップ応援（3日間）', status: 'contracted' })}>
             <div className="chat-avatar bg-purple">G</div>
             <div className="chat-content">
               <div className="chat-header">
@@ -109,8 +118,8 @@ export function MessagePage() {
                 {activeChat?.title}
               </div>
             </div>
-            <button className="icon-btn-dark">
-              <span className="material-symbols-outlined">more_vert</span>
+            <button className="icon-btn-dark" onClick={() => alert('運営に通報しました')} title="通報する">
+              <span className="material-symbols-outlined" style={{ color: '#EF4444' }}>report</span>
             </button>
           </div>
           <div className="chat-conditions-pin" style={{ marginTop: '4px' }}>
@@ -136,7 +145,7 @@ export function MessagePage() {
                 <div className="message-row received" style={{ animation: 'fadeIn 0.3s ease' }}>
                   <div className="chat-avatar bg-blue">{msg.avatar}</div>
                   <div className="message-bubble">
-                    <p>{msg.text}</p>
+                    <p style={{ whiteSpace: 'pre-wrap' }}>{maskContactInfo(msg.text)}</p>
                     <span className="message-time">{msg.time}</span>
                   </div>
                 </div>
@@ -160,7 +169,7 @@ export function MessagePage() {
                         </button>
                       </div>
                     ) : (
-                      <p>{msg.text.split('\n').map((line, j) => <span key={j}>{line}<br/></span>)}</p>
+                      <p style={{ whiteSpace: 'pre-wrap' }}>{maskContactInfo(msg.text)}</p>
                     )}
                     <span className="message-time">{msg.time}</span>
                   </div>
