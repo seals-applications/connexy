@@ -22,7 +22,8 @@ export function SettingsPage({ onLogoutSuccess }: SettingsPageProps) {
     name: '', maskedName: '', baseLocation: '', nearestStation: '',
     locationName: '', price: 15000,
     skills: [] as string[], carriers: [] as string[], experience: '', prText: '',
-    hasCertificate: false
+    hasCertificate: false,
+    role: 'staff' as 'admin' | 'staff'
   });
 
   const availableSkills = ['キャンペーンクルー', 'クローザー', 'ディレクター'];
@@ -94,7 +95,8 @@ export function SettingsPage({ onLogoutSuccess }: SettingsPageProps) {
       carriers: formData.carriers,
       experience: formData.experience,
       prText: formData.prText,
-      hasCertificate: formData.hasCertificate
+      hasCertificate: formData.hasCertificate,
+      role: formData.role
     };
 
     const savedStaff = await api.addStaff(newStaff);
@@ -104,12 +106,23 @@ export function SettingsPage({ onLogoutSuccess }: SettingsPageProps) {
       name: '', maskedName: '', baseLocation: '', nearestStation: '',
       locationName: '', price: 15000,
       skills: [], carriers: [], experience: '', prText: '',
-      hasCertificate: false
+      hasCertificate: false,
+      role: 'staff'
     });
 
     setStaffSaving(false);
     setShowStaffOverlay(false);
     alert('スタッフを登録しました');
+  };
+
+  const handleToggleRole = async (staffId: string, currentRole?: 'admin' | 'staff') => {
+    const nextRole = currentRole === 'admin' ? 'staff' : 'admin';
+    await api.updateStaffRole(staffId, nextRole);
+    const user = await api.getCurrentUser();
+    if (user) {
+      const fetchedStaffs = await api.getStaffsByUserId(user.id);
+      setStaffs(fetchedStaffs);
+    }
   };
 
   return (
@@ -238,10 +251,23 @@ export function SettingsPage({ onLogoutSuccess }: SettingsPageProps) {
                             運営確認済
                           </span>
                         )}
+                        <span style={{ display: 'inline-flex', alignItems: 'center', background: s.role === 'admin' ? '#E0F2FE' : '#F1F5F9', color: s.role === 'admin' ? '#0369A1' : '#475569', padding: '2px 6px', borderRadius: '4px', fontSize: '10px', fontWeight: 'bold' }}>
+                          {s.role === 'admin' ? '管理者' : '一般スタッフ'}
+                        </span>
                       </div>
                       <div style={{ fontSize: '12px', color: 'var(--text-sub)', marginTop: '4px' }}>{s.baseLocation} / {s.skills.join(', ')}</div>
                     </div>
-                    <button className="icon-btn-dark"><span className="material-symbols-outlined" style={{ fontSize: '20px' }}>edit</span></button>
+                    <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                      <button 
+                        onClick={() => handleToggleRole(s.id, s.role)}
+                        className="btn-secondary" 
+                        style={{ fontSize: '11px', padding: '6px 10px', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', border: '1px solid var(--border-color)', background: '#F8FAFC' }}
+                      >
+                        <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>swap_horiz</span>
+                        権限変更
+                      </button>
+                      <button className="icon-btn-dark"><span className="material-symbols-outlined" style={{ fontSize: '20px' }}>edit</span></button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -251,6 +277,19 @@ export function SettingsPage({ onLogoutSuccess }: SettingsPageProps) {
           <h3 style={{ fontSize: '14px', marginBottom: '12px', color: 'var(--text-sub)' }}>新しいスタッフを登録</h3>
           <form onSubmit={handleStaffSave} style={{ display: 'flex', flexDirection: 'column', gap: '16px', background: 'white', padding: '16px', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }}>
             
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)' }}>権限区分 *</label>
+              <select 
+                value={formData.role} 
+                onChange={e => setFormData({...formData, role: e.target.value as 'admin' | 'staff'})} 
+                disabled={staffSaving} 
+                style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc', background: 'white', fontSize: '14px' }}
+              >
+                <option value="staff">一般スタッフ (Staff)</option>
+                <option value="admin">管理者 (Admin)</option>
+              </select>
+            </div>
+
             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
               <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)' }}>実名 *</label>
               <input type="text" required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} disabled={staffSaving} style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }} placeholder="例: 鈴木 一郎" />

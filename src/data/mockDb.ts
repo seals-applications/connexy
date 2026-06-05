@@ -93,6 +93,7 @@ export interface Staff {
   prText?: string;
   completedTrainings?: string[];
   hasCertificate?: boolean;
+  role?: 'admin' | 'staff';
 }
 
 // 契約タスク(ContractTask)の型定義
@@ -263,22 +264,26 @@ const unmapTalent = (talent: Partial<Talent>): any => {
   return row;
 };
 
-const mapStaff = (row: any): Staff => ({
-  id: row.id,
-  userId: row.user_id,
-  name: row.name,
-  maskedName: row.masked_name,
-  baseLocation: row.base_location,
-  nearestStation: row.nearest_station,
-  preferredArea: row.preferred_area,
-  price: row.price,
-  skills: row.skills || [],
-  carriers: row.carriers || [],
-  experience: row.experience,
-  prText: row.pr_text,
-  completedTrainings: row.completed_trainings || [],
-  hasCertificate: row.has_certificate
-});
+const mapStaff = (row: any): Staff => {
+  const localRole = localStorage.getItem('staff_role_' + row.id) as 'admin' | 'staff' | null;
+  return {
+    id: row.id,
+    userId: row.user_id,
+    name: row.name,
+    maskedName: row.masked_name,
+    baseLocation: row.base_location,
+    nearestStation: row.nearest_station,
+    preferredArea: row.preferred_area,
+    price: row.price,
+    skills: row.skills || [],
+    carriers: row.carriers || [],
+    experience: row.experience,
+    prText: row.pr_text,
+    completedTrainings: row.completed_trainings || [],
+    hasCertificate: row.has_certificate,
+    role: localRole || row.role || 'staff'
+  };
+};
 
 const unmapStaff = (staff: Partial<Staff>): any => {
   const row: any = { ...staff };
@@ -290,6 +295,7 @@ const unmapStaff = (staff: Partial<Staff>): any => {
   if ('prText' in staff) { row.pr_text = staff.prText; delete row.prText; }
   if ('completedTrainings' in staff) { row.completed_trainings = staff.completedTrainings; delete row.completedTrainings; }
   if ('hasCertificate' in staff) { row.has_certificate = staff.hasCertificate; delete row.hasCertificate; }
+  if ('role' in staff) { row.role = staff.role; }
   return row;
 };
 
@@ -318,15 +324,19 @@ const unmapContractTask = (task: Partial<ContractTask>): any => {
   return row;
 };
 
-const mapUser = (row: any): User => ({
-  id: row.id,
-  name: row.name,
-  role: row.role,
-  loginId: row.login_id,
-  password: row.password,
-  status: row.status || 'approved',
-  invoiceNumber: row.invoice_number
-});
+const mapUser = (row: any): User => {
+  const localStatus = localStorage.getItem('company_status_' + row.id) as 'pending' | 'approved' | 'rejected' | null;
+  const localInvoice = localStorage.getItem('company_invoice_' + row.id);
+  return {
+    id: row.id,
+    name: row.name,
+    role: row.role,
+    loginId: row.login_id,
+    password: row.password,
+    status: localStatus || row.status || 'approved',
+    invoiceNumber: localInvoice || row.invoice_number
+  };
+};
 
 export const api = {
   getJobs: async (): Promise<Job[]> => {
@@ -399,9 +409,21 @@ export const api = {
   addStaff: async (staff: Omit<Staff, 'id'>): Promise<Staff> => {
     const id = 's' + Date.now();
     const newStaff = { ...staff, id, completedTrainings: [] };
+    if (newStaff.role) {
+      localStorage.setItem('staff_role_' + id, newStaff.role);
+    }
     const row = unmapStaff(newStaff);
     const { error } = await supabase.from('staffs').insert([row]);
-    if (error) { console.error('addStaff error:', error); throw error; }
+    if (error) {
+      console.warn('addStaff database insert failed, attempting fallback insertion without role column:', error);
+      const fallbackRow = { ...row };
+      delete fallbackRow.role;
+      const { error: errorFallback } = await supabase.from('staffs').insert([fallbackRow]);
+      if (errorFallback) {
+        console.error('addStaff fallback insert also failed:', errorFallback);
+        throw errorFallback;
+      }
+    }
     return newStaff;
   },
 
@@ -499,5 +521,58 @@ export const api = {
     const { data, error } = await supabase.from('companies').select('*');
     if (error) { console.error('getUsers error:', error); return []; }
     return data.map(mapUser);
+  },
+
+  registerCompany: async (company: Omit<User, 'id'>): Promise<User> => {
+    const id = 'c' + Date.now();
+    const newUser: User = { ...company, id, status: 'pending', role: 'contractor' };
+    localStorage.setItem('company_status_' + id, 'pending');
+    if (newUser.invoiceNumber) {
+      localStorage.setItem('company_invoice_' + id, newUser.invoiceNumber);
+    }
+    const row = {
+      id: newUser.id,
+      name: newUser.name,
+      role: newUser.role,
+      login_id: newUser.loginId,
+      password: newUser.password,
+      status: newUser.status,
+      invoice_number: newUser.invoiceNumber
+    };
+    const { error } = await supabase.from('companies').insert([row]);
+    if (error) {
+      console.warn('registerCompany failed, trying fallback without status/invoice_number columns:', error);
+      const fallbackRow = {
+        id: row.id,
+        name: row.name,
+        role: row.role,
+        login_id: row.login_id,
+        password: row.password
+      };
+      const { error: errorFallback } = await supabase.from('companies').insert([fallbackRow]);
+      if (errorFallback) {
+        console.error('registerCompany fallback also failed:', errorFallback);
+        throw errorFallback;
+      }
+    }
+    return newUser;
+  },
+
+  updateStaffRole: async (staffId: string, role: 'admin' | 'staff'): Promise<void> => {
+    localStorage.setItem('staff_role_' + staffId, role);
+    try {
+      await supabase.from('staffs').update({ role }).eq('id', staffId);
+    } catch (e) {
+      console.warn('DB update failed, using localStorage fallback', e);
+    }
+  },
+
+  updateCompanyStatus: async (companyId: string, status: 'pending' | 'approved' | 'rejected'): Promise<void> => {
+    localStorage.setItem('company_status_' + companyId, status);
+    try {
+      await supabase.from('companies').update({ status }).eq('id', companyId);
+    } catch (e) {
+      console.warn('DB update company status failed, using localStorage fallback', e);
+    }
   }
 };
