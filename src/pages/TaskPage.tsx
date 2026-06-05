@@ -2,6 +2,60 @@ import { useState, useEffect } from 'react';
 import { api } from '../data/mockDb';
 import type { ContractTask, Training, Staff, Job, Talent } from '../data/mockDb';
 
+const quizData: Record<string, Array<{ question: string, options: string[], answer: number }>> = {
+  tr1: [
+    {
+      question: "店頭イベント接客において、お客様へお声がけする際の適切な距離感はどれですか？",
+      options: ["密着する距離", "およそ1.5〜2メートル程度（パーソナルスペースを意識）", "5メートル以上離れて大声で呼ぶ"],
+      answer: 1
+    },
+    {
+      question: "接客時の身だしなみとして、正しくないものはどれですか？",
+      options: ["清潔感のある服装", "派手すぎるアクセサリーや強い香水", "社章や名札を正しく着用する"],
+      answer: 1
+    },
+    {
+      question: "イベント開始時刻のどれくらい前までに現場に到着・準備を終えるべきですか？",
+      options: ["イベント開始時間ちょうど", "開始の15〜30分前（現場の指示に合わせる）", "イベント終了時間の直前"],
+      answer: 1
+    }
+  ],
+  tr2: [
+    {
+      question: "光回線のクロージングにおいて、最も重要なヒアリング項目はどれですか？",
+      options: ["現在ご利用中のインターネット回線と月額料金", "お客様の趣味・家族構成", "世間話のみ"],
+      answer: 0
+    },
+    {
+      question: "他社からの乗り換え提案の際、メリットの説明として正しいものはどれですか？",
+      options: ["デメリットを一切隠して強引に契約を迫る", "違約金補填制度や月額料金の差額など、具体的な数値を提示して比較説明する", "嘘の料金を伝える"],
+      answer: 1
+    },
+    {
+      question: "ご契約内容の説明（重要事項説明）は誰が行うべきですか？",
+      options: ["説明を省略してサインだけもらう", "規約に基づき、お客様に十分ご理解いただけるよう丁寧かつ漏れなく行う", "お客様自身が後で適当に読むように促す"],
+      answer: 1
+    }
+  ],
+  tr3: [
+    {
+      question: "現場責任者（ディレクター）として、スタッフの出退勤管理はどう行うべきですか？",
+      options: ["スタッフに任せて確認しない", "本アプリのGPSチェックイン等を利用して、時間通りに現場にいることを確認・記録する", "終了後に適当に報告を書く"],
+      answer: 1
+    },
+    {
+      question: "トラブルやトラブルの兆候が発生した際、ディレクターの最初の行動はどれですか？",
+      options: ["放置して様子を見る", "速やかに事実確認を行い、発注元およびアプリ運営事務局（必要に応じて）へ報告・相談する", "スタッフのせいにして逃げる"],
+      answer: 1
+    },
+    {
+      question: "現場の終礼時に行うべき最も重要なことはどれですか？",
+      options: ["全員で直帰するだけ", "当日の獲得実績の集計、問題点の共有、およびブースの清掃・片付けの確認", "他社の悪口を言う"],
+      answer: 1
+    }
+  ]
+};
+
 export function TaskPage() {
   const [tasks, setTasks] = useState<ContractTask[]>([]);
   const [trainings, setTrainings] = useState<Training[]>([]);
@@ -12,11 +66,16 @@ export function TaskPage() {
 
   // 完了報告・評価モーダルState
   const [selectedTask, setSelectedTask] = useState<ContractTask | null>(null);
-  const [evalRating, setEvalRating] = useState<'good' | 'bad'>('good');
+  const [evalRating, setEvalRating] = useState<number>(5); // 1 to 5 stars
   const [evalComment, setEvalComment] = useState('');
   
   // 評価対象のトグル用 (デモ用：どの登場人物の視点で評価するか)
   const [evalRole, setEvalRole] = useState<'client' | 'worker' | 'staffToField'>('client');
+
+  // 研修クイズState
+  const [showQuizModal, setShowQuizModal] = useState(false);
+  const [quizTrainingId, setQuizTrainingId] = useState<string | null>(null);
+  const [quizAnswers, setQuizAnswers] = useState<Record<number, number>>({});
 
   // 研修State
   const [activeTraining, setActiveTraining] = useState<Training | null>(null);
@@ -63,7 +122,7 @@ export function TaskPage() {
   // 報告モーダル展開
   const handleOpenReport = (task: ContractTask) => {
     setSelectedTask(task);
-    setEvalRating('good');
+    setEvalRating(5);
     setEvalComment('');
     setEvalRole('client');
   };
@@ -73,8 +132,8 @@ export function TaskPage() {
     e.preventDefault();
     if (!selectedTask) return;
 
-    if (evalRating === 'bad' && !evalComment.trim()) {
-      alert('bad評価の場合は、コメント（改善要望等）の入力が必須です。');
+    if (evalRating <= 2 && !evalComment.trim()) {
+      alert('★2つ以下の評価の場合は、コメント（改善要望等）の入力が必須です。');
       return;
     }
 
@@ -90,7 +149,7 @@ export function TaskPage() {
         target
       );
 
-      alert('完了報告と評価を送信しました。');
+      alert('完了報告と評価を送信しました。\n（※ブラインド評価のため、双方が完了するまで相手の評価は表示されません）');
       setSelectedTask(null);
       await loadData();
     } catch (e) {
@@ -119,11 +178,37 @@ export function TaskPage() {
     }, 2000);
   };
 
-  const handleRegisterTraining = async (trainingId: string) => {
-    if (!myStaff) return;
+  const handleRegisterTraining = (trainingId: string) => {
+    setQuizTrainingId(trainingId);
+    setQuizAnswers({});
+    setShowQuizModal(true);
+  };
+
+  const handleQuizSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!quizTrainingId || !myStaff) return;
+    const questions = quizData[quizTrainingId];
+    if (!questions) return;
+
+    let allCorrect = true;
+    for (let i = 0; i < questions.length; i++) {
+      if (quizAnswers[i] !== questions[i].answer) {
+        allCorrect = false;
+        break;
+      }
+    }
+
+    if (!allCorrect) {
+      alert('回答が正しくありません。講義内容を復習して、もう一度回答してください。');
+      return;
+    }
+
     try {
-      await api.completeTraining(myStaff.id, trainingId);
-      alert('研修の受講完了が登録されました！スタッフ詳細プロフィールに実績バッジが反映されます。');
+      await api.completeTraining(myStaff.id, quizTrainingId);
+      alert('合格です！研修の受講完了が登録されました。\nスタッフ詳細プロフィールに実績バッジが反映されます。');
+      setShowQuizModal(false);
+      setQuizTrainingId(null);
+      setQuizAnswers({});
       setActiveTraining(null);
       await loadData();
     } catch (e) {
@@ -331,6 +416,62 @@ export function TaskPage() {
           )}
         </div>
 
+        {/* 2-2. 完了済みのタスク（ブラインド相互評価） */}
+        <h3 className="section-title">完了済みのタスク（相互評価結果）</h3>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '24px' }}>
+          {tasks.filter(t => t.status === 'completed').map(task => {
+            const evalClient = task.evaluations?.byClient;
+            const evalWorker = task.evaluations?.byWorker || task.evaluations?.byStaffToField;
+            const bothEvaluated = !!evalClient && !!evalWorker;
+
+            return (
+              <div key={task.id} style={{ background: 'white', borderRadius: '12px', padding: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.02)', border: '1px solid var(--border-color)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+                  <span className="status-badge badge-contracted" style={{ margin: 0, fontSize: '11px', background: '#D1FAE5', color: '#065F46' }}>
+                    完了
+                  </span>
+                  <span style={{ fontSize: '12px', color: 'var(--text-sub)' }}>稼働日: {task.date}</span>
+                </div>
+                <h4 style={{ margin: '0 0 4px 0', fontSize: '15px' }}>{task.jobTitle}</h4>
+                <p style={{ margin: '0 0 12px 0', fontSize: '13px', color: 'var(--text-sub)' }}>
+                  稼働スタッフ: {task.workerName} （{task.companyName}）
+                </p>
+
+                <div style={{ background: '#F8FAFC', padding: '12px', borderRadius: '8px', border: '1px solid #E2E8F0', fontSize: '13px' }}>
+                  {bothEvaluated ? (
+                    <div>
+                      <div style={{ fontWeight: 'bold', color: 'var(--text-main)', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <span className="material-symbols-outlined" style={{ fontSize: '16px', color: '#10B981' }}>check_circle</span>
+                        相互評価が開示されました（公開中）
+                      </div>
+                      <div style={{ marginBottom: '6px' }}>
+                        <strong style={{ color: 'var(--primary)' }}>発注者からの評価:</strong>{' '}
+                        <span style={{ color: '#F59E0B' }}>{'★'.repeat(evalClient.rating)}{'☆'.repeat(5 - evalClient.rating)}</span>{' '}
+                        {evalClient.comment && <span style={{ color: 'var(--text-sub)', fontSize: '12px' }}> - {evalClient.comment}</span>}
+                      </div>
+                      <div>
+                        <strong style={{ color: '#10B981' }}>スタッフからの評価:</strong>{' '}
+                        <span style={{ color: '#F59E0B' }}>{'★'.repeat(evalWorker.rating)}{'☆'.repeat(5 - evalWorker.rating)}</span>{' '}
+                        {evalWorker.comment && <span style={{ color: 'var(--text-sub)', fontSize: '12px' }}> - {evalWorker.comment}</span>}
+                      </div>
+                    </div>
+                  ) : (
+                    <div style={{ color: '#64748B', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span className="material-symbols-outlined" style={{ fontSize: '18px', color: '#EF4444' }}>hourglass_empty</span>
+                      <span>ブラインド評価中: 双方が評価を入力するまで非公開です。</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+          {tasks.filter(t => t.status === 'completed').length === 0 && (
+            <div style={{ textAlign: 'center', padding: '16px', background: 'white', borderRadius: '12px', color: 'var(--text-sub)', fontSize: '13px' }}>
+              完了済みのタスクはありません。
+            </div>
+          )}
+        </div>
+
         {/* 3. 本日の現場セクション */}
         <h3 className="section-title">本日の現場</h3>
         <div className="task-card" style={{ background: 'white', borderRadius: '12px', padding: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
@@ -346,6 +487,16 @@ export function TaskPage() {
             東京都新宿区西新宿1-1-1
           </p>
           <div className="checkin-container" style={{ borderTop: '1px solid var(--border-color)', paddingTop: '16px' }}>
+            <div style={{ position: 'relative', height: '100px', background: '#F1F5F9', borderRadius: '8px', marginBottom: '12px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #E2E8F0' }}>
+              {/* Mock Map Background Pattern */}
+              <div style={{ position: 'absolute', inset: 0, opacity: 0.08, backgroundImage: 'radial-gradient(circle, #000000 8%, transparent 8%)', backgroundSize: '16px 16px' }}></div>
+              {/* GPS Fence Area */}
+              <div style={{ width: '70px', height: '70px', borderRadius: '50%', border: '2px dashed #3B82F6', background: 'rgba(59, 130, 246, 0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+                <span style={{ fontSize: '9px', color: '#2563EB', fontWeight: 'bold', position: 'absolute', top: '4px', whiteSpace: 'nowrap' }}>GPS判定エリア</span>
+                {/* User pulsing location dot */}
+                <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#10B981', border: '2px solid white', boxShadow: '0 0 6px rgba(16, 185, 129, 0.8)' }}></div>
+              </div>
+            </div>
             <p className="radius-status success" style={{ color: '#10B981', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', marginBottom: '12px' }}>
               <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>my_location</span>
               GPSエリア内にいます
@@ -444,25 +595,26 @@ export function TaskPage() {
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
               <label style={{ fontSize: '13px', fontWeight: 'bold' }}>評価 *</label>
-              <div style={{ display: 'flex', gap: '20px' }}>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
-                  <input type="radio" name="eval-rating" checked={evalRating === 'good'} onChange={() => setEvalRating('good')} />
-                  <span style={{ color: '#10B981', fontWeight: 'bold' }}>good 👍</span>
-                </label>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
-                  <input type="radio" name="eval-rating" checked={evalRating === 'bad'} onChange={() => setEvalRating('bad')} />
-                  <span style={{ color: '#EF4444', fontWeight: 'bold' }}>bad 👎</span>
-                </label>
+              <div style={{ display: 'flex', gap: '8px', fontSize: '28px', cursor: 'pointer' }}>
+                {[1, 2, 3, 4, 5].map(star => (
+                  <span 
+                    key={star} 
+                    onClick={() => setEvalRating(star)} 
+                    style={{ color: star <= evalRating ? '#F59E0B' : '#E5E7EB', transition: 'color 0.2s' }}
+                  >
+                    ★
+                  </span>
+                ))}
               </div>
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
               <label style={{ fontSize: '13px', fontWeight: 'bold' }}>
-                コメント {evalRating === 'bad' ? <span style={{ color: '#EF4444' }}>(必須)</span> : <span style={{ color: 'var(--text-sub)' }}>(任意)</span>}
+                コメント {evalRating <= 2 ? <span style={{ color: '#EF4444' }}>(★2以下は必須)</span> : <span style={{ color: 'var(--text-sub)' }}>(任意)</span>}
               </label>
               <textarea
                 className="form-control"
-                placeholder={evalRating === 'bad' ? "bad評価の理由を具体的に入力してください。" : "勤務態度や現場環境のフィードバックをご入力ください。"}
+                placeholder={evalRating <= 2 ? "★2以下の評価の場合は、具体的な理由を入力してください。" : "勤務態度や現場環境のフィードバックをご入力ください。"}
                 value={evalComment}
                 onChange={e => setEvalComment(e.target.value)}
                 rows={3}
@@ -476,7 +628,7 @@ export function TaskPage() {
                 type="submit" 
                 className="btn-primary" 
                 style={{ flex: 1, margin: 0 }}
-                disabled={evalRating === 'bad' && !evalComment.trim()}
+                disabled={evalRating <= 2 && !evalComment.trim()}
               >
                 報告を送信
               </button>
@@ -511,6 +663,55 @@ export function TaskPage() {
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* 研修理解度テスト（クイズ）モーダル */}
+      {showQuizModal && quizTrainingId && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.6)', zIndex: 6000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
+          <form onSubmit={handleQuizSubmit} style={{ background: 'white', borderRadius: '16px', padding: '24px', width: '100%', maxWidth: '450px', display: 'flex', flexDirection: 'column', gap: '20px', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)' }}>
+            <div style={{ borderBottom: '1px solid #E2E8F0', paddingBottom: '12px' }}>
+              <h3 style={{ margin: 0, fontSize: '18px', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span className="material-symbols-outlined" style={{ color: 'var(--primary)' }}>quiz</span>
+                研修理解度テスト
+              </h3>
+              <p style={{ margin: '4px 0 0 0', fontSize: '12px', color: 'var(--text-sub)' }}>実績マークを有効にするために、以下のクイズに全問正解してください。</p>
+            </div>
+
+            {quizData[quizTrainingId]?.map((q, idx) => (
+              <div key={idx} style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <div style={{ fontSize: '14px', fontWeight: 'bold', color: 'var(--text-main)', lineHeight: '1.4' }}>
+                  問{idx + 1}. {q.question}
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  {q.options.map((opt, optIdx) => (
+                    <label key={optIdx} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 12px', background: '#F8FAFC', border: quizAnswers[idx] === optIdx ? '1px solid var(--primary)' : '1px solid #E2E8F0', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', transition: 'all 0.2s' }}>
+                      <input 
+                        type="radio" 
+                        name={`quiz-q-${idx}`} 
+                        checked={quizAnswers[idx] === optIdx} 
+                        onChange={() => setQuizAnswers(prev => ({ ...prev, [idx]: optIdx }))} 
+                        style={{ accentColor: 'var(--primary)' }}
+                      />
+                      <span style={{ color: quizAnswers[idx] === optIdx ? 'var(--primary)' : 'var(--text-main)', fontWeight: quizAnswers[idx] === optIdx ? 'bold' : 'normal' }}>{opt}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            ))}
+
+            <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
+              <button type="button" className="btn-secondary" style={{ flex: 1, margin: 0 }} onClick={() => { setShowQuizModal(false); setQuizTrainingId(null); setQuizAnswers({}); }}>キャンセル</button>
+              <button 
+                type="submit" 
+                className="btn-primary" 
+                style={{ flex: 1, margin: 0 }}
+                disabled={Object.keys(quizAnswers).length < (quizData[quizTrainingId]?.length || 0)}
+              >
+                回答を送信する
+              </button>
+            </div>
+          </form>
         </div>
       )}
 

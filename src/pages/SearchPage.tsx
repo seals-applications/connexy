@@ -1165,7 +1165,12 @@ export function SearchPage() {
                               </div>
                               <div>
                                 <div style={{ fontSize: '12px', color: 'var(--text-sub)', marginBottom: '2px' }}>{talent.companyName}</div>
-                                <h3 style={{ fontSize: '15px', color: 'var(--text-main)', margin: 0 }}>{talent.maskedName}</h3>
+                                <h3 style={{ fontSize: '15px', color: 'var(--text-main)', margin: 0, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                  {talent.maskedName}
+                                  {talent.hasCertificate && (
+                                    <span className="material-symbols-outlined" style={{ color: '#10B981', fontSize: '16px' }} title="運営確認済">verified</span>
+                                  )}
+                                </h3>
                               </div>
                             </div>
                             <span className="status-badge badge-contracted" style={{ margin: 0, fontSize: '11px', background: '#D1FAE5', color: '#065F46', whiteSpace: 'nowrap' }}>稼働可能</span>
@@ -1237,7 +1242,12 @@ export function SearchPage() {
                   {selectedTalent.maskedName.charAt(0)}
                 </div>
                 <div style={{ fontSize: '13px', color: 'var(--text-sub)', marginBottom: '4px' }}>{selectedTalent.companyName}</div>
-                <h2 style={{ margin: '0 0 8px 0', fontSize: '20px' }}>{selectedTalent.maskedName}</h2>
+                <h2 style={{ margin: '0 0 8px 0', fontSize: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                  {selectedTalent.maskedName}
+                  {selectedTalent.hasCertificate && (
+                    <span className="material-symbols-outlined" style={{ color: '#10B981', fontSize: '20px', verticalAlign: 'middle' }} title="運営確認済">verified</span>
+                  )}
+                </h2>
                 <span className="status-badge badge-contracted" style={{ display: 'inline-block', background: '#D1FAE5', color: '#065F46', marginBottom: '16px' }}>稼働可能</span>
                 
                 <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap' }}>

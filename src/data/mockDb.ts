@@ -14,7 +14,7 @@ export interface User {
 // 評価(Evaluation)の型定義
 export interface Evaluation {
   id: string;
-  rating: 'good' | 'bad';
+  rating: number; // 1 to 5 stars
   comment?: string;
   evaluatorName: string;
   createdAt: string;
@@ -74,6 +74,7 @@ export interface Talent {
   carriers?: string[];
   availableDates?: string;
   completedTrainings?: string[];
+  hasCertificate?: boolean;
 }
 
 // 登録済みスタッフ(Staff)の型定義
@@ -91,6 +92,7 @@ export interface Staff {
   experience?: string;
   prText?: string;
   completedTrainings?: string[];
+  hasCertificate?: boolean;
 }
 
 // 契約タスク(ContractTask)の型定義
@@ -193,7 +195,8 @@ const mapTalent = (row: any): Talent => ({
   nearestStation: row.nearest_station,
   carriers: row.carriers || [],
   availableDates: row.available_dates,
-  completedTrainings: row.completed_trainings || []
+  completedTrainings: row.completed_trainings || [],
+  hasCertificate: row.has_certificate
 });
 
 const unmapTalent = (talent: Partial<Talent>): any => {
@@ -208,6 +211,7 @@ const unmapTalent = (talent: Partial<Talent>): any => {
   if ('nearestStation' in talent) { row.nearest_station = talent.nearestStation; delete row.nearestStation; }
   if ('availableDates' in talent) { row.available_dates = talent.availableDates; delete row.availableDates; }
   if ('completedTrainings' in talent) { row.completed_trainings = talent.completedTrainings; delete row.completedTrainings; }
+  if ('hasCertificate' in talent) { row.has_certificate = talent.hasCertificate; delete row.hasCertificate; }
   return row;
 };
 
@@ -224,7 +228,8 @@ const mapStaff = (row: any): Staff => ({
   carriers: row.carriers || [],
   experience: row.experience,
   prText: row.pr_text,
-  completedTrainings: row.completed_trainings || []
+  completedTrainings: row.completed_trainings || [],
+  hasCertificate: row.has_certificate
 });
 
 const unmapStaff = (staff: Partial<Staff>): any => {
@@ -236,6 +241,7 @@ const unmapStaff = (staff: Partial<Staff>): any => {
   if ('preferredArea' in staff) { row.preferred_area = staff.preferredArea; delete row.preferredArea; }
   if ('prText' in staff) { row.pr_text = staff.prText; delete row.prText; }
   if ('completedTrainings' in staff) { row.completed_trainings = staff.completedTrainings; delete row.completedTrainings; }
+  if ('hasCertificate' in staff) { row.has_certificate = staff.hasCertificate; delete row.hasCertificate; }
   return row;
 };
 
@@ -385,7 +391,7 @@ export const api = {
 
   submitReport: async (
     taskId: string,
-    rating: 'good' | 'bad',
+    rating: number,
     comment: string,
     evaluatorName: string,
     target: 'byClient' | 'byWorker' | 'byStaffToField'
@@ -405,7 +411,7 @@ export const api = {
     if (!task.evaluations) task.evaluations = {};
     task.evaluations[target] = newEval;
 
-    if (rating === 'bad') {
+    if (rating <= 2) {
       task.status = 'disputed';
     } else {
       task.status = 'completed';

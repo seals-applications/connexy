@@ -21,7 +21,8 @@ export function SettingsPage({ onLogoutSuccess }: SettingsPageProps) {
   const [formData, setFormData] = useState({
     name: '', maskedName: '', baseLocation: '', nearestStation: '',
     locationName: '', price: 15000,
-    skills: [] as string[], carriers: [] as string[], experience: '', prText: ''
+    skills: [] as string[], carriers: [] as string[], experience: '', prText: '',
+    hasCertificate: false
   });
 
   const availableSkills = ['キャンペーンクルー', 'クローザー', 'ディレクター'];
@@ -92,7 +93,8 @@ export function SettingsPage({ onLogoutSuccess }: SettingsPageProps) {
       skills: formData.skills,
       carriers: formData.carriers,
       experience: formData.experience,
-      prText: formData.prText
+      prText: formData.prText,
+      hasCertificate: formData.hasCertificate
     };
 
     const savedStaff = await api.addStaff(newStaff);
@@ -101,7 +103,8 @@ export function SettingsPage({ onLogoutSuccess }: SettingsPageProps) {
     setFormData({
       name: '', maskedName: '', baseLocation: '', nearestStation: '',
       locationName: '', price: 15000,
-      skills: [], carriers: [], experience: '', prText: ''
+      skills: [], carriers: [], experience: '', prText: '',
+      hasCertificate: false
     });
 
     setStaffSaving(false);
@@ -226,7 +229,16 @@ export function SettingsPage({ onLogoutSuccess }: SettingsPageProps) {
                 {staffs.map(s => (
                   <div key={s.id} style={{ background: 'white', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div>
-                      <div style={{ fontSize: '15px', fontWeight: 'bold' }}>{s.name} <span style={{ fontSize: '12px', color: 'var(--text-sub)', fontWeight: 'normal' }}>({s.maskedName})</span></div>
+                      <div style={{ fontSize: '15px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                        {s.name} 
+                        <span style={{ fontSize: '12px', color: 'var(--text-sub)', fontWeight: 'normal' }}>({s.maskedName})</span>
+                        {s.hasCertificate && (
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '2px', background: '#D1FAE5', color: '#065F46', padding: '2px 6px', borderRadius: '4px', fontSize: '10px', fontWeight: 'bold' }}>
+                            <span className="material-symbols-outlined" style={{ fontSize: '12px' }}>verified</span>
+                            運営確認済
+                          </span>
+                        )}
+                      </div>
                       <div style={{ fontSize: '12px', color: 'var(--text-sub)', marginTop: '4px' }}>{s.baseLocation} / {s.skills.join(', ')}</div>
                     </div>
                     <button className="icon-btn-dark"><span className="material-symbols-outlined" style={{ fontSize: '20px' }}>edit</span></button>
@@ -299,6 +311,12 @@ export function SettingsPage({ onLogoutSuccess }: SettingsPageProps) {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
               <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)' }}>自己PR・経歴</label>
               <textarea rows={4} value={formData.prText} onChange={e => setFormData({...formData, prText: e.target.value})} disabled={staffSaving} style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }} placeholder="過去の経験やアピールポイントを記載してください"></textarea>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)' }}>資格証明書・研修受講証 (画像・PDF)</label>
+              <input type="file" accept="image/*,application/pdf" disabled={staffSaving} onChange={e => { if (e.target.files && e.target.files.length > 0) setFormData(prev => ({ ...prev, hasCertificate: true })) }} style={{ padding: '8px', borderRadius: '4px', border: '1px solid #ccc', background: 'white' }} />
+              <span style={{ fontSize: '11px', color: 'var(--text-sub)' }}>※ファイルをアップロードすると、プロフィールに「運営確認済」マークが付与されます</span>
             </div>
 
             <button type="submit" disabled={staffSaving} style={{ padding: '14px', background: 'var(--primary)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '16px', cursor: staffSaving ? 'not-allowed' : 'pointer', marginTop: '8px' }}>
