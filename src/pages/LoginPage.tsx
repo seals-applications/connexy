@@ -10,6 +10,7 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [agreed, setAgreed] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -85,7 +86,23 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
             />
           </div>
 
-          <button type="submit" disabled={loading} style={styles.button}>
+          <div style={styles.agreementGroup}>
+            <label style={styles.checkboxLabel}>
+              <input
+                type="checkbox"
+                checked={agreed}
+                onChange={(e) => setAgreed(e.target.checked)}
+                style={styles.checkbox}
+                disabled={loading}
+              />
+              利用規約およびプライバシーポリシーに同意する
+              <div style={styles.agreementNotice}>
+                （※当サービスはB2Bの業務委託マッチングに限定されます）
+              </div>
+            </label>
+          </div>
+
+          <button type="submit" disabled={loading || !agreed} style={styles.button(agreed)}>
             {loading ? 'ログイン中...' : 'ログイン'}
           </button>
         </form>
@@ -100,8 +117,8 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
               key={acc.id}
               type="button"
               onClick={() => handleQuickLogin(acc.id)}
-              disabled={loading}
-              style={styles.quickButton}
+              disabled={loading || !agreed}
+              style={styles.quickButton(agreed)}
             >
               <div style={{ fontWeight: 'bold', fontSize: '13px', color: 'var(--primary)' }}>{acc.name}</div>
               <div style={{ fontSize: '11px', color: '#6B7280', marginTop: '2px' }}>ID: {acc.id} / PW: pass</div>
@@ -194,19 +211,47 @@ const styles = {
     background: '#F8FAFC',
     boxSizing: 'border-box' as const,
   },
-  button: {
+  agreementGroup: {
+    display: 'flex',
+    alignItems: 'flex-start',
+    marginTop: '8px',
+    marginBottom: '8px',
+  },
+  checkboxLabel: {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    fontSize: '13px',
+    color: '#334155',
+    cursor: 'pointer',
+    userSelect: 'none' as const,
+  },
+  checkbox: {
+    marginRight: '8px',
+    cursor: 'pointer',
+    width: '16px',
+    height: '16px',
+    accentColor: '#2563EB',
+    alignSelf: 'flex-start',
+    marginTop: '2px',
+  },
+  agreementNotice: {
+    fontSize: '11px',
+    color: '#64748B',
+    marginTop: '4px',
+    marginLeft: '24px',
+  },
+  button: (agreed: boolean) => ({
     padding: '14px',
-    background: '#2563EB',
+    background: agreed ? '#2563EB' : '#94A3B8',
     color: 'white',
     border: 'none',
     borderRadius: '12px',
     fontSize: '16px',
-    fontWeight: 'bold',
-    cursor: 'pointer',
-    transition: 'all 0.2s',
+    fontWeight: 'bold' as const,
+    cursor: agreed ? 'pointer' : 'not-allowed',
+    transition: 'background 0.2s',
     marginTop: '8px',
-    boxShadow: '0 4px 12px rgba(37, 99, 235, 0.2)',
-  },
+  }),
   divider: {
     display: 'flex',
     alignItems: 'center',
@@ -215,26 +260,27 @@ const styles = {
   },
   dividerText: {
     fontSize: '11px',
-    color: '#94A3B8',
+    color: '#64748B',
     width: '100%',
     fontWeight: 'bold' as const,
-    letterSpacing: '0.5px',
+    background: 'white',
+    padding: '0 16px',
   },
   quickLoginSection: {
     display: 'flex',
     flexDirection: 'column' as const,
-    gap: '8px',
-    maxHeight: '200px',
-    overflowY: 'auto' as const,
-    paddingRight: '4px'
+    gap: '10px',
   },
-  quickButton: {
-    background: '#F1F5F9',
+  quickButton: (agreed: boolean) => ({
+    padding: '12px 16px',
+    background: agreed ? '#F1F5F9' : '#F8FAFC',
     border: '1px solid #E2E8F0',
     borderRadius: '12px',
-    padding: '10px 14px',
-    cursor: 'pointer',
-    textAlign: 'left' as const,
-    transition: 'all 0.15s',
-  }
+    display: 'flex',
+    flexDirection: 'column' as const,
+    alignItems: 'center',
+    cursor: agreed ? 'pointer' : 'not-allowed',
+    transition: 'all 0.2s',
+    opacity: agreed ? 1 : 0.6,
+  }),
 };

@@ -42,6 +42,8 @@ export function SearchPage() {
   const [isSelectingLocationOnMap, setIsSelectingLocationOnMap] = useState(false);
   const [tempSelectedLocation, setTempSelectedLocation] = useState<{ lat: number, lng: number } | null>(null);
   const tempMarkerRef = useRef<L.Marker | null>(null);
+  const [isNdaModalOpen, setIsNdaModalOpen] = useState(false);
+  const [ndaAgreed, setNdaAgreed] = useState(false);
 
   // ログインユーザーおよび限定公開先の動的管理用State
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -79,6 +81,7 @@ export function SearchPage() {
     locationName: '', // 公開用の表示名
     exactLocation: '', // 正確な店舗名・住所
     roleType: '' as any, salesChannel: '' as any, carrier: '' as any,
+    contractType: '業務委託' as any,
     availableDates: '', // 案件用など（未使用になるかも）
     selectedDates: [] as string[], // カレンダーで選択された日付
     eventDate: '',
@@ -177,6 +180,7 @@ export function SearchPage() {
         roleType: formData.roleType as Job['roleType'],
         salesChannel: formData.salesChannel as Job['salesChannel'],
         carrier: formData.carrier as Job['carrier'],
+        contractType: formData.contractType as Job['contractType'],
         detailedDescription: formData.description,
         eventDate: [...selectedJobDates].sort().join(', '),
         applicationDeadline: formData.applicationDeadline,
@@ -459,7 +463,13 @@ export function SearchPage() {
       } else if (target && target.classList.contains('view-job-btn')) {
         const jobId = target.getAttribute('data-id');
         const job = jobs.find(j => j.id === jobId);
-        if (job) setSelectedJob(job);
+        if (job) {
+          if (currentUser?.status === 'pending') {
+            alert('本人確認書類（登記簿等）の審査中です。\n審査完了後に詳細情報が閲覧可能になります。');
+            return;
+          }
+          setSelectedJob(job);
+        }
       } else if (target && target.classList.contains('view-area-btn')) {
         const areaName = target.getAttribute('data-area');
         if (areaName) {
@@ -473,7 +483,7 @@ export function SearchPage() {
     };
     document.addEventListener('click', handleDocumentClick);
     return () => document.removeEventListener('click', handleDocumentClick);
-  }, [talents, jobs]);
+  }, [talents, jobs, currentUser]);
 
   // 人材をフィルタリング＆ソートする
   const filteredTalents = useMemo(() => {
@@ -673,14 +683,20 @@ export function SearchPage() {
         const marker = L.marker([group.lat, group.lng], { icon: jobGroupIcon });
         
         // ポップアップ内に全案件のリストを描画
-        const jobsHtml = group.jobs.map(job => `
-          <div style="border-bottom: 1px solid #E5E7EB; padding-bottom: 8px; margin-bottom: 8px;">
-            <b style="font-size: 14px; display: block;">${job.isUrgent ? '【緊急】' : ''}${job.title}</b>
-            <div style="font-size: 12px; font-weight: bold; margin-top: 4px; color: #4B5563;">📍 ${job.locationName}</div>
-            <div style="font-size: 13px; color: var(--primary); font-weight: bold; margin-top: 4px;">単価: ¥${job.price.toLocaleString()}</div>
+        const jobsHtml = group.jobs.map(job => {
+          const statusText = job.status === 'open' ? '募集中' : job.status === 'closed' ? '成約済' : '交渉中';
+          return `
+          <div style="background: ${job.isUrgent ? '#FEF2F2' : '#F9FAFB'}; border: 1px solid ${job.isUrgent ? '#FECACA' : '#E5E7EB'}; padding: 8px; border-radius: 6px; margin-bottom: 8px;">
+            <div style="display: flex; gap: 4px; margin-bottom: 4px;">
+              <span style="font-size: 10px; padding: 2px 4px; background: #E0E7FF; color: #4338CA; border-radius: 4px; font-weight: bold;">${statusText}</span>
+              ${job.contractType ? `<span style="font-size: 10px; padding: 2px 4px; background: #F1F5F9; color: #475569; border-radius: 4px; border: 1px solid #CBD5E1; font-weight: bold;">${job.contractType}</span>` : ''}
+            </div>
+            <div style="font-weight: bold; font-size: 13px; color: #111827; margin-bottom: 4px; line-height: 1.3;">${job.title}</div>
+            <div style="font-size: 11px; color: #6B7280; margin-bottom: 4px;">${job.carrier || ''} ${job.salesChannel || ''}</div>
+            <div style="font-weight: bold; font-size: 13px; color: var(--primary);">¥${job.price.toLocaleString()}/日</div>
             <button class="view-job-btn" data-id="${job.id}" style="margin-top: 6px; width: 100%; padding: 6px; background: var(--primary); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold;">詳細を見る</button>
           </div>
-        `).join('');
+        `}).join('');
 
         marker.bindPopup(`
           <div style="font-family: 'Inter', sans-serif; max-height: 250px; overflow-y: auto; padding-right: 8px; width: 220px;">
@@ -1065,7 +1081,13 @@ export function SearchPage() {
                   return (
                   <div key={job.id} 
                     className={`job-card-modern ${job.isUrgent ? 'job-card-urgent' : ''}`}
-                    onClick={() => setSelectedJob(job)}
+                    onClick={() => {
+                      if (currentUser?.status === 'pending') {
+                        alert('本人確認書類（登記簿等）の審査中です。\n審査完了後に詳細情報が閲覧可能になります。');
+                        return;
+                      }
+                      setSelectedJob(job);
+                    }}
                   >
                     
                     {job.isUrgent && (
@@ -1091,7 +1113,15 @@ export function SearchPage() {
                     )}
 
                     <div className="job-tags-container">
-                      {job.carrier && <span className="modern-tag tag-carrier">{job.carrier}</span>}
+                    <span className={`status-badge badge-${job.status === 'open' ? 'negotiating' : job.status === 'closed' ? 'closed' : 'negotiating'}`} style={{ display: 'inline-block', fontSize: '11px', padding: '2px 6px', marginRight: '4px' }}>
+                      {job.status === 'open' ? '募集中' : job.status === 'closed' ? '成約済' : '交渉中'}
+                    </span>
+                    {job.contractType && (
+                      <span style={{ display: 'inline-block', fontSize: '11px', padding: '2px 6px', marginRight: '4px', background: '#F1F5F9', color: '#475569', borderRadius: '4px', fontWeight: 'bold', border: '1px solid #CBD5E1' }}>
+                        {job.contractType}
+                      </span>
+                    )}
+                    {job.carrier && <span className="modern-tag tag-carrier">{job.carrier}</span>}
                       {job.salesChannel && <span className="modern-tag tag-channel">{job.salesChannel}</span>}
                       {job.roleType && <span className="modern-tag tag-role">{job.roleType}</span>}
                       {job.workLocation && <span className="modern-tag tag-location">{job.workLocation}</span>}
@@ -1336,7 +1366,16 @@ export function SearchPage() {
           {selectedJob && (
             <>
               <div style={{ background: 'white', padding: '24px 16px', borderBottom: '1px solid var(--border-color)' }}>
-                <span className="status-badge badge-negotiating" style={{ display: 'inline-block', marginBottom: '12px' }}>募集中</span>
+                <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+                  <span className={`status-badge badge-${selectedJob.status === 'open' ? 'negotiating' : selectedJob.status === 'closed' ? 'closed' : 'negotiating'}`} style={{ display: 'inline-block' }}>
+                    {selectedJob.status === 'open' ? '募集中' : selectedJob.status === 'closed' ? '成約済' : '交渉中'}
+                  </span>
+                  {selectedJob.contractType && (
+                    <span style={{ fontSize: '12px', padding: '4px 10px', background: '#F1F5F9', color: '#475569', borderRadius: '4px', fontWeight: 'bold', border: '1px solid #CBD5E1' }}>
+                      契約形態: {selectedJob.contractType}
+                    </span>
+                  )}
+                </div>
                 <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '12px' }}>
                   {selectedJob.carrier && <span style={{ fontSize: '12px', padding: '4px 10px', background: '#E0E7FF', color: '#4338CA', borderRadius: '16px', fontWeight: 'bold' }}>{selectedJob.carrier}</span>}
                   {selectedJob.salesChannel && <span style={{ fontSize: '12px', padding: '4px 10px', background: '#FEF3C7', color: '#D97706', borderRadius: '16px', fontWeight: 'bold' }}>{selectedJob.salesChannel}</span>}
@@ -1404,10 +1443,51 @@ export function SearchPage() {
         </main>
 
         <footer style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: 'white', padding: '16px', borderTop: '1px solid var(--border-color)', display: 'flex', gap: '12px', zIndex: 10 }}>
-          <button style={{ flex: 1, padding: '12px', background: 'var(--primary)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '14px', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}>
-            応募画面へ進む
+          <button 
+            onClick={() => setIsNdaModalOpen(true)}
+            disabled={selectedJob?.status && selectedJob.status !== 'open'}
+            style={{ flex: 1, padding: '12px', background: (!selectedJob?.status || selectedJob.status === 'open') ? 'var(--primary)' : '#94A3B8', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '14px', cursor: (!selectedJob?.status || selectedJob.status === 'open') ? 'pointer' : 'not-allowed', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}
+          >
+            {(!selectedJob?.status || selectedJob.status === 'open') ? '応募画面へ進む' : '募集終了'}
           </button>
         </footer>
+
+        {isNdaModalOpen && selectedJob && (
+          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', zIndex: 3000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ background: 'white', padding: '24px', borderRadius: '16px', width: '90%', maxWidth: '400px', boxShadow: '0 20px 40px rgba(0,0,0,0.2)' }}>
+              <h3 style={{ margin: '0 0 16px 0', fontSize: '18px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span className="material-symbols-outlined" style={{ color: 'var(--primary)' }}>security</span>
+                応募の確認と秘密保持
+              </h3>
+              <p style={{ fontSize: '14px', color: '#475569', marginBottom: '16px', lineHeight: '1.6' }}>
+                この案件の契約形態は「<strong>{selectedJob.contractType || '業務委託'}</strong>」です。<br/><br/>
+                マッチング成立後、正確な店舗情報・連絡先等がアプリ上で開示されます。情報漏洩には十分ご注意ください。
+              </p>
+              
+              <label style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', marginBottom: '24px', cursor: 'pointer', padding: '12px', background: '#F8FAFC', borderRadius: '8px', border: '1px solid #E2E8F0' }}>
+                <input type="checkbox" checked={ndaAgreed} onChange={e => setNdaAgreed(e.target.checked)} style={{ marginTop: '4px', width: '16px', height: '16px', accentColor: 'var(--primary)', flexShrink: 0 }} />
+                <span style={{ fontSize: '13px', color: '#1E293B', fontWeight: 'bold', lineHeight: '1.5' }}>
+                  本案件の契約形態を理解し、開示される店舗情報等の秘密保持に同意します。
+                </span>
+              </label>
+
+              <div style={{ display: 'flex', gap: '12px' }}>
+                <button onClick={() => { setIsNdaModalOpen(false); setNdaAgreed(false); }} style={{ flex: 1, padding: '12px', background: '#F1F5F9', border: 'none', borderRadius: '8px', fontWeight: 'bold', color: '#475569', cursor: 'pointer' }}>キャンセル</button>
+                <button 
+                  disabled={!ndaAgreed} 
+                  onClick={() => {
+                    alert('応募が完了しました！\n（モック版のため実際には応募されていません）');
+                    setIsNdaModalOpen(false);
+                    setNdaAgreed(false);
+                  }}
+                  style={{ flex: 1, padding: '12px', background: ndaAgreed ? 'var(--primary)' : '#94A3B8', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: ndaAgreed ? 'pointer' : 'not-allowed', transition: 'all 0.2s' }}
+                >
+                  同意して応募
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* 新規作成 オーバーレイ */}
@@ -1448,6 +1528,15 @@ export function SearchPage() {
                   <input type="text" required value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} disabled={isSubmitting} style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }} placeholder="例: auショップ新宿 イベントスタッフ" />
                 </div>
                 
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)' }}>契約形態 *</label>
+                  <select required value={formData.contractType} onChange={e => setFormData({...formData, contractType: e.target.value as any})} disabled={isSubmitting} style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc', background: 'white' }}>
+                    <option value="業務委託">業務委託</option>
+                    <option value="労働者派遣">労働者派遣</option>
+                    <option value="その他">その他</option>
+                  </select>
+                </div>
+
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                   <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)' }}>キャリア/回線 *</label>
                   <select required value={formData.carrier} onChange={e => setFormData({...formData, carrier: e.target.value as any, locationName: formData.exactLocation ? generateMaskedLocation(formData.exactLocation, formData.exactLocation, formData.salesChannel, e.target.value, formData.workLocation) : formData.locationName})} disabled={isSubmitting} style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc', background: 'white' }}>

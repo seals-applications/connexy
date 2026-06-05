@@ -7,6 +7,7 @@ export interface User {
   role: 'contractor' | 'worker' | 'admin';
   loginId?: string;
   password?: string;
+  status?: 'pending' | 'approved' | 'rejected';
 }
 
 // 評価(Evaluation)の型定義
@@ -49,6 +50,8 @@ export interface Job {
   isUrgent?: boolean;
   allowedCompanyIds?: string[];
   exactLocation?: string;
+  status?: 'open' | 'negotiating' | 'closed';
+  contractType?: '業務委託' | '労働者派遣' | 'その他';
 }
 
 // 人材(Talent)の型定義
@@ -152,7 +155,9 @@ const mapJob = (row: any): Job => ({
   workLocation: row.work_location,
   isUrgent: row.is_urgent,
   allowedCompanyIds: row.allowed_company_ids,
-  exactLocation: row.exact_location
+  exactLocation: row.exact_location,
+  status: row.status || 'open',
+  contractType: row.contract_type
 });
 
 const unmapJob = (job: Partial<Job>): any => {
@@ -169,6 +174,8 @@ const unmapJob = (job: Partial<Job>): any => {
   if ('isUrgent' in job) { row.is_urgent = job.isUrgent; delete row.isUrgent; }
   if ('allowedCompanyIds' in job) { row.allowed_company_ids = job.allowedCompanyIds; delete row.allowedCompanyIds; }
   if ('exactLocation' in job) { row.exact_location = job.exactLocation; delete row.exactLocation; }
+  if ('status' in job) { row.status = job.status; delete job.status; }
+  if ('contractType' in job) { row.contract_type = job.contractType; delete job.contractType; }
   return row;
 };
 
@@ -267,7 +274,8 @@ const mapUser = (row: any): User => ({
   name: row.name,
   role: row.role,
   loginId: row.login_id,
-  password: row.password
+  password: row.password,
+  status: row.status || 'approved'
 });
 
 export const api = {
