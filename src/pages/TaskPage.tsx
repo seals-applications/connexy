@@ -638,9 +638,24 @@ export function TaskPage() {
                 ) : null}
 
                 <button
-                  className="btn-primary w-full"
+                  className={`btn-checkin ${isInRange ? 'active' : ''}`}
                   disabled={!isInRange}
-                  style={!isInRange ? { backgroundColor: '#E5E7EB', color: '#9CA3AF', cursor: 'not-allowed', border: 'none' } : {}}
+                  style={{
+                    backgroundColor: isInRange ? 'var(--primary)' : '#E5E7EB',
+                    color: isInRange ? 'white' : '#9CA3AF',
+                    cursor: isInRange ? 'pointer' : 'not-allowed',
+                    border: 'none',
+                    boxShadow: isInRange ? '0 4px 12px rgba(37, 99, 235, 0.25)' : 'none',
+                    width: '100%',
+                    padding: '14px',
+                    borderRadius: '12px',
+                    fontWeight: 'bold',
+                    fontSize: '15px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '6px'
+                  }}
                   onClick={handleCheckin}
                 >
                   <span className="material-symbols-outlined" style={{ marginRight: '6px', verticalAlign: 'middle' }}>
