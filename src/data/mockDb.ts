@@ -136,28 +136,55 @@ const mockTrainings: Training[] = [
 ];
 
 // Helper functions for mapping
-const mapJob = (row: any): Job => ({
-  id: row.id,
-  title: row.title,
-  description: row.description,
-  lat: row.lat,
-  lng: row.lng,
-  authorId: row.author_id,
-  price: row.price,
-  locationName: row.location_name,
-  workHours: row.work_hours,
-  requirements: row.requirements,
-  detailedDescription: row.detailed_description,
-  roleType: row.role_type,
-  salesChannel: row.sales_channel,
-  carrier: row.carrier,
-  eventDate: row.event_date,
-  applicationDeadline: row.application_deadline,
-  workLocation: row.work_location,
-  isUrgent: row.is_urgent,
-  allowedCompanyIds: row.allowed_company_ids,
-  exactLocation: row.exact_location
-});
+const mapJob = (row: any): Job => {
+  let lat = Number(row.lat);
+  let lng = Number(row.lng);
+  if (!lat || !lng || isNaN(lat) || isNaN(lng) || lat === 0 || lng === 0) {
+    const locName = row.location_name || '';
+    if (locName.includes('新宿')) {
+      lat = 35.6895; lng = 139.6917;
+    } else if (locName.includes('渋谷')) {
+      lat = 35.6580; lng = 139.7016;
+    } else if (locName.includes('池袋') || locName.includes('豊島')) {
+      lat = 35.7295; lng = 139.7109;
+    } else if (locName.includes('品川')) {
+      lat = 35.6284; lng = 139.7388;
+    } else if (locName.includes('秋葉原')) {
+      lat = 35.6997; lng = 139.7711;
+    } else if (locName.includes('上野')) {
+      lat = 35.7138; lng = 139.7773;
+    } else if (locName.includes('横浜')) {
+      lat = 35.4437; lng = 139.6380;
+    } else {
+      const offsetLat = (Math.random() - 0.5) * 0.05;
+      const offsetLng = (Math.random() - 0.5) * 0.05;
+      lat = 35.6812 + offsetLat;
+      lng = 139.7671 + offsetLng;
+    }
+  }
+  return {
+    id: row.id,
+    title: row.title,
+    description: row.description,
+    lat,
+    lng,
+    authorId: row.author_id,
+    price: row.price,
+    locationName: row.location_name || '千代田区の店舗',
+    workHours: row.work_hours,
+    requirements: row.requirements,
+    detailedDescription: row.detailed_description,
+    roleType: row.role_type,
+    salesChannel: row.sales_channel,
+    carrier: row.carrier,
+    eventDate: row.event_date,
+    applicationDeadline: row.application_deadline,
+    workLocation: row.work_location,
+    isUrgent: row.is_urgent,
+    allowedCompanyIds: row.allowed_company_ids,
+    exactLocation: row.exact_location
+  };
+};
 
 const unmapJob = (job: Partial<Job>): any => {
   const row: any = { ...job };
@@ -176,28 +203,49 @@ const unmapJob = (job: Partial<Job>): any => {
   return row;
 };
 
-const mapTalent = (row: any): Talent => ({
-  id: row.id,
-  name: row.name,
-  description: row.description,
-  lat: row.lat,
-  lng: row.lng,
-  userId: row.user_id,
-  price: row.price,
-  skills: row.skills || [],
-  prText: row.pr_text,
-  experience: row.experience,
-  preferredArea: row.preferred_area,
-  locationName: row.location_name,
-  companyName: row.company_name,
-  maskedName: row.masked_name,
-  baseLocation: row.base_location,
-  nearestStation: row.nearest_station,
-  carriers: row.carriers || [],
-  availableDates: row.available_dates,
-  completedTrainings: row.completed_trainings || [],
-  hasCertificate: row.has_certificate
-});
+const mapTalent = (row: any): Talent => {
+  let lat = Number(row.lat);
+  let lng = Number(row.lng);
+  if (!lat || !lng || isNaN(lat) || isNaN(lng) || lat === 0 || lng === 0) {
+    const locName = row.location_name || '';
+    if (locName.includes('新宿')) {
+      lat = 35.6895; lng = 139.6917;
+    } else if (locName.includes('渋谷')) {
+      lat = 35.6580; lng = 139.7016;
+    } else if (locName.includes('池袋') || locName.includes('豊島')) {
+      lat = 35.7295; lng = 139.7109;
+    } else if (locName.includes('品川')) {
+      lat = 35.6284; lng = 139.7388;
+    } else {
+      const offsetLat = (Math.random() - 0.5) * 0.05;
+      const offsetLng = (Math.random() - 0.5) * 0.05;
+      lat = 35.6812 + offsetLat;
+      lng = 139.7671 + offsetLng;
+    }
+  }
+  return {
+    id: row.id,
+    name: row.name,
+    description: row.description,
+    lat,
+    lng,
+    userId: row.user_id,
+    price: row.price,
+    skills: row.skills || [],
+    prText: row.pr_text,
+    experience: row.experience,
+    preferredArea: row.preferred_area,
+    locationName: row.location_name || '東京都千代田区',
+    companyName: row.company_name,
+    maskedName: row.masked_name,
+    baseLocation: row.base_location,
+    nearestStation: row.nearest_station,
+    carriers: row.carriers || [],
+    availableDates: row.available_dates,
+    completedTrainings: row.completed_trainings || [],
+    hasCertificate: row.has_certificate
+  };
+};
 
 const unmapTalent = (talent: Partial<Talent>): any => {
   const row: any = { ...talent };
