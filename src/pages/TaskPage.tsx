@@ -46,7 +46,7 @@ export function TaskPage() {
         setCompletedTrainingList(fetchedStaffs[0].completedTrainings || []);
       }
 
-      // 自社募集中の案件と人材をフェッチ
+      // 自社掲示中の案件と人材をフェッチ
       const allJobs = await api.getJobs();
       const allTalents = await api.getTalents();
       setMyJobs(allJobs.filter(j => j.authorId === user.id));
@@ -173,10 +173,10 @@ export function TaskPage() {
           </div>
         </div>
 
-        {/* 自社の募集状況セクション */}
-        <h3 className="section-title">自社の募集状況</h3>
+        {/* 自社の掲示状況セクション */}
+        <h3 className="section-title">自社の掲示状況</h3>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '24px' }}>
-          {/* 募集中の案件 */}
+          {/* 掲示中の案件 */}
           <div style={{ background: 'white', borderRadius: '12px', border: '1px solid var(--border-color)', overflow: 'hidden' }}>
             <button 
               onClick={() => setIsMyJobsOpen(!isMyJobsOpen)}
@@ -194,7 +194,7 @@ export function TaskPage() {
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 'bold', color: 'var(--text-main)' }}>
                 <span className="material-symbols-outlined" style={{ color: 'var(--primary)' }}>work</span>
-                募集中の案件 ({myJobs.length}件)
+                掲示中の案件 ({myJobs.length}件)
               </div>
               <span className="material-symbols-outlined" style={{ transform: isMyJobsOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>
                 expand_more
@@ -221,13 +221,13 @@ export function TaskPage() {
                     </div>
                   ))
                 ) : (
-                  <div style={{ fontSize: '12px', color: 'var(--text-sub)', textAlign: 'center', padding: '8px 0' }}>現在募集中の案件はありません。</div>
+                  <div style={{ fontSize: '12px', color: 'var(--text-sub)', textAlign: 'center', padding: '8px 0' }}>現在掲示中の案件はありません。</div>
                 )}
               </div>
             )}
           </div>
 
-          {/* 募集中の人材 */}
+          {/* 掲示中の人材 */}
           <div style={{ background: 'white', borderRadius: '12px', border: '1px solid var(--border-color)', overflow: 'hidden' }}>
             <button 
               onClick={() => setIsMyTalentsOpen(!isMyTalentsOpen)}
@@ -245,7 +245,7 @@ export function TaskPage() {
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 'bold', color: 'var(--text-main)' }}>
                 <span className="material-symbols-outlined" style={{ color: '#10B981' }}>group</span>
-                募集中の人材 ({myTalents.length}件)
+                掲示中の人材 ({myTalents.length}件)
               </div>
               <span className="material-symbols-outlined" style={{ transform: isMyTalentsOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>
                 expand_more
@@ -268,7 +268,7 @@ export function TaskPage() {
                     </div>
                   ))
                 ) : (
-                  <div style={{ fontSize: '12px', color: 'var(--text-sub)', textAlign: 'center', padding: '8px 0' }}>現在募集中の人材はありません。</div>
+                  <div style={{ fontSize: '12px', color: 'var(--text-sub)', textAlign: 'center', padding: '8px 0' }}>現在掲示中の人材はありません。</div>
                 )}
               </div>
             )}

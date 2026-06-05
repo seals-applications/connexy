@@ -682,13 +682,15 @@ export function SearchPage() {
         
         // ポップアップ内に全案件のリストを描画
         const jobsHtml = group.jobs.map(job => {
-          
+          return `
+          <div style="background: ${job.isUrgent ? '#FEF2F2' : '#F9FAFB'}; border: 1px solid ${job.isUrgent ? '#FECACA' : '#E5E7EB'}; padding: 8px; border-radius: 6px; margin-bottom: 8px;">
             <div style="font-weight: bold; font-size: 13px; color: #111827; margin-bottom: 4px; line-height: 1.3;">${job.title}</div>
             <div style="font-size: 11px; color: #6B7280; margin-bottom: 4px;">${job.carrier || ''} ${job.salesChannel || ''}</div>
             <div style="font-weight: bold; font-size: 13px; color: var(--primary);">¥${job.price.toLocaleString()}/日</div>
             <button class="view-job-btn" data-id="${job.id}" style="margin-top: 6px; width: 100%; padding: 6px; background: var(--primary); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold;">詳細を見る</button>
           </div>
-        `}).join('');
+          `;
+        }).join('');
 
         marker.bindPopup(`
           <div style="font-family: 'Inter', sans-serif; max-height: 250px; overflow-y: auto; padding-right: 8px; width: 220px;">
@@ -1439,7 +1441,7 @@ export function SearchPage() {
               <label style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', marginBottom: '24px', cursor: 'pointer', padding: '12px', background: '#F8FAFC', borderRadius: '8px', border: '1px solid #E2E8F0' }}>
                 <input type="checkbox" checked={ndaAgreed} onChange={e => setNdaAgreed(e.target.checked)} style={{ marginTop: '4px', width: '16px', height: '16px', accentColor: 'var(--primary)', flexShrink: 0 }} />
                 <span style={{ fontSize: '13px', color: '#1E293B', fontWeight: 'bold', lineHeight: '1.5' }}>
-                  本案件の契約形態を理解し、開示される店舗情報等の秘密保持に同意します。
+                  本案件の条件等を理解し、開示される店舗情報等の秘密保持に同意します。
                 </span>
               </label>
 
