@@ -124,18 +124,24 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
     loadCompanies();
   };
 
-  const handleQuickLogin = (id: string) => {
+  const handleQuickLogin = (id: string, pw?: string) => {
     setLoginId(id);
-    setPassword('pass');
+    setPassword(pw || 'pass');
     setError('');
   };
 
   const quickAccounts = [
-    { name: '株式会社シグマ通信', id: 'sigma' },
-    { name: '株式会社アルファ', id: 'alpha' },
-    { name: 'ベータ株式会社', id: 'beta' },
-    { name: '合同会社ガンマ', id: 'gamma' },
-    { name: 'デルタ合同会社', id: 'delta' }
+    { name: '株式会社シグマ通信 (代表)', id: 'sigma', pw: 'pass' },
+    { name: '株式会社アルファ (代表)', id: 'alpha', pw: 'pass' },
+    { name: 'ベータ株式会社 (代表)', id: 'beta', pw: 'pass' },
+    { name: '合同会社ガンマ (代表)', id: 'gamma', pw: 'pass' },
+    { name: 'デルタ合同会社 (代表)', id: 'delta', pw: 'pass' }
+  ];
+
+  const quickStaffAccounts = [
+    { name: 'アルファ社・個人山田 (管理者)', id: 'alpha_s1', pw: 'pass' },
+    { name: 'アルファ社・個人佐藤 (一般社員)', id: 'alpha_s2', pw: 'pass' },
+    { name: 'ベータ社・個人鈴木 (一般社員)', id: 'beta_s2', pw: 'pass' }
   ];
 
   return (
@@ -225,12 +231,31 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
                   <button
                     key={acc.id}
                     type="button"
-                    onClick={() => handleQuickLogin(acc.id)}
+                    onClick={() => handleQuickLogin(acc.id, acc.pw)}
                     disabled={loading || !agreed}
                     style={styles.quickButton(agreed)}
                   >
-                    <div style={{ fontWeight: 'bold', fontSize: '13px', color: 'var(--primary)' }}>{acc.name}</div>
-                    <div style={{ fontSize: '11px', color: '#6B7280', marginTop: '2px' }}>ID: {acc.id} / PW: pass</div>
+                    <div style={{ fontWeight: 'bold', fontSize: '12px', color: 'var(--primary)' }}>{acc.name}</div>
+                    <div style={{ fontSize: '10px', color: '#6B7280', marginTop: '2px' }}>ID: {acc.id} / PW: {acc.pw}</div>
+                  </button>
+                ))}
+              </div>
+
+              <div style={styles.divider}>
+                <span style={styles.dividerText}>スタッフ個人ログイン (タイミー方式)</span>
+              </div>
+
+              <div style={styles.quickLoginSection}>
+                {quickStaffAccounts.map((acc) => (
+                  <button
+                    key={acc.id}
+                    type="button"
+                    onClick={() => handleQuickLogin(acc.id, acc.pw)}
+                    disabled={loading || !agreed}
+                    style={styles.quickButton(agreed)}
+                  >
+                    <div style={{ fontWeight: 'bold', fontSize: '11px', color: '#B45309' }}>{acc.name}</div>
+                    <div style={{ fontSize: '10px', color: '#6B7280', marginTop: '2px' }}>ID: {acc.id} / PW: {acc.pw}</div>
                   </button>
                 ))}
               </div>

@@ -26,7 +26,9 @@ export function SettingsPage({ onLogoutSuccess }: SettingsPageProps) {
     locationName: '', price: 15000,
     skills: [] as string[], carriers: [] as string[], experience: '', prText: '',
     hasCertificate: false,
-    role: 'staff' as 'admin' | 'staff'
+    role: 'staff' as 'admin' | 'staff',
+    loginId: '',
+    password: ''
   });
 
   const [editFormData, setEditFormData] = useState({
@@ -34,11 +36,16 @@ export function SettingsPage({ onLogoutSuccess }: SettingsPageProps) {
     locationName: '', price: 15000,
     skills: [] as string[], carriers: [] as string[], experience: '', prText: '',
     hasCertificate: false,
-    role: 'staff' as 'admin' | 'staff'
+    role: 'staff' as 'admin' | 'staff',
+    loginId: '',
+    password: ''
   });
 
   const availableSkills = ['キャンペーンクルー', 'クローザー', 'ディレクター'];
   const availableCarriers = ['docomo', 'au/UQmobile', 'SoftBank/Y!mobile', 'BB'];
+
+  // Identify if logged-in user is admin
+  const isUserAdmin = !currentUser?.staffId || currentUser.staffRole === 'admin';
 
   useEffect(() => {
     if (location.state?.openStaffOverlay) {
@@ -121,7 +128,9 @@ export function SettingsPage({ onLogoutSuccess }: SettingsPageProps) {
       experience: formData.experience,
       prText: formData.prText,
       hasCertificate: formData.hasCertificate,
-      role: formData.role
+      role: formData.role,
+      loginId: formData.loginId,
+      password: formData.password
     };
 
     const savedStaff = await api.addStaff(newStaff);
@@ -132,7 +141,9 @@ export function SettingsPage({ onLogoutSuccess }: SettingsPageProps) {
       locationName: '', price: 15000,
       skills: [], carriers: [], experience: '', prText: '',
       hasCertificate: false,
-      role: 'staff'
+      role: 'staff',
+      loginId: '',
+      password: ''
     });
 
     setStaffSaving(false);
@@ -154,7 +165,9 @@ export function SettingsPage({ onLogoutSuccess }: SettingsPageProps) {
       experience: staff.experience || '',
       prText: staff.prText || '',
       hasCertificate: staff.hasCertificate || false,
-      role: staff.role || 'staff'
+      role: staff.role || 'staff',
+      loginId: staff.loginId || '',
+      password: staff.password || ''
     });
     setShowEditStaffOverlay(true);
   };
@@ -176,7 +189,9 @@ export function SettingsPage({ onLogoutSuccess }: SettingsPageProps) {
       experience: editFormData.experience,
       prText: editFormData.prText,
       hasCertificate: editFormData.hasCertificate,
-      role: editFormData.role
+      role: editFormData.role,
+      loginId: editFormData.loginId,
+      password: editFormData.password
     };
 
     await api.updateStaff(editingStaff.id, updatedFields);
@@ -202,7 +217,14 @@ export function SettingsPage({ onLogoutSuccess }: SettingsPageProps) {
         <div className="profile-section">
           <div className="profile-avatar">{currentUser?.name.charAt(0) || '株'}</div>
           <div className="profile-info">
-            <h2>{currentUser?.name || '会社名読み込み中...'}</h2>
+            <h2>
+              {currentUser?.name || '会社名読み込み中...'}
+              {currentUser?.staffName && (
+                <span style={{ fontSize: '14px', color: 'var(--text-sub)', display: 'block', fontWeight: 'normal', marginTop: '4px' }}>
+                  ログイン中: {currentUser.staffName} ({currentUser.staffRole === 'admin' ? '管理者' : '一般メンバー'})
+                </span>
+              )}
+            </h2>
             <div className="premium-badge">
               <span className="material-symbols-outlined">stars</span>
               プレミアムプラン
@@ -212,14 +234,14 @@ export function SettingsPage({ onLogoutSuccess }: SettingsPageProps) {
 
         <div className="settings-list">
           <div className="settings-group">
-            <div className="settings-item" onClick={() => setShowProfileOverlay(true)}>
+            <div className="settings-item" onClick={() => { if (isUserAdmin) setShowProfileOverlay(true); else alert('管理者権限が必要です。'); }} style={{ opacity: isUserAdmin ? 1 : 0.6 }}>
               <span className="material-symbols-outlined item-icon">business</span>
-              <span>自社プロフィール編集</span>
+              <span>自社プロフィール編集 {!isUserAdmin && ' (制限中)'}</span>
               <span className="material-symbols-outlined item-arrow">chevron_right</span>
             </div>
-            <div className="settings-item">
+            <div className="settings-item" style={{ opacity: isUserAdmin ? 1 : 0.6 }} onClick={() => { if (!isUserAdmin) alert('管理者権限が必要です。'); }}>
               <span className="material-symbols-outlined item-icon">payments</span>
-              <span>決済連携 (Stripe)</span>
+              <span>決済連携 (Stripe) {!isUserAdmin && ' (制限中)'}</span>
               <span className="material-symbols-outlined item-arrow">chevron_right</span>
             </div>
           </div>
@@ -303,18 +325,20 @@ export function SettingsPage({ onLogoutSuccess }: SettingsPageProps) {
         </header>
         <main className="list-area bg-gray" style={{ flex: 1, overflowY: 'auto', padding: '16px', paddingBottom: '100px' }}>
           
-          <div style={{ marginBottom: '20px' }}>
-            <button 
-              onClick={() => setShowAddStaffOverlay(true)} 
-              className="btn-primary" 
-              style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 24px', width: '100%', justifyContent: 'center', borderRadius: '12px', fontWeight: 'bold', fontSize: '15px', border: 'none', background: 'var(--primary)', color: 'white', cursor: 'pointer', boxShadow: '0 4px 12px rgba(37, 99, 235, 0.15)' }}
-            >
-              <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>add_circle</span>
-              スタッフを追加
-            </button>
-          </div>
+          {isUserAdmin && (
+            <div style={{ marginBottom: '20px' }}>
+              <button 
+                onClick={() => setShowAddStaffOverlay(true)} 
+                className="btn-primary" 
+                style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 24px', width: '100%', justifyContent: 'center', borderRadius: '12px', fontWeight: 'bold', fontSize: '15px', border: 'none', background: 'var(--primary)', color: 'white', cursor: 'pointer', boxShadow: '0 4px 12px rgba(37, 99, 235, 0.15)' }}
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>add_circle</span>
+                スタッフを追加
+              </button>
+            </div>
+          )}
 
-          <h3 style={{ fontSize: '14px', marginBottom: '12px', color: 'var(--text-sub)' }}>登録済みスタッフ一覧 ({staffs.length}名)</h3>
+          <h3 style={{ fontSize: '14px', marginBottom: '12px', color: 'var(--text-sub)' }}>登録済みスタッフ一覧 ({staffs.length}名) {!isUserAdmin && ' (閲覧のみ)'}</h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             {staffs.map(s => (
               <div key={s.id} style={{ background: 'white', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -333,14 +357,21 @@ export function SettingsPage({ onLogoutSuccess }: SettingsPageProps) {
                     </span>
                   </div>
                   <div style={{ fontSize: '12px', color: 'var(--text-sub)', marginTop: '4px' }}>{s.baseLocation} / {s.skills.join(', ')}</div>
+                  {s.loginId && isUserAdmin && (
+                    <div style={{ fontSize: '11px', color: '#6B7280', marginTop: '4px', background: '#F8FAFC', padding: '4px 8px', borderRadius: '4px', display: 'inline-block' }}>
+                      ID: <strong>{s.loginId}</strong> / PW: <strong>{s.password}</strong>
+                    </div>
+                  )}
                 </div>
-                <button 
-                  onClick={() => handleEditClick(s)}
-                  className="icon-btn-dark"
-                  style={{ display: 'flex', padding: '6px', borderRadius: '6px', border: 'none', background: '#F1F5F9', cursor: 'pointer' }}
-                >
-                  <span className="material-symbols-outlined" style={{ fontSize: '20px', color: '#475569' }}>edit</span>
-                </button>
+                {isUserAdmin && (
+                  <button 
+                    onClick={() => handleEditClick(s)}
+                    className="icon-btn-dark"
+                    style={{ display: 'flex', padding: '6px', borderRadius: '6px', border: 'none', background: '#F1F5F9', cursor: 'pointer' }}
+                  >
+                    <span className="material-symbols-outlined" style={{ fontSize: '20px', color: '#475569' }}>edit</span>
+                  </button>
+                )}
               </div>
             ))}
           </div>
@@ -370,6 +401,17 @@ export function SettingsPage({ onLogoutSuccess }: SettingsPageProps) {
                 <option value="staff">一般スタッフ (Staff)</option>
                 <option value="admin">管理者 (Admin)</option>
               </select>
+            </div>
+
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: 1 }}>
+                <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)' }}>ログイン用ID *</label>
+                <input type="text" required value={formData.loginId} onChange={e => setFormData({...formData, loginId: e.target.value})} disabled={staffSaving} style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }} placeholder="例: suzuki_alpha" />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: 1 }}>
+                <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)' }}>パスワード *</label>
+                <input type="password" required value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} disabled={staffSaving} style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }} placeholder="設定するパスワード" />
+              </div>
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
@@ -468,6 +510,17 @@ export function SettingsPage({ onLogoutSuccess }: SettingsPageProps) {
                 <option value="staff">一般スタッフ (Staff)</option>
                 <option value="admin">管理者 (Admin)</option>
               </select>
+            </div>
+
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: 1 }}>
+                <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)' }}>ログイン用ID *</label>
+                <input type="text" required value={editFormData.loginId} onChange={e => setEditFormData({...editFormData, loginId: e.target.value})} disabled={staffSaving} style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }} placeholder="例: suzuki_alpha" />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: 1 }}>
+                <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)' }}>パスワード *</label>
+                <input type="password" required value={editFormData.password} onChange={e => setEditFormData({...editFormData, password: e.target.value})} disabled={staffSaving} style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }} placeholder="設定するパスワード" />
+              </div>
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>

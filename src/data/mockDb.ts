@@ -9,6 +9,9 @@ export interface User {
   password?: string;
   status?: 'pending' | 'approved' | 'rejected';
   invoiceNumber?: string;
+  staffId?: string;
+  staffName?: string;
+  staffRole?: 'admin' | 'staff';
 }
 
 // 評価(Evaluation)の型定義
@@ -94,6 +97,8 @@ export interface Staff {
   completedTrainings?: string[];
   hasCertificate?: boolean;
   role?: 'admin' | 'staff';
+  loginId?: string;
+  password?: string;
 }
 
 // 契約タスク(ContractTask)の型定義
@@ -266,6 +271,8 @@ const unmapTalent = (talent: Partial<Talent>): any => {
 
 const mapStaff = (row: any): Staff => {
   const localRole = localStorage.getItem('staff_role_' + row.id) as 'admin' | 'staff' | null;
+  const localLogin = localStorage.getItem('staff_login_' + row.id);
+  const localPassword = localStorage.getItem('staff_password_' + row.id);
   return {
     id: row.id,
     userId: row.user_id,
@@ -281,7 +288,9 @@ const mapStaff = (row: any): Staff => {
     prText: row.pr_text,
     completedTrainings: row.completed_trainings || [],
     hasCertificate: row.has_certificate,
-    role: localRole || row.role || 'staff'
+    role: localRole || row.role || 'staff',
+    loginId: localLogin || row.login_id || '',
+    password: localPassword || row.password || ''
   };
 };
 
@@ -296,6 +305,7 @@ const unmapStaff = (staff: Partial<Staff>): any => {
   if ('completedTrainings' in staff) { row.completed_trainings = staff.completedTrainings; delete row.completedTrainings; }
   if ('hasCertificate' in staff) { row.has_certificate = staff.hasCertificate; delete row.hasCertificate; }
   if ('role' in staff) { row.role = staff.role; }
+  if ('loginId' in staff) { row.login_id = staff.loginId; delete row.loginId; }
   return row;
 };
 
@@ -337,6 +347,24 @@ const mapUser = (row: any): User => {
     invoiceNumber: localInvoice || row.invoice_number
   };
 };
+const initializeDefaultStaffLogins = (allStaffsData: any[]) => {
+  const companyGroups: { [key: string]: any[] } = {};
+  allStaffsData.forEach(row => {
+    if (!companyGroups[row.user_id]) companyGroups[row.user_id] = [];
+    companyGroups[row.user_id].push(row);
+  });
+  
+  for (const companyId of Object.keys(companyGroups)) {
+    const sorted = [...companyGroups[companyId]].sort((a, b) => a.id.localeCompare(b.id));
+    sorted.forEach((row, index) => {
+      const existingLogin = localStorage.getItem('staff_login_' + row.id);
+      if (!existingLogin) {
+        localStorage.setItem('staff_login_' + row.id, `${companyId}_s${index + 1}`);
+        localStorage.setItem('staff_password_' + row.id, 'pass');
+      }
+    });
+  }
+};
 
 export const api = {
   getJobs: async (): Promise<Job[]> => {
@@ -362,29 +390,74 @@ export const api = {
     if (!userId) return null;
     const { data, error } = await supabase.from('companies').select('*').eq('id', userId).single();
     if (error || !data) return null;
-    return mapUser(data);
+    
+    const companyUser = mapUser(data);
+    const staffId = localStorage.getItem('connexy_current_staff_id');
+    if (staffId) {
+      const { data: staffData } = await supabase.from('staffs').select('*').eq('id', staffId).single();
+      if (staffData) {
+        const staff = mapStaff(staffData);
+        companyUser.staffId = staff.id;
+        companyUser.staffName = staff.name;
+        companyUser.staffRole = staff.role || 'staff';
+      }
+    }
+    return companyUser;
   },
 
   login: async (loginId: string, password: string): Promise<User | null> => {
-    const { data, error } = await supabase
+    // 1. Try to authenticate against companies table (legacy / company admin direct login)
+    const { data: companyData } = await supabase
       .from('companies')
       .select('*')
       .eq('login_id', loginId)
       .eq('password', password)
       .single();
-    if (error || !data) return null;
+      
+    if (companyData) {
+      localStorage.setItem('connexy_current_user_id', companyData.id);
+      localStorage.removeItem('connexy_current_staff_id');
+      return mapUser(companyData);
+    }
     
-    localStorage.setItem('connexy_current_user_id', data.id);
-    return mapUser(data);
+    // 2. Try to authenticate against staffs table
+    const { data: allStaffsData } = await supabase.from('staffs').select('*');
+    if (allStaffsData) {
+      initializeDefaultStaffLogins(allStaffsData);
+      for (const sRow of allStaffsData) {
+        const staff = mapStaff(sRow);
+        if (staff.loginId === loginId && staff.password === password) {
+          localStorage.setItem('connexy_current_user_id', staff.userId);
+          localStorage.setItem('connexy_current_staff_id', staff.id);
+          
+          const { data: companyData2 } = await supabase.from('companies').select('*').eq('id', staff.userId).single();
+          if (companyData2) {
+            const user = mapUser(companyData2);
+            user.staffId = staff.id;
+            user.staffName = staff.name;
+            user.staffRole = staff.role || 'staff';
+            return user;
+          }
+        }
+      }
+    }
+    return null;
   },
 
   logout: async (): Promise<void> => {
     localStorage.removeItem('connexy_current_user_id');
+    localStorage.removeItem('connexy_current_staff_id');
   },
 
   getStaffsByUserId: async (userId: string): Promise<Staff[]> => {
     const { data, error } = await supabase.from('staffs').select('*').eq('user_id', userId);
     if (error) { console.error('getStaffs error:', error); return []; }
+    
+    const { data: allStaffsData } = await supabase.from('staffs').select('*');
+    if (allStaffsData) {
+      initializeDefaultStaffLogins(allStaffsData);
+    }
+    
     return data.map(mapStaff);
   },
 
@@ -412,12 +485,20 @@ export const api = {
     if (newStaff.role) {
       localStorage.setItem('staff_role_' + id, newStaff.role);
     }
+    if (newStaff.loginId) {
+      localStorage.setItem('staff_login_' + id, newStaff.loginId);
+    }
+    if (newStaff.password) {
+      localStorage.setItem('staff_password_' + id, newStaff.password);
+    }
     const row = unmapStaff(newStaff);
     const { error } = await supabase.from('staffs').insert([row]);
     if (error) {
-      console.warn('addStaff database insert failed, attempting fallback insertion without role column:', error);
+      console.warn('addStaff database insert failed, attempting fallback insertion without role/login_id/password columns:', error);
       const fallbackRow = { ...row };
       delete fallbackRow.role;
+      delete fallbackRow.login_id;
+      delete fallbackRow.password;
       const { error: errorFallback } = await supabase.from('staffs').insert([fallbackRow]);
       if (errorFallback) {
         console.error('addStaff fallback insert also failed:', errorFallback);
@@ -571,12 +652,20 @@ export const api = {
     if (staff.role) {
       localStorage.setItem('staff_role_' + staffId, staff.role);
     }
+    if (staff.loginId) {
+      localStorage.setItem('staff_login_' + staffId, staff.loginId);
+    }
+    if (staff.password) {
+      localStorage.setItem('staff_password_' + staffId, staff.password);
+    }
     const row = unmapStaff(staff);
     const { error } = await supabase.from('staffs').update(row).eq('id', staffId);
     if (error) {
-      console.warn('updateStaff database update failed, attempting fallback update without role column:', error);
+      console.warn('updateStaff database update failed, attempting fallback update without role/login_id/password columns:', error);
       const fallbackRow = { ...row };
       delete fallbackRow.role;
+      delete fallbackRow.login_id;
+      delete fallbackRow.password;
       const { error: error2 } = await supabase.from('staffs').update(fallbackRow).eq('id', staffId);
       if (error2) console.error('updateStaff fallback also failed:', error2);
     }
