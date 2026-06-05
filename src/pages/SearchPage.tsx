@@ -682,13 +682,7 @@ export function SearchPage() {
         
         // ポップアップ内に全案件のリストを描画
         const jobsHtml = group.jobs.map(job => {
-          const statusText = job.status === 'open' ? '募集中' : job.status === 'closed' ? '成約済' : '交渉中';
-          return `
-          <div style="background: ${job.isUrgent ? '#FEF2F2' : '#F9FAFB'}; border: 1px solid ${job.isUrgent ? '#FECACA' : '#E5E7EB'}; padding: 8px; border-radius: 6px; margin-bottom: 8px;">
-            <div style="display: flex; gap: 4px; margin-bottom: 4px;">
-              <span style="font-size: 10px; padding: 2px 4px; background: #E0E7FF; color: #4338CA; border-radius: 4px; font-weight: bold;">${statusText}</span>
-              ${job.contractType ? `<span style="font-size: 10px; padding: 2px 4px; background: #F1F5F9; color: #475569; border-radius: 4px; border: 1px solid #CBD5E1; font-weight: bold;">${job.contractType}</span>` : ''}
-            </div>
+          
             <div style="font-weight: bold; font-size: 13px; color: #111827; margin-bottom: 4px; line-height: 1.3;">${job.title}</div>
             <div style="font-size: 11px; color: #6B7280; margin-bottom: 4px;">${job.carrier || ''} ${job.salesChannel || ''}</div>
             <div style="font-weight: bold; font-size: 13px; color: var(--primary);">¥${job.price.toLocaleString()}/日</div>
