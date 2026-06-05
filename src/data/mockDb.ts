@@ -12,6 +12,7 @@ export interface User {
   staffId?: string;
   staffName?: string;
   staffRole?: 'admin' | 'staff';
+  representativeName?: string;
 }
 
 // 評価(Evaluation)の型定義
@@ -337,6 +338,16 @@ const unmapContractTask = (task: Partial<ContractTask>): any => {
 const mapUser = (row: any): User => {
   const localStatus = localStorage.getItem('company_status_' + row.id) as 'pending' | 'approved' | 'rejected' | null;
   const localInvoice = localStorage.getItem('company_invoice_' + row.id);
+  const localRep = localStorage.getItem('company_rep_' + row.id);
+  
+  const defaultReps: { [key: string]: string } = {
+    sigma: 'シグマ 太郎',
+    alpha: 'アルファ 健',
+    beta: 'ベータ 拓也',
+    gamma: 'ガンマ 翔',
+    delta: 'デルタ 大介'
+  };
+
   return {
     id: row.id,
     name: row.name,
@@ -344,7 +355,8 @@ const mapUser = (row: any): User => {
     loginId: row.login_id,
     password: row.password,
     status: localStatus || row.status || 'approved',
-    invoiceNumber: localInvoice || row.invoice_number
+    invoiceNumber: localInvoice || row.invoice_number,
+    representativeName: localRep || row.representative_name || defaultReps[row.id] || '未登録'
   };
 };
 const initializeDefaultStaffLogins = (allStaffsData: any[]) => {
@@ -401,6 +413,10 @@ export const api = {
         companyUser.staffName = staff.name;
         companyUser.staffRole = staff.role || 'staff';
       }
+    } else {
+      // Direct company login acts as the Representative (Admin)
+      companyUser.staffName = companyUser.representativeName;
+      companyUser.staffRole = 'admin';
     }
     return companyUser;
   },

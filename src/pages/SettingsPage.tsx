@@ -20,6 +20,7 @@ export function SettingsPage({ onLogoutSuccess }: SettingsPageProps) {
   const [staffs, setStaffs] = useState<Staff[]>([]);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [editingStaff, setEditingStaff] = useState<Staff | null>(null);
+  const [repNameInput, setRepNameInput] = useState('');
 
   const [formData, setFormData] = useState({
     name: '', maskedName: '', baseLocation: '', nearestStation: '',
@@ -58,6 +59,7 @@ export function SettingsPage({ onLogoutSuccess }: SettingsPageProps) {
       const user = await api.getCurrentUser();
       setCurrentUser(user);
       if (user) {
+        setRepNameInput(user.representativeName || '');
         const fetchedStaffs = await api.getStaffsByUserId(user.id);
         setStaffs(fetchedStaffs);
       }
@@ -102,6 +104,13 @@ export function SettingsPage({ onLogoutSuccess }: SettingsPageProps) {
 
   const handleProfileSave = () => {
     setProfileSaving(true);
+    if (currentUser) {
+      localStorage.setItem('company_rep_' + currentUser.id, repNameInput);
+      currentUser.representativeName = repNameInput;
+      if (!currentUser.staffId) {
+        currentUser.staffName = repNameInput;
+      }
+    }
     setTimeout(() => {
       setProfileSaving(false);
       setShowProfileOverlay(false);
@@ -298,10 +307,16 @@ export function SettingsPage({ onLogoutSuccess }: SettingsPageProps) {
               <label>法人名（屋号） <span className="required">必須</span></label>
               <input type="text" className="form-control" key={currentUser?.id} defaultValue={currentUser?.name || ''} />
             </div>
-            <div className="form-group">
-              <label>代表者名</label>
-              <input type="text" className="form-control" defaultValue="山田 太郎" />
-            </div>
+             <div className="form-group">
+               <label>代表者名</label>
+               <input 
+                 type="text" 
+                 className="form-control" 
+                 value={repNameInput} 
+                 onChange={e => setRepNameInput(e.target.value)} 
+                 placeholder="代表者名を入力"
+               />
+             </div>
             <div className="form-group">
               <label>担当者名 <span className="required">必須</span></label>
               <input type="text" className="form-control" defaultValue="佐藤 健一" />
