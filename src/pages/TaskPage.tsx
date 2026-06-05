@@ -700,12 +700,35 @@ export function TaskPage() {
               </div>
             ))}
 
-            <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
-              <button type="button" className="btn-secondary" style={{ flex: 1, margin: 0 }} onClick={() => { setShowQuizModal(false); setQuizTrainingId(null); setQuizAnswers({}); }}>キャンセル</button>
+            {Object.keys(quizAnswers).length < (quizData[quizTrainingId]?.length || 0) && (
+              <p style={{ color: '#EF4444', fontSize: '11px', margin: '0', textAlign: 'center', fontWeight: 'bold' }}>
+                ※すべての問題に回答すると送信できるようになります
+              </p>
+            )}
+
+            <div style={{ display: 'flex', gap: '12px', marginTop: '4px' }}>
+              <button 
+                type="button" 
+                className="btn-secondary" 
+                style={{ flex: 1, margin: 0, padding: '12px', border: '1px solid #CBD5E1', borderRadius: '8px', background: '#F1F5F9', color: '#475569', fontWeight: 'bold', cursor: 'pointer' }} 
+                onClick={() => { setShowQuizModal(false); setQuizTrainingId(null); setQuizAnswers({}); }}
+              >
+                キャンセル
+              </button>
               <button 
                 type="submit" 
-                className="btn-primary" 
-                style={{ flex: 1, margin: 0 }}
+                style={{ 
+                  flex: 1, 
+                  margin: 0, 
+                  padding: '12px', 
+                  backgroundColor: Object.keys(quizAnswers).length < (quizData[quizTrainingId]?.length || 0) ? '#E2E8F0' : 'var(--primary)', 
+                  color: Object.keys(quizAnswers).length < (quizData[quizTrainingId]?.length || 0) ? '#94A3B8' : 'white', 
+                  border: 'none', 
+                  borderRadius: '8px', 
+                  fontWeight: 'bold', 
+                  cursor: Object.keys(quizAnswers).length < (quizData[quizTrainingId]?.length || 0) ? 'not-allowed' : 'pointer',
+                  transition: 'all 0.2s'
+                }}
                 disabled={Object.keys(quizAnswers).length < (quizData[quizTrainingId]?.length || 0)}
               >
                 回答を送信する
