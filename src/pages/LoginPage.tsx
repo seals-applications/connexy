@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { api } from '../data/mockDb';
-import type { User } from '../data/mockDb';
+import type { User, Staff } from '../data/mockDb';
 
 interface LoginPageProps {
   onLoginSuccess: () => void;
@@ -24,6 +24,10 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
   const [mockFile, setMockFile] = useState<File | null>(null);
   const [signupSuccess, setSignupSuccess] = useState('');
 
+  // Cascading quick login states
+  const [selectedCompany, setSelectedCompany] = useState<string>('');
+  const [companyStaffs, setCompanyStaffs] = useState<Staff[]>([]);
+
   // Debug settings
   const [companies, setCompanies] = useState<User[]>([]);
   const [showDebug, setShowDebug] = useState(false);
@@ -36,6 +40,18 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
   useEffect(() => {
     loadCompanies();
   }, []);
+
+  const handleCompanySelect = async (companyId: string) => {
+    setSelectedCompany(companyId);
+    setLoginId('');
+    setPassword('');
+    if (companyId) {
+      const staffsList = await api.getStaffsByUserId(companyId);
+      setCompanyStaffs(staffsList);
+    } else {
+      setCompanyStaffs([]);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,12 +66,11 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
     try {
       const user = await api.login(loginId, password);
       if (user) {
-        // Retrieve fresh user info to check approval status
         const freshUser = await api.getUserById(user.id);
         const status = freshUser?.status || 'approved';
         
         if (status === 'pending') {
-          await api.logout(); // Clear localStorage
+          await api.logout();
           setError('この会社アカウントは現在審査中です。運営による承認がおこなわれるまでログインできません。');
         } else if (status === 'rejected') {
           await api.logout();
@@ -100,7 +115,6 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
       });
       setSignupSuccess('新規会社アカウントの申請を受理しました。運営による審査・承認をお待ちください。');
       
-      // Clear signup form
       setCompanyName('');
       setRepName('');
       setContactName('');
@@ -109,7 +123,6 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
       setSignupPassword('');
       setMockFile(null);
       
-      // Switch back to login
       setActiveTab('login');
       loadCompanies();
     } catch (err) {
@@ -130,18 +143,12 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
     setError('');
   };
 
-  const quickAccounts = [
-    { name: '株式会社シグマ通信 (代表)', id: 'sigma', pw: 'pass' },
-    { name: '株式会社アルファ (代表)', id: 'alpha', pw: 'pass' },
-    { name: 'ベータ株式会社 (代表)', id: 'beta', pw: 'pass' },
-    { name: '合同会社ガンマ (代表)', id: 'gamma', pw: 'pass' },
-    { name: 'デルタ合同会社 (代表)', id: 'delta', pw: 'pass' }
-  ];
-
-  const quickStaffAccounts = [
-    { name: 'アルファ社・個人山田 (管理者)', id: 'alpha_s1', pw: 'pass' },
-    { name: 'アルファ社・個人佐藤 (一般社員)', id: 'alpha_s2', pw: 'pass' },
-    { name: 'ベータ社・個人鈴木 (一般社員)', id: 'beta_s2', pw: 'pass' }
+  const testCompanies = [
+    { id: 'sigma', name: '株式会社シグマ通信' },
+    { id: 'alpha', name: '株式会社アルファ' },
+    { id: 'beta', name: 'ベータ株式会社' },
+    { id: 'gamma', name: '合同会社ガンマ' },
+    { id: 'delta', name: 'デルタ合同会社' }
   ];
 
   return (
@@ -226,39 +233,48 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
                 <span style={styles.dividerText}>テストアカウントで簡単ログイン</span>
               </div>
 
-              <div style={styles.quickLoginSection}>
-                {quickAccounts.map((acc) => (
-                  <button
-                    key={acc.id}
-                    type="button"
-                    onClick={() => handleQuickLogin(acc.id, acc.pw)}
-                    disabled={loading || !agreed}
-                    style={styles.quickButton(agreed)}
-                  >
-                    <div style={{ fontWeight: 'bold', fontSize: '12px', color: 'var(--primary)' }}>{acc.name}</div>
-                    <div style={{ fontSize: '10px', color: '#6B7280', marginTop: '2px' }}>ID: {acc.id} / PW: {acc.pw}</div>
-                  </button>
-                ))}
+              <div style={styles.inputGroup}>
+                <label style={styles.label}>テスト企業を選択</label>
+                <select
+                  value={selectedCompany}
+                  onChange={(e) => handleCompanySelect(e.target.value)}
+                  disabled={loading || !agreed}
+                  style={styles.select}
+                >
+                  <option value="">-- 企業を選択してください --</option>
+                  {testCompanies.map(c => (
+                    <option key={c.id} value={c.id}>{c.name}</option>
+                  ))}
+                </select>
               </div>
 
-              <div style={styles.divider}>
-                <span style={styles.dividerText}>スタッフ個人ログイン (タイミー方式)</span>
-              </div>
-
-              <div style={styles.quickLoginSection}>
-                {quickStaffAccounts.map((acc) => (
-                  <button
-                    key={acc.id}
-                    type="button"
-                    onClick={() => handleQuickLogin(acc.id, acc.pw)}
+              {selectedCompany && (
+                <div style={{ ...styles.inputGroup, marginTop: '8px' }}>
+                  <label style={styles.label}>ログインする個人ユーザーを選択</label>
+                  <select
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (val) {
+                        const [id, pw] = val.split(':');
+                        handleQuickLogin(id, pw);
+                      } else {
+                        setLoginId('');
+                        setPassword('');
+                      }
+                    }}
                     disabled={loading || !agreed}
-                    style={styles.quickButton(agreed)}
+                    style={styles.select}
                   >
-                    <div style={{ fontWeight: 'bold', fontSize: '11px', color: '#B45309' }}>{acc.name}</div>
-                    <div style={{ fontSize: '10px', color: '#6B7280', marginTop: '2px' }}>ID: {acc.id} / PW: {acc.pw}</div>
-                  </button>
-                ))}
-              </div>
+                    <option value="">-- ユーザーを選択してください --</option>
+                    <option value={`${selectedCompany}:pass`}>企業代表者 (管理者)</option>
+                    {companyStaffs.map(s => (
+                      <option key={s.id} value={`${s.loginId}:${s.password}`}>
+                        {s.name} ({s.role === 'admin' ? '管理者' : '一般メンバー'}) [ID: {s.loginId}]
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
             </form>
           ) : (
             <form onSubmit={handleSignupSubmit} style={styles.form}>
@@ -575,6 +591,17 @@ const styles = {
     background: '#F8FAFC',
     boxSizing: 'border-box' as const,
   },
+  select: {
+    padding: '10px 14px',
+    borderRadius: '10px',
+    border: '1px solid #CBD5E1',
+    fontSize: '14px',
+    outline: 'none',
+    background: '#F8FAFC',
+    boxSizing: 'border-box' as const,
+    cursor: 'pointer',
+    width: '100%'
+  },
   fileDropArea: {
     border: '2px dashed #CBD5E1',
     borderRadius: '12px',
@@ -651,7 +678,7 @@ const styles = {
   },
   quickLoginSection: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(2, 1fr)',
+    gridTemplateColumns: 'repeat(1, 1fr)',
     gap: '8px',
   },
   quickButton: (agreed: boolean) => ({
