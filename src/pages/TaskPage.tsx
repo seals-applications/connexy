@@ -704,12 +704,6 @@ export function TaskPage() {
               </div>
             ))}
 
-            {Object.keys(quizAnswers).length < (quizData[quizTrainingId]?.length || 0) && (
-              <p style={{ color: '#EF4444', fontSize: '11px', margin: '0', textAlign: 'center', fontWeight: 'bold' }}>
-                ※すべての問題に回答すると送信できるようになります
-              </p>
-            )}
-
             <div style={{ display: 'flex', gap: '12px', marginTop: '4px' }}>
               <button 
                 type="button" 
