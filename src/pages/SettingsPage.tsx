@@ -25,7 +25,6 @@ export function SettingsPage({ onLogoutSuccess }: SettingsPageProps) {
   const [websiteInput, setWebsiteInput] = useState('');
   const [addressInput, setAddressInput] = useState('');
   const [prInput, setPrInput] = useState('');
-  const [typeInput, setTypeInput] = useState<'client' | 'agency' | 'both'>('both');
 
   const [formData, setFormData] = useState({
     name: '', maskedName: '', baseLocation: '', nearestStation: '',
@@ -69,7 +68,6 @@ export function SettingsPage({ onLogoutSuccess }: SettingsPageProps) {
         setWebsiteInput(user.website || '');
         setAddressInput(user.address || '');
         setPrInput(user.prText || '');
-        setTypeInput(user.companyType || 'both');
         const fetchedStaffs = await api.getStaffsByUserId(user.id);
         setStaffs(fetchedStaffs);
       }
@@ -120,14 +118,12 @@ export function SettingsPage({ onLogoutSuccess }: SettingsPageProps) {
       localStorage.setItem('company_website_' + currentUser.id, websiteInput);
       localStorage.setItem('company_address_' + currentUser.id, addressInput);
       localStorage.setItem('company_pr_' + currentUser.id, prInput);
-      localStorage.setItem('company_type_' + currentUser.id, typeInput);
 
       currentUser.representativeName = repNameInput;
       currentUser.email = emailInput;
       currentUser.website = websiteInput;
       currentUser.address = addressInput;
       currentUser.prText = prInput;
-      currentUser.companyType = typeInput;
 
       if (!currentUser.staffId) {
         currentUser.staffName = repNameInput;
@@ -283,16 +279,6 @@ export function SettingsPage({ onLogoutSuccess }: SettingsPageProps) {
               <span>スタッフ管理 ({staffs.length}名)</span>
               <span className="material-symbols-outlined item-arrow">chevron_right</span>
             </div>
-            <div className="settings-item">
-              <span className="material-symbols-outlined item-icon">file_copy</span>
-              <span>案件テンプレート管理</span>
-              <span className="material-symbols-outlined item-arrow">chevron_right</span>
-            </div>
-            <div className="settings-item">
-              <span className="material-symbols-outlined item-icon">badge</span>
-              <span>スタッフへの「現場権限」付与</span>
-              <span className="material-symbols-outlined item-arrow">chevron_right</span>
-            </div>
           </div>
 
           <div className="settings-group" style={{ marginTop: '24px' }}>
@@ -330,10 +316,6 @@ export function SettingsPage({ onLogoutSuccess }: SettingsPageProps) {
               <input type="text" className="form-control" key={currentUser?.id} defaultValue={currentUser?.name || ''} />
             </div>
             <div className="form-group">
-              <label>担当者名 <span className="required">必須</span></label>
-              <input type="text" className="form-control" defaultValue="佐藤 健一" />
-            </div>
-            <div className="form-group">
               <label>インボイス登録番号</label>
               <input type="text" className="form-control" key={currentUser?.invoiceNumber} defaultValue={currentUser?.invoiceNumber || ''} placeholder="T + 13桁の半角数字" />
             </div>
@@ -366,19 +348,6 @@ export function SettingsPage({ onLogoutSuccess }: SettingsPageProps) {
                 onChange={e => setAddressInput(e.target.value)} 
                 placeholder="東京都千代田区1-1" 
               />
-            </div>
-            <div className="form-group">
-              <label>企業タイプ</label>
-              <select 
-                className="form-control" 
-                value={typeInput} 
-                onChange={e => setTypeInput(e.target.value as 'client' | 'agency' | 'both')}
-                style={{ background: 'white' }}
-              >
-                <option value="client">発注元（クライアント）</option>
-                <option value="agency">協力会社（代理店）</option>
-                <option value="both">双方（ハイブリッド）</option>
-              </select>
             </div>
             <div className="form-group">
               <label>会社PR・得意分野</label>

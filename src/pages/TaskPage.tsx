@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { api } from '../data/mockDb';
-import type { ContractTask, Training, Staff, Job, Talent } from '../data/mockDb';
+import type { ContractTask, Training, Staff, Job, Talent, User } from '../data/mockDb';
 
 const quizData: Record<string, Array<{ question: string, options: string[], answer: number }>> = {
   tr1: [
@@ -60,9 +60,64 @@ export function TaskPage() {
   const [tasks, setTasks] = useState<ContractTask[]>([]);
   const [trainings, setTrainings] = useState<Training[]>([]);
   const [myStaff, setMyStaff] = useState<Staff | null>(null);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
 
   // 出退勤State
   const [isCheckedIn, setIsCheckedIn] = useState(false);
+  const [checkinTime, setCheckinTime] = useState<string | null>(null);
+
+  // GPS State
+  const [isSimulatingGps, setIsSimulatingGps] = useState(false);
+  const [gpsError, setGpsError] = useState<string | null>(null);
+  const [userLocation, setUserLocation] = useState<{ lat: number, lng: number } | null>(null);
+
+  const TARGET_LAT = 35.6895;
+  const TARGET_LNG = 139.6917;
+
+  const getDistanceInMeters = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+    const R = 6371e3; // metres
+    const phi1 = lat1 * Math.PI/180;
+    const phi2 = lat2 * Math.PI/180;
+    const deltaPhi = (lat2-lat1) * Math.PI/180;
+    const deltaLambda = (lon2-lon1) * Math.PI/180;
+
+    const a = Math.sin(deltaPhi/2) * Math.sin(deltaPhi/2) +
+              Math.cos(phi1) * Math.cos(phi2) *
+              Math.sin(deltaLambda/2) * Math.sin(deltaLambda/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+
+    return R * c; // in metres
+  };
+
+  useEffect(() => {
+    if (isSimulatingGps) {
+      setUserLocation({ lat: TARGET_LAT, lng: TARGET_LNG });
+      setGpsError(null);
+    } else {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            setUserLocation({
+              lat: position.coords.latitude,
+              lng: position.coords.longitude
+            });
+            setGpsError(null);
+          },
+          (error) => {
+            console.error("GPS Error:", error);
+            setGpsError("位置情報が取得できません。デモ検証の際は「GPS位置をシミュレート」ボタンを使用してください。");
+            setUserLocation(null);
+          }
+        );
+      } else {
+        setGpsError("ブラウザが位置情報をサポートしていません。");
+        setUserLocation(null);
+      }
+    }
+  }, [isSimulatingGps]);
+
+  const distance = userLocation ? getDistanceInMeters(userLocation.lat, userLocation.lng, TARGET_LAT, TARGET_LNG) : null;
+  const isInRange = distance !== null && distance <= 500;
 
   // 完了報告・評価モーダルState
   const [selectedTask, setSelectedTask] = useState<ContractTask | null>(null);
@@ -97,7 +152,12 @@ export function TaskPage() {
       setTrainings(fetchedTrainings);
 
       const user = await api.getCurrentUser();
+      setCurrentUser(user);
       if (!user) return;
+
+      const checkedInStatus = localStorage.getItem('checkin_status_' + user.id) === 'true';
+      setIsCheckedIn(checkedInStatus);
+      setCheckinTime(localStorage.getItem('checkin_time_' + user.id));
 
       const fetchedStaffs = await api.getStaffsByUserId(user.id);
       if (fetchedStaffs.length > 0) {
@@ -118,6 +178,25 @@ export function TaskPage() {
   useEffect(() => {
     loadData();
   }, []);
+
+  const handleCheckin = () => {
+    if (!currentUser) return;
+    const now = new Date();
+    const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    setIsCheckedIn(true);
+    setCheckinTime(timeStr);
+    localStorage.setItem('checkin_status_' + currentUser.id, 'true');
+    localStorage.setItem('checkin_time_' + currentUser.id, timeStr);
+    alert(`GPS出勤打刻を完了しました（打刻時間: ${timeStr}）`);
+  };
+
+  const handleCheckinReset = () => {
+    if (!currentUser) return;
+    setIsCheckedIn(false);
+    setCheckinTime(null);
+    localStorage.removeItem('checkin_status_' + currentUser.id);
+    localStorage.removeItem('checkin_time_' + currentUser.id);
+  };
 
   // 報告モーダル展開
   const handleOpenReport = (task: ContractTask) => {
@@ -490,31 +569,87 @@ export function TaskPage() {
             <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>location_on</span>
             東京都新宿区西新宿1-1-1
           </p>
+
           <div className="checkin-container" style={{ borderTop: '1px solid var(--border-color)', paddingTop: '16px' }}>
+            {/* GPS Simulation Tool for Demo */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#F8FAFC', padding: '10px', borderRadius: '8px', border: '1px solid #E2E8F0', marginBottom: '12px' }}>
+              <input 
+                type="checkbox" 
+                id="gps-sim-checkbox"
+                checked={isSimulatingGps} 
+                onChange={(e) => setIsSimulatingGps(e.target.checked)} 
+                style={{ cursor: 'pointer', accentColor: 'var(--primary)' }}
+              />
+              <label htmlFor="gps-sim-checkbox" style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--text-main)', cursor: 'pointer', flex: 1 }}>
+                【デモ用】位置情報をシミュレート（現場の近くに移動）
+              </label>
+            </div>
+
             <div style={{ position: 'relative', height: '100px', background: '#F1F5F9', borderRadius: '8px', marginBottom: '12px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #E2E8F0' }}>
-              {/* Mock Map Background Pattern */}
               <div style={{ position: 'absolute', inset: 0, opacity: 0.08, backgroundImage: 'radial-gradient(circle, #000000 8%, transparent 8%)', backgroundSize: '16px 16px' }}></div>
-              {/* GPS Fence Area */}
-              <div style={{ width: '70px', height: '70px', borderRadius: '50%', border: '2px dashed #3B82F6', background: 'rgba(59, 130, 246, 0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
-                <span style={{ fontSize: '9px', color: '#2563EB', fontWeight: 'bold', position: 'absolute', top: '4px', whiteSpace: 'nowrap' }}>GPS判定エリア</span>
-                {/* User pulsing location dot */}
-                <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#10B981', border: '2px solid white', boxShadow: '0 0 6px rgba(16, 185, 129, 0.8)' }}></div>
+              <div style={{ width: '70px', height: '70px', borderRadius: '50%', border: isInRange ? '2px dashed #10B981' : '2px dashed #EF4444', background: isInRange ? 'rgba(16, 185, 129, 0.08)' : 'rgba(239, 68, 68, 0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', transition: 'all 0.3s' }}>
+                <span style={{ fontSize: '8px', color: isInRange ? '#10B981' : '#EF4444', fontWeight: 'bold', position: 'absolute', top: '4px', whiteSpace: 'nowrap' }}>
+                  500m判定エリア
+                </span>
+                <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: isInRange ? '#10B981' : '#EF4444', border: '2px solid white', boxShadow: isInRange ? '0 0 8px rgba(16, 185, 129, 0.8)' : '0 0 8px rgba(239, 68, 68, 0.8)' }}></div>
               </div>
             </div>
-            <p className="radius-status success" style={{ color: '#10B981', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', marginBottom: '12px' }}>
-              <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>my_location</span>
-              GPSエリア内にいます
-            </p>
-            <button
-              className="btn-primary w-full"
-              style={isCheckedIn ? { backgroundColor: '#EF4444', color: 'white', border: 'none' } : {}}
-              onClick={() => setIsCheckedIn(!isCheckedIn)}
-            >
-              <span className="material-symbols-outlined" style={{ marginRight: '6px', verticalAlign: 'middle' }}>
-                {isCheckedIn ? 'logout' : 'login'}
-              </span>
-              {isCheckedIn ? '退勤を打刻する' : '出勤を打刻する'}
-            </button>
+
+            {isCheckedIn ? (
+              <div style={{ background: '#D1FAE5', color: '#065F46', padding: '12px', borderRadius: '8px', marginBottom: '12px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: 'bold' }}>
+                  <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>check_circle</span>
+                  <span>出勤打刻完了（稼働中）</span>
+                </div>
+                <div style={{ fontSize: '12px', opacity: 0.9 }}>
+                  打刻日時: 当日 {checkinTime}
+                </div>
+                <button 
+                  type="button" 
+                  onClick={handleCheckinReset} 
+                  style={{ background: 'none', border: 'none', color: '#059669', fontSize: '11px', textDecoration: 'underline', cursor: 'pointer', alignSelf: 'flex-start', marginTop: '6px', padding: 0 }}
+                >
+                  【デモ用】打刻状態をクリアする
+                </button>
+              </div>
+            ) : (
+              <>
+                {gpsError && (
+                  <p style={{ color: '#EF4444', fontSize: '12px', margin: '0 0 12px 0', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>error</span>
+                    <span>{gpsError}</span>
+                  </p>
+                )}
+                
+                {distance !== null ? (
+                  <p style={{ color: isInRange ? '#10B981' : '#EF4444', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', marginBottom: '12px', fontWeight: 'bold' }}>
+                    <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>my_location</span>
+                    {isInRange ? (
+                      <span>GPS判定エリア内（現場からおよそ {distance.toFixed(0)}m）</span>
+                    ) : (
+                      <span>GPS判定エリア外（現場からおよそ {(distance / 1000).toFixed(1)}km）</span>
+                    )}
+                  </p>
+                ) : !gpsError ? (
+                  <p style={{ color: '#6B7280', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', marginBottom: '12px' }}>
+                    <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>location_searching</span>
+                    <span>位置情報を取得中...</span>
+                  </p>
+                ) : null}
+
+                <button
+                  className="btn-primary w-full"
+                  disabled={!isInRange}
+                  style={!isInRange ? { backgroundColor: '#E5E7EB', color: '#9CA3AF', cursor: 'not-allowed', border: 'none' } : {}}
+                  onClick={handleCheckin}
+                >
+                  <span className="material-symbols-outlined" style={{ marginRight: '6px', verticalAlign: 'middle' }}>
+                    login
+                  </span>
+                  出勤を打刻する
+                </button>
+              </>
+            )}
           </div>
         </div>
 
