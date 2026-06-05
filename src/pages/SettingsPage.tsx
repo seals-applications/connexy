@@ -21,6 +21,11 @@ export function SettingsPage({ onLogoutSuccess }: SettingsPageProps) {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [editingStaff, setEditingStaff] = useState<Staff | null>(null);
   const [repNameInput, setRepNameInput] = useState('');
+  const [emailInput, setEmailInput] = useState('');
+  const [websiteInput, setWebsiteInput] = useState('');
+  const [addressInput, setAddressInput] = useState('');
+  const [prInput, setPrInput] = useState('');
+  const [typeInput, setTypeInput] = useState<'client' | 'agency' | 'both'>('both');
 
   const [formData, setFormData] = useState({
     name: '', maskedName: '', baseLocation: '', nearestStation: '',
@@ -60,6 +65,11 @@ export function SettingsPage({ onLogoutSuccess }: SettingsPageProps) {
       setCurrentUser(user);
       if (user) {
         setRepNameInput(user.representativeName || '');
+        setEmailInput(user.email || '');
+        setWebsiteInput(user.website || '');
+        setAddressInput(user.address || '');
+        setPrInput(user.prText || '');
+        setTypeInput(user.companyType || 'both');
         const fetchedStaffs = await api.getStaffsByUserId(user.id);
         setStaffs(fetchedStaffs);
       }
@@ -106,7 +116,19 @@ export function SettingsPage({ onLogoutSuccess }: SettingsPageProps) {
     setProfileSaving(true);
     if (currentUser) {
       localStorage.setItem('company_rep_' + currentUser.id, repNameInput);
+      localStorage.setItem('company_email_' + currentUser.id, emailInput);
+      localStorage.setItem('company_website_' + currentUser.id, websiteInput);
+      localStorage.setItem('company_address_' + currentUser.id, addressInput);
+      localStorage.setItem('company_pr_' + currentUser.id, prInput);
+      localStorage.setItem('company_type_' + currentUser.id, typeInput);
+
       currentUser.representativeName = repNameInput;
+      currentUser.email = emailInput;
+      currentUser.website = websiteInput;
+      currentUser.address = addressInput;
+      currentUser.prText = prInput;
+      currentUser.companyType = typeInput;
+
       if (!currentUser.staffId) {
         currentUser.staffName = repNameInput;
       }
@@ -307,16 +329,6 @@ export function SettingsPage({ onLogoutSuccess }: SettingsPageProps) {
               <label>法人名（屋号） <span className="required">必須</span></label>
               <input type="text" className="form-control" key={currentUser?.id} defaultValue={currentUser?.name || ''} />
             </div>
-             <div className="form-group">
-               <label>代表者名</label>
-               <input 
-                 type="text" 
-                 className="form-control" 
-                 value={repNameInput} 
-                 onChange={e => setRepNameInput(e.target.value)} 
-                 placeholder="代表者名を入力"
-               />
-             </div>
             <div className="form-group">
               <label>担当者名 <span className="required">必須</span></label>
               <input type="text" className="form-control" defaultValue="佐藤 健一" />
@@ -324,6 +336,59 @@ export function SettingsPage({ onLogoutSuccess }: SettingsPageProps) {
             <div className="form-group">
               <label>インボイス登録番号</label>
               <input type="text" className="form-control" key={currentUser?.invoiceNumber} defaultValue={currentUser?.invoiceNumber || ''} placeholder="T + 13桁の半角数字" />
+            </div>
+            <div className="form-group">
+              <label>会社のメールアドレス</label>
+              <input 
+                type="email" 
+                className="form-control" 
+                value={emailInput} 
+                onChange={e => setEmailInput(e.target.value)} 
+                placeholder="info@company.com" 
+              />
+            </div>
+            <div className="form-group">
+              <label>公式ホームページURL</label>
+              <input 
+                type="url" 
+                className="form-control" 
+                value={websiteInput} 
+                onChange={e => setWebsiteInput(e.target.value)} 
+                placeholder="https://company.com" 
+              />
+            </div>
+            <div className="form-group">
+              <label>本社所在地 (住所)</label>
+              <input 
+                type="text" 
+                className="form-control" 
+                value={addressInput} 
+                onChange={e => setAddressInput(e.target.value)} 
+                placeholder="東京都千代田区1-1" 
+              />
+            </div>
+            <div className="form-group">
+              <label>企業タイプ</label>
+              <select 
+                className="form-control" 
+                value={typeInput} 
+                onChange={e => setTypeInput(e.target.value as 'client' | 'agency' | 'both')}
+                style={{ background: 'white' }}
+              >
+                <option value="client">発注元（クライアント）</option>
+                <option value="agency">協力会社（代理店）</option>
+                <option value="both">双方（ハイブリッド）</option>
+              </select>
+            </div>
+            <div className="form-group">
+              <label>会社PR・得意分野</label>
+              <textarea 
+                className="form-control" 
+                rows={4}
+                value={prInput} 
+                onChange={e => setPrInput(e.target.value)} 
+                placeholder="自社の強みや稼働実績を記入してください" 
+              />
             </div>
           </div>
         </main>

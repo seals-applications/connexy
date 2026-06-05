@@ -13,6 +13,11 @@ export interface User {
   staffName?: string;
   staffRole?: 'admin' | 'staff';
   representativeName?: string;
+  email?: string;
+  website?: string;
+  address?: string;
+  prText?: string;
+  companyType?: 'client' | 'agency' | 'both';
 }
 
 // 評価(Evaluation)の型定義
@@ -339,6 +344,11 @@ const mapUser = (row: any): User => {
   const localStatus = localStorage.getItem('company_status_' + row.id) as 'pending' | 'approved' | 'rejected' | null;
   const localInvoice = localStorage.getItem('company_invoice_' + row.id);
   const localRep = localStorage.getItem('company_rep_' + row.id);
+  const localEmail = localStorage.getItem('company_email_' + row.id);
+  const localWebsite = localStorage.getItem('company_website_' + row.id);
+  const localAddress = localStorage.getItem('company_address_' + row.id);
+  const localPr = localStorage.getItem('company_pr_' + row.id);
+  const localType = localStorage.getItem('company_type_' + row.id) as 'client' | 'agency' | 'both' | null;
   
   const defaultReps: { [key: string]: string } = {
     sigma: 'シグマ 太郎',
@@ -346,6 +356,46 @@ const mapUser = (row: any): User => {
     beta: 'ベータ 拓也',
     gamma: 'ガンマ 翔',
     delta: 'デルタ 大介'
+  };
+
+  const defaultEmails: { [key: string]: string } = {
+    sigma: 'contact@sigma-comm.co.jp',
+    alpha: 'info@alpha-agency.com',
+    beta: 'support@beta-corp.jp',
+    gamma: 'info@gamma-llc.net',
+    delta: 'contact@delta-partners.jp'
+  };
+
+  const defaultWebsites: { [key: string]: string } = {
+    sigma: 'https://sigma-comm.co.jp',
+    alpha: 'https://alpha-agency.com',
+    beta: 'https://beta-corp.jp',
+    gamma: 'https://gamma-llc.net',
+    delta: 'https://delta-partners.jp'
+  };
+
+  const defaultAddresses: { [key: string]: string } = {
+    sigma: '東京都新宿区西新宿2-8-1',
+    alpha: '東京都品川区大崎1-11-1',
+    beta: '東京都渋谷区渋谷3-21-3',
+    gamma: '神奈川県横浜市中区港町1-1',
+    delta: '埼玉県さいたま市大宮区吉敷町1-1'
+  };
+
+  const defaultPrs: { [key: string]: string } = {
+    sigma: '全国対応の通信キャリアイベント獲得特化集団。量販店・ショップでの稼働実績多数。',
+    alpha: '光回線・モバイルの獲得に特化した営業支援代理店。経験豊富なクローザーが稼働中。',
+    beta: 'ディレクターやキャンペーンクルーの手配から現場の運営までワンストップで受託します。',
+    gamma: '地域密着型のブース販売と店舗支援が得意です。ドコモ・au等全キャリア対応。',
+    delta: '緊急案件の対応力に強み。週末のショップ応援や臨時イベント要員の供給に自信あり。'
+  };
+
+  const defaultTypes: { [key: string]: 'client' | 'agency' | 'both' } = {
+    sigma: 'both',
+    alpha: 'agency',
+    beta: 'agency',
+    gamma: 'both',
+    delta: 'client'
   };
 
   return {
@@ -356,7 +406,12 @@ const mapUser = (row: any): User => {
     password: row.password,
     status: localStatus || row.status || 'approved',
     invoiceNumber: localInvoice || row.invoice_number,
-    representativeName: localRep || row.representative_name || defaultReps[row.id] || '未登録'
+    representativeName: localRep || row.representative_name || defaultReps[row.id] || '未登録',
+    email: localEmail || row.email || defaultEmails[row.id] || '',
+    website: localWebsite || row.website || defaultWebsites[row.id] || '',
+    address: localAddress || row.address || defaultAddresses[row.id] || '',
+    prText: localPr || row.pr_text || defaultPrs[row.id] || '',
+    companyType: localType || row.company_type || defaultTypes[row.id] || 'both'
   };
 };
 const initializeDefaultStaffLogins = (allStaffsData: any[]) => {
