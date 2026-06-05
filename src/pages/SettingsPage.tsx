@@ -11,14 +11,25 @@ export function SettingsPage({ onLogoutSuccess }: SettingsPageProps) {
   const location = useLocation();
   const [showProfileOverlay, setShowProfileOverlay] = useState(false);
   const [showStaffOverlay, setShowStaffOverlay] = useState(false);
+  const [showAddStaffOverlay, setShowAddStaffOverlay] = useState(false);
+  const [showEditStaffOverlay, setShowEditStaffOverlay] = useState(false);
   
   const [profileSaving, setProfileSaving] = useState(false);
   const [staffSaving, setStaffSaving] = useState(false);
 
   const [staffs, setStaffs] = useState<Staff[]>([]);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [editingStaff, setEditingStaff] = useState<Staff | null>(null);
 
   const [formData, setFormData] = useState({
+    name: '', maskedName: '', baseLocation: '', nearestStation: '',
+    locationName: '', price: 15000,
+    skills: [] as string[], carriers: [] as string[], experience: '', prText: '',
+    hasCertificate: false,
+    role: 'staff' as 'admin' | 'staff'
+  });
+
+  const [editFormData, setEditFormData] = useState({
     name: '', maskedName: '', baseLocation: '', nearestStation: '',
     locationName: '', price: 15000,
     skills: [] as string[], carriers: [] as string[], experience: '', prText: '',
@@ -68,6 +79,20 @@ export function SettingsPage({ onLogoutSuccess }: SettingsPageProps) {
     }));
   };
 
+  const toggleEditSkill = (skill: string) => {
+    setEditFormData(prev => ({
+      ...prev,
+      skills: prev.skills.includes(skill) ? prev.skills.filter(s => s !== skill) : [...prev.skills, skill]
+    }));
+  };
+
+  const toggleEditCarrier = (carrier: string) => {
+    setEditFormData(prev => ({
+      ...prev,
+      carriers: prev.carriers.includes(carrier) ? prev.carriers.filter(c => c !== carrier) : [...prev.carriers, carrier]
+    }));
+  };
+
   const handleProfileSave = () => {
     setProfileSaving(true);
     setTimeout(() => {
@@ -111,18 +136,61 @@ export function SettingsPage({ onLogoutSuccess }: SettingsPageProps) {
     });
 
     setStaffSaving(false);
-    setShowStaffOverlay(false);
+    setShowAddStaffOverlay(false);
     alert('スタッフを登録しました');
   };
 
-  const handleToggleRole = async (staffId: string, currentRole?: 'admin' | 'staff') => {
-    const nextRole = currentRole === 'admin' ? 'staff' : 'admin';
-    await api.updateStaffRole(staffId, nextRole);
+  const handleEditClick = (staff: Staff) => {
+    setEditingStaff(staff);
+    setEditFormData({
+      name: staff.name,
+      maskedName: staff.maskedName,
+      baseLocation: staff.baseLocation,
+      nearestStation: staff.nearestStation || '',
+      locationName: staff.preferredArea || '',
+      price: staff.price,
+      skills: staff.skills || [],
+      carriers: staff.carriers || [],
+      experience: staff.experience || '',
+      prText: staff.prText || '',
+      hasCertificate: staff.hasCertificate || false,
+      role: staff.role || 'staff'
+    });
+    setShowEditStaffOverlay(true);
+  };
+
+  const handleStaffUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingStaff) return;
+    setStaffSaving(true);
+
+    const updatedFields: Partial<Staff> = {
+      name: editFormData.name,
+      maskedName: editFormData.maskedName,
+      baseLocation: editFormData.baseLocation,
+      nearestStation: editFormData.nearestStation,
+      preferredArea: editFormData.locationName,
+      price: Number(editFormData.price),
+      skills: editFormData.skills,
+      carriers: editFormData.carriers,
+      experience: editFormData.experience,
+      prText: editFormData.prText,
+      hasCertificate: editFormData.hasCertificate,
+      role: editFormData.role
+    };
+
+    await api.updateStaff(editingStaff.id, updatedFields);
+
     const user = await api.getCurrentUser();
     if (user) {
       const fetchedStaffs = await api.getStaffsByUserId(user.id);
       setStaffs(fetchedStaffs);
     }
+
+    setStaffSaving(false);
+    setShowEditStaffOverlay(false);
+    setEditingStaff(null);
+    alert('スタッフ情報を更新しました');
   };
 
   return (
@@ -159,7 +227,7 @@ export function SettingsPage({ onLogoutSuccess }: SettingsPageProps) {
           <div className="settings-group">
             <div className="settings-item" onClick={() => setShowStaffOverlay(true)}>
               <span className="material-symbols-outlined item-icon">groups</span>
-              <span>スタッフ登録 ({staffs.length}名)</span>
+              <span>スタッフ管理 ({staffs.length}名)</span>
               <span className="material-symbols-outlined item-arrow">chevron_right</span>
             </div>
             <div className="settings-item">
@@ -224,57 +292,71 @@ export function SettingsPage({ onLogoutSuccess }: SettingsPageProps) {
         </main>
       </div>
 
-      {/* Staff Register Overlay */}
+      {/* Staff Registry Manager Overlay */}
       <div className={`overlay-view ${showStaffOverlay ? 'show' : ''}`} style={{ display: showStaffOverlay ? 'flex' : 'none', transform: showStaffOverlay ? 'translateX(0)' : 'translateX(100%)', zIndex: 3000 }}>
         <header className="solid-header overlay-header">
           <button className="icon-btn-dark" onClick={() => setShowStaffOverlay(false)}>
             <span className="material-symbols-outlined">arrow_back_ios_new</span>
           </button>
-          <h1>スタッフ登録</h1>
+          <h1>スタッフ管理</h1>
           <div style={{ width: '40px' }}></div>
         </header>
         <main className="list-area bg-gray" style={{ flex: 1, overflowY: 'auto', padding: '16px', paddingBottom: '100px' }}>
           
-          {staffs.length > 0 && (
-            <div style={{ marginBottom: '24px' }}>
-              <h3 style={{ fontSize: '14px', marginBottom: '12px', color: 'var(--text-sub)' }}>登録済みスタッフ</h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                {staffs.map(s => (
-                  <div key={s.id} style={{ background: 'white', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div>
-                      <div style={{ fontSize: '15px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-                        {s.name} 
-                        <span style={{ fontSize: '12px', color: 'var(--text-sub)', fontWeight: 'normal' }}>({s.maskedName})</span>
-                        {s.hasCertificate && (
-                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '2px', background: '#D1FAE5', color: '#065F46', padding: '2px 6px', borderRadius: '4px', fontSize: '10px', fontWeight: 'bold' }}>
-                            <span className="material-symbols-outlined" style={{ fontSize: '12px' }}>verified</span>
-                            運営確認済
-                          </span>
-                        )}
-                        <span style={{ display: 'inline-flex', alignItems: 'center', background: s.role === 'admin' ? '#E0F2FE' : '#F1F5F9', color: s.role === 'admin' ? '#0369A1' : '#475569', padding: '2px 6px', borderRadius: '4px', fontSize: '10px', fontWeight: 'bold' }}>
-                          {s.role === 'admin' ? '管理者' : '一般スタッフ'}
-                        </span>
-                      </div>
-                      <div style={{ fontSize: '12px', color: 'var(--text-sub)', marginTop: '4px' }}>{s.baseLocation} / {s.skills.join(', ')}</div>
-                    </div>
-                    <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-                      <button 
-                        onClick={() => handleToggleRole(s.id, s.role)}
-                        className="btn-secondary" 
-                        style={{ fontSize: '11px', padding: '6px 10px', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', border: '1px solid var(--border-color)', background: '#F8FAFC' }}
-                      >
-                        <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>swap_horiz</span>
-                        権限変更
-                      </button>
-                      <button className="icon-btn-dark"><span className="material-symbols-outlined" style={{ fontSize: '20px' }}>edit</span></button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+          <div style={{ marginBottom: '20px' }}>
+            <button 
+              onClick={() => setShowAddStaffOverlay(true)} 
+              className="btn-primary" 
+              style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 24px', width: '100%', justifyContent: 'center', borderRadius: '12px', fontWeight: 'bold', fontSize: '15px', border: 'none', background: 'var(--primary)', color: 'white', cursor: 'pointer', boxShadow: '0 4px 12px rgba(37, 99, 235, 0.15)' }}
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>add_circle</span>
+              スタッフを追加
+            </button>
+          </div>
 
-          <h3 style={{ fontSize: '14px', marginBottom: '12px', color: 'var(--text-sub)' }}>新しいスタッフを登録</h3>
+          <h3 style={{ fontSize: '14px', marginBottom: '12px', color: 'var(--text-sub)' }}>登録済みスタッフ一覧 ({staffs.length}名)</h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {staffs.map(s => (
+              <div key={s.id} style={{ background: 'white', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <div style={{ fontSize: '15px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                    {s.name} 
+                    <span style={{ fontSize: '12px', color: 'var(--text-sub)', fontWeight: 'normal' }}>({s.maskedName})</span>
+                    {s.hasCertificate && (
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '2px', background: '#D1FAE5', color: '#065F46', padding: '2px 6px', borderRadius: '4px', fontSize: '10px', fontWeight: 'bold' }}>
+                        <span className="material-symbols-outlined" style={{ fontSize: '12px' }}>verified</span>
+                        運営確認済
+                      </span>
+                    )}
+                    <span style={{ display: 'inline-flex', alignItems: 'center', background: s.role === 'admin' ? '#E0F2FE' : '#F1F5F9', color: s.role === 'admin' ? '#0369A1' : '#475569', padding: '2px 6px', borderRadius: '4px', fontSize: '10px', fontWeight: 'bold' }}>
+                      {s.role === 'admin' ? '管理者' : '一般スタッフ'}
+                    </span>
+                  </div>
+                  <div style={{ fontSize: '12px', color: 'var(--text-sub)', marginTop: '4px' }}>{s.baseLocation} / {s.skills.join(', ')}</div>
+                </div>
+                <button 
+                  onClick={() => handleEditClick(s)}
+                  className="icon-btn-dark"
+                  style={{ display: 'flex', padding: '6px', borderRadius: '6px', border: 'none', background: '#F1F5F9', cursor: 'pointer' }}
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: '20px', color: '#475569' }}>edit</span>
+                </button>
+              </div>
+            ))}
+          </div>
+        </main>
+      </div>
+
+      {/* Add Staff Overlay */}
+      <div className={`overlay-view ${showAddStaffOverlay ? 'show' : ''}`} style={{ display: showAddStaffOverlay ? 'flex' : 'none', transform: showAddStaffOverlay ? 'translateX(0)' : 'translateX(100%)', zIndex: 4000 }}>
+        <header className="solid-header overlay-header">
+          <button className="icon-btn-dark" onClick={() => setShowAddStaffOverlay(false)}>
+            <span className="material-symbols-outlined">arrow_back_ios_new</span>
+          </button>
+          <h1>新しいスタッフを登録</h1>
+          <div style={{ width: '40px' }}></div>
+        </header>
+        <main className="list-area bg-gray" style={{ flex: 1, overflowY: 'auto', padding: '16px', paddingBottom: '100px' }}>
           <form onSubmit={handleStaffSave} style={{ display: 'flex', flexDirection: 'column', gap: '16px', background: 'white', padding: '16px', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }}>
             
             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
@@ -303,7 +385,6 @@ export function SettingsPage({ onLogoutSuccess }: SettingsPageProps) {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
               <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)' }}>拠点（〇〇県〇〇市など） *</label>
               <input type="text" required value={formData.baseLocation} onChange={e => setFormData({...formData, baseLocation: e.target.value})} disabled={staffSaving} style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }} placeholder="例: 東京都品川区" />
-              <span style={{ fontSize: '11px', color: 'var(--text-sub)' }}>※案件応募時等の基準地になります</span>
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
@@ -355,11 +436,108 @@ export function SettingsPage({ onLogoutSuccess }: SettingsPageProps) {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
               <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)' }}>資格証明書・研修受講証 (画像・PDF)</label>
               <input type="file" accept="image/*,application/pdf" disabled={staffSaving} onChange={e => { if (e.target.files && e.target.files.length > 0) setFormData(prev => ({ ...prev, hasCertificate: true })) }} style={{ padding: '8px', borderRadius: '4px', border: '1px solid #ccc', background: 'white' }} />
-              <span style={{ fontSize: '11px', color: 'var(--text-sub)' }}>※ファイルをアップロードすると、プロフィールに「運営確認済」マークが付与されます</span>
             </div>
 
             <button type="submit" disabled={staffSaving} style={{ padding: '14px', background: 'var(--primary)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '16px', cursor: staffSaving ? 'not-allowed' : 'pointer', marginTop: '8px' }}>
               {staffSaving ? '登録中...' : '登録する'}
+            </button>
+          </form>
+        </main>
+      </div>
+
+      {/* Edit Staff Overlay */}
+      <div className={`overlay-view ${showEditStaffOverlay ? 'show' : ''}`} style={{ display: showEditStaffOverlay ? 'flex' : 'none', transform: showEditStaffOverlay ? 'translateX(0)' : 'translateX(100%)', zIndex: 4000 }}>
+        <header className="solid-header overlay-header">
+          <button className="icon-btn-dark" onClick={() => { setShowEditStaffOverlay(false); setEditingStaff(null); }}>
+            <span className="material-symbols-outlined">arrow_back_ios_new</span>
+          </button>
+          <h1>スタッフ情報を編集</h1>
+          <div style={{ width: '40px' }}></div>
+        </header>
+        <main className="list-area bg-gray" style={{ flex: 1, overflowY: 'auto', padding: '16px', paddingBottom: '100px' }}>
+          <form onSubmit={handleStaffUpdate} style={{ display: 'flex', flexDirection: 'column', gap: '16px', background: 'white', padding: '16px', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }}>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)' }}>権限区分 *</label>
+              <select 
+                value={editFormData.role} 
+                onChange={e => setEditFormData({...editFormData, role: e.target.value as 'admin' | 'staff'})} 
+                disabled={staffSaving} 
+                style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc', background: 'white', fontSize: '14px' }}
+              >
+                <option value="staff">一般スタッフ (Staff)</option>
+                <option value="admin">管理者 (Admin)</option>
+              </select>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)' }}>実名 *</label>
+              <input type="text" required value={editFormData.name} onChange={e => setEditFormData({...editFormData, name: e.target.value})} disabled={staffSaving} style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }} placeholder="例: 鈴木 一郎" />
+            </div>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)' }}>表示名（イニシャル等） *</label>
+              <input type="text" required value={editFormData.maskedName} onChange={e => setEditFormData({...editFormData, maskedName: e.target.value})} disabled={staffSaving} style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }} placeholder="例: Sさん" />
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)' }}>拠点（〇〇県〇〇市など） *</label>
+              <input type="text" required value={editFormData.baseLocation} onChange={e => setEditFormData({...editFormData, baseLocation: e.target.value})} disabled={staffSaving} style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }} placeholder="例: 東京都品川区" />
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)' }}>最寄り駅</label>
+              <input type="text" value={editFormData.nearestStation} onChange={e => setEditFormData({...editFormData, nearestStation: e.target.value})} disabled={staffSaving} style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }} placeholder="例: 品川駅" />
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)' }}>希望勤務エリア *</label>
+              <input type="text" required value={editFormData.locationName} onChange={e => setEditFormData({...editFormData, locationName: e.target.value})} disabled={staffSaving} style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }} placeholder="例: 電車で30分以内、渋谷から10km以内" />
+            </div>
+
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: 1 }}>
+                <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)' }}>希望単価 (円) *</label>
+                <input type="number" required value={editFormData.price} onChange={e => setEditFormData({...editFormData, price: Number(e.target.value)})} disabled={staffSaving} style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }} />
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)' }}>スキル (複数選択可)</label>
+              <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                {availableSkills.map(skill => (
+                  <label key={skill} style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '14px', cursor: 'pointer' }}>
+                    <input type="checkbox" checked={editFormData.skills.includes(skill)} onChange={() => toggleEditSkill(skill)} disabled={staffSaving} style={{ width: '16px', height: '16px' }} />
+                    {skill}
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)' }}>キャリア (複数選択可)</label>
+              <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                {availableCarriers.map(carrier => (
+                  <label key={carrier} style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '14px', cursor: 'pointer' }}>
+                    <input type="checkbox" checked={editFormData.carriers.includes(carrier)} onChange={() => toggleEditCarrier(carrier)} disabled={staffSaving} style={{ width: '16px', height: '16px' }} />
+                    {carrier}
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)' }}>自己PR・経歴</label>
+              <textarea rows={4} value={editFormData.prText} onChange={e => setEditFormData({...editFormData, prText: e.target.value})} disabled={staffSaving} style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }} placeholder="過去の経験やアピールポイントを記載してください"></textarea>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)' }}>資格証明書・研修受講証 (画像・PDF)</label>
+              <input type="file" accept="image/*,application/pdf" disabled={staffSaving} onChange={e => { if (e.target.files && e.target.files.length > 0) setEditFormData(prev => ({ ...prev, hasCertificate: true })) }} style={{ padding: '8px', borderRadius: '4px', border: '1px solid #ccc', background: 'white' }} />
+            </div>
+
+            <button type="submit" disabled={staffSaving} style={{ padding: '14px', background: 'var(--primary)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '16px', cursor: staffSaving ? 'not-allowed' : 'pointer', marginTop: '8px' }}>
+              {staffSaving ? '更新中...' : '更新を保存する'}
             </button>
           </form>
         </main>

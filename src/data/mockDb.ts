@@ -567,6 +567,21 @@ export const api = {
     }
   },
 
+  updateStaff: async (staffId: string, staff: Partial<Staff>): Promise<void> => {
+    if (staff.role) {
+      localStorage.setItem('staff_role_' + staffId, staff.role);
+    }
+    const row = unmapStaff(staff);
+    const { error } = await supabase.from('staffs').update(row).eq('id', staffId);
+    if (error) {
+      console.warn('updateStaff database update failed, attempting fallback update without role column:', error);
+      const fallbackRow = { ...row };
+      delete fallbackRow.role;
+      const { error: error2 } = await supabase.from('staffs').update(fallbackRow).eq('id', staffId);
+      if (error2) console.error('updateStaff fallback also failed:', error2);
+    }
+  },
+
   updateCompanyStatus: async (companyId: string, status: 'pending' | 'approved' | 'rejected'): Promise<void> => {
     localStorage.setItem('company_status_' + companyId, status);
     try {
