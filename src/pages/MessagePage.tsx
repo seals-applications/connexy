@@ -61,7 +61,12 @@ export function MessagePage() {
       avatarBg: 'bg-orange',
       preview: '明日はよろしくお願いします！',
       time: '18:15',
-      members: ['株式会社アルファ通信 (発注元)', '鈴木さん (管理者)', '佐藤さん (スタッフ)', '田中さん (スタッフ)']
+      members: [
+        '株式会社アルファ通信_担当者',
+        'ベータエージェンシー_鈴木さん',
+        'ベータエージェンシー_佐藤さん',
+        'ベータエージェンシー_田中さん'
+      ]
     }
   ];
 
@@ -78,9 +83,9 @@ export function MessagePage() {
     if (chatId === 'chat_au_group') {
       return [
         { type: 'system', text: '現場グループチャットが開設されました', time: '昨日' },
-        { type: 'received', senderName: 'アルファ通信 担当者', text: 'お疲れ様です。明日のauショップ新宿西口店イベント、メンバー確定しましたのでグループ作成しました。集合時間は9:30、店舗裏口です。よろしくお願いいたします！', time: '昨日 18:00', avatar: 'ア' },
-        { type: 'received', senderName: '佐藤さん', text: '佐藤です。承知いたしました。明日はよろしくお願いいたします！', time: '昨日 18:10', avatar: '佐' },
-        { type: 'received', senderName: '田中さん', text: '田中です。承知いたしました。よろしくお願いいたします！', time: '昨日 18:15', avatar: '田' }
+        { type: 'received', senderName: '株式会社アルファ通信_担当者', text: 'お疲れ様です。明日のauショップ新宿西口店イベント、メンバー確定しましたのでグループ作成しました。集合時間は9:30、店舗裏口です。よろしくお願いいたします！', time: '昨日 18:00', avatar: 'ア' },
+        { type: 'received', senderName: 'ベータエージェンシー_佐藤さん', text: '佐藤です。承知いたしました。明日はよろしくお願いいたします！', time: '昨日 18:10', avatar: '佐' },
+        { type: 'received', senderName: 'ベータエージェンシー_田中さん', text: '田中です。承知いたしました。よろしくお願いいたします！', time: '昨日 18:15', avatar: '田' }
       ];
     }
     if (chatId === 'chat_alpha_direct') {
@@ -133,11 +138,16 @@ export function MessagePage() {
     if (!inputText.trim() || !activeChat) return;
     const now = new Date();
     const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    const senderName = currentUser 
+      ? (currentUser.staffName 
+          ? `${currentUser.name}_${currentUser.staffName}` 
+          : `${currentUser.name}_代表`)
+      : '自分';
     const newMsg = {
       type: 'sent',
       text: inputText,
       time: timeStr,
-      senderName: currentUser ? (currentUser.staffName || currentUser.name) : '自分'
+      senderName
     };
     const updated = [...messages, newMsg];
     setMessages(updated);
@@ -228,11 +238,11 @@ export function MessagePage() {
           </div>
           
           {activeChat?.status === 'group' ? (
-            <div className="chat-conditions-pin" style={{ marginTop: '4px', background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '8px', padding: '6px 12px' }}>
-              <div style={{ fontSize: '11px', color: 'var(--text-sub)', fontWeight: 'bold' }}>参加メンバー:</div>
-              <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', whiteSpace: 'nowrap', marginTop: '2px', fontSize: '11px', color: 'var(--text-main)' }}>
+            <div className="chat-conditions-pin" style={{ marginTop: '4px', background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '8px', padding: '8px 12px', display: 'block' }}>
+              <div style={{ fontSize: '11px', color: 'var(--text-sub)', fontWeight: 'bold', marginBottom: '4px', textAlign: 'left' }}>参加メンバー:</div>
+              <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', whiteSpace: 'nowrap', fontSize: '11px', color: 'var(--text-main)', width: '100%' }}>
                 {activeChat.members?.map((m, idx) => (
-                  <span key={idx} style={{ background: '#E2E8F0', padding: '2px 8px', borderRadius: '12px' }}>
+                  <span key={idx} style={{ background: '#E2E8F0', padding: '2px 8px', borderRadius: '12px', flexShrink: 0 }}>
                     {m}
                   </span>
                 ))}
