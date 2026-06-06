@@ -611,6 +611,31 @@ export const api = {
     return data.map(mapContractTask);
   },
 
+  saveContractTaskChat: async (taskId: string, messages: any[], jobTitle: string, clientName: string, workerName: string): Promise<void> => {
+    const { data } = await supabase.from('contract_tasks').select('id').eq('id', taskId);
+    const exists = data && data.length > 0;
+    const evaluations = { messages };
+    
+    if (exists) {
+      const { error } = await supabase.from('contract_tasks').update({ evaluations }).eq('id', taskId);
+      if (error) throw error;
+    } else {
+      const row = {
+        id: taskId,
+        job_id: 'chat',
+        job_title: jobTitle,
+        client_name: clientName,
+        worker_name: workerName,
+        price: 0,
+        date: new Date().toISOString().split('T')[0],
+        status: 'working',
+        evaluations
+      };
+      const { error } = await supabase.from('contract_tasks').insert([row]);
+      if (error) throw error;
+    }
+  },
+
   submitReport: async (
     taskId: string,
     rating: number,
