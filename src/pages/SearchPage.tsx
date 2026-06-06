@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
+import { setOptions, importLibrary } from '@googlemaps/js-api-loader';
+import { MarkerClusterer } from '@googlemaps/markerclusterer';
 import { api } from '../data/mockDb';
 import type { Job, Talent, Staff, Training, User } from '../data/mockDb';
 import { CalendarPicker } from '../components/CalendarPicker';
@@ -11,8 +11,12 @@ import Autocomplete from 'react-google-autocomplete';
 
 export function SearchPage() {
   const navigate = useNavigate();
-  const mapRef = useRef<L.Map | null>(null);
-  const markersGroupRef = useRef<L.LayerGroup | null>(null);
+  const mapRef = useRef<any>(null);
+  const clustererRef = useRef<any>(null);
+  const markersRef = useRef<any[]>([]);
+  const advancedMarkerClassRef = useRef<any>(null);
+  const infoWindowClassRef = useRef<any>(null);
+  const [isMapLoaded, setIsMapLoaded] = useState(false);
 
   const [mode, setMode] = useState<'talent' | 'job'>('job');
   const [viewMode, setViewMode] = useState<'map' | 'list'>('map');
@@ -41,7 +45,7 @@ export function SearchPage() {
   const [selectedJobDates, setSelectedJobDates] = useState<string[]>([]);
   const [isSelectingLocationOnMap, setIsSelectingLocationOnMap] = useState(false);
   const [tempSelectedLocation, setTempSelectedLocation] = useState<{ lat: number, lng: number } | null>(null);
-  const tempMarkerRef = useRef<L.Marker | null>(null);
+  const tempMarkerRef = useRef<any>(null);
   const [isNdaModalOpen, setIsNdaModalOpen] = useState(false);
   const [ndaAgreed, setNdaAgreed] = useState(false);
 
@@ -191,7 +195,7 @@ export function SearchPage() {
 
       // クリーンアップ
       if (tempMarkerRef.current) {
-        tempMarkerRef.current.remove();
+        tempMarkerRef.current.map = null;
         tempMarkerRef.current = null;
       }
       setTempSelectedLocation(null);
@@ -252,25 +256,97 @@ export function SearchPage() {
     const mapContainer = document.getElementById('map-area');
     if (!mapContainer || mapRef.current) return;
 
-    const defaultLocation: [number, number] = [35.6812, 139.7671];
+    const defaultLocation = { lat: 35.6812, lng: 139.7671 };
 
-    mapRef.current = L.map('map-area', {
-      zoomControl: false,
-    }).setView(defaultLocation, 14);
+    setOptions({
+      key: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '',
+      v: 'weekly'
+    });
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-    }).addTo(mapRef.current);
+    let resizeObserver: ResizeObserver | null = null;
+    let isCleanedUp = false;
 
-    L.control.zoom({ position: 'bottomright' }).addTo(mapRef.current);
-    markersGroupRef.current = L.layerGroup().addTo(mapRef.current);
+    const initMap = async () => {
+      try {
+        const { Map, InfoWindow } = await importLibrary('maps') as any;
+        const { AdvancedMarkerElement } = await importLibrary('marker') as any;
 
-    // 初期マウント時のコンテナサイズ未確定に対応するための遅延サイズ更新
-    const timer = setTimeout(() => {
-      if (mapRef.current) {
-        mapRef.current.invalidateSize();
+        if (isCleanedUp || !mapContainer) return;
+
+        advancedMarkerClassRef.current = AdvancedMarkerElement;
+        infoWindowClassRef.current = InfoWindow;
+
+        const map = new Map(mapContainer, {
+          center: defaultLocation,
+          zoom: 14,
+          mapId: import.meta.env.VITE_GOOGLE_MAP_ID || 'DEMO_MAP_ID',
+          disableDefaultUI: true,
+          zoomControl: true,
+          zoomControlOptions: {
+            position: 9, // google.maps.ControlPosition.RIGHT_BOTTOM is 9
+          },
+        });
+
+        mapRef.current = map;
+        setIsMapLoaded(true);
+
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(
+            (position) => {
+              if (isCleanedUp || !mapRef.current) return;
+              const lat = position.coords.latitude;
+              const lng = position.coords.longitude;
+              const currentLocation = { lat, lng };
+
+              mapRef.current.setCenter(currentLocation);
+
+              const currentLocPin = document.createElement('div');
+              currentLocPin.innerHTML = `<div style="
+                width: 16px;
+                height: 16px;
+                background-color: #2563EB;
+                border: 3px solid white;
+                border-radius: 50%;
+                box-shadow: 0 0 10px rgba(0,0,0,0.3);
+              "></div>`;
+
+              const marker = new AdvancedMarkerElement({
+                map: mapRef.current,
+                position: currentLocation,
+                content: currentLocPin,
+                title: '現在地',
+              });
+
+              const infoWindow = new InfoWindow({
+                content: '<b>現在地</b>'
+              });
+
+              marker.addListener('click', () => {
+                infoWindow.open({
+                  anchor: marker,
+                  map: mapRef.current,
+                });
+              });
+            },
+            (error) => {
+              console.warn('位置情報の取得に失敗しました:', error.message);
+            },
+            { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+          );
+        }
+
+        resizeObserver = new ResizeObserver(() => {
+          if (mapRef.current) {
+            (window as any).google?.maps?.event?.trigger(mapRef.current, 'resize');
+          }
+        });
+        resizeObserver.observe(mapContainer);
+      } catch (err: any) {
+        console.error('Google Maps APIの読み込みに失敗しました:', err);
       }
-    }, 200);
+    };
+
+    initMap();
 
     const loadData = async () => {
       try {
@@ -300,62 +376,18 @@ export function SearchPage() {
 
     loadData();
 
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const lat = position.coords.latitude;
-          const lng = position.coords.longitude;
-          const currentLocation: [number, number] = [lat, lng];
-
-          if (mapRef.current) {
-            mapRef.current.setView(currentLocation, 14);
-            mapRef.current.invalidateSize();
-            const customIcon = L.divIcon({
-              className: 'current-location-marker',
-              html: `<div style="
-                width: 16px;
-                height: 16px;
-                background-color: #2563EB;
-                border: 3px solid white;
-                border-radius: 50%;
-                box-shadow: 0 0 10px rgba(0,0,0,0.3);
-              "></div>`,
-              iconSize: [16, 16],
-              iconAnchor: [8, 8],
-            });
-
-            const marker = L.marker(currentLocation, { icon: customIcon }).addTo(mapRef.current);
-            marker.bindPopup('<b>現在地</b>').openPopup();
-          }
-        },
-        (error) => {
-          console.warn('位置情報の取得に失敗しました:', error.message);
-          if (mapRef.current) {
-            mapRef.current.invalidateSize();
-          }
-        },
-        { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
-      );
-    }
-
-    const resizeObserver = new ResizeObserver(() => {
-        if(mapRef.current) mapRef.current.invalidateSize();
-    });
-    resizeObserver.observe(mapContainer);
-
     return () => {
-      clearTimeout(timer);
-      resizeObserver.disconnect();
-      if (mapRef.current) {
-        mapRef.current.remove();
-        mapRef.current = null;
+      isCleanedUp = true;
+      if (resizeObserver) {
+        resizeObserver.disconnect();
       }
+      mapRef.current = null;
     };
   }, []);
 
   const startMapSelection = () => {
     if (tempMarkerRef.current) {
-      tempMarkerRef.current.remove();
+      tempMarkerRef.current.map = null;
       tempMarkerRef.current = null;
     }
     setIsCreateFormOpen(false);
@@ -365,7 +397,7 @@ export function SearchPage() {
   const cancelMapSelection = () => {
     setIsSelectingLocationOnMap(false);
     if (tempMarkerRef.current) {
-      tempMarkerRef.current.remove();
+      tempMarkerRef.current.map = null;
       tempMarkerRef.current = null;
     }
     setIsCreateFormOpen(true);
@@ -374,30 +406,37 @@ export function SearchPage() {
   useEffect(() => {
     if (!mapRef.current) return;
 
-    const handleMapClick = async (e: L.LeafletMouseEvent) => {
-      if (!isSelectingLocationOnMap || !mapRef.current) return;
+    let clickListener: any = null;
 
-      const { lat, lng } = e.latlng;
+    const handleMapClick = async (e: any) => {
+      if (!isSelectingLocationOnMap || !mapRef.current || !e.latLng) return;
+
+      const lat = e.latLng.lat();
+      const lng = e.latLng.lng();
 
       if (tempMarkerRef.current) {
-        tempMarkerRef.current.remove();
+        tempMarkerRef.current.map = null;
       }
-      
-      const customIcon = L.divIcon({
-        className: 'temp-location-marker',
-        html: `<div style="
+
+      if (advancedMarkerClassRef.current) {
+        const AdvancedMarkerElement = advancedMarkerClassRef.current;
+        const tempPin = document.createElement('div');
+        tempPin.className = 'temp-location-marker';
+        tempPin.innerHTML = `<div style="
           width: 20px;
           height: 20px;
           background-color: #EF4444;
           border: 3px solid white;
           border-radius: 50%;
           box-shadow: 0 0 10px rgba(0,0,0,0.5);
-        "></div>`,
-        iconSize: [20, 20],
-        iconAnchor: [10, 10],
-      });
+        "></div>`;
 
-      tempMarkerRef.current = L.marker([lat, lng], { icon: customIcon }).addTo(mapRef.current);
+        tempMarkerRef.current = new AdvancedMarkerElement({
+          map: mapRef.current,
+          position: { lat, lng },
+          content: tempPin,
+        });
+      }
 
       try {
         const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&accept-language=ja`);
@@ -436,14 +475,14 @@ export function SearchPage() {
     };
 
     if (isSelectingLocationOnMap) {
-      mapRef.current.on('click', handleMapClick);
+      clickListener = mapRef.current.addListener('click', handleMapClick);
       const mapDiv = document.getElementById('map-area');
       if (mapDiv) mapDiv.style.cursor = 'crosshair';
     }
 
     return () => {
-      if (mapRef.current) {
-        mapRef.current.off('click', handleMapClick);
+      if (clickListener) {
+        clickListener.remove();
       }
       const mapDiv = document.getElementById('map-area');
       if (mapDiv) mapDiv.style.cursor = '';
@@ -662,25 +701,65 @@ export function SearchPage() {
 
   // mode と data の変更を検知してマップのピンを出し分ける
   useEffect(() => {
-    if (!mapRef.current || !markersGroupRef.current) return;
-    markersGroupRef.current.clearLayers();
+    if (!isMapLoaded || !mapRef.current || !advancedMarkerClassRef.current || !infoWindowClassRef.current) return;
+
+    // Clear existing markers
+    markersRef.current.forEach((m) => {
+      m.map = null;
+    });
+    markersRef.current = [];
+
+    if (clustererRef.current) {
+      clustererRef.current.clearMarkers();
+      clustererRef.current = null;
+    }
+
+    const AdvancedMarkerElement = advancedMarkerClassRef.current;
+    const InfoWindow = infoWindowClassRef.current;
+
+    const newMarkers: any[] = [];
 
     if (mode === 'job') {
       groupedJobs.forEach((group) => {
         const circleColor = group.hasUrgent ? '#EF4444' : '#3B82F6';
         
-        const jobGroupIcon = L.divIcon({
-          className: 'job-group-location-marker',
-          html: `<div style="
-            width: 32px; height: 32px; background-color: ${circleColor}; border: 3px solid white; border-radius: 50%; box-shadow: 0 4px 6px ${group.hasUrgent ? 'rgba(239, 68, 68, 0.4)' : 'rgba(59, 130, 246, 0.4)'}; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 14px;
-          ">${group.jobs.length}</div>`,
-          iconSize: [32, 32],
-          iconAnchor: [16, 16],
+        const pinElement = document.createElement('div');
+        pinElement.style.cursor = 'pointer';
+        pinElement.innerHTML = `
+          <div style="
+            width: 32px;
+            height: 32px;
+            background-color: ${circleColor};
+            border: 3px solid white;
+            border-radius: 50%;
+            box-shadow: 0 4px 6px ${group.hasUrgent ? 'rgba(239, 68, 68, 0.4)' : 'rgba(59, 130, 246, 0.4)'};
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 14px;
+            transition: transform 0.15s ease;
+          ">
+            ${group.jobs.length}
+          </div>
+        `;
+
+        pinElement.addEventListener('mouseenter', () => {
+          const inner = pinElement.firstElementChild as HTMLElement;
+          if (inner) inner.style.transform = 'scale(1.1)';
+        });
+        pinElement.addEventListener('mouseleave', () => {
+          const inner = pinElement.firstElementChild as HTMLElement;
+          if (inner) inner.style.transform = 'scale(1)';
         });
 
-        const marker = L.marker([group.lat, group.lng], { icon: jobGroupIcon });
-        
-        // ポップアップ内に全案件のリストを描画
+        const marker = new AdvancedMarkerElement({
+          position: { lat: group.lat, lng: group.lng },
+          content: pinElement,
+          title: `案件: ${group.jobs.length}件`,
+        });
+
         const jobsHtml = group.jobs.map(job => {
           return `
           <div style="background: ${job.isUrgent ? '#FEF2F2' : '#F9FAFB'}; border: 1px solid ${job.isUrgent ? '#FECACA' : '#E5E7EB'}; padding: 8px; border-radius: 6px; margin-bottom: 8px;">
@@ -692,37 +771,138 @@ export function SearchPage() {
           `;
         }).join('');
 
-        marker.bindPopup(`
-          <div style="font-family: 'Inter', sans-serif; max-height: 250px; overflow-y: auto; padding-right: 8px; width: 220px;">
-            <div style="font-size: 13px; font-weight: bold; color: #6B7280; margin-bottom: 8px; text-align: center; border-bottom: 2px solid #E5E7EB; padding-bottom: 4px;">このエリアの募集: ${group.jobs.length}件</div>
-            ${jobsHtml}
-          </div>
-        `);
-        markersGroupRef.current?.addLayer(marker);
+        const infoWindow = new InfoWindow({
+          content: `
+            <div style="font-family: 'Inter', sans-serif; max-height: 250px; overflow-y: auto; padding-right: 8px; width: 220px;">
+              <div style="font-size: 13px; font-weight: bold; color: #6B7280; margin-bottom: 8px; text-align: center; border-bottom: 2px solid #E5E7EB; padding-bottom: 4px;">このエリアの募集: ${group.jobs.length}件</div>
+              ${jobsHtml}
+            </div>
+          `
+        });
+
+        marker.addListener('click', () => {
+          infoWindow.open({
+            anchor: marker,
+            map: mapRef.current,
+          });
+        });
+
+        newMarkers.push(marker);
       });
     } else {
       filteredTalentGroups.forEach((group) => {
-        const talentGroupIcon = L.divIcon({
-          className: 'talent-group-location-marker',
-          html: `<div style="
-            width: 32px; height: 32px; background-color: #10B981; border: 3px solid white; border-radius: 50%; box-shadow: 0 4px 6px rgba(16, 185, 129, 0.4); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 14px;
-          ">${group.talents.length}</div>`,
-          iconSize: [32, 32],
-          iconAnchor: [16, 16],
+        const pinElement = document.createElement('div');
+        pinElement.style.cursor = 'pointer';
+        pinElement.innerHTML = `
+          <div style="
+            width: 32px;
+            height: 32px;
+            background-color: #10B981;
+            border: 3px solid white;
+            border-radius: 50%;
+            box-shadow: 0 4px 6px rgba(16, 185, 129, 0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 14px;
+            transition: transform 0.15s ease;
+          ">
+            ${group.talents.length}
+          </div>
+        `;
+
+        pinElement.addEventListener('mouseenter', () => {
+          const inner = pinElement.firstElementChild as HTMLElement;
+          if (inner) inner.style.transform = 'scale(1.1)';
+        });
+        pinElement.addEventListener('mouseleave', () => {
+          const inner = pinElement.firstElementChild as HTMLElement;
+          if (inner) inner.style.transform = 'scale(1)';
         });
 
-        const marker = L.marker([group.lat, group.lng], { icon: talentGroupIcon });
-        marker.bindPopup(`
-          <div style="font-family: 'Inter', sans-serif; text-align: center;">
-            <b style="font-size: 15px; display: block; margin-bottom: 8px;">${group.locationName}</b>
-            <div style="font-size: 14px; color: #10B981; font-weight: bold; margin-bottom: 12px;">人材: ${group.talents.length}名</div>
-            <button class="view-area-btn" data-area="${group.locationName}" style="width: 100%; padding: 6px; background: #10B981; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">リストを見る</button>
-          </div>
-        `);
-        markersGroupRef.current?.addLayer(marker);
+        const marker = new AdvancedMarkerElement({
+          position: { lat: group.lat, lng: group.lng },
+          content: pinElement,
+          title: `人材: ${group.talents.length}名`,
+        });
+
+        const infoWindow = new InfoWindow({
+          content: `
+            <div style="font-family: 'Inter', sans-serif; text-align: center; width: 180px;">
+              <b style="font-size: 14px; display: block; margin-bottom: 6px; color: #111827;">${group.locationName}</b>
+              <div style="font-size: 13px; color: #10B981; font-weight: bold; margin-bottom: 10px;">人材: ${group.talents.length}名</div>
+              <button class="view-area-btn" data-area="${group.locationName}" style="width: 100%; padding: 6px; background: #10B981; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 12px;">リストを見る</button>
+            </div>
+          `
+        });
+
+        marker.addListener('click', () => {
+          infoWindow.open({
+            anchor: marker,
+            map: mapRef.current,
+          });
+        });
+
+        newMarkers.push(marker);
       });
     }
-  }, [mode, groupedJobs, filteredTalentGroups]);
+
+    markersRef.current = newMarkers;
+
+    // Create marker clusterer
+    clustererRef.current = new MarkerClusterer({
+      map: mapRef.current,
+      markers: newMarkers,
+      renderer: {
+        render: ({ count, position }) => {
+          const clusterContainer = document.createElement('div');
+          clusterContainer.style.cursor = 'pointer';
+          
+          let clusterBg = '#1E3A8A'; // 案件クラスターは濃い青
+          if (mode === 'talent') {
+            clusterBg = '#065F46'; // 人材クラスターは濃い緑
+          }
+
+          clusterContainer.innerHTML = `
+            <div style="
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              width: 40px;
+              height: 40px;
+              background-color: ${clusterBg};
+              color: #FFFFFF;
+              border: 3px solid #FFFFFF;
+              border-radius: 50%;
+              font-weight: 800;
+              font-size: 14px;
+              box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+              transition: transform 0.15s ease;
+            ">
+              ${count}
+            </div>
+          `;
+
+          clusterContainer.addEventListener('mouseenter', () => {
+            const inner = clusterContainer.firstElementChild as HTMLElement;
+            if (inner) inner.style.transform = 'scale(1.1)';
+          });
+          clusterContainer.addEventListener('mouseleave', () => {
+            const inner = clusterContainer.firstElementChild as HTMLElement;
+            if (inner) inner.style.transform = 'scale(1)';
+          });
+
+          return new AdvancedMarkerElement({
+            position,
+            content: clusterContainer,
+          });
+        }
+      }
+    });
+
+  }, [isMapLoaded, mode, groupedJobs, filteredTalentGroups]);
 
 
   const activeFiltersCount = useMemo(() => {
@@ -1574,14 +1754,24 @@ export function SearchPage() {
                             }));
                             
                             if (mapRef.current) {
-                              if (tempMarkerRef.current) tempMarkerRef.current.remove();
-                              const customIcon = L.divIcon({
-                                className: 'temp-location-marker',
-                                html: `<div style="width: 20px; height: 20px; background-color: #EF4444; border: 3px solid white; border-radius: 50%; box-shadow: 0 0 10px rgba(0,0,0,0.5);"></div>`,
-                                iconSize: [20, 20], iconAnchor: [10, 10],
-                              });
-                              tempMarkerRef.current = L.marker([lat, lng], { icon: customIcon }).addTo(mapRef.current);
-                              mapRef.current.setView([lat, lng], 16);
+                              if (tempMarkerRef.current) {
+                                tempMarkerRef.current.map = null;
+                              }
+                              
+                              if (advancedMarkerClassRef.current) {
+                                const AdvancedMarkerElement = advancedMarkerClassRef.current;
+                                const tempPin = document.createElement('div');
+                                tempPin.className = 'temp-location-marker';
+                                tempPin.innerHTML = `<div style="width: 20px; height: 20px; background-color: #EF4444; border: 3px solid white; border-radius: 50%; box-shadow: 0 0 10px rgba(0,0,0,0.5);"></div>`;
+
+                                tempMarkerRef.current = new AdvancedMarkerElement({
+                                  map: mapRef.current,
+                                  position: { lat, lng },
+                                  content: tempPin,
+                                });
+                              }
+                              mapRef.current.setCenter({ lat, lng });
+                              mapRef.current.setZoom(16);
                             }
                           }
                         }}
