@@ -1219,10 +1219,32 @@ export function SearchPage() {
       const now = new Date();
       const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
       
+      let finalStaffId = selectedStaffId;
+      if (!finalStaffId && currentUser) {
+        // Create a default staff for this company as a fallback
+        const newStaff = await api.addStaff({
+          userId: currentUser.id,
+          name: `${currentUser.name} スタッフA`,
+          maskedName: `${currentUser.name.substring(0, 4)}*`,
+          baseLocation: '東京都新宿区',
+          nearestStation: '新宿駅',
+          preferredArea: '東京都',
+          price: 15000,
+          skills: ['キャンペーンクルー'],
+          carriers: ['docomo', 'au/UQmobile']
+        });
+        finalStaffId = newStaff.id;
+        // Seed logs for this new staff member as well!
+        await api.seedStaffAttendanceLogs(); 
+      }
+
+      const selectedStaff = myStaffs.find(s => s.id === finalStaffId) || 
+                            (await api.getStaffsByUserId(currentUser.id)).find(s => s.id === finalStaffId);
+
       const appMsg = {
         id: 'sys_app_' + Date.now(),
         type: 'system',
-        text: `案件「${selectedJob.title}」に応募しました。`,
+        text: `案件「${selectedJob.title}」に応募しました。\n【提案人材】: ${selectedStaff ? selectedStaff.name : '未選択'}`,
         time: timeStr
       };
       
@@ -1233,7 +1255,17 @@ export function SearchPage() {
                          selectedJob.authorId === 'gamma' ? 'ガンマモバイル' :
                          selectedJob.authorId === 'delta' ? 'デルタパートナーズ' : 'パートナー企業';
       
-      await api.saveContractTaskChat(roomId, updated, selectedJob.title, currentUser.name, authorName, [selectedJob.id]);
+      const appliedJobStaffIds = finalStaffId ? { [selectedJob.id]: finalStaffId } : undefined;
+      
+      await api.saveContractTaskChat(
+        roomId, 
+        updated, 
+        selectedJob.title, 
+        currentUser.name, 
+        authorName, 
+        [selectedJob.id], 
+        appliedJobStaffIds
+      );
       
       const refreshedTasks = await api.getContractTasks();
       setContractTasks(refreshedTasks);
@@ -2098,7 +2130,18 @@ export function SearchPage() {
               </button>
             ) : (
               <button 
-                onClick={() => setIsNdaModalOpen(true)}
+                onClick={async () => {
+                  if (currentUser) {
+                    const staffs = await api.getStaffsByUserId(currentUser.id);
+                    setMyStaffs(staffs);
+                    if (staffs.length > 0) {
+                      setSelectedStaffId(staffs[0].id);
+                    } else {
+                      setSelectedStaffId('');
+                    }
+                  }
+                  setIsNdaModalOpen(true);
+                }}
                 style={{ flex: 1, padding: '12px', background: 'var(--primary)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '14px', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}
               >
                 応募画面へ進む
@@ -2118,6 +2161,41 @@ export function SearchPage() {
                 マッチング成立後、正確な店舗情報・連絡先等がアプリ上で開示されます。情報漏洩には十分ご注意ください。
               </p>
               
+              {/* 提案スタッフの選択 */}
+              <div style={{ marginBottom: '20px', textAlign: 'left' }}>
+                <label style={{ fontSize: '13px', fontWeight: 'bold', color: '#334155', display: 'block', marginBottom: '6px' }}>
+                  提案・アサインするスタッフを選択してください *
+                </label>
+                {myStaffs.length > 0 ? (
+                  <select
+                    value={selectedStaffId}
+                    onChange={e => setSelectedStaffId(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '10px',
+                      borderRadius: '8px',
+                      border: '1px solid #CBD5E1',
+                      fontSize: '14px',
+                      background: 'white',
+                      outline: 'none',
+                      color: 'var(--text-main)',
+                      fontWeight: 'bold'
+                    }}
+                  >
+                    {myStaffs.map(staff => (
+                      <option key={staff.id} value={staff.id}>
+                        {staff.name} ({staff.carriers.join(', ') || 'キャリア未指定'}) - 単価: ¥{staff.price.toLocaleString()}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <div style={{ padding: '10px', background: '#FFFBEB', border: '1px solid #FDE68A', borderRadius: '8px', color: '#B45309', fontSize: '12px', lineHeight: '1.4' }}>
+                    ⚠️ アサイン可能なスタッフが登録されていません。<br />
+                    「設定」タブの「スタッフ管理」からスタッフを追加してください。デモ用に一時的に「仮のスタッフ」をアサインして応募します。
+                  </div>
+                )}
+              </div>
+
               <label style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', marginBottom: '24px', cursor: 'pointer', padding: '12px', background: '#F8FAFC', borderRadius: '8px', border: '1px solid #E2E8F0' }}>
                 <input type="checkbox" checked={ndaAgreed} onChange={e => setNdaAgreed(e.target.checked)} style={{ marginTop: '4px', width: '16px', height: '16px', accentColor: 'var(--primary)', flexShrink: 0 }} />
                 <span style={{ fontSize: '13px', color: '#1E293B', fontWeight: 'bold', lineHeight: '1.5' }}>

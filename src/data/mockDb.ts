@@ -582,6 +582,12 @@ export const api = {
     return data.map(mapStaff);
   },
 
+  getAllStaffs: async (): Promise<Staff[]> => {
+    const { data, error } = await supabase.from('staffs').select('*');
+    if (error) { console.error('getAllStaffs error:', error); return []; }
+    return data.map(mapStaff);
+  },
+
   addJob: async (job: Omit<Job, 'id'>): Promise<Job> => {
     const id = 'j' + Date.now();
     const newJob = { ...job, id };
@@ -661,7 +667,15 @@ export const api = {
     return data.map(mapContractTask);
   },
 
-  saveContractTaskChat: async (taskId: string, messages: any[], jobTitle: string, clientName: string, workerName: string, appliedJobIds?: string[]): Promise<void> => {
+  saveContractTaskChat: async (
+    taskId: string, 
+    messages: any[], 
+    jobTitle: string, 
+    clientName: string, 
+    workerName: string, 
+    appliedJobIds?: string[],
+    appliedJobStaffIds?: { [jobId: string]: string }
+  ): Promise<void> => {
     const { data } = await supabase.from('contract_tasks').select('evaluations').eq('id', taskId);
     const exists = data && data.length > 0;
     
@@ -675,12 +689,17 @@ export const api = {
       evaluations = {
         ...existingEvals,
         messages,
-        appliedJobIds: mergedAppliedJobIds
+        appliedJobIds: mergedAppliedJobIds,
+        appliedJobStaffIds: {
+          ...(existingEvals.appliedJobStaffIds || {}),
+          ...(appliedJobStaffIds || {})
+        }
       };
       const { error } = await supabase.from('contract_tasks').update({ evaluations }).eq('id', taskId);
       if (error) throw error;
     } else {
       evaluations.appliedJobIds = appliedJobIds || [];
+      evaluations.appliedJobStaffIds = appliedJobStaffIds || {};
       const row = {
         id: taskId,
         job_id: 'chat',
@@ -695,6 +714,13 @@ export const api = {
       const { error } = await supabase.from('contract_tasks').insert([row]);
       if (error) throw error;
     }
+  },
+
+  createContractTask: async (task: ContractTask): Promise<void> => {
+    const row = unmapContractTask(task);
+    row.evaluations = task.evaluations;
+    const { error } = await supabase.from('contract_tasks').insert([row]);
+    if (error) { console.error('createContractTask error:', error); throw error; }
   },
 
   submitReport: async (
@@ -837,6 +863,46 @@ export const api = {
       await supabase.from('companies').update({ status }).eq('id', companyId);
     } catch (e) {
       console.warn('DB update company status failed, using localStorage fallback', e);
+    }
+  },
+
+  seedStaffAttendanceLogs: async (): Promise<void> => {
+    try {
+      const { data: staffs, error } = await supabase.from('staffs').select('*');
+      if (error || !staffs) return;
+      for (const sRow of staffs) {
+        const staff = mapStaff(sRow);
+        // If they already have a significant number of attendance logs (e.g. 8+), skip them to avoid duplicating.
+        const attendanceLogs = (staff.completedTrainings || []).filter(t => t.startsWith('ATTENDANCE_LOG_'));
+        if (attendanceLogs.length >= 8) continue;
+
+        // Generate 15 random logs for April, May, and June 2026
+        const newLogs: string[] = [];
+        const times = ['08:50', '08:53', '08:55', '08:57', '08:58', '08:59', '09:00', '09:01', '09:02', '09:03', '09:05', '09:08'];
+        const dates = [
+          '2026-06-05', '2026-06-04', '2026-06-03', '2026-06-02', '2026-06-01',
+          '2026-05-29', '2026-05-28', '2026-05-27', '2026-05-26', '2026-05-25',
+          '2026-05-22', '2026-05-21', '2026-05-20', '2026-05-19', '2026-05-18',
+          '2026-05-15', '2026-05-14', '2026-05-13', '2026-05-12', '2026-05-11'
+        ];
+        
+        // Randomly select 15 dates
+        const shuffled = [...dates].sort(() => 0.5 - Math.random());
+        const selectedDates = shuffled.slice(0, 15);
+        selectedDates.forEach(date => {
+          const randTime = times[Math.floor(Math.random() * times.length)];
+          newLogs.push(`ATTENDANCE_LOG_${date}_${randTime}`);
+        });
+
+        // Merge and update
+        const cleanTrainings = (staff.completedTrainings || []).filter(t => !t.startsWith('ATTENDANCE_LOG_'));
+        const updatedTrainings = [...cleanTrainings, ...newLogs];
+        
+        await supabase.from('staffs').update({ completed_trainings: updatedTrainings }).eq('id', staff.id);
+        console.log(`Seeded ${newLogs.length} attendance logs for staff ${staff.name}`);
+      }
+    } catch (e) {
+      console.error('Error seeding staff attendance logs:', e);
     }
   }
 };

@@ -26,7 +26,11 @@ function App() {
   };
 
   useEffect(() => {
-    checkUser();
+    const init = async () => {
+      await api.seedStaffAttendanceLogs();
+      await checkUser();
+    };
+    init();
   }, []);
 
   if (loading) {

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { api } from '../data/mockDb';
 import type { ContractTask, Training, Staff, Job, Talent, User } from '../data/mockDb';
 
@@ -135,8 +135,47 @@ export function TaskPage() {
   // 自社募集案件・人材State
   const [myJobs, setMyJobs] = useState<Job[]>([]);
   const [myTalents, setMyTalents] = useState<Talent[]>([]);
-  const [isMyJobsOpen, setIsMyJobsOpen] = useState(false);
-  const [isMyTalentsOpen, setIsMyTalentsOpen] = useState(false);
+  const [showMyPostsOverlay, setShowMyPostsOverlay] = useState(false);
+  const [myPostsTab, setMyPostsTab] = useState<'jobs' | 'talents'>('jobs');
+  const [myJobsSortType, setMyJobsSortType] = useState<'recent' | 'deadline' | 'price'>('recent');
+  const [expandedJobId, setExpandedJobId] = useState<string | null>(null);
+  const [expandedTalentId, setExpandedTalentId] = useState<string | null>(null);
+
+  // 選考・マッチング関連のState
+  const [screeningJobId, setScreeningJobId] = useState<string | null>(null);
+  const [screeningMode, setScreeningMode] = useState<'default' | 'quality' | 'cost_performance' | 'reliability'>('default');
+  const [allStaffs, setAllStaffs] = useState<Staff[]>([]);
+  const [confirmingCandidate, setConfirmingCandidate] = useState<any | null>(null);
+
+  const isJobPast = (job: Job) => {
+    if (!job.applicationDeadline) return false;
+    const todayStr = new Date().toISOString().split('T')[0];
+    return job.applicationDeadline < todayStr;
+  };
+
+  const sortedActiveMyJobs = useMemo(() => {
+    const active = myJobs.filter(j => !isJobPast(j));
+    if (myJobsSortType === 'deadline') {
+      return [...active].sort((a, b) => {
+        const da = a.applicationDeadline || '';
+        const db = b.applicationDeadline || '';
+        return da.localeCompare(db);
+      });
+    }
+    if (myJobsSortType === 'price') {
+      return [...active].sort((a, b) => (b.price || 0) - (a.price || 0));
+    }
+    return [...active].sort((a, b) => b.id.localeCompare(a.id));
+  }, [myJobs, myJobsSortType]);
+
+  const pastMyJobs = useMemo(() => {
+    const past = myJobs.filter(j => isJobPast(j));
+    return [...past].sort((a, b) => {
+      const da = a.applicationDeadline || '';
+      const db = b.applicationDeadline || '';
+      return db.localeCompare(da);
+    });
+  }, [myJobs]);
 
   const loadData = async () => {
     try {
@@ -181,6 +220,9 @@ export function TaskPage() {
       const allTalents = await api.getTalents();
       setMyJobs(allJobs.filter(j => j.authorId === user.id));
       setMyTalents(allTalents.filter(t => t.userId === user.id));
+
+      const fetchedAllStaffs = await api.getAllStaffs();
+      setAllStaffs(fetchedAllStaffs);
     } catch (e) {
       console.error(e);
     }
@@ -402,6 +444,90 @@ export function TaskPage() {
     }
   };
 
+  const handleStartScreeningChat = (chatTask: any, companyId: string) => {
+    let roomId = chatTask?.id;
+    if (!roomId && currentUser) {
+      const sortedIds = [currentUser.id, companyId].sort();
+      roomId = `chat_${sortedIds[0]}_${sortedIds[1]}`;
+    }
+    localStorage.setItem('connexy_active_chat_id', roomId);
+    setScreeningJobId(null);
+    setShowMyPostsOverlay(false);
+    window.location.hash = '#/message';
+  };
+
+  const handleConfirmContract = async (candidate: any) => {
+    const job = myJobs.find(j => j.id === screeningJobId);
+    if (!job || !currentUser) return;
+    try {
+      const staff = candidate.staff;
+      const company = candidate.company;
+
+      // 1. Create a ContractTask for the actual job assignment
+      const newContractTask: ContractTask = {
+        id: `ct_${Date.now()}`,
+        jobId: job.id,
+        jobTitle: job.title,
+        workerName: staff.name,
+        companyName: company.name,
+        clientName: currentUser.name,
+        price: job.price,
+        date: (job.eventDate ? job.eventDate.split(', ')[0] : '') || new Date().toISOString().split('T')[0],
+        status: 'working',
+        evaluations: {
+          messages: [
+            { id: `sys_c_${Date.now()}`, type: 'system', text: 'マッチングが成立しました。業務完了後、実績報告と相互評価を行ってください。', time: '現在' }
+          ]
+        } as any
+      };
+
+      await api.createContractTask(newContractTask);
+
+      // 2. Update the chat room to add the contract announcement
+      let chatTaskId = candidate.chatTask?.id;
+      if (!chatTaskId) {
+        const sortedIds = [currentUser.id, company.id].sort();
+        chatTaskId = `chat_${sortedIds[0]}_${sortedIds[1]}`;
+      }
+
+      let msgs: any[] = [];
+      const currentTask = tasks.find(t => t.id === chatTaskId);
+      if (currentTask) {
+        msgs = (currentTask.evaluations as any)?.messages || [];
+      } else {
+        msgs = [{ id: 'sys_init', type: 'system', text: 'チャットを開始しました', time: '' }];
+      }
+
+      const now = new Date();
+      const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+      
+      const contractMsg = {
+        id: 'sys_contract_' + Date.now(),
+        type: 'system',
+        text: `🎉 契約オファーが承認されました！\n【アサインメンバー】: ${staff.name}\n【契約金額】: 日当 ¥${job.price.toLocaleString()}\n稼働に向けてチャットで詳細情報を共有してください。`,
+        time: timeStr
+      };
+
+      const updatedMsgs = [...msgs, contractMsg];
+      await api.saveContractTaskChat(
+        chatTaskId,
+        updatedMsgs,
+        job.title,
+        currentUser.name,
+        company.name,
+        [job.id]
+      );
+
+      alert(`🎉 ${company.name} との契約が成立しました！\n「タスク管理」の「本日の現場」および「チャット」に情報が反映されます。`);
+      setConfirmingCandidate(null);
+      setScreeningJobId(null);
+      await loadData();
+    } catch (e) {
+      console.error(e);
+      alert('契約処理中にエラーが発生しました。');
+    }
+  };
+
   // 研修受講シミュレータ
   const handleStartTraining = (training: Training) => {
     setActiveTraining(training);
@@ -620,113 +746,6 @@ export function TaskPage() {
           </div>
         </div>
 
-        {/* 自社の掲示状況セクション */}
-        {isUserAdmin && (
-          <>
-            <h3 className="section-title">自社の掲示状況</h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '24px' }}>
-              {/* 掲示中の案件 */}
-              <div style={{ background: 'white', borderRadius: '12px', border: '1px solid var(--border-color)', overflow: 'hidden' }}>
-                <button 
-                  onClick={() => setIsMyJobsOpen(!isMyJobsOpen)}
-                  style={{
-                    width: '100%',
-                    padding: '16px',
-                    background: 'none',
-                    border: 'none',
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    cursor: 'pointer',
-                    textAlign: 'left'
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 'bold', color: 'var(--text-main)' }}>
-                    <span className="material-symbols-outlined" style={{ color: 'var(--primary)' }}>work</span>
-                    掲示中の案件 ({myJobs.length}件)
-                  </div>
-                  <span className="material-symbols-outlined" style={{ transform: isMyJobsOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>
-                    expand_more
-                  </span>
-                </button>
-                
-                {isMyJobsOpen && (
-                  <div style={{ padding: '0 16px 16px 16px', borderTop: '1px solid #f3f4f6', display: 'flex', flexDirection: 'column', gap: '10px', paddingTop: '12px' }}>
-                    {myJobs.length > 0 ? (
-                      myJobs.map(job => (
-                        <div key={job.id} style={{ padding: '10px', background: '#F8FAFC', borderRadius: '8px', border: '1px solid #E2E8F0' }}>
-                          <div style={{ fontWeight: 'bold', fontSize: '14px', marginBottom: '4px' }}>{job.title}</div>
-                          <div style={{ display: 'flex', gap: '8px', fontSize: '11px', color: 'var(--text-sub)' }}>
-                            <span>単価: ¥{job.price.toLocaleString()}</span>
-                            <span>•</span>
-                            <span>エリア: {job.locationName || '未指定'}</span>
-                            {job.allowedCompanyIds && (
-                              <>
-                                <span>•</span>
-                                <span style={{ color: '#F59E0B', fontWeight: 'bold' }}>限定公開</span>
-                              </>
-                            )}
-                          </div>
-                        </div>
-                      ))
-                    ) : (
-                      <div style={{ fontSize: '12px', color: 'var(--text-sub)', textAlign: 'center', padding: '8px 0' }}>現在掲示中の案件はありません。</div>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              {/* 掲示中の人材 */}
-              <div style={{ background: 'white', borderRadius: '12px', border: '1px solid var(--border-color)', overflow: 'hidden' }}>
-                <button 
-                  onClick={() => setIsMyTalentsOpen(!isMyTalentsOpen)}
-                  style={{
-                    width: '100%',
-                    padding: '16px',
-                    background: 'none',
-                    border: 'none',
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    cursor: 'pointer',
-                    textAlign: 'left'
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 'bold', color: 'var(--text-main)' }}>
-                    <span className="material-symbols-outlined" style={{ color: '#10B981' }}>group</span>
-                    掲示中の人材 ({myTalents.length}件)
-                  </div>
-                  <span className="material-symbols-outlined" style={{ transform: isMyTalentsOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>
-                    expand_more
-                  </span>
-                </button>
-                
-                {isMyTalentsOpen && (
-                  <div style={{ padding: '0 16px 16px 16px', borderTop: '1px solid #f3f4f6', display: 'flex', flexDirection: 'column', gap: '10px', paddingTop: '12px' }}>
-                    {myTalents.length > 0 ? (
-                      myTalents.map(talent => (
-                        <div key={talent.id} style={{ padding: '10px', background: '#F8FAFC', borderRadius: '8px', border: '1px solid #E2E8F0' }}>
-                          <div style={{ fontWeight: 'bold', fontSize: '14px', marginBottom: '4px' }}>{talent.name} ({talent.maskedName})</div>
-                          <div style={{ display: 'flex', gap: '8px', fontSize: '11px', color: 'var(--text-sub)', flexWrap: 'wrap' }}>
-                            <span>単価: ¥{talent.price.toLocaleString()}〜</span>
-                            <span>•</span>
-                            <span>エリア: {talent.locationName}</span>
-                            <span>•</span>
-                            <span>勤務日: {talent.availableDates || '未定'}</span>
-                          </div>
-                        </div>
-                      ))
-                    ) : (
-                      <div style={{ fontSize: '12px', color: 'var(--text-sub)', textAlign: 'center', padding: '8px 0' }}>現在掲示中の人材はありません。</div>
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
-          </>
-        )}
-
-
         {/* 4. アクションリストセクション */}
         <div className="settings-list" style={{ marginBottom: '24px' }}>
           <div className="settings-group" style={{ background: 'white', borderRadius: '12px', overflow: 'hidden', border: '1px solid var(--border-color)', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }}>
@@ -736,6 +755,15 @@ export function TaskPage() {
               <div className="settings-item" onClick={() => setShowStaffMonitorOverlay(true)}>
                 <span className="material-symbols-outlined item-icon" style={{ color: '#4F46E5', marginRight: '12px' }}>supervised_user_circle</span>
                 <span style={{ flex: 1, fontSize: '15px', fontWeight: 500 }}>スタッフ出勤状況の確認</span>
+                <span className="material-symbols-outlined item-arrow" style={{ color: '#D1D5DB' }}>chevron_right</span>
+              </div>
+            )}
+
+            {/* 自社の掲示状況（管理者のみ） */}
+            {isUserAdmin && (
+              <div className="settings-item" onClick={() => setShowMyPostsOverlay(true)}>
+                <span className="material-symbols-outlined item-icon" style={{ color: '#0EA5E9', marginRight: '12px' }}>work_history</span>
+                <span style={{ flex: 1, fontSize: '15px', fontWeight: 500 }}>自社の掲示状況（案件・人材管理）</span>
                 <span className="material-symbols-outlined item-arrow" style={{ color: '#D1D5DB' }}>chevron_right</span>
               </div>
             )}
@@ -1379,6 +1407,918 @@ export function TaskPage() {
         </div>
       )}
 
+      {/* 自社の掲示状況 (案件・人材管理) Overlay */}
+      {showMyPostsOverlay && (
+        <div className={`overlay-view ${showMyPostsOverlay ? 'show' : ''}`} style={{ display: showMyPostsOverlay ? 'flex' : 'none', transform: showMyPostsOverlay ? 'translateX(0)' : 'translateX(100%)', zIndex: 3000 }}>
+          <header className="solid-header overlay-header">
+            <button className="icon-btn-dark" onClick={() => {
+              setShowMyPostsOverlay(false);
+              setExpandedJobId(null);
+              setExpandedTalentId(null);
+            }}>
+              <span className="material-symbols-outlined">arrow_back_ios_new</span>
+            </button>
+            <h1>自社の掲示状況</h1>
+            <div style={{ width: '40px' }}></div>
+          </header>
+
+          <main className="list-area bg-gray" style={{ flex: 1, overflowY: 'auto', padding: '16px', paddingBottom: '100px', textAlign: 'left' }}>
+            {/* タブ切り替えカプセル */}
+            <div style={{
+              display: 'flex',
+              background: '#F1F5F9',
+              padding: '3px',
+              borderRadius: '20px',
+              boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.05)',
+              marginBottom: '16px'
+            }}>
+              <button
+                onClick={() => setMyPostsTab('jobs')}
+                style={{
+                  flex: 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '4px',
+                  padding: '8px',
+                  borderRadius: '17px',
+                  border: 'none',
+                  background: myPostsTab === 'jobs' ? '#FFFFFF' : 'transparent',
+                  color: myPostsTab === 'jobs' ? 'var(--primary)' : '#64748B',
+                  fontSize: '13px',
+                  fontWeight: 'bold',
+                  boxShadow: myPostsTab === 'jobs' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>work</span>
+                案件管理
+              </button>
+              <button
+                onClick={() => setMyPostsTab('talents')}
+                style={{
+                  flex: 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '4px',
+                  padding: '8px',
+                  borderRadius: '17px',
+                  border: 'none',
+                  background: myPostsTab === 'talents' ? '#FFFFFF' : 'transparent',
+                  color: myPostsTab === 'talents' ? 'var(--primary)' : '#64748B',
+                  fontSize: '13px',
+                  fontWeight: 'bold',
+                  boxShadow: myPostsTab === 'talents' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>group</span>
+                人材管理
+              </button>
+            </div>
+
+            {myPostsTab === 'jobs' ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                {/* 並び替えコントローラー */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'white', padding: '10px 14px', borderRadius: '10px', border: '1px solid var(--border-color)' }}>
+                  <span style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--text-sub)' }}>案件の並び替え:</span>
+                  <select
+                    value={myJobsSortType}
+                    onChange={e => setMyJobsSortType(e.target.value as 'recent' | 'deadline' | 'price')}
+                    style={{
+                      padding: '4px 8px',
+                      borderRadius: '6px',
+                      border: '1px solid #ccc',
+                      background: 'white',
+                      fontSize: '12px',
+                      outline: 'none',
+                      fontWeight: 'bold',
+                      color: 'var(--text-main)'
+                    }}
+                  >
+                    <option value="recent">更新順 (新着順)</option>
+                    <option value="deadline">締切が近い順</option>
+                    <option value="price">単価が高い順</option>
+                  </select>
+                </div>
+
+                {/* 募集中案件 */}
+                <div>
+                  <h3 className="section-title" style={{ marginTop: '8px', marginBottom: '8px', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span className="material-symbols-outlined" style={{ color: '#10B981', fontSize: '18px' }}>campaign</span>
+                    掲載中の案件 ({sortedActiveMyJobs.length}件)
+                  </h3>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    {sortedActiveMyJobs.length > 0 ? (
+                      sortedActiveMyJobs.map(job => {
+                        const isExpanded = expandedJobId === job.id;
+                        return (
+                          <div 
+                            key={job.id} 
+                            style={{ 
+                              background: 'white', 
+                              borderRadius: '12px', 
+                              border: '1px solid var(--border-color)', 
+                              boxShadow: '0 2px 6px rgba(0,0,0,0.02)',
+                              overflow: 'hidden' 
+                            }}
+                          >
+                            <div 
+                              onClick={() => setExpandedJobId(isExpanded ? null : job.id)}
+                              style={{ padding: '14px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px' }}
+                            >
+                              <div style={{ flex: 1 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+                                  <span style={{
+                                    fontSize: '10px',
+                                    fontWeight: 'bold',
+                                    padding: '2px 8px',
+                                    borderRadius: '10px',
+                                    background: '#D1FAE5',
+                                    color: '#065F46'
+                                  }}>募集中</span>
+                                  {job.allowedCompanyIds && (
+                                    <span style={{ fontSize: '10px', fontWeight: 'bold', padding: '2px 8px', borderRadius: '10px', background: '#FEF3C7', color: '#D97706' }}>限定公開</span>
+                                  )}
+                                </div>
+                                <h4 style={{ margin: 0, fontSize: '14px', fontWeight: 'bold', color: 'var(--text-main)' }}>{job.title}</h4>
+                                <div style={{ display: 'flex', gap: '8px', fontSize: '11px', color: 'var(--text-sub)', marginTop: '6px', alignItems: 'center', flexWrap: 'wrap' }}>
+                                  <span>単価: ¥{job.price.toLocaleString()} / 日</span>
+                                  <span>•</span>
+                                  <span>締切: {job.applicationDeadline}</span>
+                                  <span>•</span>
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setScreeningJobId(job.id);
+                                    }}
+                                    style={{
+                                      background: 'var(--primary)',
+                                      color: 'white',
+                                      border: 'none',
+                                      borderRadius: '4px',
+                                      padding: '2px 8px',
+                                      fontSize: '10px',
+                                      fontWeight: 'bold',
+                                      cursor: 'pointer',
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: '2px'
+                                    }}
+                                  >
+                                    <span className="material-symbols-outlined" style={{ fontSize: '12px' }}>rule</span>
+                                    選考・マッチング ({(() => {
+                                      const realCount = tasks.filter(t => 
+                                        t.jobId === 'chat' && 
+                                        (t.evaluations as any)?.appliedJobIds?.includes(job.id)
+                                      ).length;
+                                      return realCount > 0 ? realCount : 5;
+                                    })()}社)
+                                  </button>
+                                </div>
+                              </div>
+                              <span className="material-symbols-outlined" style={{ color: 'var(--text-sub)', transform: isExpanded ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s', marginTop: '4px' }}>
+                                expand_more
+                              </span>
+                            </div>
+
+                            {isExpanded && (
+                              <div style={{ padding: '14px', borderTop: '1px solid #F3F4F6', background: '#F8FAFC', fontSize: '12px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                <div>
+                                  <strong style={{ color: 'var(--text-sub)' }}>📍 勤務エリア:</strong>
+                                  <div style={{ marginTop: '2px', fontWeight: 'bold' }}>{job.locationName || '未指定'} ({job.exactLocation || '詳細住所なし'})</div>
+                                </div>
+                                <div>
+                                  <strong style={{ color: 'var(--text-sub)' }}>📅 開催日日程:</strong>
+                                  <div style={{ marginTop: '2px', display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                                    {(job.eventDate ? job.eventDate.split(', ') : []).map((d: string) => (
+                                      <span key={d} style={{ background: '#E2E8F0', padding: '2px 8px', borderRadius: '4px', fontSize: '11px' }}>{d}</span>
+                                    ))}
+                                  </div>
+                                </div>
+                                <div>
+                                  <strong style={{ color: 'var(--text-sub)' }}>💼 職種 / キャリア / 販路:</strong>
+                                  <div style={{ marginTop: '2px', fontWeight: 'bold' }}>
+                                    {job.roleType} / {job.carrier} / {job.salesChannel} ({job.workLocation})
+                                  </div>
+                                </div>
+                                <div>
+                                  <strong style={{ color: 'var(--text-sub)' }}>🚗 交通費・宿泊費設定:</strong>
+                                  <div style={{ marginTop: '2px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                                    <div>
+                                      ・交通費：
+                                      {(() => {
+                                        const t = job.expenses?.transportType;
+                                        const val = job.expenses?.transportValue;
+                                        if (t === 'pay_separate') return val && val > 0 ? `別途支給（上限 ${val.toLocaleString()}円 / 日）` : '別途支給（上限なし）';
+                                        if (t === 'arranged') return 'こちらで手配';
+                                        if (t === 'flat') return `一律 ${val?.toLocaleString()}円 / 日`;
+                                        return 'なし（単価に含む）';
+                                      })()}
+                                    </div>
+                                    <div>
+                                      ・宿泊費：
+                                      {(() => {
+                                        const t = job.expenses?.accommodationType;
+                                        const val = job.expenses?.accommodationValue;
+                                        if (t === 'pay_separate') return val && val > 0 ? `別途支給（上限 ${val.toLocaleString()}円 / 泊）` : '別途支給（上限なし）';
+                                        if (t === 'arranged') return 'こちらで手配';
+                                        if (t === 'flat') return `一律 ${val?.toLocaleString()}円 / 泊`;
+                                        return 'なし（単価に含む）';
+                                      })()}
+                                    </div>
+                                  </div>
+                                </div>
+                                {job.detailedDescription && (
+                                  <div>
+                                    <strong style={{ color: 'var(--text-sub)' }}>📝 詳細内容:</strong>
+                                    <div style={{ marginTop: '4px', background: 'white', padding: '8px', borderRadius: '6px', border: '1px solid #E2E8F0', whiteSpace: 'pre-wrap', lineHeight: '1.4' }}>
+                                      {job.detailedDescription}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })
+                    ) : (
+                      <div style={{ background: 'white', padding: '16px', borderRadius: '12px', border: '1px dashed #ccc', textAlign: 'center', fontSize: '12px', color: 'var(--text-sub)' }}>
+                        現在掲載中の案件はありません。
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* 過去の募集案件 */}
+                <div style={{ marginTop: '10px' }}>
+                  <h3 className="section-title" style={{ marginBottom: '8px', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span className="material-symbols-outlined" style={{ color: '#64748B', fontSize: '18px' }}>archive</span>
+                    過去の募集案件（掲載終了） ({pastMyJobs.length}件)
+                  </h3>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    {pastMyJobs.length > 0 ? (
+                      pastMyJobs.map(job => {
+                        const isExpanded = expandedJobId === job.id;
+                        return (
+                          <div 
+                            key={job.id} 
+                            style={{ 
+                              background: 'white', 
+                              borderRadius: '12px', 
+                              border: '1px solid var(--border-color)', 
+                              opacity: 0.85,
+                              overflow: 'hidden' 
+                            }}
+                          >
+                            <div 
+                              onClick={() => setExpandedJobId(isExpanded ? null : job.id)}
+                              style={{ padding: '14px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px' }}
+                            >
+                              <div style={{ flex: 1 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+                                  <span style={{
+                                    fontSize: '10px',
+                                    fontWeight: 'bold',
+                                    padding: '2px 8px',
+                                    borderRadius: '10px',
+                                    background: '#F1F5F9',
+                                    color: '#64748B'
+                                  }}>掲載終了</span>
+                                </div>
+                                <h4 style={{ margin: 0, fontSize: '14px', fontWeight: 'bold', color: '#64748B' }}>{job.title}</h4>
+                                <div style={{ display: 'flex', gap: '8px', fontSize: '11px', color: 'var(--text-sub)', marginTop: '6px' }}>
+                                  <span>単価: ¥{job.price.toLocaleString()} / 日</span>
+                                  <span>•</span>
+                                  <span>締切: {job.applicationDeadline}</span>
+                                </div>
+                              </div>
+                              <span className="material-symbols-outlined" style={{ color: 'var(--text-sub)', transform: isExpanded ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s', marginTop: '4px' }}>
+                                expand_more
+                              </span>
+                            </div>
+
+                            {isExpanded && (
+                              <div style={{ padding: '14px', borderTop: '1px solid #F3F4F6', background: '#F8FAFC', fontSize: '12px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                <div>
+                                  <strong style={{ color: 'var(--text-sub)' }}>📍 勤務エリア:</strong>
+                                  <div style={{ marginTop: '2px', fontWeight: 'bold' }}>{job.locationName || '未指定'} ({job.exactLocation || '詳細住所なし'})</div>
+                                </div>
+                                <div>
+                                  <strong style={{ color: 'var(--text-sub)' }}>📅 開催日日程:</strong>
+                                  <div style={{ marginTop: '2px', display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                                    {(job.eventDate ? job.eventDate.split(', ') : []).map((d: string) => (
+                                      <span key={d} style={{ background: '#E2E8F0', padding: '2px 8px', borderRadius: '4px', fontSize: '11px' }}>{d}</span>
+                                    ))}
+                                  </div>
+                                </div>
+                                <div>
+                                  <strong style={{ color: 'var(--text-sub)' }}>💼 職種 / キャリア / 販路:</strong>
+                                  <div style={{ marginTop: '2px', fontWeight: 'bold' }}>
+                                    {job.roleType} / {job.carrier} / {job.salesChannel} ({job.workLocation})
+                                  </div>
+                                </div>
+                                <div>
+                                  <strong style={{ color: 'var(--text-sub)' }}>🚗 交通費・宿泊費設定:</strong>
+                                  <div style={{ marginTop: '2px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                                    <div>
+                                      ・交通費：
+                                      {(() => {
+                                        const t = job.expenses?.transportType;
+                                        const val = job.expenses?.transportValue;
+                                        if (t === 'pay_separate') return val && val > 0 ? `別途支給（上限 ${val.toLocaleString()}円 / 日）` : '別途支給（上限なし）';
+                                        if (t === 'arranged') return 'こちらで手配';
+                                        if (t === 'flat') return `一律 ${val?.toLocaleString()}円 / 日`;
+                                        return 'なし（単価に含む）';
+                                      })()}
+                                    </div>
+                                    <div>
+                                      ・宿泊費：
+                                      {(() => {
+                                        const t = job.expenses?.accommodationType;
+                                        const val = job.expenses?.accommodationValue;
+                                        if (t === 'pay_separate') return val && val > 0 ? `別途支給（上限 ${val.toLocaleString()}円 / 泊）` : '別途支給（上限なし）';
+                                        if (t === 'arranged') return 'こちらで手配';
+                                        if (t === 'flat') return `一律 ${val?.toLocaleString()}円 / 泊`;
+                                        return 'なし（単価に含む）';
+                                      })()}
+                                    </div>
+                                  </div>
+                                </div>
+                                {job.detailedDescription && (
+                                  <div>
+                                    <strong style={{ color: 'var(--text-sub)' }}>📝 詳細内容:</strong>
+                                    <div style={{ marginTop: '4px', background: 'white', padding: '8px', borderRadius: '6px', border: '1px solid #E2E8F0', whiteSpace: 'pre-wrap', lineHeight: '1.4' }}>
+                                      {job.detailedDescription}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })
+                    ) : (
+                      <div style={{ background: 'white', padding: '16px', borderRadius: '12px', border: '1px dashed #ccc', textAlign: 'center', fontSize: '12px', color: 'var(--text-sub)' }}>
+                        掲載終了した案件はありません。
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              /* 人材管理タブ */
+              <div>
+                <h3 className="section-title" style={{ marginTop: '8px', marginBottom: '8px', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span className="material-symbols-outlined" style={{ color: '#10B981', fontSize: '18px' }}>group</span>
+                  掲載中の人材 ({myTalents.length}件)
+                </h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  {myTalents.length > 0 ? (
+                    myTalents.map(talent => {
+                      const isExpanded = expandedTalentId === talent.id;
+                      return (
+                        <div 
+                          key={talent.id} 
+                          style={{ 
+                            background: 'white', 
+                            borderRadius: '12px', 
+                            border: '1px solid var(--border-color)', 
+                            boxShadow: '0 2px 6px rgba(0,0,0,0.02)',
+                            overflow: 'hidden' 
+                          }}
+                        >
+                          <div 
+                            onClick={() => setExpandedTalentId(isExpanded ? null : talent.id)}
+                            style={{ padding: '14px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px' }}
+                          >
+                            <div>
+                              <h4 style={{ margin: 0, fontSize: '14px', fontWeight: 'bold', color: 'var(--text-main)' }}>{talent.name} ({talent.maskedName})</h4>
+                              <div style={{ display: 'flex', gap: '8px', fontSize: '11px', color: 'var(--text-sub)', marginTop: '4px' }}>
+                                <span>単価: ¥{talent.price.toLocaleString()}〜</span>
+                                <span>•</span>
+                                <span>エリア: {talent.locationName}</span>
+                              </div>
+                            </div>
+                            <span className="material-symbols-outlined" style={{ color: 'var(--text-sub)', transform: isExpanded ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>
+                              expand_more
+                            </span>
+                          </div>
+
+                          {isExpanded && (
+                            <div style={{ padding: '14px', borderTop: '1px solid #F3F4F6', background: '#F8FAFC', fontSize: '12px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                              <div>
+                                <strong style={{ color: 'var(--text-sub)' }}>📅 稼働可能日程:</strong>
+                                <div style={{ marginTop: '2px', fontWeight: 'bold' }}>{talent.availableDates || '未定'}</div>
+                              </div>
+                              {talent.description && (
+                                <div>
+                                  <strong style={{ color: 'var(--text-sub)' }}>📝 自己紹介・アピール:</strong>
+                                  <div style={{ marginTop: '4px', background: 'white', padding: '8px', borderRadius: '6px', border: '1px solid #E2E8F0', whiteSpace: 'pre-wrap', lineHeight: '1.4' }}>
+                                    {talent.description}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <div style={{ background: 'white', padding: '16px', borderRadius: '12px', border: '1px dashed #ccc', textAlign: 'center', fontSize: '12px', color: 'var(--text-sub)' }}>
+                      現在掲載中の人材はありません。
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </main>
+        </div>
+      )}
+
+      {/* 応募者選考・マッチング Overlay */}
+      {(() => {
+        if (!screeningJobId) return null;
+        const activeScreeningJob = myJobs.find(j => j.id === screeningJobId);
+        if (!activeScreeningJob) return null;
+
+        // Define candidate profiles (excluding current user)
+        const baseProfiles = [
+          { id: 'alpha', name: '株式会社アルファ', rep: 'アルファ 健', prText: '光回線・モバイル獲得に特化した営業支援代理店。', avgRating: 4.8, reviewCount: 24, regMonths: 12, attendanceRate: 99.2 },
+          { id: 'beta', name: 'ベータ株式会社', rep: 'ベータ 拓也', prText: 'イベントクルー手配から運営までワンストップで受託。', avgRating: 4.6, reviewCount: 18, regMonths: 6, attendanceRate: 98.5 },
+          { id: 'gamma', name: '合同会社ガンマ', rep: 'ガンマ 翔', prText: '地域密着型ブース販売。登録1.5ヶ月の新規代理店！', avgRating: 4.1, reviewCount: 3, regMonths: 1.5, attendanceRate: 92.1 },
+          { id: 'delta', name: 'デルタ合同会社', rep: 'デルタ 大介', prText: '緊急アサイン対応力に強み。週末ショップ応援多数。', avgRating: 4.4, reviewCount: 15, regMonths: 14, attendanceRate: 96.0 },
+          { id: 'omega', name: 'オメガプロモーション', rep: 'オメガ 玲奈', prText: '通信販売特化型エージェンシー。新規参入2ヶ月目！', avgRating: 4.5, reviewCount: 9, regMonths: 2.0, attendanceRate: 95.0 }
+        ].filter(p => p.id !== currentUser?.id);
+
+        const screeningCandidates = baseProfiles.map(p => {
+          // Find chat room for this candidate
+          const taskKey = [currentUser?.id || '', p.id].sort().join('_');
+          const chatTask = tasks.find(t => t.id === 'chat_' + taskKey);
+
+          // Resolve proposed staff ID
+          let staffId = (chatTask?.evaluations as any)?.appliedJobStaffIds?.[activeScreeningJob.id];
+          let proposedStaff = allStaffs.find(s => s.id === staffId);
+
+          // If not specified, default to first staff of this company or build mock
+          if (!proposedStaff) {
+            const companyStaffsInDb = allStaffs.filter(s => s.userId === p.id);
+            if (companyStaffsInDb.length > 0) {
+              proposedStaff = companyStaffsInDb[0];
+            } else {
+              // Mock staff
+              proposedStaff = {
+                id: `mock_s_${p.id}`,
+                userId: p.id,
+                name: `${p.rep.split(' ')[0]} メンバー`,
+                maskedName: `${p.rep.split(' ')[0]}*`,
+                baseLocation: p.id === 'alpha' ? '東京都新宿区' : p.id === 'beta' ? '東京都渋谷区' : p.id === 'gamma' ? '神奈川県横浜市' : '東京都豊島区',
+                nearestStation: p.id === 'alpha' ? '新宿駅' : p.id === 'beta' ? '渋谷駅' : p.id === 'gamma' ? '横浜駅' : '池袋駅',
+                price: 15000,
+                skills: p.id === 'alpha' ? ['クローザー'] : ['キャンペーンクルー'],
+                carriers: p.id === 'alpha' ? ['au/UQmobile'] : ['docomo'],
+                completedTrainings: p.id === 'alpha' ? ['tr1', 'tr2'] : ['tr1']
+              };
+            }
+          }
+
+          // Calculate attendance logs count
+          // Calculate attendance logs count and attendance rate from proposedStaff logs
+          const staffLogs = (proposedStaff.completedTrainings || []).filter((t: string) => t.startsWith('ATTENDANCE_LOG_'));
+          const checkinCount = staffLogs.length;
+
+          // Calculate staff attendance rate. We check time at the end of log string, <= "09:00" is on-time.
+          let staffAttendanceRate = p.attendanceRate; // fallback to company rate
+          if (staffLogs.length > 0) {
+            const onTimeCount = staffLogs.filter((t: string) => {
+              const parts = t.split('_');
+              const timeStr = parts[parts.length - 1]; // e.g., "08:50" or "09:05"
+              return timeStr <= '09:00';
+            }).length;
+            staffAttendanceRate = (onTimeCount / staffLogs.length) * 100;
+          }
+
+          // 1. Reliability Score (staff attendance rate & company avg rating)
+          const reliabilityScore = (staffAttendanceRate * 0.6) + ((p.avgRating / 5) * 40 * 10); // Scale to 100
+
+          // 2. Track Record Match (carrier & skill)
+          let matchScore = 20;
+          if (activeScreeningJob.carrier && proposedStaff.carriers.includes(activeScreeningJob.carrier)) {
+            matchScore += 40;
+          }
+          if (activeScreeningJob.roleType && proposedStaff.skills.includes(activeScreeningJob.roleType)) {
+            matchScore += 40;
+          }
+
+          // 3. Schedule Cover Rate (dependent on selected staff ID)
+          const staffNum = parseInt(proposedStaff.id.replace(/\D/g, '') || '0') || 1;
+          let scheduleScore = 60 + (staffNum % 5) * 10;
+          if (scheduleScore > 100) scheduleScore = 100;
+
+          // 4. Proximity Score (distance)
+          let distanceKm = 8.5;
+          const staffLoc = (proposedStaff.baseLocation || proposedStaff.nearestStation || '').toLowerCase();
+          const jobLoc = (activeScreeningJob.locationName || '').toLowerCase();
+          
+          if (staffLoc && jobLoc) {
+            if (staffLoc.includes('新宿') && jobLoc.includes('新宿')) distanceKm = 1.2;
+            else if (staffLoc.includes('渋谷') && jobLoc.includes('渋谷')) distanceKm = 0.8;
+            else if (staffLoc.includes('横浜') && jobLoc.includes('横浜')) distanceKm = 1.5;
+            else if (staffLoc.includes('新宿') && jobLoc.includes('渋谷')) distanceKm = 4.6;
+            else if (staffLoc.includes('渋谷') && jobLoc.includes('新宿')) distanceKm = 4.8;
+            else if (staffLoc.includes('品川') && jobLoc.includes('品川')) distanceKm = 1.0;
+            else if (staffLoc.includes('池袋') && jobLoc.includes('池袋')) distanceKm = 1.3;
+            else if (staffLoc.includes('さいたま') && jobLoc.includes('大宮')) distanceKm = 2.1;
+            else if (staffLoc.includes('横浜') || staffLoc.includes('川崎')) {
+              distanceKm = jobLoc.includes('横浜') || jobLoc.includes('川崎') ? 2.5 : 25.0;
+            } else {
+              // Deterministic random distance for consistency based on staff ID and job ID
+              const idSum = staffNum + parseInt(activeScreeningJob.id.replace(/\D/g, '') || '0');
+              distanceKm = 3.0 + (idSum % 15);
+            }
+          }
+          let proximityScore = 40;
+          if (distanceKm < 2) proximityScore = 100;
+          else if (distanceKm < 5) proximityScore = 90;
+          else if (distanceKm < 10) proximityScore = 80;
+          else if (distanceKm < 20) proximityScore = 60;
+
+          // Newcomer bonus
+          const isNewcomer = p.regMonths < 3;
+
+          // Weighted score calculation
+          let reliabilityWeight = 0.30;
+          let matchWeight = 0.15;
+          let scheduleWeight = 0.20;
+          let proximityWeight = 0.25;
+          let newcomerBonus = 0;
+
+          if (screeningMode === 'default') {
+            reliabilityWeight = 0.30; matchWeight = 0.15; scheduleWeight = 0.20; proximityWeight = 0.25;
+            newcomerBonus = isNewcomer ? 10 : 0;
+          } else if (screeningMode === 'quality') {
+            reliabilityWeight = 0.25; matchWeight = 0.45; scheduleWeight = 0.15; proximityWeight = 0.15;
+            newcomerBonus = 0;
+          } else if (screeningMode === 'cost_performance') {
+            reliabilityWeight = 0.15; matchWeight = 0.10; scheduleWeight = 0.15; proximityWeight = 0.20;
+            newcomerBonus = isNewcomer ? 40 : 0;
+          } else if (screeningMode === 'reliability') {
+            reliabilityWeight = 0.50; matchWeight = 0.10; scheduleWeight = 0.20; proximityWeight = 0.20;
+            newcomerBonus = 0;
+          }
+
+          const finalScore = (reliabilityScore * reliabilityWeight) +
+                             (matchScore * matchWeight) +
+                             (scheduleScore * scheduleWeight) +
+                             (proximityScore * proximityWeight) +
+                             newcomerBonus;
+
+          return {
+            company: p,
+            staff: proposedStaff,
+            checkinCount,
+            distance: distanceKm,
+            score: finalScore,
+            isNewcomer,
+            reliabilityScore,
+            matchScore,
+            scheduleScore,
+            proximityScore,
+            chatTask
+          };
+        }).sort((a, b) => b.score - a.score);
+
+        const recommendedCandidates = screeningCandidates.slice(0, 3);
+        const otherCandidates = screeningCandidates.slice(3);
+
+        return (
+          <div 
+            className="overlay-view show" 
+            style={{ 
+              display: 'flex', 
+              transform: 'translateX(0)', 
+              zIndex: 3100,
+              background: '#F8FAFC'
+            }}
+          >
+            <header className="solid-header overlay-header" style={{ background: 'linear-gradient(135deg, #1E293B 0%, #0F172A 100%)', color: 'white' }}>
+              <button type="button" className="icon-btn-dark" onClick={() => setScreeningJobId(null)} style={{ color: 'white' }}>
+                <span className="material-symbols-outlined">arrow_back_ios_new</span>
+              </button>
+              <h1>応募者の選考</h1>
+              <div style={{ width: '40px' }}></div>
+            </header>
+
+            <main className="list-area bg-gray" style={{ flex: 1, overflowY: 'auto', padding: '16px', paddingBottom: '100px', textAlign: 'left' }}>
+              
+              {/* 案件概要 */}
+              <div style={{ background: 'white', padding: '14px 16px', borderRadius: '12px', border: '1px solid var(--border-color)', marginBottom: '16px', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
+                <span style={{ fontSize: '10px', fontWeight: 'bold', background: '#EFF6FF', color: 'var(--primary)', padding: '2px 8px', borderRadius: '10px' }}>選考対象案件</span>
+                <h3 style={{ margin: '6px 0 4px 0', fontSize: '15px', fontWeight: 'bold' }}>{activeScreeningJob.title}</h3>
+                <div style={{ fontSize: '11px', color: 'var(--text-sub)', display: 'flex', gap: '8px' }}>
+                  <span>単価: ¥{activeScreeningJob.price.toLocaleString()} / 日</span>
+                  <span>•</span>
+                  <span>勤務地: {activeScreeningJob.locationName}</span>
+                </div>
+              </div>
+
+              {/* モードセレクター */}
+              <div style={{ background: 'white', padding: '14px', borderRadius: '12px', border: '1px solid var(--border-color)', marginBottom: '16px', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
+                <div style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--text-sub)', marginBottom: '8px' }}>
+                  🎯 選定ポリシーモードを選択（重み付けが自動で変化します）:
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px' }}>
+                  {[
+                    { id: 'default', label: '完全お任せ', desc: 'バランス重視', icon: 'shuffle' },
+                    { id: 'quality', label: 'クオリティ', desc: '即戦力・実績重視', icon: 'workspace_premium' },
+                    { id: 'cost_performance', label: 'コスパ', desc: '新規参入優遇', icon: 'volunteer_activism' },
+                    { id: 'reliability', label: '信頼性', desc: '欠勤リスク最小化', icon: 'verified_user' }
+                  ].map(modeOpt => {
+                    const isSel = screeningMode === modeOpt.id;
+                    return (
+                      <button
+                        key={modeOpt.id}
+                        type="button"
+                        onClick={() => setScreeningMode(modeOpt.id as any)}
+                        style={{
+                          padding: '10px 8px',
+                          borderRadius: '8px',
+                          border: isSel ? '2px solid var(--primary)' : '1px solid var(--border-color)',
+                          background: isSel ? '#EFF6FF' : '#F8FAFC',
+                          color: isSel ? 'var(--primary)' : 'var(--text-main)',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          transition: 'all 0.2s',
+                          textAlign: 'left'
+                        }}
+                      >
+                        <span className="material-symbols-outlined" style={{ fontSize: '20px', color: isSel ? 'var(--primary)' : '#64748B' }}>{modeOpt.icon}</span>
+                        <div>
+                          <div style={{ fontSize: '12px', fontWeight: 'bold' }}>{modeOpt.label}</div>
+                          <div style={{ fontSize: '9px', opacity: 0.8 }}>{modeOpt.desc}</div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* おすすめ候補者（上位3社） */}
+              <div style={{ marginBottom: '20px' }}>
+                <h3 className="section-title" style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#B45309' }}>
+                  <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>stars</span>
+                  おすすめ候補者（上位3社）
+                </h3>
+                
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  {recommendedCandidates.map((c: any) => (
+                    <div 
+                      key={c.company.id} 
+                      style={{ 
+                        background: 'white', 
+                        borderRadius: '16px', 
+                        border: '2px solid #F59E0B', 
+                        boxShadow: '0 4px 12px rgba(245, 158, 11, 0.08)', 
+                        overflow: 'hidden' 
+                      }}
+                    >
+                      {/* カードヘッダー */}
+                      <div style={{ padding: '12px 14px', background: '#FFFBEB', borderBottom: '1px solid #FEF3C7', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontSize: '11px', fontWeight: 'bold', color: '#B45309', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>hotel_class</span>
+                          おすすめ候補
+                        </span>
+                        {c.isNewcomer && (
+                          <span style={{ fontSize: '9px', fontWeight: 'bold', background: '#D1FAE5', color: '#065F46', padding: '2px 6px', borderRadius: '4px' }}>
+                            新規パートナー
+                          </span>
+                        )}
+                      </div>
+                      
+                      {/* カードボディ */}
+                      <div style={{ padding: '14px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
+                          <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: '#EFF6FF', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '16px' }}>
+                            {c.company.name.substring(0, 1)}
+                          </div>
+                          <div>
+                            <h4 style={{ margin: 0, fontSize: '14px', fontWeight: 'bold', color: 'var(--text-main)' }}>{c.company.name}</h4>
+                            <span style={{ fontSize: '11px', color: 'var(--text-sub)' }}>代表: {c.company.representativeName}</span>
+                          </div>
+                        </div>
+                        
+                        <p style={{ margin: '0 0 12px 0', fontSize: '12px', color: '#475569', lineHeight: '1.4', background: '#F8FAFC', padding: '8px', borderRadius: '6px', border: '1px solid #F1F5F9' }}>
+                          {c.company.prText}
+                        </p>
+
+                        {/* 提案人材の詳細 */}
+                        <div style={{ borderTop: '1px dashed #E2E8F0', paddingTop: '10px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', fontWeight: 'bold', color: 'var(--primary)' }}>
+                            <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>person</span>
+                            <span>提案人材: {c.staff.name}</span>
+                          </div>
+                          
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', fontSize: '11px' }}>
+                            <div style={{ background: '#F1F5F9', padding: '6px 8px', borderRadius: '6px' }}>
+                              <span style={{ color: 'var(--text-sub)', display: 'block', transform: 'scale(0.9)', transformOrigin: 'left' }}>現場との距離</span>
+                              <strong style={{ color: 'var(--text-main)' }}>{c.distance.toFixed(1)} km</strong> ({c.staff.nearestStation || '未指定'})
+                            </div>
+                            <div style={{ background: '#F1F5F9', padding: '6px 8px', borderRadius: '6px' }}>
+                              <span style={{ color: 'var(--text-sub)', display: 'block', transform: 'scale(0.9)', transformOrigin: 'left' }}>実績マッチ</span>
+                              <strong style={{ color: 'var(--text-main)' }}>{c.staff.skills.join(', ') || '一般'}</strong> ({c.staff.carriers.join(', ') || 'キャリア未指定'})
+                            </div>
+                            <div style={{ background: '#F1F5F9', padding: '6px 8px', borderRadius: '6px' }}>
+                              <span style={{ color: 'var(--text-sub)', display: 'block', transform: 'scale(0.9)', transformOrigin: 'left' }}>信頼性</span>
+                              <strong style={{ color: '#F59E0B' }}>★{c.company.avgRating}</strong> ({c.company.attendanceRate}% / 履歴{c.checkinCount}回)
+                            </div>
+                            <div style={{ background: '#F1F5F9', padding: '6px 8px', borderRadius: '6px' }}>
+                              <span style={{ color: 'var(--text-sub)', display: 'block', transform: 'scale(0.9)', transformOrigin: 'left' }}>日程カバー率</span>
+                              <strong style={{ color: 'var(--text-main)' }}>{c.scheduleScore}%</strong>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* アクションボタン */}
+                        <div style={{ display: 'flex', gap: '10px', marginTop: '14px' }}>
+                          <button 
+                            type="button"
+                            onClick={() => handleStartScreeningChat(c.chatTask, c.company.id)}
+                            style={{ 
+                              flex: 1, 
+                              padding: '8px', 
+                              borderRadius: '8px', 
+                              border: '1px solid #CBD5E1', 
+                              background: 'white', 
+                              color: '#475569', 
+                              fontSize: '12px', 
+                              fontWeight: 'bold', 
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: '4px'
+                            }}
+                          >
+                            <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>chat</span>
+                            チャットで相談
+                          </button>
+                          <button 
+                            type="button"
+                            onClick={() => setConfirmingCandidate(c)}
+                            style={{ 
+                              flex: 1, 
+                              padding: '8px', 
+                              borderRadius: '8px', 
+                              border: 'none', 
+                              background: 'var(--primary)', 
+                              color: 'white', 
+                              fontSize: '12px', 
+                              fontWeight: 'bold', 
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: '4px'
+                            }}
+                          >
+                            <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>handshake</span>
+                            契約オファー(発注)
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* その他の応募者一覧 */}
+              {otherCandidates.length > 0 && (
+                <div>
+                  <h3 className="section-title" style={{ fontSize: '13px' }}>その他の応募者一覧</h3>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    {otherCandidates.map((c: any) => (
+                      <div 
+                        key={c.company.id} 
+                        style={{ 
+                          background: 'white', 
+                          borderRadius: '12px', 
+                          border: '1px solid var(--border-color)', 
+                          padding: '12px 14px',
+                          boxShadow: '0 1px 3px rgba(0,0,0,0.01)'
+                        }}
+                      >
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: '#F1F5F9', color: '#475569', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '13px' }}>
+                              {c.company.name.substring(0, 1)}
+                            </div>
+                            <div>
+                              <h4 style={{ margin: 0, fontSize: '13px', fontWeight: 'bold' }}>{c.company.name}</h4>
+                              <div style={{ fontSize: '10px', color: 'var(--text-sub)', marginTop: '2px' }}>
+                                現場まで {c.distance.toFixed(1)} km ({c.staff.nearestStation}) • 提案人材: {c.staff.name}
+                              </div>
+                            </div>
+                          </div>
+                          {c.isNewcomer && (
+                            <span style={{ fontSize: '8px', fontWeight: 'bold', background: '#D1FAE5', color: '#065F46', padding: '1px 4px', borderRadius: '3px' }}>新規</span>
+                          )}
+                        </div>
+                        
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #F1F5F9', paddingTop: '8px', marginTop: '4px' }}>
+                          <div style={{ fontSize: '11px', color: '#64748B' }}>
+                            信頼性: <strong style={{ color: '#F59E0B' }}>★{c.company.avgRating}</strong> ({c.company.attendanceRate}%)
+                          </div>
+                          <div style={{ display: 'flex', gap: '6px' }}>
+                            <button 
+                              type="button"
+                              onClick={() => handleStartScreeningChat(c.chatTask, c.company.id)}
+                              style={{ padding: '4px 8px', background: 'none', border: '1px solid #CBD5E1', borderRadius: '4px', fontSize: '10px', fontWeight: 'bold', color: '#475569', cursor: 'pointer' }}
+                            >
+                              チャット
+                            </button>
+                            <button 
+                              type="button"
+                              onClick={() => setConfirmingCandidate(c)}
+                              style={{ padding: '4px 8px', background: 'var(--primary)', border: 'none', borderRadius: '4px', fontSize: '10px', fontWeight: 'bold', color: 'white', cursor: 'pointer' }}
+                            >
+                              発注
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+            </main>
+          </div>
+        );
+      })()}
+
+      {/* 発注確認モーダル */}
+      {confirmingCandidate && screeningJobId && (() => {
+        const activeScreeningJob = myJobs.find(j => j.id === screeningJobId);
+        if (!activeScreeningJob) return null;
+        return (
+          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', zIndex: 4000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
+            <div style={{ background: 'white', borderRadius: '16px', padding: '24px', width: '100%', maxWidth: '400px', display: 'flex', flexDirection: 'column', gap: '16px', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }}>
+              <h3 style={{ margin: 0, fontSize: '16px', borderBottom: '1px solid var(--border-color)', paddingBottom: '10px', fontWeight: 'bold', color: 'var(--text-main)' }}>
+                🤝 契約オファー（発注）の確定
+              </h3>
+              
+              <div style={{ fontSize: '13px', color: 'var(--text-main)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <div>
+                  <span style={{ color: 'var(--text-sub)', fontSize: '11px', display: 'block' }}>発注先企業</span>
+                  <strong>{confirmingCandidate.company.name}</strong>
+                </div>
+                <div>
+                  <span style={{ color: 'var(--text-sub)', fontSize: '11px', display: 'block' }}>配置メンバー</span>
+                  <strong>{confirmingCandidate.staff.name}</strong>
+                </div>
+                <div>
+                  <span style={{ color: 'var(--text-sub)', fontSize: '11px', display: 'block' }}>対象案件</span>
+                  <strong>{activeScreeningJob.title}</strong>
+                </div>
+                <div style={{ background: '#F8FAFC', padding: '10px', borderRadius: '8px', border: '1px solid #E2E8F0', marginTop: '4px' }}>
+                  <span style={{ color: 'var(--text-sub)', fontSize: '11px', display: 'block' }}>ご契約条件</span>
+                  <strong>日当：¥{activeScreeningJob.price.toLocaleString()} 円</strong>
+                  <div style={{ fontSize: '10px', color: 'var(--text-sub)', marginTop: '2px' }}>
+                    ※契約後、両者のチャットルームに契約成立メッセージが送られ、タスクが「稼働中」になります。
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
+                <button 
+                  type="button" 
+                  className="btn-secondary" 
+                  style={{ flex: 1, margin: 0, padding: '10px' }} 
+                  onClick={() => setConfirmingCandidate(null)}
+                >
+                  キャンセル
+                </button>
+                <button 
+                  type="button" 
+                  className="btn-primary" 
+                  style={{ flex: 1, margin: 0, padding: '10px', background: 'var(--primary)' }}
+                  onClick={() => handleConfirmContract(confirmingCandidate)}
+                >
+                  発注を確定する
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
     </div>
   );
 }
+
