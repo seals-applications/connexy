@@ -40,6 +40,13 @@ export function MessagePage() {
 
       const tasks = await api.getContractTasks();
       setChatTasks(tasks);
+
+      // Check if there is an active chat room saved in local storage to open
+      const savedActiveId = localStorage.getItem('connexy_active_chat_id');
+      if (savedActiveId) {
+        setActiveChatId(savedActiveId);
+        localStorage.removeItem('connexy_active_chat_id');
+      }
     };
     initData();
   }, []);
@@ -189,6 +196,14 @@ export function MessagePage() {
           preview,
           time
         } as ChatChannel;
+      })
+      .filter(channel => {
+        const isDefaultMockRoom = 
+          channel.id === 'chat_alpha_beta' || 
+          channel.id === 'chat_alpha_gamma' || 
+          channel.id === 'chat_beta_gamma';
+        const existsInDb = chatTasks.some(t => t.id === channel.id);
+        return isDefaultMockRoom || existsInDb;
       });
 
     return [groupChannel, ...directChannels];

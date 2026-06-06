@@ -961,6 +961,133 @@ export function SearchPage() {
     }
   };
 
+  const handleJobApplication = async () => {
+    if (!currentUser || !selectedJob) return;
+    
+    const sortedIds = [currentUser.id, selectedJob.authorId].sort();
+    const roomId = `chat_${sortedIds[0]}_${sortedIds[1]}`;
+    
+    try {
+      const tasks = await api.getContractTasks();
+      const existingTask = tasks.find(t => t.id === roomId);
+      let msgs = [];
+      
+      if (existingTask) {
+        msgs = (existingTask.evaluations as any)?.messages || [];
+      } else {
+        const defaultRoomMessages: any[] = [
+          { id: 'sys_init', type: 'system', text: 'チャットを開始しました', time: '' }
+        ];
+        if (roomId.includes('alpha')) {
+          defaultRoomMessages.push(
+            { id: 'def_12', type: 'received', senderId: 'alpha', senderName: '株式会社アルファ通信', text: 'お世話になっております。週末のキャンペーンスタッフ2名の件ですが、まだ募集されていますでしょうか？', time: '10:30', avatar: 'A' },
+            { id: 'def_13', type: 'sent', senderId: currentUser.id === 'alpha' ? 'beta' : 'alpha', text: 'お世話になっております！はい、まだ募集しております。\n単価15,000円でお願いしたいのですが、いかがでしょうか？', time: '10:35' },
+            { id: 'def_14', type: 'received', senderId: 'alpha', senderName: '株式会社アルファ通信', text: '明日の待ち合わせ時間は10時でお願いします。', time: '10:42', avatar: 'A' }
+          );
+        } else if (roomId.includes('beta')) {
+          defaultRoomMessages.push(
+            { id: 'def_22', type: 'received', senderId: 'beta', senderName: 'ベータエージェンシー', text: '発注書を発行しました。ご確認お願いします。', time: '昨日', avatar: 'B' }
+          );
+        }
+        msgs = defaultRoomMessages;
+      }
+      
+      const now = new Date();
+      const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+      
+      const appMsg = {
+        id: 'sys_app_' + Date.now(),
+        type: 'system',
+        text: `案件「${selectedJob.title}」に応募しました。`,
+        time: timeStr
+      };
+      
+      const updated = [...msgs, appMsg];
+      
+      const authorName = selectedJob.authorId === 'alpha' ? '株式会社アルファ通信' :
+                         selectedJob.authorId === 'beta' ? 'ベータエージェンシー' :
+                         selectedJob.authorId === 'gamma' ? 'ガンマモバイル' :
+                         selectedJob.authorId === 'delta' ? 'デルタパートナーズ' : 'パートナー企業';
+      
+      await api.saveContractTaskChat(roomId, updated, selectedJob.title, currentUser.name, authorName);
+      
+      localStorage.setItem('connexy_active_chat_id', roomId);
+      
+      alert('応募が完了しました！チャット画面へ移動して担当者と連絡を取りましょう！');
+      setIsNdaModalOpen(false);
+      setNdaAgreed(false);
+      setSelectedJob(null);
+      navigate('/message');
+    } catch (err) {
+      console.error('Application failed:', err);
+      alert('応募処理中にエラーが発生しました。');
+    }
+  };
+
+  const handleStartTalentChat = async () => {
+    if (!currentUser || !selectedTalent) return;
+    
+    if (currentUser.id === selectedTalent.userId) {
+      alert('自社の人材にはメッセージを送信できません。');
+      return;
+    }
+    
+    const sortedIds = [currentUser.id, selectedTalent.userId].sort();
+    const roomId = `chat_${sortedIds[0]}_${sortedIds[1]}`;
+    
+    try {
+      const tasks = await api.getContractTasks();
+      const existingTask = tasks.find(t => t.id === roomId);
+      let msgs = [];
+      
+      if (existingTask) {
+        msgs = (existingTask.evaluations as any)?.messages || [];
+      } else {
+        const defaultRoomMessages: any[] = [
+          { id: 'sys_init', type: 'system', text: 'チャットを開始しました', time: '' }
+        ];
+        if (roomId.includes('alpha')) {
+          defaultRoomMessages.push(
+            { id: 'def_12', type: 'received', senderId: 'alpha', senderName: '株式会社アルファ通信', text: 'お世話になっております。週末のキャンペーンスタッフ2名の件ですが、まだ募集されていますでしょうか？', time: '10:30', avatar: 'A' },
+            { id: 'def_13', type: 'sent', senderId: currentUser.id === 'alpha' ? 'beta' : 'alpha', text: 'お世話になっております！はい、まだ募集しております。\n単価15,000円でお願いしたいのですが、いかがでしょうか？', time: '10:35' },
+            { id: 'def_14', type: 'received', senderId: 'alpha', senderName: '株式会社アルファ通信', text: '明日の待ち合わせ時間は10時でお願いします。', time: '10:42', avatar: 'A' }
+          );
+        } else if (roomId.includes('beta')) {
+          defaultRoomMessages.push(
+            { id: 'def_22', type: 'received', senderId: 'beta', senderName: 'ベータエージェンシー', text: '発注書を発行しました。ご確認お願いします。', time: '昨日', avatar: 'B' }
+          );
+        }
+        msgs = defaultRoomMessages;
+      }
+      
+      const now = new Date();
+      const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+      
+      const offerMsg = {
+        id: 'sys_offer_' + Date.now(),
+        type: 'system',
+        text: `人材「${selectedTalent.maskedName}」についてのお問い合わせチャットが開始されました。`,
+        time: timeStr
+      };
+      
+      const updated = [...msgs, offerMsg];
+      
+      const clientName = currentUser.name;
+      const workerName = selectedTalent.companyName || 'パートナー企業';
+      const jobTitle = `${selectedTalent.maskedName}の採用オファー`;
+      
+      await api.saveContractTaskChat(roomId, updated, jobTitle, clientName, workerName);
+      
+      localStorage.setItem('connexy_active_chat_id', roomId);
+      
+      setSelectedTalent(null);
+      navigate('/message');
+    } catch (err) {
+      console.error('Talent chat start failed:', err);
+      alert('チャット開始処理中にエラーが発生しました。');
+    }
+  };
+
   return (
     <div className="view active" style={{ display: 'flex', flexDirection: 'column' }}>
       {isSelectingLocationOnMap && (
@@ -1531,7 +1658,10 @@ export function SearchPage() {
         </main>
 
         <footer style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: 'white', padding: '16px', borderTop: '1px solid var(--border-color)', display: 'flex', gap: '12px', zIndex: 10 }}>
-          <button style={{ flex: 1, padding: '12px', background: '#10B981', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '14px', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}>
+          <button 
+            onClick={handleStartTalentChat}
+            style={{ flex: 1, padding: '12px', background: '#10B981', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '14px', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}
+          >
             <span className="material-symbols-outlined">send</span>
             メッセージを送る
           </button>
@@ -1651,11 +1781,7 @@ export function SearchPage() {
                 <button onClick={() => { setIsNdaModalOpen(false); setNdaAgreed(false); }} style={{ flex: 1, padding: '12px', background: '#F1F5F9', border: 'none', borderRadius: '8px', fontWeight: 'bold', color: '#475569', cursor: 'pointer' }}>キャンセル</button>
                 <button 
                   disabled={!ndaAgreed} 
-                  onClick={() => {
-                    alert('応募が完了しました！\n（モック版のため実際には応募されていません）');
-                    setIsNdaModalOpen(false);
-                    setNdaAgreed(false);
-                  }}
+                  onClick={handleJobApplication}
                   style={{ flex: 1, padding: '12px', background: ndaAgreed ? 'var(--primary)' : '#94A3B8', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: ndaAgreed ? 'pointer' : 'not-allowed', transition: 'all 0.2s' }}
                 >
                   同意して応募
