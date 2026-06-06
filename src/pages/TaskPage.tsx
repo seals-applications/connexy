@@ -60,7 +60,9 @@ export function TaskPage() {
   const [tasks, setTasks] = useState<ContractTask[]>([]);
   const [trainings, setTrainings] = useState<Training[]>([]);
   const [myStaff, setMyStaff] = useState<Staff | null>(null);
+  const [companyStaffs, setCompanyStaffs] = useState<Staff[]>([]);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const isUserAdmin = !currentUser?.staffId || currentUser.staffRole === 'admin';
 
   // 出退勤State
   const [isCheckedIn, setIsCheckedIn] = useState(false);
@@ -136,6 +138,7 @@ export function TaskPage() {
   const [activeTraining, setActiveTraining] = useState<Training | null>(null);
   const [isTrainingCompleted, setIsTrainingCompleted] = useState<Record<string, boolean>>({});
   const [completedTrainingList, setCompletedTrainingList] = useState<string[]>([]);
+  const [showTrainingOverlay, setShowTrainingOverlay] = useState(false);
 
   // 自社募集案件・人材State
   const [myJobs, setMyJobs] = useState<Job[]>([]);
@@ -155,14 +158,20 @@ export function TaskPage() {
       setCurrentUser(user);
       if (!user) return;
 
-      const checkedInStatus = localStorage.getItem('checkin_status_' + user.id) === 'true';
-      setIsCheckedIn(checkedInStatus);
-      setCheckinTime(localStorage.getItem('checkin_time_' + user.id));
+      const checkedInStatus = localStorage.getItem('checkin_status_' + user.id) === 'true' || 
+                              (user.staffId && localStorage.getItem('checkin_status_' + user.staffId) === 'true');
+      setIsCheckedIn(!!checkedInStatus);
+      setCheckinTime(localStorage.getItem('checkin_time_' + user.id) || 
+                     (user.staffId ? localStorage.getItem('checkin_time_' + user.staffId) : null));
 
       const fetchedStaffs = await api.getStaffsByUserId(user.id);
+      setCompanyStaffs(fetchedStaffs);
+      
       if (fetchedStaffs.length > 0) {
-        setMyStaff(fetchedStaffs[0]);
-        setCompletedTrainingList(fetchedStaffs[0].completedTrainings || []);
+        const matched = user.staffId ? fetchedStaffs.find(s => s.id === user.staffId) : null;
+        const currentStaff = matched || fetchedStaffs[0];
+        setMyStaff(currentStaff);
+        setCompletedTrainingList(currentStaff.completedTrainings || []);
       }
 
       // 自社掲示中の案件と人材をフェッチ
@@ -187,6 +196,10 @@ export function TaskPage() {
     setCheckinTime(timeStr);
     localStorage.setItem('checkin_status_' + currentUser.id, 'true');
     localStorage.setItem('checkin_time_' + currentUser.id, timeStr);
+    if (currentUser.staffId) {
+      localStorage.setItem('checkin_status_' + currentUser.staffId, 'true');
+      localStorage.setItem('checkin_time_' + currentUser.staffId, timeStr);
+    }
     alert(`GPS出勤打刻を完了しました（打刻時間: ${timeStr}）`);
   };
 
@@ -196,6 +209,10 @@ export function TaskPage() {
     setCheckinTime(null);
     localStorage.removeItem('checkin_status_' + currentUser.id);
     localStorage.removeItem('checkin_time_' + currentUser.id);
+    if (currentUser.staffId) {
+      localStorage.removeItem('checkin_status_' + currentUser.staffId);
+      localStorage.removeItem('checkin_time_' + currentUser.staffId);
+    }
   };
 
   // 報告モーダル展開
@@ -300,10 +317,11 @@ export function TaskPage() {
   };
 
   // 集計値算出
-  const pendingReportCount = tasks.filter(t => t.status === 'report_pending').length;
-  const workingCount = tasks.filter(t => t.status === 'working').length;
-  const completedCount = tasks.filter(t => t.status === 'completed').length;
-  const disputedCount = tasks.filter(t => t.status === 'disputed').length;
+  const displayedTasks = isUserAdmin ? tasks : tasks.filter(t => t.workerName === currentUser?.staffName);
+  const pendingReportCount = displayedTasks.filter(t => t.status === 'report_pending').length;
+  const workingCount = displayedTasks.filter(t => t.status === 'working').length;
+  const completedCount = displayedTasks.filter(t => t.status === 'completed').length;
+  const disputedCount = displayedTasks.filter(t => t.status === 'disputed').length;
 
   return (
     <div className="view active" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
@@ -342,111 +360,115 @@ export function TaskPage() {
         </div>
 
         {/* 自社の掲示状況セクション */}
-        <h3 className="section-title">自社の掲示状況</h3>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '24px' }}>
-          {/* 掲示中の案件 */}
-          <div style={{ background: 'white', borderRadius: '12px', border: '1px solid var(--border-color)', overflow: 'hidden' }}>
-            <button 
-              onClick={() => setIsMyJobsOpen(!isMyJobsOpen)}
-              style={{
-                width: '100%',
-                padding: '16px',
-                background: 'none',
-                border: 'none',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                cursor: 'pointer',
-                textAlign: 'left'
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 'bold', color: 'var(--text-main)' }}>
-                <span className="material-symbols-outlined" style={{ color: 'var(--primary)' }}>work</span>
-                掲示中の案件 ({myJobs.length}件)
-              </div>
-              <span className="material-symbols-outlined" style={{ transform: isMyJobsOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>
-                expand_more
-              </span>
-            </button>
-            
-            {isMyJobsOpen && (
-              <div style={{ padding: '0 16px 16px 16px', borderTop: '1px solid #f3f4f6', display: 'flex', flexDirection: 'column', gap: '10px', paddingTop: '12px' }}>
-                {myJobs.length > 0 ? (
-                  myJobs.map(job => (
-                    <div key={job.id} style={{ padding: '10px', background: '#F8FAFC', borderRadius: '8px', border: '1px solid #E2E8F0' }}>
-                      <div style={{ fontWeight: 'bold', fontSize: '14px', marginBottom: '4px' }}>{job.title}</div>
-                      <div style={{ display: 'flex', gap: '8px', fontSize: '11px', color: 'var(--text-sub)' }}>
-                        <span>単価: ¥{job.price.toLocaleString()}</span>
-                        <span>•</span>
-                        <span>エリア: {job.locationName || '未指定'}</span>
-                        {job.allowedCompanyIds && (
-                          <>
+        {isUserAdmin && (
+          <>
+            <h3 className="section-title">自社の掲示状況</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '24px' }}>
+              {/* 掲示中の案件 */}
+              <div style={{ background: 'white', borderRadius: '12px', border: '1px solid var(--border-color)', overflow: 'hidden' }}>
+                <button 
+                  onClick={() => setIsMyJobsOpen(!isMyJobsOpen)}
+                  style={{
+                    width: '100%',
+                    padding: '16px',
+                    background: 'none',
+                    border: 'none',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    cursor: 'pointer',
+                    textAlign: 'left'
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 'bold', color: 'var(--text-main)' }}>
+                    <span className="material-symbols-outlined" style={{ color: 'var(--primary)' }}>work</span>
+                    掲示中の案件 ({myJobs.length}件)
+                  </div>
+                  <span className="material-symbols-outlined" style={{ transform: isMyJobsOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>
+                    expand_more
+                  </span>
+                </button>
+                
+                {isMyJobsOpen && (
+                  <div style={{ padding: '0 16px 16px 16px', borderTop: '1px solid #f3f4f6', display: 'flex', flexDirection: 'column', gap: '10px', paddingTop: '12px' }}>
+                    {myJobs.length > 0 ? (
+                      myJobs.map(job => (
+                        <div key={job.id} style={{ padding: '10px', background: '#F8FAFC', borderRadius: '8px', border: '1px solid #E2E8F0' }}>
+                          <div style={{ fontWeight: 'bold', fontSize: '14px', marginBottom: '4px' }}>{job.title}</div>
+                          <div style={{ display: 'flex', gap: '8px', fontSize: '11px', color: 'var(--text-sub)' }}>
+                            <span>単価: ¥{job.price.toLocaleString()}</span>
                             <span>•</span>
-                            <span style={{ color: '#F59E0B', fontWeight: 'bold' }}>限定公開</span>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <div style={{ fontSize: '12px', color: 'var(--text-sub)', textAlign: 'center', padding: '8px 0' }}>現在掲示中の案件はありません。</div>
+                            <span>エリア: {job.locationName || '未指定'}</span>
+                            {job.allowedCompanyIds && (
+                              <>
+                                <span>•</span>
+                                <span style={{ color: '#F59E0B', fontWeight: 'bold' }}>限定公開</span>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div style={{ fontSize: '12px', color: 'var(--text-sub)', textAlign: 'center', padding: '8px 0' }}>現在掲示中の案件はありません。</div>
+                    )}
+                  </div>
                 )}
               </div>
-            )}
-          </div>
 
-          {/* 掲示中の人材 */}
-          <div style={{ background: 'white', borderRadius: '12px', border: '1px solid var(--border-color)', overflow: 'hidden' }}>
-            <button 
-              onClick={() => setIsMyTalentsOpen(!isMyTalentsOpen)}
-              style={{
-                width: '100%',
-                padding: '16px',
-                background: 'none',
-                border: 'none',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                cursor: 'pointer',
-                textAlign: 'left'
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 'bold', color: 'var(--text-main)' }}>
-                <span className="material-symbols-outlined" style={{ color: '#10B981' }}>group</span>
-                掲示中の人材 ({myTalents.length}件)
-              </div>
-              <span className="material-symbols-outlined" style={{ transform: isMyTalentsOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>
-                expand_more
-              </span>
-            </button>
-            
-            {isMyTalentsOpen && (
-              <div style={{ padding: '0 16px 16px 16px', borderTop: '1px solid #f3f4f6', display: 'flex', flexDirection: 'column', gap: '10px', paddingTop: '12px' }}>
-                {myTalents.length > 0 ? (
-                  myTalents.map(talent => (
-                    <div key={talent.id} style={{ padding: '10px', background: '#F8FAFC', borderRadius: '8px', border: '1px solid #E2E8F0' }}>
-                      <div style={{ fontWeight: 'bold', fontSize: '14px', marginBottom: '4px' }}>{talent.name} ({talent.maskedName})</div>
-                      <div style={{ display: 'flex', gap: '8px', fontSize: '11px', color: 'var(--text-sub)', flexWrap: 'wrap' }}>
-                        <span>単価: ¥{talent.price.toLocaleString()}〜</span>
-                        <span>•</span>
-                        <span>エリア: {talent.locationName}</span>
-                        <span>•</span>
-                        <span>勤務日: {talent.availableDates || '未定'}</span>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <div style={{ fontSize: '12px', color: 'var(--text-sub)', textAlign: 'center', padding: '8px 0' }}>現在掲示中の人材はありません。</div>
+              {/* 掲示中の人材 */}
+              <div style={{ background: 'white', borderRadius: '12px', border: '1px solid var(--border-color)', overflow: 'hidden' }}>
+                <button 
+                  onClick={() => setIsMyTalentsOpen(!isMyTalentsOpen)}
+                  style={{
+                    width: '100%',
+                    padding: '16px',
+                    background: 'none',
+                    border: 'none',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    cursor: 'pointer',
+                    textAlign: 'left'
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 'bold', color: 'var(--text-main)' }}>
+                    <span className="material-symbols-outlined" style={{ color: '#10B981' }}>group</span>
+                    掲示中の人材 ({myTalents.length}件)
+                  </div>
+                  <span className="material-symbols-outlined" style={{ transform: isMyTalentsOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>
+                    expand_more
+                  </span>
+                </button>
+                
+                {isMyTalentsOpen && (
+                  <div style={{ padding: '0 16px 16px 16px', borderTop: '1px solid #f3f4f6', display: 'flex', flexDirection: 'column', gap: '10px', paddingTop: '12px' }}>
+                    {myTalents.length > 0 ? (
+                      myTalents.map(talent => (
+                        <div key={talent.id} style={{ padding: '10px', background: '#F8FAFC', borderRadius: '8px', border: '1px solid #E2E8F0' }}>
+                          <div style={{ fontWeight: 'bold', fontSize: '14px', marginBottom: '4px' }}>{talent.name} ({talent.maskedName})</div>
+                          <div style={{ display: 'flex', gap: '8px', fontSize: '11px', color: 'var(--text-sub)', flexWrap: 'wrap' }}>
+                            <span>単価: ¥{talent.price.toLocaleString()}〜</span>
+                            <span>•</span>
+                            <span>エリア: {talent.locationName}</span>
+                            <span>•</span>
+                            <span>勤務日: {talent.availableDates || '未定'}</span>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div style={{ fontSize: '12px', color: 'var(--text-sub)', textAlign: 'center', padding: '8px 0' }}>現在掲示中の人材はありません。</div>
+                    )}
+                  </div>
                 )}
               </div>
-            )}
-          </div>
-        </div>
+            </div>
+          </>
+        )}
 
         {/* 2. 完了報告待ちリスト */}
         <h3 className="section-title">業務完了報告と相互評価</h3>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '24px' }}>
-          {tasks.filter(t => t.status === 'report_pending' || t.status === 'disputed').map(task => (
+          {displayedTasks.filter(t => t.status === 'report_pending' || t.status === 'disputed').map(task => (
             <div key={task.id} style={{ background: 'white', borderRadius: '12px', padding: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.02)', border: task.status === 'disputed' ? '1px solid #FCA5A5' : '1px solid var(--border-color)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
                 <span className={`status-badge ${task.status === 'disputed' ? 'badge-waiting' : 'badge-negotiating'}`} style={{ margin: 0, fontSize: '11px' }}>
@@ -492,7 +514,7 @@ export function TaskPage() {
               )}
             </div>
           ))}
-          {tasks.filter(t => t.status === 'report_pending' || t.status === 'disputed').length === 0 && (
+          {displayedTasks.filter(t => t.status === 'report_pending' || t.status === 'disputed').length === 0 && (
             <div style={{ textAlign: 'center', padding: '24px', background: 'white', borderRadius: '12px', color: 'var(--text-sub)', fontSize: '13px' }}>
               現在、完了報告・評価待ちのタスクはありません。
             </div>
@@ -502,7 +524,7 @@ export function TaskPage() {
         {/* 2-2. 完了済みのタスク（ブラインド相互評価） */}
         <h3 className="section-title">完了済みのタスク（相互評価結果）</h3>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '24px' }}>
-          {tasks.filter(t => t.status === 'completed').map(task => {
+          {displayedTasks.filter(t => t.status === 'completed').map(task => {
             const evalClient = task.evaluations?.byClient;
             const evalWorker = task.evaluations?.byWorker || task.evaluations?.byStaffToField;
             const bothEvaluated = !!evalClient && !!evalWorker;
@@ -548,7 +570,7 @@ export function TaskPage() {
               </div>
             );
           })}
-          {tasks.filter(t => t.status === 'completed').length === 0 && (
+          {displayedTasks.filter(t => t.status === 'completed').length === 0 && (
             <div style={{ textAlign: 'center', padding: '16px', background: 'white', borderRadius: '12px', color: 'var(--text-sub)', fontSize: '13px' }}>
               完了済みのタスクはありません。
             </div>
@@ -557,7 +579,7 @@ export function TaskPage() {
 
         {/* 3. 本日の現場セクション */}
         <h3 className="section-title">本日の現場</h3>
-        <div className="task-card" style={{ background: 'white', borderRadius: '12px', padding: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
+        <div className="task-card" style={{ background: 'white', borderRadius: '12px', padding: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.03)', marginBottom: '24px' }}>
           <div className="task-header" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
             <span className="task-status active" style={{ color: isCheckedIn ? '#10B981' : 'var(--primary)', fontWeight: 'bold' }}>
               {isCheckedIn ? '● 稼働中' : '稼働予定'}
@@ -668,63 +690,149 @@ export function TaskPage() {
           </div>
         </div>
 
-        {/* 4. 研修制度セクション */}
-        <h3 className="section-title">研修制度と実績連携</h3>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          <div style={{ background: 'white', padding: '16px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
-            <h4 style={{ margin: '0 0 8px 0', fontSize: '14px', color: 'var(--text-main)' }}>🛡️ あなたの受講完了研修</h4>
-            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-              {completedTrainingList.length > 0 ? (
-                completedTrainingList.map(tid => {
-                  const tr = trainings.find(t => t.id === tid);
-                  return (
-                    <span key={tid} style={{ background: '#D1FAE5', color: '#065F46', padding: '4px 10px', borderRadius: '16px', fontSize: '11px', fontWeight: 'bold' }}>
-                      ✓ {tr?.title}
-                    </span>
-                  );
-                })
-              ) : (
-                <span style={{ fontSize: '12px', color: 'var(--text-sub)' }}>受講完了した研修はありません。</span>
+        {/* 管理者用：スタッフの出勤状況モニター */}
+        {isUserAdmin && (
+          <>
+            <h3 className="section-title">スタッフの出勤状況 (本日)</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '24px' }}>
+              {companyStaffs.map(s => {
+                const isStaffCheckedIn = localStorage.getItem('checkin_status_' + s.id) === 'true' || 
+                                         localStorage.getItem('checkin_status_' + s.userId) === 'true';
+                const staffCheckinTime = localStorage.getItem('checkin_time_' + s.id) || 
+                                         localStorage.getItem('checkin_time_' + s.userId);
+
+                return (
+                  <div key={s.id} style={{ background: 'white', padding: '12px 16px', borderRadius: '12px', border: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                      <div style={{ fontWeight: 'bold', fontSize: '14px' }}>{s.name}</div>
+                      <div style={{ fontSize: '11px', color: 'var(--text-sub)', marginTop: '2px' }}>
+                        拠点: {s.baseLocation} / 単価: ¥{s.price.toLocaleString()}
+                      </div>
+                    </div>
+                    <div style={{ textAlign: 'right' }}>
+                      {isStaffCheckedIn ? (
+                        <div>
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: '#D1FAE5', color: '#065F46', padding: '4px 10px', borderRadius: '12px', fontSize: '11px', fontWeight: 'bold' }}>
+                            <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>check_circle</span>
+                            出勤済み
+                          </span>
+                          <div style={{ fontSize: '10px', color: 'var(--text-sub)', marginTop: '4px' }}>打刻時間: {staffCheckinTime}</div>
+                        </div>
+                      ) : (
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: '#F3F4F6', color: '#6B7280', padding: '4px 10px', borderRadius: '12px', fontSize: '11px', fontWeight: 'bold' }}>
+                          <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>schedule</span>
+                          未出勤
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+              {companyStaffs.length === 0 && (
+                <div style={{ textAlign: 'center', padding: '16px', background: 'white', borderRadius: '12px', color: 'var(--text-sub)', fontSize: '13px' }}>
+                  登録されているスタッフはいません。
+                </div>
               )}
             </div>
-          </div>
+          </>
+        )}
 
-          {trainings.map(tr => {
-            const isCompleted = completedTrainingList.includes(tr.id);
-            return (
-              <div key={tr.id} style={{ background: 'white', borderRadius: '12px', padding: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }}>
-                <h4 style={{ margin: '0 0 8px 0', fontSize: '14px' }}>{tr.title}</h4>
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  {isCompleted ? (
-                    <button className="btn-secondary w-full" disabled style={{ margin: 0, opacity: 0.6 }}>
-                      受講完了済み
-                    </button>
-                  ) : (
-                    <>
-                      <button 
-                        className="btn-primary" 
-                        style={{ margin: 0, flex: 1, backgroundColor: '#3B82F6', color: 'white' }}
-                        onClick={() => handleStartTraining(tr)}
-                      >
-                        受講を開始 (Zoom)
-                      </button>
-                      <button 
-                        className="btn-primary" 
-                        disabled={!isTrainingCompleted[tr.id]}
-                        style={{ margin: 0, flex: 1, backgroundColor: isTrainingCompleted[tr.id] ? '#10B981' : '#E5E7EB', color: isTrainingCompleted[tr.id] ? 'white' : '#9CA3AF', cursor: isTrainingCompleted[tr.id] ? 'pointer' : 'not-allowed' }}
-                        onClick={() => handleRegisterTraining(tr.id)}
-                      >
-                        受講完了を登録
-                      </button>
-                    </>
-                  )}
-                </div>
-              </div>
-            );
-          })}
+        {/* 4. 研修・実績へのリンクボタン */}
+        <div style={{ marginBottom: '24px' }}>
+          <button 
+            onClick={() => setShowTrainingOverlay(true)} 
+            className="btn-primary" 
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px',
+              padding: '14px 20px',
+              width: '100%',
+              borderRadius: '12px',
+              background: 'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)',
+              color: 'white',
+              fontWeight: 'bold',
+              fontSize: '15px',
+              border: 'none',
+              cursor: 'pointer',
+              boxShadow: '0 4px 12px rgba(37, 99, 235, 0.15)',
+              margin: 0
+            }}
+          >
+            <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>workspace_premium</span>
+            研修・獲得実績を開く
+          </button>
         </div>
 
       </main>
+
+      {/* 研修・実績 Overlay */}
+      <div className={`overlay-view ${showTrainingOverlay ? 'show' : ''}`} style={{ display: showTrainingOverlay ? 'flex' : 'none', transform: showTrainingOverlay ? 'translateX(0)' : 'translateX(100%)', zIndex: 3000 }}>
+        <header className="solid-header overlay-header">
+          <button className="icon-btn-dark" onClick={() => setShowTrainingOverlay(false)}>
+            <span className="material-symbols-outlined">arrow_back_ios_new</span>
+          </button>
+          <h1>研修・獲得実績</h1>
+          <div style={{ width: '40px' }}></div>
+        </header>
+        <main className="list-area bg-gray" style={{ flex: 1, overflowY: 'auto', padding: '16px', paddingBottom: '100px' }}>
+          <h3 className="section-title" style={{ marginTop: 0 }}>研修制度と実績連携</h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div style={{ background: 'white', padding: '16px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
+              <h4 style={{ margin: '0 0 8px 0', fontSize: '14px', color: 'var(--text-main)' }}>🛡️ あなたの受講完了研修</h4>
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                {completedTrainingList.length > 0 ? (
+                  completedTrainingList.map(tid => {
+                    const tr = trainings.find(t => t.id === tid);
+                    return (
+                      <span key={tid} style={{ background: '#D1FAE5', color: '#065F46', padding: '4px 10px', borderRadius: '16px', fontSize: '11px', fontWeight: 'bold' }}>
+                        ✓ {tr?.title}
+                      </span>
+                    );
+                  })
+                ) : (
+                  <span style={{ fontSize: '12px', color: 'var(--text-sub)' }}>受講完了した研修はありません。</span>
+                )}
+              </div>
+            </div>
+
+            {trainings.map(tr => {
+              const isCompleted = completedTrainingList.includes(tr.id);
+              return (
+                <div key={tr.id} style={{ background: 'white', borderRadius: '12px', padding: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }}>
+                  <h4 style={{ margin: '0 0 8px 0', fontSize: '14px' }}>{tr.title}</h4>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    {isCompleted ? (
+                      <button className="btn-secondary w-full" disabled style={{ margin: 0, opacity: 0.6 }}>
+                        受講完了済み
+                      </button>
+                    ) : (
+                      <>
+                        <button 
+                          className="btn-primary" 
+                          style={{ margin: 0, flex: 1, backgroundColor: '#3B82F6', color: 'white' }}
+                          onClick={() => handleStartTraining(tr)}
+                        >
+                          受講を開始 (Zoom)
+                        </button>
+                        <button 
+                          className="btn-primary" 
+                          disabled={!isTrainingCompleted[tr.id]}
+                          style={{ margin: 0, flex: 1, backgroundColor: isTrainingCompleted[tr.id] ? '#10B981' : '#E5E7EB', color: isTrainingCompleted[tr.id] ? 'white' : '#9CA3AF', cursor: isTrainingCompleted[tr.id] ? 'pointer' : 'not-allowed' }}
+                          onClick={() => handleRegisterTraining(tr.id)}
+                        >
+                          受講完了を登録
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </main>
+      </div>
 
       {/* 完了報告・評価モーダル */}
       {selectedTask && (
