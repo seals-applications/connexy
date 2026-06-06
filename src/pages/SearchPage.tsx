@@ -433,6 +433,7 @@ export function SearchPage() {
     });
 
     let resizeObserver: ResizeObserver | null = null;
+    let initObserver: ResizeObserver | null = null;
     let isCleanedUp = false;
 
     const initMap = async () => {
@@ -506,7 +507,11 @@ export function SearchPage() {
 
         resizeObserver = new ResizeObserver(() => {
           if (mapRef.current) {
+            const currentCenter = mapRef.current.getCenter();
             (window as any).google?.maps?.event?.trigger(mapRef.current, 'resize');
+            if (currentCenter) {
+              mapRef.current.setCenter(currentCenter);
+            }
           }
         });
         resizeObserver.observe(mapContainer);
@@ -515,7 +520,22 @@ export function SearchPage() {
       }
     };
 
-    initMap();
+    // コンテナサイズが0の場合は、サイズが付与されるまで待機する
+    if (mapContainer.clientWidth === 0 || mapContainer.clientHeight === 0) {
+      initObserver = new ResizeObserver(() => {
+        if (mapContainer.clientWidth > 0 && mapContainer.clientHeight > 0) {
+          if (initObserver) {
+            initObserver.disconnect();
+          }
+          if (!isCleanedUp && !mapRef.current) {
+            initMap();
+          }
+        }
+      });
+      initObserver.observe(mapContainer);
+    } else {
+      initMap();
+    }
 
     const loadData = async () => {
       try {
@@ -551,6 +571,9 @@ export function SearchPage() {
       isCleanedUp = true;
       if (resizeObserver) {
         resizeObserver.disconnect();
+      }
+      if (initObserver) {
+        initObserver.disconnect();
       }
       mapRef.current = null;
     };
