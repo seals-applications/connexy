@@ -159,11 +159,6 @@ export function TaskPage() {
       setCurrentUser(user);
       if (!user) return;
 
-      const checkinKey = user.staffId ? user.staffId : user.id;
-      const checkedInStatus = localStorage.getItem('checkin_status_' + checkinKey) === 'true';
-      setIsCheckedIn(checkedInStatus);
-      setCheckinTime(localStorage.getItem('checkin_time_' + checkinKey));
-
       const fetchedStaffs = await api.getStaffsByUserId(user.id);
       setCompanyStaffs(fetchedStaffs);
       
@@ -171,7 +166,23 @@ export function TaskPage() {
         const matched = user.staffId ? fetchedStaffs.find(s => s.id === user.staffId) : null;
         const currentStaff = matched || fetchedStaffs[0];
         setMyStaff(currentStaff);
-        setCompletedTrainingList(currentStaff.completedTrainings || []);
+        setCompletedTrainingList((currentStaff.completedTrainings || []).filter(tid => !tid.startsWith('CHECKIN_STATUS_')));
+      }
+
+      if (user.staffId && fetchedStaffs.length > 0) {
+        const currentStaff = fetchedStaffs.find(s => s.id === user.staffId) || fetchedStaffs[0];
+        const checkinTag = (currentStaff.completedTrainings || []).find(tid => tid.startsWith('CHECKIN_STATUS_TRUE_'));
+        if (checkinTag) {
+          setIsCheckedIn(true);
+          setCheckinTime(checkinTag.replace('CHECKIN_STATUS_TRUE_', ''));
+        } else {
+          setIsCheckedIn(false);
+          setCheckinTime(null);
+        }
+      } else {
+        const checkedInStatus = localStorage.getItem('checkin_status_' + user.id) === 'true';
+        setIsCheckedIn(checkedInStatus);
+        setCheckinTime(localStorage.getItem('checkin_time_' + user.id));
       }
 
       // 自社掲示中の案件と人材をフェッチ
@@ -188,25 +199,53 @@ export function TaskPage() {
     loadData();
   }, []);
 
-  const handleCheckin = () => {
+  const handleCheckin = async () => {
     if (!currentUser) return;
     const now = new Date();
     const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-    setIsCheckedIn(true);
-    setCheckinTime(timeStr);
-    const checkinKey = currentUser.staffId ? currentUser.staffId : currentUser.id;
-    localStorage.setItem('checkin_status_' + checkinKey, 'true');
-    localStorage.setItem('checkin_time_' + checkinKey, timeStr);
-    alert(`GPS出勤打刻を完了しました（打刻時間: ${timeStr}）`);
+    
+    if (currentUser.staffId && myStaff) {
+      const tag = `CHECKIN_STATUS_TRUE_${timeStr}`;
+      const newTrainings = Array.from(new Set([...(myStaff.completedTrainings || []), tag]));
+      try {
+        await api.updateStaff(myStaff.id, { completedTrainings: newTrainings });
+        myStaff.completedTrainings = newTrainings;
+        setIsCheckedIn(true);
+        setCheckinTime(timeStr);
+        alert(`GPS出勤打刻を完了しました（打刻時間: ${timeStr}）`);
+      } catch (err) {
+        console.error("Check-in database error:", err);
+        alert("データベースとの同期中にエラーが発生しました。インターネット接続を確認して、再度お試しください。");
+      }
+    } else {
+      setIsCheckedIn(true);
+      setCheckinTime(timeStr);
+      localStorage.setItem('checkin_status_' + currentUser.id, 'true');
+      localStorage.setItem('checkin_time_' + currentUser.id, timeStr);
+      alert(`GPS出勤打刻を完了しました（打刻時間: ${timeStr}）`);
+    }
   };
 
-  const handleCheckinReset = () => {
+  const handleCheckinReset = async () => {
     if (!currentUser) return;
-    setIsCheckedIn(false);
-    setCheckinTime(null);
-    const checkinKey = currentUser.staffId ? currentUser.staffId : currentUser.id;
-    localStorage.removeItem('checkin_status_' + checkinKey);
-    localStorage.removeItem('checkin_time_' + checkinKey);
+    
+    if (currentUser.staffId && myStaff) {
+      const newTrainings = (myStaff.completedTrainings || []).filter(tid => !tid.startsWith('CHECKIN_STATUS_'));
+      try {
+        await api.updateStaff(myStaff.id, { completedTrainings: newTrainings });
+        myStaff.completedTrainings = newTrainings;
+        setIsCheckedIn(false);
+        setCheckinTime(null);
+      } catch (err) {
+        console.error("Check-in reset database error:", err);
+        alert("データベースとの同期中にエラーが発生しました。再度お試しください。");
+      }
+    } else {
+      setIsCheckedIn(false);
+      setCheckinTime(null);
+      localStorage.removeItem('checkin_status_' + currentUser.id);
+      localStorage.removeItem('checkin_time_' + currentUser.id);
+    }
   };
 
   // 報告モーダル展開
@@ -579,8 +618,9 @@ export function TaskPage() {
             <h3 className="section-title">スタッフの出勤状況 (本日)</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '24px' }}>
               {companyStaffs.map(s => {
-                const isStaffCheckedIn = localStorage.getItem('checkin_status_' + s.id) === 'true';
-                const staffCheckinTime = localStorage.getItem('checkin_time_' + s.id);
+                const checkinTag = (s.completedTrainings || []).find(tid => tid.startsWith('CHECKIN_STATUS_TRUE_'));
+                const isStaffCheckedIn = !!checkinTag;
+                const staffCheckinTime = checkinTag ? checkinTag.replace('CHECKIN_STATUS_TRUE_', '') : null;
 
                 return (
                   <div key={s.id} style={{ background: 'white', padding: '12px 16px', borderRadius: '12px', border: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
