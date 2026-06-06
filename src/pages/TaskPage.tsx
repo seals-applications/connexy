@@ -140,6 +140,7 @@ export function TaskPage() {
   const [completedTrainingList, setCompletedTrainingList] = useState<string[]>([]);
   const [showTrainingOverlay, setShowTrainingOverlay] = useState(false);
   const [showReportOverlay, setShowReportOverlay] = useState(false);
+  const [showStaffMonitorOverlay, setShowStaffMonitorOverlay] = useState(false);
 
   // 自社募集案件・人材State
   const [myJobs, setMyJobs] = useState<Job[]>([]);
@@ -612,118 +613,48 @@ export function TaskPage() {
         )}
 
 
-        {/* 管理者用：スタッフの出勤状況モニター */}
-        {isUserAdmin && (
-          <>
-            <h3 className="section-title">スタッフの出勤状況 (本日)</h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '24px' }}>
-              {companyStaffs.map(s => {
-                const checkinTag = (s.completedTrainings || []).find(tid => tid.startsWith('CHECKIN_STATUS_TRUE_'));
-                const isStaffCheckedIn = !!checkinTag;
-                const staffCheckinTime = checkinTag ? checkinTag.replace('CHECKIN_STATUS_TRUE_', '') : null;
-
-                return (
-                  <div key={s.id} style={{ background: 'white', padding: '12px 16px', borderRadius: '12px', border: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div>
-                      <div style={{ fontWeight: 'bold', fontSize: '14px' }}>{s.name}</div>
-                      <div style={{ fontSize: '11px', color: 'var(--text-sub)', marginTop: '2px' }}>
-                        拠点: {s.baseLocation} / 単価: ¥{s.price.toLocaleString()} <span style={{ fontSize: '10px', color: '#94A3B8', marginLeft: '6px' }}>(デバッグ用ID: {s.id})</span>
-                      </div>
-                    </div>
-                    <div style={{ textAlign: 'right' }}>
-                      {isStaffCheckedIn ? (
-                        <div>
-                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: '#D1FAE5', color: '#065F46', padding: '4px 10px', borderRadius: '12px', fontSize: '11px', fontWeight: 'bold' }}>
-                            <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>check_circle</span>
-                            出勤済み
-                          </span>
-                          <div style={{ fontSize: '10px', color: 'var(--text-sub)', marginTop: '4px' }}>打刻時間: {staffCheckinTime}</div>
-                        </div>
-                      ) : (
-                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: '#F3F4F6', color: '#6B7280', padding: '4px 10px', borderRadius: '12px', fontSize: '11px', fontWeight: 'bold' }}>
-                          <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>schedule</span>
-                          未出勤
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-              {companyStaffs.length === 0 && (
-                <div style={{ textAlign: 'center', padding: '16px', background: 'white', borderRadius: '12px', color: 'var(--text-sub)', fontSize: '13px' }}>
-                  登録されているスタッフはいません。
-                </div>
-              )}
-            </div>
-          </>
-        )}
-
-        {/* 4. アクションボタンセクション */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '24px' }}>
-          <button 
-            type="button"
-            onClick={() => setShowReportOverlay(true)} 
-            className="btn-primary" 
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '8px',
-              padding: '14px 20px',
-              width: '100%',
-              borderRadius: '12px',
-              background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
-              color: 'white',
-              fontWeight: 'bold',
-              fontSize: '15px',
-              border: 'none',
-              cursor: 'pointer',
-              boxShadow: '0 4px 12px rgba(16, 185, 129, 0.15)',
-              margin: 0
-            }}
-          >
-            <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>rate_review</span>
-            実績報告・評価履歴を開く
-            {pendingReportCount > 0 && (
-              <span style={{
-                background: '#EF4444',
-                color: 'white',
-                borderRadius: '10px',
-                padding: '2px 8px',
-                fontSize: '11px',
-                fontWeight: 'bold',
-                marginLeft: '6px'
-              }}>
-                {pendingReportCount}
-              </span>
+        {/* 4. アクションリストセクション */}
+        <div className="settings-list" style={{ marginBottom: '24px' }}>
+          <div className="settings-group" style={{ background: 'white', borderRadius: '12px', overflow: 'hidden', border: '1px solid var(--border-color)', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }}>
+            
+            {/* スタッフ出勤状況（管理者のみ） */}
+            {isUserAdmin && (
+              <div className="settings-item" onClick={() => setShowStaffMonitorOverlay(true)}>
+                <span className="material-symbols-outlined item-icon" style={{ color: '#4F46E5', marginRight: '12px' }}>supervised_user_circle</span>
+                <span style={{ flex: 1, fontSize: '15px', fontWeight: 500 }}>スタッフ出勤状況の確認 (本日)</span>
+                <span className="material-symbols-outlined item-arrow" style={{ color: '#D1D5DB' }}>chevron_right</span>
+              </div>
             )}
-          </button>
 
-          <button 
-            type="button"
-            onClick={() => setShowTrainingOverlay(true)} 
-            className="btn-primary" 
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '8px',
-              padding: '14px 20px',
-              width: '100%',
-              borderRadius: '12px',
-              background: 'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)',
-              color: 'white',
-              fontWeight: 'bold',
-              fontSize: '15px',
-              border: 'none',
-              cursor: 'pointer',
-              boxShadow: '0 4px 12px rgba(37, 99, 235, 0.15)',
-              margin: 0
-            }}
-          >
-            <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>workspace_premium</span>
-            研修・獲得実績を開く
-          </button>
+            {/* 実績報告・評価履歴 */}
+            <div className="settings-item" onClick={() => setShowReportOverlay(true)}>
+              <span className="material-symbols-outlined item-icon" style={{ color: '#059669', marginRight: '12px' }}>rate_review</span>
+              <span style={{ flex: 1, fontSize: '15px', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                実績報告・評価履歴を開く
+                {pendingReportCount > 0 && (
+                  <span style={{
+                    background: '#EF4444',
+                    color: 'white',
+                    borderRadius: '10px',
+                    padding: '2px 8px',
+                    fontSize: '11px',
+                    fontWeight: 'bold'
+                  }}>
+                    未完了: {pendingReportCount}件
+                  </span>
+                )}
+              </span>
+              <span className="material-symbols-outlined item-arrow" style={{ color: '#D1D5DB' }}>chevron_right</span>
+            </div>
+
+            {/* 研修・獲得実績 */}
+            <div className="settings-item" onClick={() => setShowTrainingOverlay(true)}>
+              <span className="material-symbols-outlined item-icon" style={{ color: '#2563EB', marginRight: '12px' }}>workspace_premium</span>
+              <span style={{ flex: 1, fontSize: '15px', fontWeight: 500 }}>研修・獲得実績を開く</span>
+              <span className="material-symbols-outlined item-arrow" style={{ color: '#D1D5DB' }}>chevron_right</span>
+            </div>
+
+          </div>
         </div>
 
       </main>
@@ -761,32 +692,45 @@ export function TaskPage() {
             {trainings.map(tr => {
               const isCompleted = completedTrainingList.includes(tr.id);
               return (
-                <div key={tr.id} style={{ background: 'white', borderRadius: '12px', padding: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }}>
-                  <h4 style={{ margin: '0 0 8px 0', fontSize: '14px' }}>{tr.title}</h4>
-                  <div style={{ display: 'flex', gap: '8px' }}>
-                    {isCompleted ? (
-                      <button className="btn-secondary w-full" disabled style={{ margin: 0, opacity: 0.6 }}>
-                        受講完了済み
-                      </button>
-                    ) : (
-                      <>
-                        <button 
-                          className="btn-primary" 
-                          style={{ margin: 0, flex: 1, backgroundColor: '#3B82F6', color: 'white' }}
-                          onClick={() => handleStartTraining(tr)}
-                        >
-                          受講を開始 (Zoom)
-                        </button>
-                        <button 
-                          className="btn-primary" 
-                          disabled={!isTrainingCompleted[tr.id]}
-                          style={{ margin: 0, flex: 1, backgroundColor: isTrainingCompleted[tr.id] ? '#10B981' : '#E5E7EB', color: isTrainingCompleted[tr.id] ? 'white' : '#9CA3AF', cursor: isTrainingCompleted[tr.id] ? 'pointer' : 'not-allowed' }}
-                          onClick={() => handleRegisterTraining(tr.id)}
-                        >
-                          受講完了を登録
-                        </button>
-                      </>
-                    )}
+                <div key={tr.id} style={{ background: 'white', borderRadius: '12px', padding: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.02)', border: '1px solid var(--border-color)' }}>
+                  <h4 style={{ margin: '0 0 8px 0', fontSize: '14px', fontWeight: 600 }}>{tr.title}</h4>
+                  
+                  <div className="settings-list" style={{ marginTop: '12px' }}>
+                    <div className="settings-group" style={{ background: '#F9FAFB', borderRadius: '8px', overflow: 'hidden', border: '1px solid var(--border-color)' }}>
+                      {isCompleted ? (
+                        <div className="settings-item" style={{ padding: '12px 16px', cursor: 'default' }}>
+                          <span className="material-symbols-outlined item-icon" style={{ color: '#10B981', marginRight: '12px' }}>check_circle</span>
+                          <span style={{ flex: 1, fontSize: '14px', fontWeight: 500, color: '#10B981' }}>受講完了済み</span>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="settings-item" onClick={() => handleStartTraining(tr)} style={{ padding: '12px 16px' }}>
+                            <span className="material-symbols-outlined item-icon" style={{ color: '#2563EB', marginRight: '12px' }}>play_circle</span>
+                            <span style={{ flex: 1, fontSize: '14px', fontWeight: 500 }}>受講を開始 (Zoom)</span>
+                            <span className="material-symbols-outlined item-arrow" style={{ color: '#D1D5DB' }}>chevron_right</span>
+                          </div>
+                          
+                          <div 
+                            className="settings-item" 
+                            onClick={() => {
+                              if (isTrainingCompleted[tr.id]) {
+                                handleRegisterTraining(tr.id);
+                              }
+                            }}
+                            style={{ 
+                              padding: '12px 16px',
+                              opacity: isTrainingCompleted[tr.id] ? 1 : 0.5,
+                              cursor: isTrainingCompleted[tr.id] ? 'pointer' : 'not-allowed',
+                              borderTop: '1px solid var(--border-color)'
+                            }}
+                          >
+                            <span className="material-symbols-outlined item-icon" style={{ color: isTrainingCompleted[tr.id] ? '#10B981' : '#9CA3AF', marginRight: '12px' }}>verified</span>
+                            <span style={{ flex: 1, fontSize: '14px', fontWeight: 500, color: isTrainingCompleted[tr.id] ? 'var(--text-main)' : '#9CA3AF' }}>受講完了を登録</span>
+                            <span className="material-symbols-outlined item-arrow" style={{ color: '#D1D5DB' }}>chevron_right</span>
+                          </div>
+                        </>
+                      )}
+                    </div>
                   </div>
                 </div>
               );
@@ -849,9 +793,15 @@ export function TaskPage() {
                 )}
 
                 {task.status === 'report_pending' && (
-                  <button type="button" className="btn-primary w-full" style={{ margin: 0 }} onClick={() => handleOpenReport(task)}>
-                    完了報告と評価の入力
-                  </button>
+                  <div className="settings-list" style={{ marginTop: '12px' }}>
+                    <div className="settings-group" style={{ background: '#F9FAFB', borderRadius: '8px', overflow: 'hidden', border: '1px solid var(--border-color)' }}>
+                      <div className="settings-item" onClick={() => handleOpenReport(task)} style={{ padding: '12px 16px' }}>
+                        <span className="material-symbols-outlined item-icon" style={{ color: '#059669', marginRight: '12px' }}>rate_review</span>
+                        <span style={{ flex: 1, fontSize: '14px', fontWeight: 500 }}>完了報告と評価の入力</span>
+                        <span className="material-symbols-outlined item-arrow" style={{ color: '#D1D5DB' }}>chevron_right</span>
+                      </div>
+                    </div>
+                  </div>
                 )}
               </div>
             ))}
@@ -918,6 +868,59 @@ export function TaskPage() {
             )}
           </div>
 
+        </main>
+      </div>
+
+      {/* スタッフ出勤状況モニター Overlay */}
+      <div className={`overlay-view ${showStaffMonitorOverlay ? 'show' : ''}`} style={{ display: showStaffMonitorOverlay ? 'flex' : 'none', transform: showStaffMonitorOverlay ? 'translateX(0)' : 'translateX(100%)', zIndex: 3000 }}>
+        <header className="solid-header overlay-header">
+          <button type="button" className="icon-btn-dark" onClick={() => setShowStaffMonitorOverlay(false)}>
+            <span className="material-symbols-outlined">arrow_back_ios_new</span>
+          </button>
+          <h1>スタッフの出勤状況</h1>
+          <div style={{ width: '40px' }}></div>
+        </header>
+        <main className="list-area bg-gray" style={{ flex: 1, overflowY: 'auto', padding: '16px', paddingBottom: '100px' }}>
+          <h3 className="section-title" style={{ marginTop: 0 }}>スタッフの出勤状況 (本日)</h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '24px' }}>
+            {companyStaffs.map(s => {
+              const checkinTag = (s.completedTrainings || []).find(tid => tid.startsWith('CHECKIN_STATUS_TRUE_'));
+              const isStaffCheckedIn = !!checkinTag;
+              const staffCheckinTime = checkinTag ? checkinTag.replace('CHECKIN_STATUS_TRUE_', '') : null;
+
+              return (
+                <div key={s.id} style={{ background: 'white', padding: '12px 16px', borderRadius: '12px', border: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <div style={{ fontWeight: 'bold', fontSize: '14px' }}>{s.name}</div>
+                    <div style={{ fontSize: '11px', color: 'var(--text-sub)', marginTop: '2px' }}>
+                      拠点: {s.baseLocation} / 単価: ¥{s.price.toLocaleString()} <span style={{ fontSize: '10px', color: '#94A3B8', marginLeft: '6px' }}>(デバッグ用ID: {s.id})</span>
+                    </div>
+                  </div>
+                  <div style={{ textAlign: 'right' }}>
+                    {isStaffCheckedIn ? (
+                      <div>
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: '#D1FAE5', color: '#065F46', padding: '4px 10px', borderRadius: '12px', fontSize: '11px', fontWeight: 'bold' }}>
+                          <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>check_circle</span>
+                          出勤済み
+                        </span>
+                        <div style={{ fontSize: '10px', color: 'var(--text-sub)', marginTop: '4px' }}>打刻時間: {staffCheckinTime}</div>
+                      </div>
+                    ) : (
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: '#F3F4F6', color: '#6B7280', padding: '4px 10px', borderRadius: '12px', fontSize: '11px', fontWeight: 'bold' }}>
+                        <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>schedule</span>
+                        未出勤
+                      </span>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+            {companyStaffs.length === 0 && (
+              <div style={{ textAlign: 'center', padding: '16px', background: 'white', borderRadius: '12px', color: 'var(--text-sub)', fontSize: '13px' }}>
+                登録されているスタッフはいません。
+              </div>
+            )}
+          </div>
         </main>
       </div>
 
