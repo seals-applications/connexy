@@ -1365,25 +1365,66 @@ export function SearchPage() {
             <div className="toggle-slider"></div>
           </div>
         </div>
-        <div className="header-search" style={{ justifyContent: 'flex-end' }}>
-          <button 
-            className="filter-btn" 
-            onClick={() => setViewMode(viewMode === 'map' ? 'list' : 'map')}
-            style={{ 
-              backgroundColor: viewMode === 'list' ? 'var(--primary)' : 'white',
-              color: viewMode === 'list' ? 'white' : 'var(--text-main)',
-              border: 'none',
-              boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-              transition: 'all 0.2s ease'
-            }}
-          >
-            <span className="material-symbols-outlined">
-              {viewMode === 'map' ? 'format_list_bulleted' : 'map'}
-            </span>
-          </button>
-          <button 
-            className="filter-btn" 
-            onClick={handleRefresh}
+        <div className="header-search" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
+          {/* ビュー切り替えカプセルボタン */}
+          <div style={{
+            display: 'flex',
+            background: '#F1F5F9',
+            padding: '3px',
+            borderRadius: '20px',
+            boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.05)',
+            alignItems: 'center'
+          }}>
+            <button
+              onClick={() => setViewMode('map')}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+                padding: '6px 14px',
+                borderRadius: '17px',
+                border: 'none',
+                background: viewMode === 'map' ? '#FFFFFF' : 'transparent',
+                color: viewMode === 'map' ? 'var(--primary)' : '#64748B',
+                fontSize: '12px',
+                fontWeight: 'bold',
+                boxShadow: viewMode === 'map' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                whiteSpace: 'nowrap'
+              }}
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>map</span>
+              マップ表示
+            </button>
+            <button
+              onClick={() => setViewMode('list')}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+                padding: '6px 14px',
+                borderRadius: '17px',
+                border: 'none',
+                background: viewMode === 'list' ? '#FFFFFF' : 'transparent',
+                color: viewMode === 'list' ? 'var(--primary)' : '#64748B',
+                fontSize: '12px',
+                fontWeight: 'bold',
+                boxShadow: viewMode === 'list' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                whiteSpace: 'nowrap'
+              }}
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>format_list_bulleted</span>
+              リスト表示
+            </button>
+          </div>
+
+          <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+            <button 
+              className="filter-btn" 
+              onClick={handleRefresh}
             style={{ 
               backgroundColor: 'white',
               color: 'var(--text-main)',
@@ -1436,6 +1477,7 @@ export function SearchPage() {
               </span>
             )}
           </button>
+          </div>
         </div>
       </header>
       )}
