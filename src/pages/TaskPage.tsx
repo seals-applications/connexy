@@ -139,6 +139,7 @@ export function TaskPage() {
   const [isTrainingCompleted, setIsTrainingCompleted] = useState<Record<string, boolean>>({});
   const [completedTrainingList, setCompletedTrainingList] = useState<string[]>([]);
   const [showTrainingOverlay, setShowTrainingOverlay] = useState(false);
+  const [showReportOverlay, setShowReportOverlay] = useState(false);
 
   // 自社募集案件・人材State
   const [myJobs, setMyJobs] = useState<Job[]>([]);
@@ -342,8 +343,121 @@ export function TaskPage() {
           </div>
         )}
 
+        {/* 3. 本日の現場セクション */}
+        <h3 className="section-title" style={{ marginTop: 0 }}>本日の現場</h3>
+        <div className="task-card" style={{ background: 'white', borderRadius: '12px', padding: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.03)', marginBottom: '24px' }}>
+          <div className="task-header" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
+            <span className="task-status active" style={{ color: isCheckedIn ? '#10B981' : 'var(--primary)', fontWeight: 'bold' }}>
+              {isCheckedIn ? '● 稼働中' : '稼働予定'}
+            </span>
+            <span className="task-time" style={{ fontSize: '13px', color: 'var(--text-sub)' }}>10:00 - 19:00</span>
+          </div>
+          <h4 className="task-title" style={{ fontSize: '16px', margin: '0 0 8px 0' }}>auショップ新宿西口店 イベント</h4>
+          <p className="task-address" style={{ margin: '0 0 16px 0', fontSize: '13px', color: 'var(--text-sub)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>location_on</span>
+            東京都新宿区西新宿1-1-1
+          </p>
+
+          <div className="checkin-container" style={{ borderTop: '1px solid var(--border-color)', paddingTop: '16px' }}>
+            {/* GPS Simulation Tool for Demo */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#F8FAFC', padding: '10px', borderRadius: '8px', border: '1px solid #E2E8F0', marginBottom: '12px' }}>
+              <input 
+                type="checkbox" 
+                id="gps-sim-checkbox"
+                checked={isSimulatingGps} 
+                onChange={(e) => setIsSimulatingGps(e.target.checked)} 
+                style={{ cursor: 'pointer', accentColor: 'var(--primary)' }}
+              />
+              <label htmlFor="gps-sim-checkbox" style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--text-main)', cursor: 'pointer', flex: 1 }}>
+                【デモ用】位置情報をシミュレート（現場の近くに移動）
+              </label>
+            </div>
+
+            <div style={{ position: 'relative', height: '100px', background: '#F1F5F9', borderRadius: '8px', marginBottom: '12px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #E2E8F0' }}>
+              <div style={{ position: 'absolute', inset: 0, opacity: 0.08, backgroundImage: 'radial-gradient(circle, #000000 8%, transparent 8%)', backgroundSize: '16px 16px' }}></div>
+              <div style={{ width: '70px', height: '70px', borderRadius: '50%', border: isInRange ? '2px dashed #10B981' : '2px dashed #EF4444', background: isInRange ? 'rgba(16, 185, 129, 0.08)' : 'rgba(239, 68, 68, 0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', transition: 'all 0.3s' }}>
+                <span style={{ fontSize: '8px', color: isInRange ? '#10B981' : '#EF4444', fontWeight: 'bold', position: 'absolute', top: '4px', whiteSpace: 'nowrap' }}>
+                  500m判定エリア
+                </span>
+                <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: isInRange ? '#10B981' : '#EF4444', border: '2px solid white', boxShadow: isInRange ? '0 0 8px rgba(16, 185, 129, 0.8)' : '0 0 8px rgba(239, 68, 68, 0.8)' }}></div>
+              </div>
+            </div>
+
+            {isCheckedIn ? (
+              <div style={{ background: '#D1FAE5', color: '#065F46', padding: '12px', borderRadius: '8px', marginBottom: '12px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: 'bold' }}>
+                  <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>check_circle</span>
+                  <span>出勤打刻完了（稼働中）</span>
+                </div>
+                <div style={{ fontSize: '12px', opacity: 0.9 }}>
+                  打刻日時: 当日 {checkinTime}
+                </div>
+                <button 
+                  type="button" 
+                  onClick={handleCheckinReset} 
+                  style={{ background: 'none', border: 'none', color: '#059669', fontSize: '11px', textDecoration: 'underline', cursor: 'pointer', alignSelf: 'flex-start', marginTop: '6px', padding: 0 }}
+                >
+                  【デモ用】打刻状態をクリアする
+                </button>
+              </div>
+            ) : (
+              <>
+                {gpsError && (
+                  <p style={{ color: '#EF4444', fontSize: '12px', margin: '0 0 12px 0', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>error</span>
+                    <span>{gpsError}</span>
+                  </p>
+                )}
+                
+                {distance !== null ? (
+                  <p style={{ color: isInRange ? '#10B981' : '#EF4444', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', marginBottom: '12px', fontWeight: 'bold' }}>
+                    <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>my_location</span>
+                    {isInRange ? (
+                      <span>GPS判定エリア内（現場からおよそ {distance.toFixed(0)}m）</span>
+                    ) : (
+                      <span>GPS判定エリア外（現場からおよそ {(distance / 1000).toFixed(1)}km）</span>
+                    )}
+                  </p>
+                ) : !gpsError ? (
+                  <p style={{ color: '#6B7280', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', marginBottom: '12px' }}>
+                    <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>location_searching</span>
+                    <span>位置情報を取得中...</span>
+                  </p>
+                ) : null}
+
+                <button
+                  className={`btn-checkin ${isInRange ? 'active' : ''}`}
+                  disabled={!isInRange}
+                  style={{
+                    backgroundColor: isInRange ? 'var(--primary)' : '#E5E7EB',
+                    color: isInRange ? 'white' : '#9CA3AF',
+                    cursor: isInRange ? 'pointer' : 'not-allowed',
+                    border: 'none',
+                    boxShadow: isInRange ? '0 4px 12px rgba(37, 99, 235, 0.25)' : 'none',
+                    width: '100%',
+                    padding: '14px',
+                    borderRadius: '12px',
+                    fontWeight: 'bold',
+                    fontSize: '15px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '6px'
+                  }}
+                  onClick={handleCheckin}
+                >
+                  <span className="material-symbols-outlined" style={{ marginRight: '6px', verticalAlign: 'middle' }}>
+                    login
+                  </span>
+                  出勤を打刻する
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+
         {/* 1. タスク概況セクション (ダッシュボードから移動) */}
-        <h3 className="section-title" style={{ marginTop: 0 }}>タスク概況</h3>
+        <h3 className="section-title">タスク概況</h3>
         <div className="summary-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', marginBottom: '24px' }}>
           <div className="summary-card" style={{ background: 'white', borderRadius: '12px', padding: '16px', textAlign: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
             <span className="summary-num" style={{ fontSize: '24px', fontWeight: 'bold', color: '#F59E0B', display: 'block' }}>{workingCount}</span>
@@ -465,230 +579,6 @@ export function TaskPage() {
           </>
         )}
 
-        {/* 2. 完了報告待ちリスト */}
-        <h3 className="section-title">業務完了報告と相互評価</h3>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '24px' }}>
-          {displayedTasks.filter(t => t.status === 'report_pending' || t.status === 'disputed').map(task => (
-            <div key={task.id} style={{ background: 'white', borderRadius: '12px', padding: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.02)', border: task.status === 'disputed' ? '1px solid #FCA5A5' : '1px solid var(--border-color)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
-                <span className={`status-badge ${task.status === 'disputed' ? 'badge-waiting' : 'badge-negotiating'}`} style={{ margin: 0, fontSize: '11px' }}>
-                  {task.status === 'disputed' ? '悪い評価の対応待ち' : '未報告'}
-                </span>
-                <span style={{ fontSize: '12px', color: 'var(--text-sub)' }}>稼働日: {task.date}</span>
-              </div>
-              <h4 style={{ margin: '0 0 4px 0', fontSize: '15px' }}>{task.jobTitle}</h4>
-              <p style={{ margin: '0 0 12px 0', fontSize: '13px', color: 'var(--text-sub)' }}>
-                稼働スタッフ: {task.workerName} （{task.companyName}）
-              </p>
-              
-              {task.status === 'disputed' && task.disputedReason && (
-                <div style={{ background: '#FEF2F2', borderLeft: '4px solid #EF4444', padding: '8px 12px', borderRadius: '4px', marginBottom: '12px', fontSize: '12px' }}>
-                  <strong>相手方の拒否理由:</strong> {task.disputedReason}
-                  <div style={{ color: '#DC2626', fontWeight: 'bold', marginTop: '6px' }}>
-                    🚨 アプリ運営事務局から双方へヒアリング確認の連絡が入ります。
-                  </div>
-                </div>
-              )}
-
-              {task.status === 'disputed' && !task.disputedReason && (
-                <div style={{ background: '#FFFBEB', border: '1px solid #FDE68A', padding: '10px', borderRadius: '8px', marginBottom: '12px' }}>
-                  <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#B45309', marginBottom: '8px' }}>
-                    ⚠️ あなたがbad評価をつけたため、相手方の応答待ち状態です。
-                  </div>
-                  {/* デモ用相手方アクション模擬 */}
-                  <div style={{ display: 'flex', gap: '8px' }}>
-                    <button className="btn-secondary btn-small" style={{ margin: 0, fontSize: '11px', flex: 1, borderColor: '#10B981', color: '#10B981' }} onClick={() => handleSimulateDispute(task.id, 'approve')}>
-                      相手が「承認」する(デモ)
-                    </button>
-                    <button className="btn-secondary btn-small" style={{ margin: 0, fontSize: '11px', flex: 1, borderColor: '#EF4444', color: '#EF4444' }} onClick={() => handleSimulateDispute(task.id, 'reject')}>
-                      相手が「拒否」する(デモ)
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {task.status === 'report_pending' && (
-                <button className="btn-primary w-full" style={{ margin: 0 }} onClick={() => handleOpenReport(task)}>
-                  完了報告と評価の入力
-                </button>
-              )}
-            </div>
-          ))}
-          {displayedTasks.filter(t => t.status === 'report_pending' || t.status === 'disputed').length === 0 && (
-            <div style={{ textAlign: 'center', padding: '24px', background: 'white', borderRadius: '12px', color: 'var(--text-sub)', fontSize: '13px' }}>
-              現在、完了報告・評価待ちのタスクはありません。
-            </div>
-          )}
-        </div>
-
-        {/* 2-2. 完了済みのタスク（ブラインド相互評価） */}
-        <h3 className="section-title">完了済みのタスク（相互評価結果）</h3>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '24px' }}>
-          {displayedTasks.filter(t => t.status === 'completed').map(task => {
-            const evalClient = task.evaluations?.byClient;
-            const evalWorker = task.evaluations?.byWorker || task.evaluations?.byStaffToField;
-            const bothEvaluated = !!evalClient && !!evalWorker;
-
-            return (
-              <div key={task.id} style={{ background: 'white', borderRadius: '12px', padding: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.02)', border: '1px solid var(--border-color)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
-                  <span className="status-badge badge-contracted" style={{ margin: 0, fontSize: '11px', background: '#D1FAE5', color: '#065F46' }}>
-                    完了
-                  </span>
-                  <span style={{ fontSize: '12px', color: 'var(--text-sub)' }}>稼働日: {task.date}</span>
-                </div>
-                <h4 style={{ margin: '0 0 4px 0', fontSize: '15px' }}>{task.jobTitle}</h4>
-                <p style={{ margin: '0 0 12px 0', fontSize: '13px', color: 'var(--text-sub)' }}>
-                  稼働スタッフ: {task.workerName} （{task.companyName}）
-                </p>
-
-                <div style={{ background: '#F8FAFC', padding: '12px', borderRadius: '8px', border: '1px solid #E2E8F0', fontSize: '13px' }}>
-                  {bothEvaluated ? (
-                    <div>
-                      <div style={{ fontWeight: 'bold', color: 'var(--text-main)', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                        <span className="material-symbols-outlined" style={{ fontSize: '16px', color: '#10B981' }}>check_circle</span>
-                        相互評価が開示されました（公開中）
-                      </div>
-                      <div style={{ marginBottom: '6px' }}>
-                        <strong style={{ color: 'var(--primary)' }}>発注者からの評価:</strong>{' '}
-                        <span style={{ color: '#F59E0B' }}>{'★'.repeat(evalClient.rating)}{'☆'.repeat(5 - evalClient.rating)}</span>{' '}
-                        {evalClient.comment && <span style={{ color: 'var(--text-sub)', fontSize: '12px' }}> - {evalClient.comment}</span>}
-                      </div>
-                      <div>
-                        <strong style={{ color: '#10B981' }}>スタッフからの評価:</strong>{' '}
-                        <span style={{ color: '#F59E0B' }}>{'★'.repeat(evalWorker.rating)}{'☆'.repeat(5 - evalWorker.rating)}</span>{' '}
-                        {evalWorker.comment && <span style={{ color: 'var(--text-sub)', fontSize: '12px' }}> - {evalWorker.comment}</span>}
-                      </div>
-                    </div>
-                  ) : (
-                    <div style={{ color: '#64748B', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <span className="material-symbols-outlined" style={{ fontSize: '18px', color: '#EF4444' }}>hourglass_empty</span>
-                      <span>ブラインド評価中: 双方が評価を入力するまで非公開です。</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-          {displayedTasks.filter(t => t.status === 'completed').length === 0 && (
-            <div style={{ textAlign: 'center', padding: '16px', background: 'white', borderRadius: '12px', color: 'var(--text-sub)', fontSize: '13px' }}>
-              完了済みのタスクはありません。
-            </div>
-          )}
-        </div>
-
-        {/* 3. 本日の現場セクション */}
-        <h3 className="section-title">本日の現場</h3>
-        <div className="task-card" style={{ background: 'white', borderRadius: '12px', padding: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.03)', marginBottom: '24px' }}>
-          <div className="task-header" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
-            <span className="task-status active" style={{ color: isCheckedIn ? '#10B981' : 'var(--primary)', fontWeight: 'bold' }}>
-              {isCheckedIn ? '● 稼働中' : '稼働予定'}
-            </span>
-            <span className="task-time" style={{ fontSize: '13px', color: 'var(--text-sub)' }}>10:00 - 19:00</span>
-          </div>
-          <h4 className="task-title" style={{ fontSize: '16px', margin: '0 0 8px 0' }}>auショップ新宿西口店 イベント</h4>
-          <p className="task-address" style={{ margin: '0 0 16px 0', fontSize: '13px', color: 'var(--text-sub)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-            <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>location_on</span>
-            東京都新宿区西新宿1-1-1
-          </p>
-
-          <div className="checkin-container" style={{ borderTop: '1px solid var(--border-color)', paddingTop: '16px' }}>
-            {/* GPS Simulation Tool for Demo */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#F8FAFC', padding: '10px', borderRadius: '8px', border: '1px solid #E2E8F0', marginBottom: '12px' }}>
-              <input 
-                type="checkbox" 
-                id="gps-sim-checkbox"
-                checked={isSimulatingGps} 
-                onChange={(e) => setIsSimulatingGps(e.target.checked)} 
-                style={{ cursor: 'pointer', accentColor: 'var(--primary)' }}
-              />
-              <label htmlFor="gps-sim-checkbox" style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--text-main)', cursor: 'pointer', flex: 1 }}>
-                【デモ用】位置情報をシミュレート（現場の近くに移動）
-              </label>
-            </div>
-
-            <div style={{ position: 'relative', height: '100px', background: '#F1F5F9', borderRadius: '8px', marginBottom: '12px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #E2E8F0' }}>
-              <div style={{ position: 'absolute', inset: 0, opacity: 0.08, backgroundImage: 'radial-gradient(circle, #000000 8%, transparent 8%)', backgroundSize: '16px 16px' }}></div>
-              <div style={{ width: '70px', height: '70px', borderRadius: '50%', border: isInRange ? '2px dashed #10B981' : '2px dashed #EF4444', background: isInRange ? 'rgba(16, 185, 129, 0.08)' : 'rgba(239, 68, 68, 0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', transition: 'all 0.3s' }}>
-                <span style={{ fontSize: '8px', color: isInRange ? '#10B981' : '#EF4444', fontWeight: 'bold', position: 'absolute', top: '4px', whiteSpace: 'nowrap' }}>
-                  500m判定エリア
-                </span>
-                <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: isInRange ? '#10B981' : '#EF4444', border: '2px solid white', boxShadow: isInRange ? '0 0 8px rgba(16, 185, 129, 0.8)' : '0 0 8px rgba(239, 68, 68, 0.8)' }}></div>
-              </div>
-            </div>
-
-            {isCheckedIn ? (
-              <div style={{ background: '#D1FAE5', color: '#065F46', padding: '12px', borderRadius: '8px', marginBottom: '12px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: 'bold' }}>
-                  <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>check_circle</span>
-                  <span>出勤打刻完了（稼働中）</span>
-                </div>
-                <div style={{ fontSize: '12px', opacity: 0.9 }}>
-                  打刻日時: 当日 {checkinTime}
-                </div>
-                <button 
-                  type="button" 
-                  onClick={handleCheckinReset} 
-                  style={{ background: 'none', border: 'none', color: '#059669', fontSize: '11px', textDecoration: 'underline', cursor: 'pointer', alignSelf: 'flex-start', marginTop: '6px', padding: 0 }}
-                >
-                  【デモ用】打刻状態をクリアする
-                </button>
-              </div>
-            ) : (
-              <>
-                {gpsError && (
-                  <p style={{ color: '#EF4444', fontSize: '12px', margin: '0 0 12px 0', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>error</span>
-                    <span>{gpsError}</span>
-                  </p>
-                )}
-                
-                {distance !== null ? (
-                  <p style={{ color: isInRange ? '#10B981' : '#EF4444', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', marginBottom: '12px', fontWeight: 'bold' }}>
-                    <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>my_location</span>
-                    {isInRange ? (
-                      <span>GPS判定エリア内（現場からおよそ {distance.toFixed(0)}m）</span>
-                    ) : (
-                      <span>GPS判定エリア外（現場からおよそ {(distance / 1000).toFixed(1)}km）</span>
-                    )}
-                  </p>
-                ) : !gpsError ? (
-                  <p style={{ color: '#6B7280', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', marginBottom: '12px' }}>
-                    <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>location_searching</span>
-                    <span>位置情報を取得中...</span>
-                  </p>
-                ) : null}
-
-                <button
-                  className={`btn-checkin ${isInRange ? 'active' : ''}`}
-                  disabled={!isInRange}
-                  style={{
-                    backgroundColor: isInRange ? 'var(--primary)' : '#E5E7EB',
-                    color: isInRange ? 'white' : '#9CA3AF',
-                    cursor: isInRange ? 'pointer' : 'not-allowed',
-                    border: 'none',
-                    boxShadow: isInRange ? '0 4px 12px rgba(37, 99, 235, 0.25)' : 'none',
-                    width: '100%',
-                    padding: '14px',
-                    borderRadius: '12px',
-                    fontWeight: 'bold',
-                    fontSize: '15px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '6px'
-                  }}
-                  onClick={handleCheckin}
-                >
-                  <span className="material-symbols-outlined" style={{ marginRight: '6px', verticalAlign: 'middle' }}>
-                    login
-                  </span>
-                  出勤を打刻する
-                </button>
-              </>
-            )}
-          </div>
-        </div>
 
         {/* 管理者用：スタッフの出勤状況モニター */}
         {isUserAdmin && (
@@ -737,9 +627,49 @@ export function TaskPage() {
           </>
         )}
 
-        {/* 4. 研修・実績へのリンクボタン */}
-        <div style={{ marginBottom: '24px' }}>
+        {/* 4. アクションボタンセクション */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '24px' }}>
           <button 
+            type="button"
+            onClick={() => setShowReportOverlay(true)} 
+            className="btn-primary" 
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px',
+              padding: '14px 20px',
+              width: '100%',
+              borderRadius: '12px',
+              background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
+              color: 'white',
+              fontWeight: 'bold',
+              fontSize: '15px',
+              border: 'none',
+              cursor: 'pointer',
+              boxShadow: '0 4px 12px rgba(16, 185, 129, 0.15)',
+              margin: 0
+            }}
+          >
+            <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>rate_review</span>
+            実績報告・評価履歴を開く
+            {pendingReportCount > 0 && (
+              <span style={{
+                background: '#EF4444',
+                color: 'white',
+                borderRadius: '10px',
+                padding: '2px 8px',
+                fontSize: '11px',
+                fontWeight: 'bold',
+                marginLeft: '6px'
+              }}>
+                {pendingReportCount}
+              </span>
+            )}
+          </button>
+
+          <button 
+            type="button"
             onClick={() => setShowTrainingOverlay(true)} 
             className="btn-primary" 
             style={{
@@ -831,6 +761,132 @@ export function TaskPage() {
               );
             })}
           </div>
+        </main>
+      </div>
+
+      {/* 業務完了報告・評価履歴 Overlay */}
+      <div className={`overlay-view ${showReportOverlay ? 'show' : ''}`} style={{ display: showReportOverlay ? 'flex' : 'none', transform: showReportOverlay ? 'translateX(0)' : 'translateX(100%)', zIndex: 3000 }}>
+        <header className="solid-header overlay-header">
+          <button type="button" className="icon-btn-dark" onClick={() => setShowReportOverlay(false)}>
+            <span className="material-symbols-outlined">arrow_back_ios_new</span>
+          </button>
+          <h1>実績報告・評価履歴</h1>
+          <div style={{ width: '40px' }}></div>
+        </header>
+        <main className="list-area bg-gray" style={{ flex: 1, overflowY: 'auto', padding: '16px', paddingBottom: '100px' }}>
+          
+          {/* 2. 完了報告待ちリスト */}
+          <h3 className="section-title" style={{ marginTop: 0 }}>業務完了報告と相互評価</h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '24px' }}>
+            {displayedTasks.filter(t => t.status === 'report_pending' || t.status === 'disputed').map(task => (
+              <div key={task.id} style={{ background: 'white', borderRadius: '12px', padding: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.02)', border: task.status === 'disputed' ? '1px solid #FCA5A5' : '1px solid var(--border-color)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+                  <span className={`status-badge ${task.status === 'disputed' ? 'badge-waiting' : 'badge-negotiating'}`} style={{ margin: 0, fontSize: '11px' }}>
+                    {task.status === 'disputed' ? '悪い評価の対応待ち' : '未報告'}
+                  </span>
+                  <span style={{ fontSize: '12px', color: 'var(--text-sub)' }}>稼働日: {task.date}</span>
+                </div>
+                <h4 style={{ margin: '0 0 4px 0', fontSize: '15px' }}>{task.jobTitle}</h4>
+                <p style={{ margin: '0 0 12px 0', fontSize: '13px', color: 'var(--text-sub)' }}>
+                  稼働スタッフ: {task.workerName} （{task.companyName}）
+                </p>
+                
+                {task.status === 'disputed' && task.disputedReason && (
+                  <div style={{ background: '#FEF2F2', borderLeft: '4px solid #EF4444', padding: '8px 12px', borderRadius: '4px', marginBottom: '12px', fontSize: '12px' }}>
+                    <strong>相手方の拒否理由:</strong> {task.disputedReason}
+                    <div style={{ color: '#DC2626', fontWeight: 'bold', marginTop: '6px' }}>
+                      🚨 アプリ運営事務局から双方へヒアリング確認の連絡が入ります。
+                    </div>
+                  </div>
+                )}
+
+                {task.status === 'disputed' && !task.disputedReason && (
+                  <div style={{ background: '#FFFBEB', border: '1px solid #FDE68A', padding: '10px', borderRadius: '8px', marginBottom: '12px' }}>
+                    <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#B45309', marginBottom: '8px' }}>
+                      ⚠️ あなたがbad評価をつけたため、相手方の応答待ち状態です。
+                    </div>
+                    {/* デモ用相手方アクション模擬 */}
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <button type="button" className="btn-secondary btn-small" style={{ margin: 0, fontSize: '11px', flex: 1, borderColor: '#10B981', color: '#10B981' }} onClick={() => handleSimulateDispute(task.id, 'approve')}>
+                        相手が「承認」する(デモ)
+                      </button>
+                      <button type="button" className="btn-secondary btn-small" style={{ margin: 0, fontSize: '11px', flex: 1, borderColor: '#EF4444', color: '#EF4444' }} onClick={() => handleSimulateDispute(task.id, 'reject')}>
+                        相手が「拒否」する(デモ)
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {task.status === 'report_pending' && (
+                  <button type="button" className="btn-primary w-full" style={{ margin: 0 }} onClick={() => handleOpenReport(task)}>
+                    完了報告と評価の入力
+                  </button>
+                )}
+              </div>
+            ))}
+            {displayedTasks.filter(t => t.status === 'report_pending' || t.status === 'disputed').length === 0 && (
+              <div style={{ textAlign: 'center', padding: '24px', background: 'white', borderRadius: '12px', color: 'var(--text-sub)', fontSize: '13px' }}>
+                現在、完了報告・評価待ちのタスクはありません。
+              </div>
+            )}
+          </div>
+
+          {/* 2-2. 完了済みのタスク（ブラインド相互評価） */}
+          <h3 className="section-title">完了済みのタスク（相互評価結果）</h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '24px' }}>
+            {displayedTasks.filter(t => t.status === 'completed').map(task => {
+              const evalClient = task.evaluations?.byClient;
+              const evalWorker = task.evaluations?.byWorker || task.evaluations?.byStaffToField;
+              const bothEvaluated = !!evalClient && !!evalWorker;
+
+              return (
+                <div key={task.id} style={{ background: 'white', borderRadius: '12px', padding: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.02)', border: '1px solid var(--border-color)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+                    <span className="status-badge badge-contracted" style={{ margin: 0, fontSize: '11px', background: '#D1FAE5', color: '#065F46' }}>
+                      完了
+                    </span>
+                    <span style={{ fontSize: '12px', color: 'var(--text-sub)' }}>稼働日: {task.date}</span>
+                  </div>
+                  <h4 style={{ margin: '0 0 4px 0', fontSize: '15px' }}>{task.jobTitle}</h4>
+                  <p style={{ margin: '0 0 12px 0', fontSize: '13px', color: 'var(--text-sub)' }}>
+                    稼働スタッフ: {task.workerName} （{task.companyName}）
+                  </p>
+
+                  <div style={{ background: '#F8FAFC', padding: '12px', borderRadius: '8px', border: '1px solid #E2E8F0', fontSize: '13px' }}>
+                    {bothEvaluated ? (
+                      <div>
+                        <div style={{ fontWeight: 'bold', color: 'var(--text-main)', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <span className="material-symbols-outlined" style={{ fontSize: '16px', color: '#10B981' }}>check_circle</span>
+                          相互評価が開示されました（公開中）
+                        </div>
+                        <div style={{ marginBottom: '6px' }}>
+                          <strong style={{ color: 'var(--primary)' }}>発注者からの評価:</strong>{' '}
+                          <span style={{ color: '#F59E0B' }}>{'★'.repeat(evalClient.rating)}{'☆'.repeat(5 - evalClient.rating)}</span>{' '}
+                          {evalClient.comment && <span style={{ color: 'var(--text-sub)', fontSize: '12px' }}> - {evalClient.comment}</span>}
+                        </div>
+                        <div>
+                          <strong style={{ color: '#10B981' }}>スタッフからの評価:</strong>{' '}
+                          <span style={{ color: '#F59E0B' }}>{'★'.repeat(evalWorker.rating)}{'☆'.repeat(5 - evalWorker.rating)}</span>{' '}
+                          {evalWorker.comment && <span style={{ color: 'var(--text-sub)', fontSize: '12px' }}> - {evalWorker.comment}</span>}
+                        </div>
+                      </div>
+                    ) : (
+                      <div style={{ color: '#64748B', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span className="material-symbols-outlined" style={{ fontSize: '18px', color: '#EF4444' }}>hourglass_empty</span>
+                        <span>ブラインド評価中: 双方が評価を入力するまで非公開です。</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+            {displayedTasks.filter(t => t.status === 'completed').length === 0 && (
+              <div style={{ textAlign: 'center', padding: '16px', background: 'white', borderRadius: '12px', color: 'var(--text-sub)', fontSize: '13px' }}>
+                完了済みのタスクはありません。
+              </div>
+            )}
+          </div>
+
         </main>
       </div>
 
