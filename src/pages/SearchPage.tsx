@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { setOptions, importLibrary } from '@googlemaps/js-api-loader';
 import { MarkerClusterer } from '@googlemaps/markerclusterer';
 import { api } from '../data/mockDb';
-import type { Job, Talent, Staff, Training, User } from '../data/mockDb';
+import type { Job, Talent, Staff, Training, User, ContractTask } from '../data/mockDb';
 import { CalendarPicker } from '../components/CalendarPicker';
 import { formatJobDates } from '../utils/dateFormatter';
 import { generateMaskedLocation, extractArea } from '../utils/maskingUtils';
@@ -23,6 +23,7 @@ export function SearchPage() {
   
   const [jobs, setJobs] = useState<Job[]>([]);
   const [talents, setTalents] = useState<Talent[]>([]);
+  const [contractTasks, setContractTasks] = useState<ContractTask[]>([]);
   const [filterArea, setFilterArea] = useState<string>('all');
   const [allTrainings, setAllTrainings] = useState<Training[]>([]);
 
@@ -94,24 +95,179 @@ export function SearchPage() {
     isLimited: false
   });
 
+  const [isSamePriceAllDates, setIsSamePriceAllDates] = useState(true);
+  const [commonPrice, setCommonPrice] = useState<number>(0);
+  const [dailyPrices, setDailyPrices] = useState<{ [date: string]: number }>({});
+  const [expenses, setExpenses] = useState<{
+    transportType: 'none' | 'actual' | 'flat';
+    transportValue: number;
+    accommodationType: 'none' | 'actual' | 'flat';
+    accommodationValue: number;
+  }>({
+    transportType: 'none',
+    transportValue: 0,
+    accommodationType: 'none',
+    accommodationValue: 0
+  });
+
+  // selectedJobDatesの変更に応じてdailyPricesのキーを更新
+  useEffect(() => {
+    const nextPrices = { ...dailyPrices };
+    // 新しく選択された日付があれば追加
+    selectedJobDates.forEach(date => {
+      if (!(date in nextPrices)) {
+        nextPrices[date] = commonPrice || 0;
+      }
+    });
+    // 選択解除された日付があれば削除
+    Object.keys(nextPrices).forEach(date => {
+      if (!selectedJobDates.includes(date)) {
+        delete nextPrices[date];
+      }
+    });
+    setDailyPrices(nextPrices);
+  }, [selectedJobDates]);
+
+  // 全日程同一価格が有効な場合、commonPriceの変更を全ての日程に同期
+  useEffect(() => {
+    if (isSamePriceAllDates) {
+      const nextPrices: { [date: string]: number } = {};
+      selectedJobDates.forEach(date => {
+        nextPrices[date] = commonPrice;
+      });
+      setDailyPrices(nextPrices);
+    }
+  }, [commonPrice, isSamePriceAllDates, selectedJobDates]);
+
+  // 案件情報複製処理（コピーして新規作成）
+  const handleDuplicateJob = (job: Job) => {
+    setFormData({
+      title: `${job.title} (コピー)`,
+      description: job.description,
+      price: job.price,
+      locationName: job.locationName || '',
+      exactLocation: job.exactLocation || '',
+      roleType: job.roleType || '',
+      salesChannel: job.salesChannel || '',
+      carrier: job.carrier || '',
+      availableDates: '',
+      selectedDates: [],
+      eventDate: job.eventDate || '',
+      applicationDeadline: job.applicationDeadline || '',
+      workLocation: job.workLocation || '店内',
+      isUrgent: job.isUrgent || false,
+      isLimited: (job.allowedCompanyIds && job.allowedCompanyIds.length > 0) || false
+    });
+
+    const dates = job.eventDate ? job.eventDate.split(', ').filter(Boolean) : [];
+    setSelectedJobDates(dates);
+
+    if (job.dailyPrices && Object.keys(job.dailyPrices).length > 0) {
+      setDailyPrices({ ...job.dailyPrices });
+      const prices = Object.values(job.dailyPrices);
+      const firstPrice = prices[0] || 0;
+      const allSame = prices.every(p => p === firstPrice);
+      setIsSamePriceAllDates(allSame);
+      if (allSame) {
+        setCommonPrice(firstPrice);
+      } else {
+        setCommonPrice(0);
+      }
+    } else {
+      setIsSamePriceAllDates(true);
+      setCommonPrice(job.price);
+      const fallbackPrices: { [date: string]: number } = {};
+      dates.forEach(d => {
+        fallbackPrices[d] = job.price;
+      });
+      setDailyPrices(fallbackPrices);
+    }
+
+    if (job.expenses) {
+      setExpenses({
+        transportType: job.expenses.transportType || 'none',
+        transportValue: job.expenses.transportValue || 0,
+        accommodationType: job.expenses.accommodationType || 'none',
+        accommodationValue: job.expenses.accommodationValue || 0
+      });
+    } else {
+      setExpenses({
+        transportType: 'none',
+        transportValue: 0,
+        accommodationType: 'none',
+        accommodationValue: 0
+      });
+    }
+
+    if (job.allowedCompanyIds && job.allowedCompanyIds.length > 0) {
+      setTargetCompanyId(job.allowedCompanyIds[0]);
+    } else {
+      setTargetCompanyId('');
+    }
+
+    setTempSelectedLocation({ lat: job.exactLat || job.lat, lng: job.exactLng || job.lng });
+
+    setCreateFormType('job');
+    setIsCreateFormOpen(true);
+    setSelectedJob(null);
+  };
+
+  // 一覧表示での単価・総額レンダリング
+  const renderJobPrice = (job: Job) => {
+    if (job.dailyPrices && Object.keys(job.dailyPrices).length > 0) {
+      const prices = Object.values(job.dailyPrices);
+      const minPrice = Math.min(...prices);
+      const maxPrice = Math.max(...prices);
+      if (minPrice === maxPrice) {
+        return (
+          <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+            <span style={{ display: 'flex', alignItems: 'baseline' }}>
+              <span className="job-price" style={{ fontSize: '16px' }}>¥{minPrice.toLocaleString()}</span>
+              <span className="job-price-unit" style={{ fontSize: '10px', color: 'var(--text-sub)' }}>/ 日</span>
+            </span>
+            <span style={{ fontSize: '11px', color: '#1E40AF', fontWeight: 'bold' }}>合計 ¥{job.price.toLocaleString()}</span>
+          </span>
+        );
+      } else {
+        return (
+          <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+            <span style={{ display: 'flex', alignItems: 'baseline' }}>
+              <span className="job-price" style={{ fontSize: '14px' }}>¥{minPrice.toLocaleString()}〜{maxPrice.toLocaleString()}</span>
+              <span className="job-price-unit" style={{ fontSize: '10px', color: 'var(--text-sub)' }}>/ 日</span>
+            </span>
+            <span style={{ fontSize: '11px', color: '#1E40AF', fontWeight: 'bold' }}>合計 ¥{job.price.toLocaleString()}</span>
+          </span>
+        );
+      }
+    }
+    return (
+      <>
+        <span className="job-price">¥{job.price.toLocaleString()}</span>
+        <span className="job-price-unit">/ 日</span>
+      </>
+    );
+  };
+
   // データ更新State & 処理
   const [isRefreshing, setIsRefreshing] = useState(false);
   const handleRefresh = async () => {
     if (isRefreshing) return;
     setIsRefreshing(true);
     try {
-      const [fetchedJobs, fetchedTalents, fetchedTrainings, user, users] = await Promise.all([
+      const [fetchedJobs, fetchedTalents, fetchedTrainings, user, users, fetchedContractTasks] = await Promise.all([
         api.getJobs(),
         api.getTalents(),
         api.getTrainings(),
         api.getCurrentUser(),
-        api.getUsers()
+        api.getUsers(),
+        api.getContractTasks()
       ]);
       setJobs(fetchedJobs);
       setTalents(fetchedTalents);
       setAllTrainings(fetchedTrainings);
       setCurrentUser(user);
       setAllUsers(users);
+      setContractTasks(fetchedContractTasks);
       // アニメーションを自然に見せるために、わずかにディレイをかける
       await new Promise(resolve => setTimeout(resolve, 400));
     } catch (error) {
@@ -169,10 +325,12 @@ export function SearchPage() {
     }
 
     if (createFormType === 'job') {
+      const totalPrice = Object.values(dailyPrices).reduce((sum, val) => sum + val, 0);
+
       const newJob: Omit<Job, 'id'> = {
         title: formData.title,
         description: formData.description,
-        price: Number(formData.price),
+        price: totalPrice,
         locationName: formData.locationName,
         exactLocation: formData.exactLocation,
         lat: ambiguousCoords.lat,
@@ -188,7 +346,9 @@ export function SearchPage() {
         applicationDeadline: formData.applicationDeadline,
         workLocation: formData.workLocation as Job['workLocation'],
         isUrgent: formData.isUrgent,
-        allowedCompanyIds: formData.isLimited && targetCompanyId ? [targetCompanyId] : undefined
+        allowedCompanyIds: formData.isLimited && targetCompanyId ? [targetCompanyId] : undefined,
+        dailyPrices,
+        expenses
       };
       const savedJob = await api.addJob(newJob);
       setJobs(prev => [...prev, savedJob]);
@@ -200,6 +360,15 @@ export function SearchPage() {
       }
       setTempSelectedLocation(null);
       setSelectedJobDates([]);
+      setCommonPrice(0);
+      setDailyPrices({});
+      setExpenses({
+        transportType: 'none',
+        transportValue: 0,
+        accommodationType: 'none',
+        accommodationValue: 0
+      });
+      setIsSamePriceAllDates(true);
     } else {
       const selectedStaff = myStaffs.find(s => s.id === selectedStaffId);
       if (!selectedStaff) {
@@ -350,18 +519,20 @@ export function SearchPage() {
 
     const loadData = async () => {
       try {
-        const [fetchedJobs, fetchedTalents, fetchedTrainings, user, users] = await Promise.all([
+        const [fetchedJobs, fetchedTalents, fetchedTrainings, user, users, fetchedContractTasks] = await Promise.all([
           api.getJobs(),
           api.getTalents(),
           api.getTrainings(),
           api.getCurrentUser(),
-          api.getUsers()
+          api.getUsers(),
+          api.getContractTasks()
         ]);
         setJobs(fetchedJobs);
         setTalents(fetchedTalents);
         setAllTrainings(fetchedTrainings);
         setCurrentUser(user);
         setAllUsers(users);
+        setContractTasks(fetchedContractTasks);
         
         if (user && users.length > 0) {
           const otherUsers = users.filter(u => u.id !== user.id);
@@ -580,8 +751,34 @@ export function SearchPage() {
   }, [filteredTalents]);
 
 
+  const appliedJobIds = useMemo(() => {
+    if (!currentUser) return [];
+    
+    // Find all chat tasks involving the current user's company
+    const myChatTasks = contractTasks.filter(t => {
+      if (!t.id.startsWith('chat_')) return false;
+      const parts = t.id.split('_');
+      return parts.includes(currentUser.id);
+    });
+    
+    const ids: string[] = [];
+    myChatTasks.forEach(t => {
+      const evals = t.evaluations as any;
+      if (evals && Array.isArray(evals.appliedJobIds)) {
+        ids.push(...evals.appliedJobIds);
+      }
+    });
+    return ids;
+  }, [contractTasks, currentUser]);
+
   const filteredJobs = useMemo(() => {
     return jobs.filter(job => {
+      // 0. 自分または自社の人間が応募した案件、および自社案件は表示しない
+      if (currentUser) {
+        if (job.authorId === currentUser.id) return false;
+        if (appliedJobIds.includes(job.id)) return false;
+      }
+
       // 1. エリアフィルタ
       let matchesArea = true;
       if (filterArea === 'shinjuku') matchesArea = !!job.locationName?.includes('新宿');
@@ -649,7 +846,7 @@ export function SearchPage() {
 
       return matchesArea && matchesLimited && matchesUrgent;
     });
-  }, [jobs, filterArea, includeUrgent, currentUser, filterJobRoles, filterCarriers, filterChannels, filterMinPrice, filterDeadlineDays, searchKeyword]);
+  }, [jobs, filterArea, includeUrgent, currentUser, filterJobRoles, filterCarriers, filterChannels, filterMinPrice, filterDeadlineDays, searchKeyword, appliedJobIds]);
 
   const sortedJobs = useMemo(() => {
     let list = [...filteredJobs];
@@ -1013,7 +1210,10 @@ export function SearchPage() {
                          selectedJob.authorId === 'gamma' ? 'ガンマモバイル' :
                          selectedJob.authorId === 'delta' ? 'デルタパートナーズ' : 'パートナー企業';
       
-      await api.saveContractTaskChat(roomId, updated, selectedJob.title, currentUser.name, authorName);
+      await api.saveContractTaskChat(roomId, updated, selectedJob.title, currentUser.name, authorName, [selectedJob.id]);
+      
+      const refreshedTasks = await api.getContractTasks();
+      setContractTasks(refreshedTasks);
       
       localStorage.setItem('connexy_active_chat_id', roomId);
       
@@ -1453,8 +1653,7 @@ export function SearchPage() {
                       <div className="job-stat-item" style={{ alignItems: 'flex-end' }}>
                         <span className="job-stat-label">単価</span>
                         <span className="job-stat-value">
-                          <span className="job-price">¥{job.price.toLocaleString()}</span>
-                          <span className="job-price-unit">/ 日</span>
+                          {renderJobPrice(job)}
                         </span>
                       </div>
                     </div>
@@ -1710,7 +1909,61 @@ export function SearchPage() {
                   <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>monetization_on</span>
                   単価（報酬）
                 </h3>
-                <p style={{ margin: 0, fontSize: '18px', fontWeight: 'bold', color: 'var(--primary)' }}>¥{selectedJob.price.toLocaleString()} <span style={{ fontSize: '12px', fontWeight: 'normal', color: 'var(--text-main)' }}>/ 日</span></p>
+                {selectedJob.dailyPrices && Object.keys(selectedJob.dailyPrices).length > 0 ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <div style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--text-sub)' }}>稼働日ごとの単価内訳：</div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', background: '#F8FAFC', padding: '12px', borderRadius: '8px', border: '1px solid #E2E8F0' }}>
+                      {Object.entries(selectedJob.dailyPrices).sort((a, b) => a[0].localeCompare(b[0])).map(([date, dailyPrice]) => (
+                        <div key={date} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
+                          <span style={{ color: 'var(--text-main)' }}>{date}</span>
+                          <span style={{ fontWeight: 'bold', color: 'var(--text-main)' }}>¥{dailyPrice.toLocaleString()} / 日</span>
+                        </div>
+                      ))}
+                      <div style={{ borderTop: '1px solid #E2E8F0', paddingTop: '8px', marginTop: '4px', display: 'flex', justifyContent: 'space-between', fontSize: '14px', fontWeight: 'bold', color: 'var(--primary)' }}>
+                        <span>想定支払額合計</span>
+                        <span>¥{selectedJob.price.toLocaleString()}</span>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <p style={{ margin: 0, fontSize: '18px', fontWeight: 'bold', color: 'var(--primary)' }}>¥{selectedJob.price.toLocaleString()} <span style={{ fontSize: '12px', fontWeight: 'normal', color: 'var(--text-main)' }}>/ 日</span></p>
+                )}
+
+                {/* 交通費・宿泊費の別途表示 */}
+                {selectedJob.expenses && (selectedJob.expenses.transportType !== 'none' || selectedJob.expenses.accommodationType !== 'none') ? (
+                  <div style={{ marginTop: '14px', paddingTop: '12px', borderTop: '1px dashed #E2E8F0', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <div style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--text-sub)' }}>諸経費の支給設定：</div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '12px', color: 'var(--text-main)' }}>
+                      {selectedJob.expenses.transportType !== 'none' && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span className="material-symbols-outlined" style={{ fontSize: '16px', color: '#4B5563' }}>directions_car</span>
+                          <span>交通費：</span>
+                          <span style={{ fontWeight: 'bold' }}>
+                            {selectedJob.expenses.transportType === 'flat' ? '一律 ' : '実費支給（上限 '}
+                            {selectedJob.expenses.transportValue?.toLocaleString()}円 / 日
+                            {selectedJob.expenses.transportType === 'actual' ? '）' : ''}
+                          </span>
+                        </div>
+                      )}
+                      {selectedJob.expenses.accommodationType !== 'none' && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span className="material-symbols-outlined" style={{ fontSize: '16px', color: '#4B5563' }}>hotel</span>
+                          <span>宿泊費：</span>
+                          <span style={{ fontWeight: 'bold' }}>
+                            {selectedJob.expenses.accommodationType === 'flat' ? '一律 ' : '実費支給（上限 '}
+                            {selectedJob.expenses.accommodationValue?.toLocaleString()}円 / 泊
+                            {selectedJob.expenses.accommodationType === 'actual' ? '）' : ''}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px dashed #E2E8F0', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--text-sub)' }}>
+                    <span className="material-symbols-outlined" style={{ fontSize: '16px', color: 'var(--text-sub)' }}>info</span>
+                    <span>交通費・宿泊費の別途支給はありません（単価に含む）</span>
+                  </div>
+                )}
               </div>
 
               <div style={{ background: 'white', padding: '16px', marginTop: '8px', borderTop: '1px solid var(--border-color)', borderBottom: '1px solid var(--border-color)' }}>
@@ -1758,14 +2011,26 @@ export function SearchPage() {
           )}
         </main>
 
-        <footer style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: 'white', padding: '16px', borderTop: '1px solid var(--border-color)', display: 'flex', gap: '12px', zIndex: 10 }}>
-          <button 
-            onClick={() => setIsNdaModalOpen(true)}
-            style={{ flex: 1, padding: '12px', background: 'var(--primary)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '14px', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}
-          >
-            応募画面へ進む
-          </button>
-        </footer>
+        {selectedJob && (
+          <footer style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: 'white', padding: '16px', borderTop: '1px solid var(--border-color)', display: 'flex', gap: '12px', zIndex: 10 }}>
+            {selectedJob.authorId === currentUser?.id || currentUser?.role === 'contractor' || currentUser?.companyType === 'client' || currentUser?.companyType === 'both' ? (
+              <button 
+                onClick={() => handleDuplicateJob(selectedJob)}
+                style={{ flex: 1, padding: '12px', background: '#D97706', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '14px', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>content_copy</span>
+                この案件をコピーして新規作成
+              </button>
+            ) : (
+              <button 
+                onClick={() => setIsNdaModalOpen(true)}
+                style={{ flex: 1, padding: '12px', background: 'var(--primary)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '14px', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}
+              >
+                応募画面へ進む
+              </button>
+            )}
+          </footer>
+        )}
 
         {isNdaModalOpen && selectedJob && (
           <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', zIndex: 3000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -1833,173 +2098,173 @@ export function SearchPage() {
           <form onSubmit={handleCreateSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             {createFormType === 'job' ? (
               <>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                  <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)' }}>案件タイトル *</label>
-                  <input type="text" required value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} disabled={isSubmitting} style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }} placeholder="例: auショップ新宿 イベントスタッフ" />
-                </div>
-                
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                  <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)' }}>キャリア/回線 *</label>
-                  <select required value={formData.carrier} onChange={e => setFormData({...formData, carrier: e.target.value as any, locationName: formData.exactLocation ? generateMaskedLocation(formData.exactLocation, formData.exactLocation, formData.salesChannel, e.target.value, formData.workLocation) : formData.locationName})} disabled={isSubmitting} style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc', background: 'white' }}>
-                    <option value="" disabled>選択してください</option>
-                    <option value="docomo">docomo</option>
-                    <option value="au/UQmobile">au/UQmobile</option>
-                    <option value="SoftBank/Y!mobile">SoftBank/Y!mobile</option>
-                    <option value="BB">BB</option>
-                  </select>
-                </div>
+                {/* 共通条件カード */}
+                <div style={{ background: '#F8FAFC', padding: '16px', borderRadius: '12px', border: '1px solid #E2E8F0', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  <div style={{ fontSize: '14px', fontWeight: 'bold', color: 'var(--primary)', borderBottom: '2px solid #E2E8F0', paddingBottom: '6px', marginBottom: '4px' }}>
+                    1. 共通条件（全日程・職種共通）
+                  </div>
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                  <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)' }}>職種 *</label>
-                  <select required value={formData.roleType} onChange={e => setFormData({...formData, roleType: e.target.value})} disabled={isSubmitting} style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc', background: 'white' }}>
-                    <option value="" disabled>選択してください</option>
-                    <option value="キャンペーンクルー">キャンペーンクルー</option>
-                    <option value="クローザー">クローザー</option>
-                    <option value="ディレクター">ディレクター</option>
-                  </select>
-                </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)' }}>案件タイトル *</label>
+                    <input type="text" required value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} disabled={isSubmitting} style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }} placeholder="例: auショップ新宿 イベントスタッフ" />
+                  </div>
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                  <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)' }}>販路 *</label>
-                  <select required value={formData.salesChannel} onChange={e => setFormData({...formData, salesChannel: e.target.value as any, locationName: formData.exactLocation ? generateMaskedLocation(formData.exactLocation, formData.exactLocation, e.target.value, formData.carrier, formData.workLocation) : formData.locationName})} disabled={isSubmitting} style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc', background: 'white' }}>
-                    <option value="" disabled>選択してください</option>
-                    <option value="量販店">量販店</option>
-                    <option value="ショップ">ショップ</option>
-                  </select>
-                </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)' }}>業務内容の詳細 *</label>
+                    <textarea required rows={4} value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} disabled={isSubmitting} style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }} placeholder="具体的な仕事内容を記載してください"></textarea>
+                  </div>
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                  <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)' }}>稼働場所 *</label>
-                  <select required value={formData.workLocation} onChange={e => setFormData({...formData, workLocation: e.target.value as any, locationName: formData.exactLocation ? generateMaskedLocation(formData.exactLocation, formData.exactLocation, formData.salesChannel, formData.carrier, e.target.value) : formData.locationName})} disabled={isSubmitting} style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc', background: 'white' }}>
-                    <option value="" disabled>選択してください</option>
-                    <option value="店内">店内</option>
-                    <option value="外販（複合施設など）">外販（複合施設など）</option>
-                    <option value="外販（スーパーなど）">外販（スーパーなど）</option>
-                    <option value="外販（その他）">外販（その他）</option>
-                  </select>
-                </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)' }}>稼働場所のタイプ *</label>
+                    <select required value={formData.workLocation} onChange={e => setFormData({...formData, workLocation: e.target.value as any, locationName: formData.exactLocation ? generateMaskedLocation(formData.exactLocation, formData.exactLocation, formData.salesChannel, formData.carrier, e.target.value) : formData.locationName})} disabled={isSubmitting} style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc', background: 'white' }}>
+                      <option value="店内">店内</option>
+                      <option value="外販（複合施設など）">外販（複合施設など）</option>
+                      <option value="外販（スーパーなど）">外販（スーパーなど）</option>
+                      <option value="外販（その他）">外販（その他）</option>
+                    </select>
+                  </div>
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)' }}>正確な店舗名・住所 (非公開) *</label>
-                  <div style={{ display: 'flex', gap: '8px' }}>
-                    {import.meta.env.VITE_GOOGLE_MAPS_API_KEY ? (
-                      <Autocomplete
-                        apiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY}
-                        onPlaceSelected={(place: any) => {
-                          if (place.geometry) {
-                            const lat = place.geometry.location.lat();
-                            const lng = place.geometry.location.lng();
-                            const address = place.name || place.formatted_address || '';
-                            const fullAddress = place.formatted_address || address;
-                            
-                            setTempSelectedLocation({ lat, lng });
-                            setFormData(prev => ({
-                              ...prev,
-                              exactLocation: address,
-                              locationName: generateMaskedLocation(fullAddress, address, prev.salesChannel, prev.carrier, prev.workLocation)
-                            }));
-                            
-                            if (mapRef.current) {
-                              if (tempMarkerRef.current) {
-                                tempMarkerRef.current.map = null;
-                              }
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)' }}>正確な店舗名・住所 (非公開) *</label>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      {import.meta.env.VITE_GOOGLE_MAPS_API_KEY ? (
+                        <Autocomplete
+                          apiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY}
+                          onPlaceSelected={(place: any) => {
+                            if (place.geometry) {
+                              const lat = place.geometry.location.lat();
+                              const lng = place.geometry.location.lng();
+                              const address = place.name || place.formatted_address || '';
+                              const fullAddress = place.formatted_address || address;
                               
-                              if (advancedMarkerClassRef.current) {
-                                const AdvancedMarkerElement = advancedMarkerClassRef.current;
-                                const tempPin = document.createElement('div');
-                                tempPin.className = 'temp-location-marker';
-                                tempPin.innerHTML = `<div style="width: 20px; height: 20px; background-color: #EF4444; border: 3px solid white; border-radius: 50%; box-shadow: 0 0 10px rgba(0,0,0,0.5);"></div>`;
+                              setTempSelectedLocation({ lat, lng });
+                              setFormData(prev => ({
+                                ...prev,
+                                exactLocation: address,
+                                locationName: generateMaskedLocation(fullAddress, address, prev.salesChannel, prev.carrier, prev.workLocation)
+                              }));
+                              
+                              if (mapRef.current) {
+                                if (tempMarkerRef.current) {
+                                  tempMarkerRef.current.map = null;
+                                }
+                                
+                                if (advancedMarkerClassRef.current) {
+                                  const AdvancedMarkerElement = advancedMarkerClassRef.current;
+                                  const tempPin = document.createElement('div');
+                                  tempPin.className = 'temp-location-marker';
+                                  tempPin.innerHTML = `<div style="width: 20px; height: 20px; background-color: #EF4444; border: 3px solid white; border-radius: 50%; box-shadow: 0 0 10px rgba(0,0,0,0.5);"></div>`;
 
-                                tempMarkerRef.current = new AdvancedMarkerElement({
-                                  map: mapRef.current,
-                                  position: { lat, lng },
-                                  content: tempPin,
-                                });
+                                  tempMarkerRef.current = new AdvancedMarkerElement({
+                                    map: mapRef.current,
+                                    position: { lat, lng },
+                                    content: tempPin,
+                                  });
+                                }
+                                mapRef.current.setCenter({ lat, lng });
+                                mapRef.current.setZoom(16);
                               }
-                              mapRef.current.setCenter({ lat, lng });
-                              mapRef.current.setZoom(16);
                             }
-                          }
+                          }}
+                          options={{
+                            types: ['establishment', 'geocode'],
+                            componentRestrictions: { country: 'jp' },
+                          }}
+                          defaultValue={formData.exactLocation}
+                          onChange={(e: any) => {
+                            const newExact = e.target.value;
+                            setFormData({...formData, exactLocation: newExact, locationName: generateMaskedLocation(newExact, newExact, formData.salesChannel, formData.carrier, formData.workLocation)});
+                          }}
+                          disabled={isSubmitting} 
+                          style={{ flex: 1, padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }} 
+                          placeholder="例: ヤマダデンキ 新宿西口店" 
+                        />
+                      ) : (
+                        <input 
+                          type="text" 
+                          required 
+                          value={formData.exactLocation} 
+                          onChange={e => {
+                            const newExact = e.target.value;
+                            setFormData({...formData, exactLocation: newExact, locationName: generateMaskedLocation(newExact, newExact, formData.salesChannel, formData.carrier, formData.workLocation)});
+                          }} 
+                          disabled={isSubmitting} 
+                          style={{ flex: 1, padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }} 
+                          placeholder="※APIキー未設定: 手動で入力してください" 
+                        />
+                      )}
+                      <button
+                        type="button"
+                        onClick={startMapSelection}
+                        disabled={isSubmitting}
+                        style={{
+                          padding: '10px 14px',
+                          background: 'var(--primary)',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '4px',
+                          fontWeight: 'bold',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          fontSize: '13px',
+                          boxShadow: '0 2px 4px rgba(37,99,235,0.2)'
                         }}
-                        options={{
-                          types: ['establishment', 'geocode'],
-                          componentRestrictions: { country: 'jp' },
-                        }}
-                        defaultValue={formData.exactLocation}
-                        onChange={(e: any) => {
-                          const newExact = e.target.value;
-                          setFormData({...formData, exactLocation: newExact, locationName: generateMaskedLocation(newExact, newExact, formData.salesChannel, formData.carrier, formData.workLocation)});
-                        }}
-                        disabled={isSubmitting} 
-                        style={{ flex: 1, padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }} 
-                        placeholder="例: ヤマダデンキ 新宿西口店" 
-                      />
-                    ) : (
-                      <input 
-                        type="text" 
-                        required 
-                        value={formData.exactLocation} 
-                        onChange={e => {
-                          const newExact = e.target.value;
-                          setFormData({...formData, exactLocation: newExact, locationName: generateMaskedLocation(newExact, newExact, formData.salesChannel, formData.carrier, formData.workLocation)});
-                        }} 
-                        disabled={isSubmitting} 
-                        style={{ flex: 1, padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }} 
-                        placeholder="※APIキー未設定: 手動で入力してください" 
-                      />
-                    )}
-                    <button
-                      type="button"
-                      onClick={startMapSelection}
-                      disabled={isSubmitting}
-                      style={{
-                        padding: '10px 14px',
-                        background: 'var(--primary)',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '4px',
-                        fontWeight: 'bold',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '4px',
-                        fontSize: '13px',
-                        boxShadow: '0 2px 4px rgba(37,99,235,0.2)'
-                      }}
-                    >
-                      <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>map</span>
-                      地図から選択
-                    </button>
+                      >
+                        <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>map</span>
+                        地図から選択
+                      </button>
+                    </div>
+                    <span style={{ fontSize: '11px', color: 'var(--text-sub)' }}>
+                      ※地図をクリックすると住所が自動入力され、公開用の表示名も自動生成されます
+                    </span>
                   </div>
-                  <span style={{ fontSize: '11px', color: 'var(--text-sub)' }}>
-                    ※地図をクリックすると住所が自動入力され、公開用の表示名も自動生成されます
-                  </span>
-                </div>
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', background: '#F9FAFB', padding: '12px', borderRadius: '8px', border: '1px dashed #ccc' }}>
-                  <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)' }}>公開用の表示名 (マスキング済) *</label>
-                  <input 
-                    type="text" 
-                    required 
-                    value={formData.locationName} 
-                    onChange={e => setFormData({...formData, locationName: e.target.value})} 
-                    disabled={isSubmitting} 
-                    style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }} 
-                    placeholder="例: 新宿区のYデンキ" 
-                  />
-                  <span style={{ fontSize: '11px', color: 'var(--primary)' }}>
-                    ※アプリ上にはこの名称のみが表示されます。必要に応じて手動で調整してください。
-                  </span>
-                </div>
-
-                <div style={{ display: 'flex', gap: '12px' }}>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: 1 }}>
-                    <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)' }}>単価 (円) *</label>
-                    <input type="number" required value={formData.price} onChange={e => setFormData({...formData, price: Number(e.target.value)})} disabled={isSubmitting} style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }} />
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', background: 'white', padding: '12px', borderRadius: '8px', border: '1px dashed #ccc' }}>
+                    <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)' }}>公開用の表示名 (マスキング済) *</label>
+                    <input 
+                      type="text" 
+                      required 
+                      value={formData.locationName} 
+                      onChange={e => setFormData({...formData, locationName: e.target.value})} 
+                      disabled={isSubmitting} 
+                      style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }} 
+                      placeholder="例: 新宿区のYデンキ" 
+                    />
+                    <span style={{ fontSize: '11px', color: 'var(--primary)' }}>
+                      ※アプリ上にはこの名称のみが表示されます。必要に応じて手動で調整してください。
+                    </span>
                   </div>
-                </div>
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <div style={{ display: 'flex', gap: '12px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: 1 }}>
+                      <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)' }}>キャリア/回線 *</label>
+                      <select required value={formData.carrier} onChange={e => setFormData({...formData, carrier: e.target.value as any, locationName: formData.exactLocation ? generateMaskedLocation(formData.exactLocation, formData.exactLocation, formData.salesChannel, e.target.value, formData.workLocation) : formData.locationName})} disabled={isSubmitting} style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc', background: 'white' }}>
+                        <option value="" disabled>選択</option>
+                        <option value="docomo">docomo</option>
+                        <option value="au/UQmobile">au/UQmobile</option>
+                        <option value="SoftBank/Y!mobile">SoftBank/Y!mobile</option>
+                        <option value="BB">BB</option>
+                      </select>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: 1 }}>
+                      <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)' }}>販路 *</label>
+                      <select required value={formData.salesChannel} onChange={e => setFormData({...formData, salesChannel: e.target.value as any, locationName: formData.exactLocation ? generateMaskedLocation(formData.exactLocation, formData.exactLocation, e.target.value, formData.carrier, formData.workLocation) : formData.locationName})} disabled={isSubmitting} style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc', background: 'white' }}>
+                        <option value="" disabled>選択</option>
+                        <option value="量販店">量販店</option>
+                        <option value="ショップ">ショップ</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '12px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: 1 }}>
+                      <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)' }}>応募締切日 *</label>
+                      <input type="date" required value={formData.applicationDeadline} onChange={e => setFormData({...formData, applicationDeadline: e.target.value})} disabled={isSubmitting} style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }} />
+                    </div>
+                  </div>
+
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                     <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)', marginBottom: '4px' }}>開催日 (複数選択可) *</label>
                     <CalendarPicker selectedDates={selectedJobDates} onChange={dates => setSelectedJobDates(dates)} />
@@ -2009,46 +2274,184 @@ export function SearchPage() {
                       </div>
                     )}
                   </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                    <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)' }}>応募締切日 *</label>
-                    <input type="date" required value={formData.applicationDeadline} onChange={e => setFormData({...formData, applicationDeadline: e.target.value})} disabled={isSubmitting} style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }} />
-                  </div>
-                </div>
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '4px' }}>
-                  <div style={{ display: 'flex', gap: '20px' }}>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold' }}>
-                      <input type="checkbox" checked={formData.isUrgent} onChange={e => setFormData({...formData, isUrgent: e.target.checked})} disabled={isSubmitting} style={{ width: '16px', height: '16px' }} />
-                      <span style={{ color: '#EF4444' }}>🚨 緊急募集にする (最優先表示)</span>
-                    </label>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold' }}>
-                      <input type="checkbox" checked={formData.isLimited} onChange={e => setFormData({...formData, isLimited: e.target.checked})} disabled={isSubmitting} style={{ width: '16px', height: '16px' }} />
-                      <span style={{ color: 'var(--primary)' }}>🔒 限定公開 (親しい取引先のみ)</span>
-                    </label>
-                  </div>
+                  {/* 交通費・宿泊費の支給設定 */}
+                  <div style={{ background: 'white', padding: '12px', borderRadius: '8px', border: '1px solid #E2E8F0', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    <div style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--text-main)' }}>交通費・宿泊費の設定</div>
+                    
+                    <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: 1, minWidth: '140px' }}>
+                        <label style={{ fontSize: '11px', color: 'var(--text-sub)' }}>交通費支給</label>
+                        <select 
+                          value={expenses.transportType} 
+                          onChange={e => setExpenses(prev => ({ ...prev, transportType: e.target.value as any }))}
+                          style={{ padding: '8px', borderRadius: '4px', border: '1px solid #ccc', background: 'white', fontSize: '13px' }}
+                        >
+                          <option value="none">なし（単価に含む）</option>
+                          <option value="actual">実費支給（上限あり）</option>
+                          <option value="flat">一律支給</option>
+                        </select>
+                        {expenses.transportType !== 'none' && (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '4px' }}>
+                            <input 
+                              type="number" 
+                              required
+                              value={expenses.transportValue || ''} 
+                              onChange={e => setExpenses(prev => ({ ...prev, transportValue: Number(e.target.value) }))}
+                              placeholder="金額" 
+                              style={{ padding: '6px', borderRadius: '4px', border: '1px solid #ccc', fontSize: '12px', width: '80px' }} 
+                            />
+                            <span style={{ fontSize: '12px' }}>円 / 日</span>
+                          </div>
+                        )}
+                      </div>
 
-                  {formData.isLimited && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '4px', background: '#F8FAFC', padding: '12px', borderRadius: '8px', border: '1px solid #E2E8F0' }}>
-                      <label style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--text-main)' }}>公開先企業を選択してください *</label>
-                      <select 
-                        value={targetCompanyId} 
-                        onChange={e => setTargetCompanyId(e.target.value)} 
-                        disabled={isSubmitting} 
-                        style={{ padding: '8px', borderRadius: '6px', border: '1px solid #CBD5E1', background: 'white', fontSize: '14px', outline: 'none' }}
-                      >
-                        {allUsers
-                          .filter(u => u.id !== currentUser?.id)
-                          .map(u => (
-                            <option key={u.id} value={u.id}>{u.name}</option>
-                          ))}
-                      </select>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: 1, minWidth: '140px' }}>
+                        <label style={{ fontSize: '11px', color: 'var(--text-sub)' }}>宿泊費支給</label>
+                        <select 
+                          value={expenses.accommodationType} 
+                          onChange={e => setExpenses(prev => ({ ...prev, accommodationType: e.target.value as any }))}
+                          style={{ padding: '8px', borderRadius: '4px', border: '1px solid #ccc', background: 'white', fontSize: '13px' }}
+                        >
+                          <option value="none">なし</option>
+                          <option value="actual">実費支給（上限あり）</option>
+                          <option value="flat">一律支給</option>
+                        </select>
+                        {expenses.accommodationType !== 'none' && (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '4px' }}>
+                            <input 
+                              type="number" 
+                              required
+                              value={expenses.accommodationValue || ''} 
+                              onChange={e => setExpenses(prev => ({ ...prev, accommodationValue: Number(e.target.value) }))}
+                              placeholder="金額" 
+                              style={{ padding: '6px', borderRadius: '4px', border: '1px solid #ccc', fontSize: '12px', width: '80px' }} 
+                            />
+                            <span style={{ fontSize: '12px' }}>円 / 泊</span>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  )}
+                  </div>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '4px' }}>
+                    <div style={{ display: 'flex', gap: '20px' }}>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold' }}>
+                        <input type="checkbox" checked={formData.isUrgent} onChange={e => setFormData({...formData, isUrgent: e.target.checked})} disabled={isSubmitting} style={{ width: '16px', height: '16px' }} />
+                        <span style={{ color: '#EF4444' }}>🚨 緊急募集にする</span>
+                      </label>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold' }}>
+                        <input type="checkbox" checked={formData.isLimited} onChange={e => setFormData({...formData, isLimited: e.target.checked})} disabled={isSubmitting} style={{ width: '16px', height: '16px' }} />
+                        <span style={{ color: 'var(--primary)' }}>🔒 限定公開</span>
+                      </label>
+                    </div>
+
+                    {formData.isLimited && (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '4px', background: 'white', padding: '12px', borderRadius: '8px', border: '1px solid #E2E8F0' }}>
+                        <label style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--text-main)' }}>公開先企業を選択してください *</label>
+                        <select 
+                          value={targetCompanyId} 
+                          onChange={e => setTargetCompanyId(e.target.value)} 
+                          disabled={isSubmitting} 
+                          style={{ padding: '8px', borderRadius: '6px', border: '1px solid #CBD5E1', background: 'white', fontSize: '14px', outline: 'none' }}
+                        >
+                          {allUsers
+                            .filter(u => u.id !== currentUser?.id)
+                            .map(u => (
+                              <option key={u.id} value={u.id}>{u.name}</option>
+                            ))}
+                        </select>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                  <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)' }}>業務内容の詳細</label>
-                  <textarea rows={4} value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} disabled={isSubmitting} style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }} placeholder="具体的な仕事内容を記載してください"></textarea>
+                {/* 個別条件カード */}
+                <div style={{ background: '#FFFDF9', padding: '16px', borderRadius: '12px', border: '1px solid #FCD34D', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#D97706', borderBottom: '2px solid #FCD34D', paddingBottom: '6px', marginBottom: '4px' }}>
+                    2. 個別条件（職種・単価の設定）
+                  </div>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)' }}>職種 *</label>
+                    <select required value={formData.roleType} onChange={e => setFormData({...formData, roleType: e.target.value})} disabled={isSubmitting} style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc', background: 'white' }}>
+                      <option value="" disabled>選択してください</option>
+                      <option value="キャンペーンクルー">キャンペーンクルー</option>
+                      <option value="クローザー">クローザー</option>
+                      <option value="ディレクター">ディレクター</option>
+                    </select>
+                  </div>
+
+                  {/* 単価の入力設定 */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold' }}>
+                      <input 
+                        type="checkbox" 
+                        checked={isSamePriceAllDates} 
+                        onChange={e => setIsSamePriceAllDates(e.target.checked)} 
+                        disabled={isSubmitting} 
+                        style={{ width: '16px', height: '16px' }} 
+                      />
+                      <span>すべての稼働日で同じ単価を設定する</span>
+                    </label>
+
+                    {isSamePriceAllDates ? (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        <label style={{ fontSize: '12px', color: 'var(--text-sub)' }}>日当単価 (円) *</label>
+                        <input 
+                          type="number" 
+                          required 
+                          value={commonPrice || ''} 
+                          onChange={e => setCommonPrice(Number(e.target.value))} 
+                          disabled={isSubmitting} 
+                          style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }} 
+                          placeholder="例: 15000" 
+                        />
+                      </div>
+                    ) : (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', background: 'white', padding: '12px', borderRadius: '8px', border: '1px solid #E2E8F0' }}>
+                        <div style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--text-main)' }}>日程ごとの単価設定</div>
+                        {selectedJobDates.length === 0 ? (
+                          <div style={{ fontSize: '12px', color: '#EF4444', fontStyle: 'italic' }}>
+                            ※ 上記で「開催日」を選択すると、ここに日程別の入力欄が表示されます。
+                          </div>
+                        ) : (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            {[...selectedJobDates].sort().map(date => (
+                              <div key={date} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
+                                <span style={{ fontSize: '13px', fontWeight: 'bold' }}>{date} :</span>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                  <input 
+                                    type="number" 
+                                    required 
+                                    value={dailyPrices[date] || ''} 
+                                    onChange={e => setDailyPrices(prev => ({ ...prev, [date]: Number(e.target.value) }))} 
+                                    disabled={isSubmitting} 
+                                    style={{ padding: '8px', borderRadius: '4px', border: '1px solid #ccc', width: '120px', fontSize: '13px' }} 
+                                    placeholder="単価を入力" 
+                                  />
+                                  <span style={{ fontSize: '13px' }}>円</span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* 想定支払総額のサマリープレビュー */}
+                  <div style={{ background: '#EFF6FF', border: '1px solid #BFDBFE', padding: '12px', borderRadius: '8px', marginTop: '4px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ fontSize: '12px', color: '#1E40AF', fontWeight: 'bold' }}>
+                      案件の想定総支払額 (仮押さえ額)
+                    </div>
+                    <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#1E3A8A' }}>
+                      ¥ {Object.values(dailyPrices).reduce((sum, val) => sum + val, 0).toLocaleString()}
+                      <span style={{ fontSize: '11px', fontWeight: 'normal', color: '#475569', marginLeft: '4px' }}>
+                        ({selectedJobDates.length}日間分)
+                      </span>
+                    </div>
+                  </div>
                 </div>
               </>
             ) : (

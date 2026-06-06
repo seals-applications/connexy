@@ -60,6 +60,15 @@ export interface Job {
   isUrgent?: boolean;
   allowedCompanyIds?: string[];
   exactLocation?: string;
+
+  // 追加拡張フィールド（requirementsの配列要素としてシリアライズしてDB保存）
+  dailyPrices?: { [date: string]: number };
+  expenses?: {
+    transportType: 'none' | 'actual' | 'flat';
+    transportValue?: number;
+    accommodationType: 'none' | 'actual' | 'flat';
+    accommodationValue?: number;
+  };
 }
 
 // 人材(Talent)の型定義
@@ -174,6 +183,31 @@ const mapJob = (row: any): Job => {
       lng = 139.7671 + offsetLng;
     }
   }
+
+  const requirements: string[] = row.requirements || [];
+  let dailyPrices: Job['dailyPrices'] = undefined;
+  let expenses: Job['expenses'] = undefined;
+
+  const cleanRequirements = requirements.filter(req => {
+    if (req.startsWith('__DAILY_PRICES__::')) {
+      try {
+        dailyPrices = JSON.parse(req.substring('__DAILY_PRICES__::'.length));
+      } catch (e) {
+        console.error('Failed to parse daily prices:', e);
+      }
+      return false;
+    }
+    if (req.startsWith('__EXPENSES__::')) {
+      try {
+        expenses = JSON.parse(req.substring('__EXPENSES__::'.length));
+      } catch (e) {
+        console.error('Failed to parse expenses:', e);
+      }
+      return false;
+    }
+    return true;
+  });
+
   return {
     id: row.id,
     title: row.title,
@@ -184,7 +218,7 @@ const mapJob = (row: any): Job => {
     price: row.price,
     locationName: row.location_name || '千代田区の店舗',
     workHours: row.work_hours,
-    requirements: row.requirements,
+    requirements: cleanRequirements,
     detailedDescription: row.detailed_description,
     roleType: row.role_type,
     salesChannel: row.sales_channel,
@@ -194,7 +228,9 @@ const mapJob = (row: any): Job => {
     workLocation: row.work_location,
     isUrgent: row.is_urgent,
     allowedCompanyIds: row.allowed_company_ids,
-    exactLocation: row.exact_location
+    exactLocation: row.exact_location,
+    dailyPrices,
+    expenses
   };
 };
 
@@ -212,6 +248,20 @@ const unmapJob = (job: Partial<Job>): any => {
   if ('isUrgent' in job) { row.is_urgent = job.isUrgent; delete row.isUrgent; }
   if ('allowedCompanyIds' in job) { row.allowed_company_ids = job.allowedCompanyIds; delete row.allowedCompanyIds; }
   if ('exactLocation' in job) { row.exact_location = job.exactLocation; delete row.exactLocation; }
+
+  // Serialize dailyPrices and expenses into requirements array
+  const requirements = [...(job.requirements || [])];
+  if (job.dailyPrices) {
+    requirements.push(`__DAILY_PRICES__::${JSON.stringify(job.dailyPrices)}`);
+  }
+  if (job.expenses) {
+    requirements.push(`__EXPENSES__::${JSON.stringify(job.expenses)}`);
+  }
+  row.requirements = requirements;
+
+  delete row.dailyPrices;
+  delete row.expenses;
+
   return row;
 };
 
@@ -611,15 +661,26 @@ export const api = {
     return data.map(mapContractTask);
   },
 
-  saveContractTaskChat: async (taskId: string, messages: any[], jobTitle: string, clientName: string, workerName: string): Promise<void> => {
-    const { data } = await supabase.from('contract_tasks').select('id').eq('id', taskId);
+  saveContractTaskChat: async (taskId: string, messages: any[], jobTitle: string, clientName: string, workerName: string, appliedJobIds?: string[]): Promise<void> => {
+    const { data } = await supabase.from('contract_tasks').select('evaluations').eq('id', taskId);
     const exists = data && data.length > 0;
-    const evaluations = { messages };
     
+    let evaluations: any = { messages };
     if (exists) {
+      const existingEvals = data[0].evaluations || {};
+      const mergedAppliedJobIds = Array.from(new Set([
+        ...(existingEvals.appliedJobIds || []),
+        ...(appliedJobIds || [])
+      ]));
+      evaluations = {
+        ...existingEvals,
+        messages,
+        appliedJobIds: mergedAppliedJobIds
+      };
       const { error } = await supabase.from('contract_tasks').update({ evaluations }).eq('id', taskId);
       if (error) throw error;
     } else {
+      evaluations.appliedJobIds = appliedJobIds || [];
       const row = {
         id: taskId,
         job_id: 'chat',
