@@ -81,24 +81,28 @@ export function MessagePage() {
         { id: 'def_4', type: 'received', senderId: 'beta', senderName: 'ベータエージェンシー_田中さん', text: '田中です。承知いたしました。よろしくお願いいたします！', time: '昨日 18:15', avatar: '田' }
       ];
     }
-    if (chatId.includes('alpha')) {
+    if (chatId === 'chat_alpha_sigma') {
       return [
         { id: 'def_11', type: 'system', text: 'チャットを開始しました', time: '' },
         { id: 'def_12', type: 'received', senderId: 'alpha', senderName: '株式会社アルファ通信', text: 'お世話になっております。週末のキャンペーンスタッフ2名の件ですが、まだ募集されていますでしょうか？', time: '10:30', avatar: 'A' },
-        { id: 'def_13', type: 'sent', senderId: currentUser?.id === 'alpha' ? 'beta' : 'alpha', text: 'お世話になっております！はい、まだ募集しております。\n単価15,000円でお願いしたいのですが、いかがでしょうか？', time: '10:35' },
+        { id: 'def_13', type: 'sent', senderId: currentUser?.id === 'alpha' ? 'sigma' : 'alpha', text: 'お世話になっております！はい、まだ募集しております。\n単価15,000円でお願いしたいのですが、いかがでしょうか？', time: '10:35' },
         { id: 'def_14', type: 'received', senderId: 'alpha', senderName: '株式会社アルファ通信', text: '明日の待ち合わせ時間は10時でお願いします。', time: '10:42', avatar: 'A' }
       ];
     }
-    if (chatId.includes('beta')) {
+    if (chatId === 'chat_beta_sigma') {
       return [
         { id: 'def_21', type: 'system', text: 'チャットを開始しました', time: '' },
         { id: 'def_22', type: 'received', senderId: 'beta', senderName: 'ベータエージェンシー', text: '発注書を発行しました。ご確認お願いします。', time: '昨日', avatar: 'B' }
       ];
     }
-    const otherId = chatId.replace('chat_', '').split('_').find(id => id !== currentUser?.id) || 'other';
+    if (chatId === 'chat_gamma_sigma') {
+      return [
+        { id: 'def_31', type: 'system', text: 'チャットを開始しました', time: '' },
+        { id: 'def_32', type: 'received', senderId: 'gamma', senderName: 'ガンマモバイル', text: 'よろしくお願いします。', time: '月曜日', avatar: 'G' }
+      ];
+    }
     return [
-      { id: 'def_31', type: 'system', text: 'チャットを開始しました', time: '' },
-      { id: 'def_32', type: 'received', senderId: otherId, senderName: 'パートナー企業', text: 'よろしくお願いします。', time: '月曜日', avatar: 'P' }
+      { id: 'def_41', type: 'system', text: 'チャットを開始しました', time: '' }
     ];
   };
 
@@ -199,9 +203,9 @@ export function MessagePage() {
       })
       .filter(channel => {
         const isDefaultMockRoom = 
-          channel.id === 'chat_alpha_beta' || 
-          channel.id === 'chat_alpha_gamma' || 
-          channel.id === 'chat_beta_gamma';
+          channel.id === 'chat_alpha_sigma' || 
+          channel.id === 'chat_beta_sigma' || 
+          channel.id === 'chat_gamma_sigma';
         const existsInDb = chatTasks.some(t => t.id === channel.id);
         return isDefaultMockRoom || existsInDb;
       });

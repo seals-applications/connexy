@@ -978,15 +978,19 @@ export function SearchPage() {
         const defaultRoomMessages: any[] = [
           { id: 'sys_init', type: 'system', text: 'チャットを開始しました', time: '' }
         ];
-        if (roomId.includes('alpha')) {
+        if (roomId === 'chat_alpha_sigma') {
           defaultRoomMessages.push(
             { id: 'def_12', type: 'received', senderId: 'alpha', senderName: '株式会社アルファ通信', text: 'お世話になっております。週末のキャンペーンスタッフ2名の件ですが、まだ募集されていますでしょうか？', time: '10:30', avatar: 'A' },
-            { id: 'def_13', type: 'sent', senderId: currentUser.id === 'alpha' ? 'beta' : 'alpha', text: 'お世話になっております！はい、まだ募集しております。\n単価15,000円でお願いしたいのですが、いかがでしょうか？', time: '10:35' },
+            { id: 'def_13', type: 'sent', senderId: currentUser.id === 'alpha' ? 'sigma' : 'alpha', text: 'お世話になっております！はい、まだ募集しております。\n単価15,000円でお願いしたいのですが、いかがでしょうか？', time: '10:35' },
             { id: 'def_14', type: 'received', senderId: 'alpha', senderName: '株式会社アルファ通信', text: '明日の待ち合わせ時間は10時でお願いします。', time: '10:42', avatar: 'A' }
           );
-        } else if (roomId.includes('beta')) {
+        } else if (roomId === 'chat_beta_sigma') {
           defaultRoomMessages.push(
             { id: 'def_22', type: 'received', senderId: 'beta', senderName: 'ベータエージェンシー', text: '発注書を発行しました。ご確認お願いします。', time: '昨日', avatar: 'B' }
+          );
+        } else if (roomId === 'chat_gamma_sigma') {
+          defaultRoomMessages.push(
+            { id: 'def_32', type: 'received', senderId: 'gamma', senderName: 'ガンマモバイル', text: 'よろしくお願いします。', time: '月曜日', avatar: 'G' }
           );
         }
         msgs = defaultRoomMessages;
@@ -1046,15 +1050,19 @@ export function SearchPage() {
         const defaultRoomMessages: any[] = [
           { id: 'sys_init', type: 'system', text: 'チャットを開始しました', time: '' }
         ];
-        if (roomId.includes('alpha')) {
+        if (roomId === 'chat_alpha_sigma') {
           defaultRoomMessages.push(
             { id: 'def_12', type: 'received', senderId: 'alpha', senderName: '株式会社アルファ通信', text: 'お世話になっております。週末のキャンペーンスタッフ2名の件ですが、まだ募集されていますでしょうか？', time: '10:30', avatar: 'A' },
-            { id: 'def_13', type: 'sent', senderId: currentUser.id === 'alpha' ? 'beta' : 'alpha', text: 'お世話になっております！はい、まだ募集しております。\n単価15,000円でお願いしたいのですが、いかがでしょうか？', time: '10:35' },
+            { id: 'def_13', type: 'sent', senderId: currentUser.id === 'alpha' ? 'sigma' : 'alpha', text: 'お世話になっております！はい、まだ募集しております。\n単価15,000円でお願いしたいのですが、いかがでしょうか？', time: '10:35' },
             { id: 'def_14', type: 'received', senderId: 'alpha', senderName: '株式会社アルファ通信', text: '明日の待ち合わせ時間は10時でお願いします。', time: '10:42', avatar: 'A' }
           );
-        } else if (roomId.includes('beta')) {
+        } else if (roomId === 'chat_beta_sigma') {
           defaultRoomMessages.push(
             { id: 'def_22', type: 'received', senderId: 'beta', senderName: 'ベータエージェンシー', text: '発注書を発行しました。ご確認お願いします。', time: '昨日', avatar: 'B' }
+          );
+        } else if (roomId === 'chat_gamma_sigma') {
+          defaultRoomMessages.push(
+            { id: 'def_32', type: 'received', senderId: 'gamma', senderName: 'ガンマモバイル', text: 'よろしくお願いします。', time: '月曜日', avatar: 'G' }
           );
         }
         msgs = defaultRoomMessages;
