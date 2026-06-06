@@ -159,11 +159,10 @@ export function TaskPage() {
       setCurrentUser(user);
       if (!user) return;
 
-      const checkedInStatus = localStorage.getItem('checkin_status_' + user.id) === 'true' || 
-                              (user.staffId && localStorage.getItem('checkin_status_' + user.staffId) === 'true');
-      setIsCheckedIn(!!checkedInStatus);
-      setCheckinTime(localStorage.getItem('checkin_time_' + user.id) || 
-                     (user.staffId ? localStorage.getItem('checkin_time_' + user.staffId) : null));
+      const checkinKey = user.staffId ? user.staffId : user.id;
+      const checkedInStatus = localStorage.getItem('checkin_status_' + checkinKey) === 'true';
+      setIsCheckedIn(checkedInStatus);
+      setCheckinTime(localStorage.getItem('checkin_time_' + checkinKey));
 
       const fetchedStaffs = await api.getStaffsByUserId(user.id);
       setCompanyStaffs(fetchedStaffs);
@@ -195,12 +194,9 @@ export function TaskPage() {
     const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
     setIsCheckedIn(true);
     setCheckinTime(timeStr);
-    localStorage.setItem('checkin_status_' + currentUser.id, 'true');
-    localStorage.setItem('checkin_time_' + currentUser.id, timeStr);
-    if (currentUser.staffId) {
-      localStorage.setItem('checkin_status_' + currentUser.staffId, 'true');
-      localStorage.setItem('checkin_time_' + currentUser.staffId, timeStr);
-    }
+    const checkinKey = currentUser.staffId ? currentUser.staffId : currentUser.id;
+    localStorage.setItem('checkin_status_' + checkinKey, 'true');
+    localStorage.setItem('checkin_time_' + checkinKey, timeStr);
     alert(`GPS出勤打刻を完了しました（打刻時間: ${timeStr}）`);
   };
 
@@ -208,12 +204,9 @@ export function TaskPage() {
     if (!currentUser) return;
     setIsCheckedIn(false);
     setCheckinTime(null);
-    localStorage.removeItem('checkin_status_' + currentUser.id);
-    localStorage.removeItem('checkin_time_' + currentUser.id);
-    if (currentUser.staffId) {
-      localStorage.removeItem('checkin_status_' + currentUser.staffId);
-      localStorage.removeItem('checkin_time_' + currentUser.staffId);
-    }
+    const checkinKey = currentUser.staffId ? currentUser.staffId : currentUser.id;
+    localStorage.removeItem('checkin_status_' + checkinKey);
+    localStorage.removeItem('checkin_time_' + checkinKey);
   };
 
   // 報告モーダル展開
@@ -586,10 +579,8 @@ export function TaskPage() {
             <h3 className="section-title">スタッフの出勤状況 (本日)</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '24px' }}>
               {companyStaffs.map(s => {
-                const isStaffCheckedIn = localStorage.getItem('checkin_status_' + s.id) === 'true' || 
-                                         localStorage.getItem('checkin_status_' + s.userId) === 'true';
-                const staffCheckinTime = localStorage.getItem('checkin_time_' + s.id) || 
-                                         localStorage.getItem('checkin_time_' + s.userId);
+                const isStaffCheckedIn = localStorage.getItem('checkin_status_' + s.id) === 'true';
+                const staffCheckinTime = localStorage.getItem('checkin_time_' + s.id);
 
                 return (
                   <div key={s.id} style={{ background: 'white', padding: '12px 16px', borderRadius: '12px', border: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
