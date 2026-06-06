@@ -738,7 +738,10 @@ export const api = {
       delete fallbackRow.login_id;
       delete fallbackRow.password;
       const { error: error2 } = await supabase.from('staffs').update(fallbackRow).eq('id', staffId);
-      if (error2) console.error('updateStaff fallback also failed:', error2);
+      if (error2) {
+        console.error('updateStaff fallback also failed:', error2);
+        throw error2;
+      }
     }
   },
 
