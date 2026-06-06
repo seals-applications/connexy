@@ -142,6 +142,12 @@ export function TaskPage() {
   const [showReportOverlay, setShowReportOverlay] = useState(false);
   const [showStaffMonitorOverlay, setShowStaffMonitorOverlay] = useState(false);
 
+  // 出勤履歴State
+  const [showHistoryOverlay, setShowHistoryOverlay] = useState(false);
+  const [selectedHistoryYear, setSelectedHistoryYear] = useState<number>(new Date().getFullYear());
+  const [selectedHistoryMonth, setSelectedHistoryMonth] = useState<number>(new Date().getMonth() + 1);
+  const [selectedHistoryStaffId, setSelectedHistoryStaffId] = useState<string | null>(null);
+
   // 自社募集案件・人材State
   const [myJobs, setMyJobs] = useState<Job[]>([]);
   const [myTalents, setMyTalents] = useState<Talent[]>([]);
@@ -167,7 +173,7 @@ export function TaskPage() {
         const matched = user.staffId ? fetchedStaffs.find(s => s.id === user.staffId) : null;
         const currentStaff = matched || fetchedStaffs[0];
         setMyStaff(currentStaff);
-        setCompletedTrainingList((currentStaff.completedTrainings || []).filter(tid => !tid.startsWith('CHECKIN_STATUS_')));
+        setCompletedTrainingList((currentStaff.completedTrainings || []).filter(tid => !tid.startsWith('CHECKIN_STATUS_') && !tid.startsWith('ATTENDANCE_LOG_')));
       }
 
       if (user.staffId && fetchedStaffs.length > 0) {
@@ -247,6 +253,108 @@ export function TaskPage() {
       localStorage.removeItem('checkin_status_' + currentUser.id);
       localStorage.removeItem('checkin_time_' + currentUser.id);
     }
+  };
+
+  const handleCheckout = async () => {
+    if (!currentUser) return;
+    const now = new Date();
+    const dateStr = now.toISOString().split('T')[0];
+    const checkoutTimeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    const checkinTimeStr = checkinTime || '09:00';
+
+    if (currentUser.staffId && myStaff) {
+      const attendanceTag = `ATTENDANCE_LOG_${dateStr}_${checkinTimeStr}_${checkoutTimeStr}_completed`;
+      const newTrainings = [
+        ...(myStaff.completedTrainings || []).filter(tid => !tid.startsWith('CHECKIN_STATUS_')),
+        attendanceTag
+      ];
+      try {
+        await api.updateStaff(myStaff.id, { completedTrainings: newTrainings });
+        myStaff.completedTrainings = newTrainings;
+        setIsCheckedIn(false);
+        setCheckinTime(null);
+        alert(`退勤打刻を完了しました（退勤時間: ${checkoutTimeStr}）\n出勤履歴に保存されました。`);
+      } catch (err) {
+        console.error("Check-out database error:", err);
+        alert("データベースとの同期中にエラーが発生しました。インターネット接続を確認して、再度お試しください。");
+      }
+    } else {
+      const localLogs = JSON.parse(localStorage.getItem('attendance_logs_' + currentUser.id) || '[]');
+      localLogs.push({
+        date: dateStr,
+        checkin: checkinTimeStr,
+        checkout: checkoutTimeStr,
+        status: 'completed'
+      });
+      localStorage.setItem('attendance_logs_' + currentUser.id, JSON.stringify(localLogs));
+      
+      setIsCheckedIn(false);
+      setCheckinTime(null);
+      localStorage.removeItem('checkin_status_' + currentUser.id);
+      localStorage.removeItem('checkin_time_' + currentUser.id);
+      alert(`退勤打刻を完了しました（退勤時間: ${checkoutTimeStr}）\n出勤履歴に保存されました。`);
+    }
+  };
+
+  interface ParsedAttendanceLog {
+    date: string;
+    checkin: string;
+    checkout: string;
+    status: 'completed' | 'absent' | 'working';
+  }
+
+  const getAttendanceLogsForStaff = (staff: Staff | null): ParsedAttendanceLog[] => {
+    if (!staff) return [];
+    
+    const dbLogs: ParsedAttendanceLog[] = (staff.completedTrainings || [])
+      .filter(t => t.startsWith('ATTENDANCE_LOG_'))
+      .map(t => {
+        const parts = t.split('_');
+        return {
+          date: parts[2],
+          checkin: parts[3],
+          checkout: parts[4],
+          status: (parts[5] as any) || 'completed'
+        };
+      });
+
+    if (dbLogs.length === 0) {
+      const mockLogs: ParsedAttendanceLog[] = [
+        { date: '2026-06-05', checkin: '09:02', checkout: '18:05', status: 'completed' },
+        { date: '2026-06-04', checkin: '08:58', checkout: '18:00', status: 'completed' },
+        { date: '2026-06-03', checkin: '09:00', checkout: '18:01', status: 'completed' },
+        { date: '2026-06-02', checkin: '08:55', checkout: '18:03', status: 'completed' },
+        { date: '2026-06-01', checkin: '09:05', checkout: '17:59', status: 'completed' },
+        { date: '2026-05-28', checkin: '08:59', checkout: '18:02', status: 'completed' },
+        { date: '2026-05-27', checkin: '09:00', checkout: '17:58', status: 'completed' },
+        { date: '2026-05-26', checkin: '09:01', checkout: '18:05', status: 'completed' },
+        { date: '2026-05-25', checkin: '08:54', checkout: '17:58', status: 'completed' },
+        { date: '2026-04-15', checkin: '09:00', checkout: '18:00', status: 'completed' },
+        { date: '2026-04-14', checkin: '08:57', checkout: '18:01', status: 'completed' },
+        { date: '2025-12-10', checkin: '09:02', checkout: '18:03', status: 'completed' }
+      ];
+      return mockLogs;
+    }
+
+    return dbLogs.sort((a, b) => b.date.localeCompare(a.date));
+  };
+
+  const handleDownloadCSV = (logs: ParsedAttendanceLog[], staffName: string) => {
+    if (logs.length === 0) {
+      alert("ダウンロードできる出勤データがありません。");
+      return;
+    }
+    const headers = ["日付", "出勤時間", "退勤時間", "労働状況"];
+    const rows = logs.map(log => [log.date, log.checkin, log.checkout, log.status === 'completed' ? '退勤完了' : '勤務中']);
+    const csvContent = "\uFEFF" + [headers.join(","), ...rows.map(e => e.join(","))].join("\n");
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `出勤履歴_${staffName}_${selectedHistoryYear}年${selectedHistoryMonth}月.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   // 報告モーダル展開
@@ -417,20 +525,45 @@ export function TaskPage() {
             </div>
 
             {isCheckedIn ? (
-              <div style={{ background: '#D1FAE5', color: '#065F46', padding: '12px', borderRadius: '8px', marginBottom: '12px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: 'bold' }}>
-                  <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>check_circle</span>
-                  <span>出勤打刻完了（稼働中）</span>
+              <div style={{ background: '#D1FAE5', color: '#065F46', padding: '16px', borderRadius: '12px', marginBottom: '12px', display: 'flex', flexDirection: 'column', gap: '10px', border: '1px solid #A7F3D0' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span className="material-symbols-outlined" style={{ color: '#10B981', fontSize: '22px' }}>check_circle</span>
+                  <span style={{ fontSize: '15px', fontWeight: 'bold' }}>現在、出勤中です（稼働中）</span>
                 </div>
-                <div style={{ fontSize: '12px', opacity: 0.9 }}>
-                  打刻日時: 当日 {checkinTime} <span style={{ fontSize: '10px', opacity: 0.6 }}>(デバッグ用ID: {currentUser?.staffId || currentUser?.id})</span>
+                <div style={{ fontSize: '13px', opacity: 0.9 }}>
+                  打刻時刻: 本日 {checkinTime} <span style={{ fontSize: '10px', opacity: 0.6 }}>(ID: {currentUser?.staffId || currentUser?.id})</span>
                 </div>
+                
+                <button
+                  type="button"
+                  onClick={handleCheckout}
+                  style={{
+                    width: '100%',
+                    padding: '12px',
+                    backgroundColor: '#EF4444',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '8px',
+                    fontWeight: 'bold',
+                    fontSize: '14px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '6px',
+                    boxShadow: '0 4px 10px rgba(239, 68, 68, 0.2)'
+                  }}
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>logout</span>
+                  退勤を打刻する
+                </button>
+
                 <button 
                   type="button" 
                   onClick={handleCheckinReset} 
-                  style={{ background: 'none', border: 'none', color: '#059669', fontSize: '11px', textDecoration: 'underline', cursor: 'pointer', alignSelf: 'flex-start', marginTop: '6px', padding: 0 }}
+                  style={{ background: 'none', border: 'none', color: '#059669', fontSize: '11px', textDecoration: 'underline', cursor: 'pointer', alignSelf: 'center', marginTop: '4px', padding: 0 }}
                 >
-                  【デモ用】打刻状態をクリアする
+                  【デモ用】打刻状態をクリアする (初期状態に戻す)
                 </button>
               </div>
             ) : (
@@ -651,6 +784,24 @@ export function TaskPage() {
             <div className="settings-item" onClick={() => setShowTrainingOverlay(true)}>
               <span className="material-symbols-outlined item-icon" style={{ color: '#2563EB', marginRight: '12px' }}>workspace_premium</span>
               <span style={{ flex: 1, fontSize: '15px', fontWeight: 500 }}>研修・獲得実績を開く</span>
+              <span className="material-symbols-outlined item-arrow" style={{ color: '#D1D5DB' }}>chevron_right</span>
+            </div>
+
+            {/* 出勤履歴の確認（過去10年） */}
+            <div className="settings-item" onClick={() => {
+              if (isUserAdmin) {
+                if (companyStaffs.length > 0) {
+                  setSelectedHistoryStaffId(companyStaffs[0].id);
+                }
+              } else {
+                setSelectedHistoryStaffId(myStaff?.id || null);
+              }
+              setShowHistoryOverlay(true);
+            }}>
+              <span className="material-symbols-outlined item-icon" style={{ color: '#D97706', marginRight: '12px' }}>history</span>
+              <span style={{ flex: 1, fontSize: '15px', fontWeight: 500 }}>
+                {isUserAdmin ? "スタッフ出勤履歴の確認 (過去10年)" : "出勤履歴の確認 (過去10年)"}
+              </span>
               <span className="material-symbols-outlined item-arrow" style={{ color: '#D1D5DB' }}>chevron_right</span>
             </div>
 
@@ -921,6 +1072,164 @@ export function TaskPage() {
               </div>
             )}
           </div>
+        </main>
+      </div>
+
+      {/* 出勤履歴の確認（過去10年） Overlay */}
+      <div className={`overlay-view ${showHistoryOverlay ? 'show' : ''}`} style={{ display: showHistoryOverlay ? 'flex' : 'none', transform: showHistoryOverlay ? 'translateX(0)' : 'translateX(100%)', zIndex: 3000 }}>
+        <header className="solid-header overlay-header">
+          <button type="button" className="icon-btn-dark" onClick={() => setShowHistoryOverlay(false)}>
+            <span className="material-symbols-outlined">arrow_back_ios_new</span>
+          </button>
+          <h1>出勤履歴の確認 (10年)</h1>
+          <div style={{ width: '40px' }}></div>
+        </header>
+        <main className="list-area bg-gray" style={{ flex: 1, overflowY: 'auto', padding: '16px', paddingBottom: '100px' }}>
+          <h3 className="section-title" style={{ marginTop: 0 }}>対象スタッフと年月の指定</h3>
+          <div style={{ background: 'white', padding: '16px', borderRadius: '12px', border: '1px solid var(--border-color)', marginBottom: '20px' }}>
+            {/* スタッフ選択 (管理者の場合のみ) */}
+            {isUserAdmin && companyStaffs.length > 0 && (
+              <div style={{ marginBottom: '16px' }}>
+                <label style={{ fontSize: '12px', color: 'var(--text-sub)', display: 'block', marginBottom: '6px', fontWeight: 'bold' }}>スタッフを選択</label>
+                <select 
+                  value={selectedHistoryStaffId || ''} 
+                  onChange={e => setSelectedHistoryStaffId(e.target.value)} 
+                  style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'white', fontSize: '14px' }}
+                >
+                  {companyStaffs.map(s => (
+                    <option key={s.id} value={s.id}>{s.name} ({s.role === 'admin' ? '管理者' : '一般'})</option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {!isUserAdmin && (
+              <div style={{ marginBottom: '16px', background: '#F8FAFC', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border-color)', fontWeight: 'bold', fontSize: '13px', color: 'var(--text-main)' }}>
+                対象スタッフ: {myStaff?.name || currentUser?.name || '清水 真一'}
+              </div>
+            )}
+
+            {/* 年月選択 */}
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <div style={{ flex: 1 }}>
+                <label style={{ fontSize: '12px', color: 'var(--text-sub)', display: 'block', marginBottom: '6px', fontWeight: 'bold' }}>年</label>
+                <select 
+                  value={selectedHistoryYear} 
+                  onChange={e => setSelectedHistoryYear(Number(e.target.value))}
+                  style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'white', fontSize: '14px' }}
+                >
+                  {Array.from({ length: 11 }, (_, i) => new Date().getFullYear() - 10 + i).map(year => (
+                    <option key={year} value={year}>{year}年</option>
+                  ))}
+                </select>
+              </div>
+              <div style={{ flex: 1 }}>
+                <label style={{ fontSize: '12px', color: 'var(--text-sub)', display: 'block', marginBottom: '6px', fontWeight: 'bold' }}>月</label>
+                <select 
+                  value={selectedHistoryMonth} 
+                  onChange={e => setSelectedHistoryMonth(Number(e.target.value))}
+                  style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'white', fontSize: '14px' }}
+                >
+                  {Array.from({ length: 12 }, (_, i) => i + 1).map(month => (
+                    <option key={month} value={month}>{month}月</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </div>
+
+          {(() => {
+            const activeStaff = isUserAdmin 
+              ? companyStaffs.find(s => s.id === selectedHistoryStaffId) 
+              : myStaff;
+            const allLogs = getAttendanceLogsForStaff(activeStaff || null);
+            
+            const filterPrefix = `${selectedHistoryYear}-${String(selectedHistoryMonth).padStart(2, '0')}`;
+            const filteredLogs = allLogs.filter(log => log.date.startsWith(filterPrefix));
+
+            // Calculate monthly stats
+            const totalDays = filteredLogs.length;
+            const totalHours = filteredLogs.reduce((acc, log) => {
+              const [inH, inM] = log.checkin.split(':').map(Number);
+              const [outH, outM] = log.checkout.split(':').map(Number);
+              let diff = (outH + outM / 60) - (inH + inM / 60);
+              if (diff > 6) diff -= 1.0; // Break deduction
+              return acc + (diff > 0 ? diff : 0);
+            }, 0);
+
+            return (
+              <>
+                {/* Monthly stats card */}
+                <div style={{ background: '#EEF2F6', borderRadius: '12px', padding: '16px', display: 'flex', gap: '16px', marginBottom: '20px', border: '1px solid #E2E8F0' }}>
+                  <div style={{ flex: 1, textAlign: 'center' }}>
+                    <span style={{ fontSize: '11px', color: '#64748B', display: 'block', fontWeight: 'bold' }}>出勤日数</span>
+                    <span style={{ fontSize: '20px', fontWeight: 'bold', color: 'var(--text-main)' }}>{totalDays} 日</span>
+                  </div>
+                  <div style={{ width: '1px', background: '#CBD5E1' }}></div>
+                  <div style={{ flex: 1, textAlign: 'center' }}>
+                    <span style={{ fontSize: '11px', color: '#64748B', display: 'block', fontWeight: 'bold' }}>総労働時間 (目安)</span>
+                    <span style={{ fontSize: '20px', fontWeight: 'bold', color: 'var(--text-main)' }}>{totalHours.toFixed(1)} 時間</span>
+                  </div>
+                </div>
+
+                {/* Day-by-day logs */}
+                <h3 className="section-title">日次打刻履歴</h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '24px' }}>
+                  {filteredLogs.map((log, idx) => (
+                    <div key={idx} style={{ background: 'white', padding: '14px 16px', borderRadius: '12px', border: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 1px 3px rgba(0,0,0,0.01)' }}>
+                      <div>
+                        <div style={{ fontWeight: 'bold', fontSize: '14px', color: 'var(--text-main)' }}>
+                          {log.date} ({new Date(log.date).toLocaleDateString('ja-JP', { weekday: 'short' })})
+                        </div>
+                        <div style={{ fontSize: '12px', color: 'var(--text-sub)', marginTop: '4px', display: 'flex', gap: '12px' }}>
+                          <span>出勤: <strong style={{ color: '#2563EB' }}>{log.checkin}</strong></span>
+                          <span>退勤: <strong style={{ color: '#EF4444' }}>{log.checkout}</strong></span>
+                        </div>
+                      </div>
+                      <div>
+                        <span style={{ background: '#D1FAE5', color: '#065F46', padding: '4px 8px', borderRadius: '8px', fontSize: '11px', fontWeight: 'bold' }}>
+                          退勤完了
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+
+                  {filteredLogs.length === 0 && (
+                    <div style={{ textAlign: 'center', padding: '32px 16px', background: 'white', borderRadius: '12px', color: 'var(--text-sub)', fontSize: '13px', border: '1px dashed var(--border-color)' }}>
+                      選択された年月の出勤履歴はありません。
+                    </div>
+                  )}
+                </div>
+
+                {/* CSV download button */}
+                {filteredLogs.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => handleDownloadCSV(filteredLogs, activeStaff?.name || currentUser?.name || 'スタッフ')}
+                    style={{
+                      width: '100%',
+                      padding: '14px',
+                      backgroundColor: 'var(--primary)',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '8px',
+                      fontWeight: 'bold',
+                      fontSize: '15px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '8px',
+                      boxShadow: '0 4px 12px rgba(37,99,235,0.2)'
+                    }}
+                  >
+                    <span className="material-symbols-outlined">download</span>
+                    この月の履歴をCSVで出力する
+                  </button>
+                )}
+              </>
+            );
+          })()}
         </main>
       </div>
 
