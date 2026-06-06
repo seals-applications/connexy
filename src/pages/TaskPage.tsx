@@ -72,6 +72,7 @@ export function TaskPage() {
   const [isSimulatingGps, setIsSimulatingGps] = useState(false);
   const [gpsError, setGpsError] = useState<string | null>(null);
   const [userLocation, setUserLocation] = useState<{ lat: number, lng: number } | null>(null);
+  const [isVerifyingGps, setIsVerifyingGps] = useState(false);
 
   const TARGET_LAT = 35.6895;
   const TARGET_LNG = 139.6917;
@@ -96,25 +97,8 @@ export function TaskPage() {
       setUserLocation({ lat: TARGET_LAT, lng: TARGET_LNG });
       setGpsError(null);
     } else {
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-          (position) => {
-            setUserLocation({
-              lat: position.coords.latitude,
-              lng: position.coords.longitude
-            });
-            setGpsError(null);
-          },
-          (error) => {
-            console.error("GPS Error:", error);
-            setGpsError("位置情報が取得できません。デモ検証の際は「GPS位置をシミュレート」ボタンを使用してください。");
-            setUserLocation(null);
-          }
-        );
-      } else {
-        setGpsError("ブラウザが位置情報をサポートしていません。");
-        setUserLocation(null);
-      }
+      setUserLocation(null);
+      setGpsError(null);
     }
   }, [isSimulatingGps]);
 
@@ -206,12 +190,8 @@ export function TaskPage() {
     loadData();
   }, []);
 
-  const handleCheckin = async () => {
+  const performCheckin = async (timeStr: string, dateStr: string) => {
     if (!currentUser) return;
-    const now = new Date();
-    const dateStr = now.toISOString().split('T')[0];
-    const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-    
     if (currentUser.staffId && myStaff) {
       const tag = `CHECKIN_STATUS_TRUE_${timeStr}`;
       const logTag = `ATTENDANCE_LOG_${dateStr}_${timeStr}`;
@@ -241,6 +221,56 @@ export function TaskPage() {
       
       alert(`GPS出勤打刻を完了しました（打刻時間: ${timeStr}）`);
     }
+  };
+
+  const handleCheckin = async () => {
+    if (!currentUser) return;
+    const now = new Date();
+    const dateStr = now.toISOString().split('T')[0];
+    const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+    if (isSimulatingGps) {
+      await performCheckin(timeStr, dateStr);
+      return;
+    }
+
+    if (!navigator.geolocation) {
+      alert("お使いのブラウザは位置情報をサポートしていません。");
+      setGpsError("ブラウザが位置情報をサポートしていません。");
+      return;
+    }
+
+    setIsVerifyingGps(true);
+    setGpsError(null);
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const lat = position.coords.latitude;
+        const lng = position.coords.longitude;
+        setUserLocation({ lat, lng });
+
+        const dist = getDistanceInMeters(lat, lng, TARGET_LAT, TARGET_LNG);
+        if (dist <= 500) {
+          await performCheckin(timeStr, dateStr);
+        } else {
+          const distKm = (dist / 1000).toFixed(1);
+          alert(`GPS判定エリア外です。現場から ${distKm}km 離れています。500m以内に移動して再度お試しください。`);
+        }
+        setIsVerifyingGps(false);
+      },
+      (error) => {
+        console.error("GPS Error:", error);
+        let errorMsg = "位置情報が取得できません。端末の位置情報設定を確認し、アプリへのアクセスを許可してください。";
+        if (error.code === error.PERMISSION_DENIED) {
+          errorMsg = "位置情報の利用許可が拒否されました。ブラウザまたはシステムの設定で位置情報へのアクセスを許可してください。";
+        }
+        setGpsError(errorMsg);
+        alert(errorMsg);
+        setIsVerifyingGps(false);
+        setUserLocation(null);
+      },
+      { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
+    );
   };
 
   const handleCheckinReset = async () => {
@@ -527,19 +557,19 @@ export function TaskPage() {
                 ) : !gpsError ? (
                   <p style={{ color: '#6B7280', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', marginBottom: '12px' }}>
                     <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>location_searching</span>
-                    <span>位置情報を取得中...</span>
+                    <span>位置情報は打刻時に取得されます</span>
                   </p>
                 ) : null}
 
                 <button
-                  className={`btn-checkin ${isInRange ? 'active' : ''}`}
-                  disabled={!isInRange}
+                  className={`btn-checkin ${isVerifyingGps ? 'loading' : (userLocation !== null && !isInRange) ? 'disabled' : 'active'}`}
+                  disabled={isVerifyingGps || (userLocation !== null && !isInRange)}
                   style={{
-                    backgroundColor: isInRange ? 'var(--primary)' : '#E5E7EB',
-                    color: isInRange ? 'white' : '#9CA3AF',
-                    cursor: isInRange ? 'pointer' : 'not-allowed',
+                    backgroundColor: (isVerifyingGps || (userLocation !== null && !isInRange)) ? '#E5E7EB' : 'var(--primary)',
+                    color: (isVerifyingGps || (userLocation !== null && !isInRange)) ? '#9CA3AF' : 'white',
+                    cursor: (isVerifyingGps || (userLocation !== null && !isInRange)) ? 'not-allowed' : 'pointer',
                     border: 'none',
-                    boxShadow: isInRange ? '0 4px 12px rgba(37, 99, 235, 0.25)' : 'none',
+                    boxShadow: (isVerifyingGps || (userLocation !== null && !isInRange)) ? 'none' : '0 4px 12px rgba(37, 99, 235, 0.25)',
                     width: '100%',
                     padding: '14px',
                     borderRadius: '12px',
@@ -552,10 +582,21 @@ export function TaskPage() {
                   }}
                   onClick={handleCheckin}
                 >
-                  <span className="material-symbols-outlined" style={{ marginRight: '6px', verticalAlign: 'middle' }}>
-                    login
-                  </span>
-                  出勤を打刻する
+                  {isVerifyingGps ? (
+                    <>
+                      <span className="material-symbols-outlined spin-anim" style={{ marginRight: '6px', verticalAlign: 'middle' }}>
+                        progress_activity
+                      </span>
+                      位置情報を確認中...
+                    </>
+                  ) : (
+                    <>
+                      <span className="material-symbols-outlined" style={{ marginRight: '6px', verticalAlign: 'middle' }}>
+                        login
+                      </span>
+                      {userLocation !== null && !isInRange ? '出勤判定エリア外です' : '出勤を打刻する'}
+                    </>
+                  )}
                 </button>
               </>
             )}
