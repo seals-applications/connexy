@@ -99,9 +99,9 @@ export function SearchPage() {
   const [commonPrice, setCommonPrice] = useState<number>(0);
   const [dailyPrices, setDailyPrices] = useState<{ [date: string]: number }>({});
   const [expenses, setExpenses] = useState<{
-    transportType: 'none' | 'actual' | 'flat';
+    transportType: 'none' | 'pay_separate' | 'arranged' | 'actual' | 'flat';
     transportValue: number;
-    accommodationType: 'none' | 'actual' | 'flat';
+    accommodationType: 'none' | 'pay_separate' | 'arranged' | 'actual' | 'flat';
     accommodationValue: number;
   }>({
     transportType: 'none',
@@ -1939,9 +1939,14 @@ export function SearchPage() {
                           <span className="material-symbols-outlined" style={{ fontSize: '16px', color: '#4B5563' }}>directions_car</span>
                           <span>交通費：</span>
                           <span style={{ fontWeight: 'bold' }}>
-                            {selectedJob.expenses.transportType === 'flat' ? '一律 ' : '実費支給（上限 '}
-                            {selectedJob.expenses.transportValue?.toLocaleString()}円 / 日
-                            {selectedJob.expenses.transportType === 'actual' ? '）' : ''}
+                            {(() => {
+                              const t = selectedJob.expenses.transportType;
+                              const val = selectedJob.expenses.transportValue;
+                              if (t === 'pay_separate') return val && val > 0 ? `あり（別途支給・上限 ${val.toLocaleString()}円 / 日）` : 'あり（別途支給・上限なし）';
+                              if (t === 'arranged') return 'あり（こちらで手配）';
+                              if (t === 'flat') return `一律 ${val?.toLocaleString()}円 / 日`;
+                              return `実費支給（上限 ${val?.toLocaleString()}円 / 日）`;
+                            })()}
                           </span>
                         </div>
                       )}
@@ -1950,9 +1955,14 @@ export function SearchPage() {
                           <span className="material-symbols-outlined" style={{ fontSize: '16px', color: '#4B5563' }}>hotel</span>
                           <span>宿泊費：</span>
                           <span style={{ fontWeight: 'bold' }}>
-                            {selectedJob.expenses.accommodationType === 'flat' ? '一律 ' : '実費支給（上限 '}
-                            {selectedJob.expenses.accommodationValue?.toLocaleString()}円 / 泊
-                            {selectedJob.expenses.accommodationType === 'actual' ? '）' : ''}
+                            {(() => {
+                              const t = selectedJob.expenses.accommodationType;
+                              const val = selectedJob.expenses.accommodationValue;
+                              if (t === 'pay_separate') return val && val > 0 ? `あり（別途支給・上限 ${val.toLocaleString()}円 / 泊）` : 'あり（別途支給・上限なし）';
+                              if (t === 'arranged') return 'あり（こちらで手配）';
+                              if (t === 'flat') return `一律 ${val?.toLocaleString()}円 / 泊`;
+                              return `実費支給（上限 ${val?.toLocaleString()}円 / 泊）`;
+                            })()}
                           </span>
                         </div>
                       )}
@@ -2288,20 +2298,22 @@ export function SearchPage() {
                           style={{ padding: '8px', borderRadius: '4px', border: '1px solid #ccc', background: 'white', fontSize: '13px' }}
                         >
                           <option value="none">なし（単価に含む）</option>
-                          <option value="actual">実費支給（上限あり）</option>
-                          <option value="flat">一律支給</option>
+                          <option value="pay_separate">あり（別途支給）</option>
+                          <option value="arranged">あり（こちらで手配）</option>
                         </select>
-                        {expenses.transportType !== 'none' && (
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '4px' }}>
-                            <input 
-                              type="number" 
-                              required
-                              value={expenses.transportValue || ''} 
-                              onChange={e => setExpenses(prev => ({ ...prev, transportValue: Number(e.target.value) }))}
-                              placeholder="金額" 
-                              style={{ padding: '6px', borderRadius: '4px', border: '1px solid #ccc', fontSize: '12px', width: '80px' }} 
-                            />
-                            <span style={{ fontSize: '12px' }}>円 / 日</span>
+                        {expenses.transportType === 'pay_separate' && (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', marginTop: '4px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                              <input 
+                                type="number" 
+                                value={expenses.transportValue || ''} 
+                                onChange={e => setExpenses(prev => ({ ...prev, transportValue: e.target.value ? Number(e.target.value) : 0 }))}
+                                placeholder="上限額（任意）" 
+                                style={{ padding: '6px', borderRadius: '4px', border: '1px solid #ccc', fontSize: '12px', width: '100px' }} 
+                              />
+                              <span style={{ fontSize: '12px' }}>円 / 日</span>
+                            </div>
+                            <span style={{ fontSize: '10px', color: 'var(--text-sub)' }}>※空欄は上限なし</span>
                           </div>
                         )}
                       </div>
@@ -2313,21 +2325,23 @@ export function SearchPage() {
                           onChange={e => setExpenses(prev => ({ ...prev, accommodationType: e.target.value as any }))}
                           style={{ padding: '8px', borderRadius: '4px', border: '1px solid #ccc', background: 'white', fontSize: '13px' }}
                         >
-                          <option value="none">なし</option>
-                          <option value="actual">実費支給（上限あり）</option>
-                          <option value="flat">一律支給</option>
+                          <option value="none">なし（単価に含む）</option>
+                          <option value="pay_separate">あり（別途支給）</option>
+                          <option value="arranged">あり（こちらで手配）</option>
                         </select>
-                        {expenses.accommodationType !== 'none' && (
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '4px' }}>
-                            <input 
-                              type="number" 
-                              required
-                              value={expenses.accommodationValue || ''} 
-                              onChange={e => setExpenses(prev => ({ ...prev, accommodationValue: Number(e.target.value) }))}
-                              placeholder="金額" 
-                              style={{ padding: '6px', borderRadius: '4px', border: '1px solid #ccc', fontSize: '12px', width: '80px' }} 
-                            />
-                            <span style={{ fontSize: '12px' }}>円 / 泊</span>
+                        {expenses.accommodationType === 'pay_separate' && (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', marginTop: '4px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                              <input 
+                                type="number" 
+                                value={expenses.accommodationValue || ''} 
+                                onChange={e => setExpenses(prev => ({ ...prev, accommodationValue: e.target.value ? Number(e.target.value) : 0 }))}
+                                placeholder="上限額（任意）" 
+                                style={{ padding: '6px', borderRadius: '4px', border: '1px solid #ccc', fontSize: '12px', width: '100px' }} 
+                              />
+                              <span style={{ fontSize: '12px' }}>円 / 泊</span>
+                            </div>
+                            <span style={{ fontSize: '10px', color: 'var(--text-sub)' }}>※空欄は上限なし</span>
                           </div>
                         )}
                       </div>

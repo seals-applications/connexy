@@ -64,9 +64,9 @@ export interface Job {
   // 追加拡張フィールド（requirementsの配列要素としてシリアライズしてDB保存）
   dailyPrices?: { [date: string]: number };
   expenses?: {
-    transportType: 'none' | 'actual' | 'flat';
+    transportType: 'none' | 'pay_separate' | 'arranged' | 'actual' | 'flat';
     transportValue?: number;
-    accommodationType: 'none' | 'actual' | 'flat';
+    accommodationType: 'none' | 'pay_separate' | 'arranged' | 'actual' | 'flat';
     accommodationValue?: number;
   };
 }

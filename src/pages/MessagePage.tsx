@@ -20,11 +20,23 @@ export function MessagePage() {
   const chatTimelineRef = useRef<HTMLDivElement>(null);
   const [allCompanies, setAllCompanies] = useState<any[]>([]);
   const [chatTasks, setChatTasks] = useState<any[]>([]);
+  const [jobs, setJobs] = useState<any[]>([]);
+
+  // 経費・手配用のState
+  const [showReceiptModal, setShowReceiptModal] = useState(false);
+  const [showArrangementModal, setShowArrangementModal] = useState(false);
+  const [receiptCategory, setReceiptCategory] = useState<'transport' | 'accommodation'>('transport');
+  const [receiptAmount, setReceiptAmount] = useState<number>(0);
+  const [receiptNotes, setReceiptNotes] = useState('');
+  const [arrangementCategory, setArrangementCategory] = useState<'transport' | 'accommodation'>('transport');
+  const [arrangementInfo, setArrangementInfo] = useState('');
 
   const handleSync = async () => {
     try {
       const tasks = await api.getContractTasks();
       setChatTasks(tasks);
+      const fetchedJobs = await api.getJobs();
+      setJobs(fetchedJobs);
     } catch (err) {
       console.error('Manual sync failed:', err);
     }
@@ -41,6 +53,9 @@ export function MessagePage() {
       const tasks = await api.getContractTasks();
       setChatTasks(tasks);
 
+      const fetchedJobs = await api.getJobs();
+      setJobs(fetchedJobs);
+
       // Check if there is an active chat room saved in local storage to open
       const savedActiveId = localStorage.getItem('connexy_active_chat_id');
       if (savedActiveId) {
@@ -56,6 +71,8 @@ export function MessagePage() {
       try {
         const tasks = await api.getContractTasks();
         setChatTasks(tasks);
+        const fetchedJobs = await api.getJobs();
+        setJobs(fetchedJobs);
       } catch (err) {
         console.error('Polling error:', err);
       }
@@ -392,6 +409,325 @@ export function MessagePage() {
     }
   };
 
+  // チャットに関連する案件情報の解決
+  const relatedJob = useMemo(() => {
+    if (!activeChat || !chatTasks) return null;
+    const task = chatTasks.find(t => t.id === activeChat.id);
+    const jobIds = (task?.evaluations as any)?.appliedJobIds || [];
+    if (jobIds.length === 0) return null;
+    return jobs.find(j => j.id === jobIds[0]) || null;
+  }, [activeChat, chatTasks, jobs]);
+
+  const isClient = useMemo(() => {
+    if (!currentUser) return false;
+    if (relatedJob) {
+      return currentUser.id === relatedJob.companyId;
+    }
+    return currentUser.id === 'sigma';
+  }, [currentUser, relatedJob]);
+
+  const transportPaySeparate = useMemo(() => {
+    if (!relatedJob) return true;
+    return relatedJob.expenses?.transportType === 'pay_separate' || relatedJob.expenses?.transportType === 'actual' || relatedJob.expenses?.transportType === 'flat';
+  }, [relatedJob]);
+
+  const accommodationPaySeparate = useMemo(() => {
+    if (!relatedJob) return true;
+    return relatedJob.expenses?.accommodationType === 'pay_separate' || relatedJob.expenses?.accommodationType === 'actual' || relatedJob.expenses?.accommodationType === 'flat';
+  }, [relatedJob]);
+
+  const transportArranged = useMemo(() => {
+    if (!relatedJob) return true;
+    return relatedJob.expenses?.transportType === 'arranged';
+  }, [relatedJob]);
+
+  const accommodationArranged = useMemo(() => {
+    if (!relatedJob) return true;
+    return relatedJob.expenses?.accommodationType === 'arranged';
+  }, [relatedJob]);
+
+  // 領収書の提出処理
+  const handleSendReceipt = async () => {
+    if (!activeChat || !currentUser || !receiptAmount) return;
+    
+    const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const senderName = currentUser.staffName 
+      ? `${currentUser.name}_${currentUser.staffName}` 
+      : `${currentUser.name}_代表`;
+
+    const receiptMsg = {
+      id: 'rc_' + Date.now(),
+      type: 'sent',
+      senderId: currentUser.id,
+      senderName,
+      text: `【領収書提出】${receiptCategory === 'transport' ? '交通費' : '宿泊費'}: ¥${receiptAmount.toLocaleString()} の精算申請`,
+      time: timeStr,
+      isReceipt: true,
+      receiptDetails: {
+        category: receiptCategory,
+        amount: receiptAmount,
+        notes: receiptNotes,
+        status: 'pending'
+      }
+    };
+
+    const systemLogMsg = {
+      id: 'sys_rc_' + Date.now(),
+      type: 'system',
+      text: `${currentUser.name}が${receiptCategory === 'transport' ? '交通費' : '宿泊費'}の領収書を提出しました。(¥${receiptAmount.toLocaleString()})`,
+      time: timeStr
+    };
+
+    try {
+      const task = chatTasks.find(t => t.id === activeChat.id);
+      const msgs = task?.evaluations?.messages || getDefaultMessages(activeChat.id);
+      const updated = [...msgs, receiptMsg, systemLogMsg];
+      
+      const jobTitle = activeChat.title || '商談チャット';
+      const clientName = activeChat.id.includes('sigma') ? '商談相手' : 'クライアント企業';
+      const workerName = currentUser.name;
+      
+      await api.saveContractTaskChat(activeChat.id, updated, jobTitle, clientName, workerName);
+      
+      const updatedTasks = await api.getContractTasks();
+      setChatTasks(updatedTasks);
+      setShowReceiptModal(false);
+    } catch (e) {
+      console.error(e);
+      alert('領収書の提出に失敗しました');
+    }
+  };
+
+  // 手配情報の共有処理
+  const handleSendArrangement = async () => {
+    if (!activeChat || !currentUser || !arrangementInfo.trim()) return;
+    
+    const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const senderName = currentUser.staffName 
+      ? `${currentUser.name}_${currentUser.staffName}` 
+      : `${currentUser.name}_代表`;
+
+    const arrangementMsg = {
+      id: 'ar_' + Date.now(),
+      type: 'sent',
+      senderId: currentUser.id,
+      senderName,
+      text: `【手配情報共有】${arrangementCategory === 'transport' ? '交通手配' : '宿泊手配'}の情報共有`,
+      time: timeStr,
+      isArrangement: true,
+      arrangementDetails: {
+        category: arrangementCategory,
+        info: arrangementInfo
+      }
+    };
+
+    const systemLogMsg = {
+      id: 'sys_ar_' + Date.now(),
+      type: 'system',
+      text: `${currentUser.name}が${arrangementCategory === 'transport' ? '交通手配' : '宿泊手配'}の情報を共有しました。`,
+      time: timeStr
+    };
+
+    try {
+      const task = chatTasks.find(t => t.id === activeChat.id);
+      const msgs = task?.evaluations?.messages || getDefaultMessages(activeChat.id);
+      const updated = [...msgs, arrangementMsg, systemLogMsg];
+      
+      const jobTitle = activeChat.title || '商談チャット';
+      const clientName = currentUser.name;
+      const workerName = activeChat.id.includes('alpha') ? '株式会社アルファ通信' : 
+                         activeChat.id.includes('beta') ? 'ベータエージェンシー' : 'パートナー会社';
+      
+      await api.saveContractTaskChat(activeChat.id, updated, jobTitle, clientName, workerName);
+      
+      const updatedTasks = await api.getContractTasks();
+      setChatTasks(updatedTasks);
+      setShowArrangementModal(false);
+    } catch (e) {
+      console.error(e);
+      alert('手配情報の共有に失敗しました');
+    }
+  };
+
+  // 精算承認処理
+  const handleApproveReceipt = async (msgId: string) => {
+    if (!activeChat || !currentUser) return;
+    
+    try {
+      const task = chatTasks.find(t => t.id === activeChat.id);
+      const msgs = [...(task?.evaluations?.messages || [])];
+      
+      const targetIdx = msgs.findIndex(m => m.id === msgId);
+      if (targetIdx === -1) return;
+      
+      const targetMsg = { ...msgs[targetIdx] };
+      if (!targetMsg.receiptDetails) return;
+      
+      targetMsg.receiptDetails = {
+        ...targetMsg.receiptDetails,
+        status: 'approved'
+      };
+      
+      // テキスト表記の変更
+      targetMsg.text = `【領収書承認済】${targetMsg.receiptDetails.category === 'transport' ? '交通費' : '宿泊費'}: ¥${targetMsg.receiptDetails.amount?.toLocaleString()} の精算完了`;
+      msgs[targetIdx] = targetMsg;
+      
+      const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      const systemLogMsg = {
+        id: 'sys_app_rc_' + Date.now(),
+        type: 'system',
+        text: `クライアントによって${targetMsg.receiptDetails.category === 'transport' ? '交通費' : '宿泊費'}の精算（¥${targetMsg.receiptDetails.amount?.toLocaleString()}）が承認されました。`,
+        time: timeStr
+      };
+      
+      const updated = [...msgs, systemLogMsg];
+      
+      const jobTitle = activeChat.title || '商談チャット';
+      const clientName = currentUser.name;
+      const workerName = activeChat.id.includes('alpha') ? '株式会社アルファ通信' : 
+                         activeChat.id.includes('beta') ? 'ベータエージェンシー' : 'パートナー会社';
+      
+      await api.saveContractTaskChat(activeChat.id, updated, jobTitle, clientName, workerName);
+      
+      const updatedTasks = await api.getContractTasks();
+      setChatTasks(updatedTasks);
+    } catch (e) {
+      console.error(e);
+      alert('精算の承認に失敗しました');
+    }
+  };
+
+  const renderReceiptCard = (msg: any) => {
+    const isApproved = msg.receiptDetails?.status === 'approved';
+    const categoryLabel = msg.receiptDetails?.category === 'transport' ? '交通費' : '宿泊費';
+    const amount = msg.receiptDetails?.amount || 0;
+    const notes = msg.receiptDetails?.notes || '';
+    
+    return (
+      <div className="receipt-card" style={{ 
+        background: '#FFFFFF', 
+        border: isApproved ? '2px solid #10B981' : '2px dashed #F59E0B', 
+        borderRadius: '12px', 
+        padding: '14px', 
+        width: '240px',
+        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)',
+        color: '#1F2937',
+        textAlign: 'left'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 'bold', color: isApproved ? '#047857' : '#B45309' }}>
+            <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>receipt_long</span>
+            <span style={{ fontSize: '13px' }}>領収書提出 ({categoryLabel})</span>
+          </div>
+          <span style={{ 
+            fontSize: '10px', 
+            fontWeight: 'bold', 
+            padding: '2px 8px', 
+            borderRadius: '12px',
+            background: isApproved ? '#DEF7EC' : '#FEF3C7',
+            color: isApproved ? '#03543F' : '#D97706',
+            whiteSpace: 'nowrap'
+          }}>
+            {isApproved ? '精算完了' : '承認待ち'}
+          </span>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '12px', background: '#F9FAFB', padding: '10px', borderRadius: '8px', marginBottom: '12px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #E5E7EB', paddingBottom: '4px' }}>
+            <span style={{ color: '#6B7280' }}>申請金額:</span>
+            <span style={{ fontWeight: 'bold', fontSize: '14px', color: '#111827' }}>¥{amount.toLocaleString()}</span>
+          </div>
+          {notes && (
+            <div style={{ marginTop: '4px' }}>
+              <div style={{ color: '#6B7280', fontSize: '11px', marginBottom: '2px' }}>備考:</div>
+              <div style={{ color: '#374151', wordBreak: 'break-all', whiteSpace: 'pre-wrap', lineHeight: '1.4' }}>{notes}</div>
+            </div>
+          )}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#10B981', fontSize: '11px', marginTop: '4px', borderTop: '1px dashed #E5E7EB', paddingTop: '4px' }}>
+            <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>image</span>
+            <span>領収書画像 (添付あり)</span>
+          </div>
+        </div>
+        
+        {!isApproved && isClient ? (
+          <button 
+            onClick={() => handleApproveReceipt(msg.id)}
+            style={{ 
+              background: '#10B981', 
+              color: '#FFFFFF', 
+              border: 'none', 
+              fontSize: '11px', 
+              padding: '8px 12px', 
+              borderRadius: '6px', 
+              cursor: 'pointer', 
+              fontWeight: 'bold', 
+              width: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '4px',
+              boxShadow: '0 2px 4px rgba(16, 185, 129, 0.2)'
+            }}
+          >
+            <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>check_circle</span>
+            精算を承認する
+          </button>
+        ) : !isApproved ? (
+          <div style={{ textAlign: 'center', fontSize: '10px', color: '#9CA3AF', padding: '4px 0' }}>
+            ※承認されると精算が確定します
+          </div>
+        ) : (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', fontSize: '11px', color: '#10B981', fontWeight: 'bold', padding: '4px 0' }}>
+            <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>task_alt</span>
+            精算が完了しています
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const renderArrangementCard = (msg: any) => {
+    const categoryLabel = msg.arrangementDetails?.category === 'transport' ? '交通手配' : '宿泊手配';
+    const info = msg.arrangementDetails?.info || '';
+    const isTransport = msg.arrangementDetails?.category === 'transport';
+    
+    return (
+      <div className="arrangement-card" style={{ 
+        background: '#FFFFFF', 
+        border: '2px solid #3B82F6', 
+        borderRadius: '12px', 
+        padding: '14px', 
+        width: '240px',
+        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)',
+        color: '#1F2937',
+        textAlign: 'left'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 'bold', color: '#1D4ED8', marginBottom: '10px' }}>
+          <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>
+            {isTransport ? 'directions_transit' : 'hotel'}
+          </span>
+          <span style={{ fontSize: '13px' }}>手配情報共有 ({categoryLabel})</span>
+        </div>
+        <div style={{ 
+          fontSize: '12px', 
+          color: '#1F2937', 
+          background: '#EFF6FF', 
+          padding: '10px', 
+          borderRadius: '8px',
+          border: '1px solid #BFDBFE'
+        }}>
+          <div style={{ fontWeight: 'bold', color: '#1E40AF', marginBottom: '6px', fontSize: '11px' }}>手配内容・予約情報:</div>
+          <div style={{ wordBreak: 'break-all', whiteSpace: 'pre-wrap', lineHeight: '1.5', color: '#1E3A8A' }}>
+            {info}
+          </div>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#3B82F6', fontSize: '11px', marginTop: '10px', justifyContent: 'center', fontWeight: 'bold' }}>
+          <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>verified</span>
+          <span>手配完了</span>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="view active" style={{ display: 'flex' }}>
       <header className="solid-header">
@@ -509,33 +845,40 @@ export function MessagePage() {
                         {msg.senderName}
                       </div>
                     )}
-                    <div className="message-bubble">
-                      {msg.isProposal ? (
-                        <div className="contract-card" style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '8px', padding: '12px', width: '220px' }}>
-                          <div className="contract-header" style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 'bold', color: 'var(--primary-color)', marginBottom: '8px' }}>
-                            <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>description</span>
-                            <span style={{ fontSize: '13px' }}>電子発注書</span>
+                    {msg.isReceipt || msg.isArrangement ? (
+                      <div style={{ animation: 'fadeIn 0.3s ease', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        {msg.isReceipt ? renderReceiptCard(msg) : renderArrangementCard(msg)}
+                        <span className="message-time" style={{ alignSelf: 'flex-start', margin: '4px 4px 0 4px' }}>{msg.time}</span>
+                      </div>
+                    ) : (
+                      <div className="message-bubble">
+                        {msg.isProposal ? (
+                          <div className="contract-card" style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '8px', padding: '12px', width: '220px' }}>
+                            <div className="contract-header" style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 'bold', color: 'var(--primary-color)', marginBottom: '8px' }}>
+                              <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>description</span>
+                              <span style={{ fontSize: '13px' }}>電子発注書</span>
+                            </div>
+                            <div className="contract-body" style={{ fontSize: '11px', color: 'var(--text-main)', marginBottom: '10px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                              <div><strong>案件名:</strong> {msg.proposalDetails?.title || activeChat?.title}</div>
+                              <div><strong>単価:</strong> {msg.proposalDetails?.price || '15,000円 / 日'}</div>
+                              <div><strong>期間:</strong> {msg.proposalDetails?.duration || '10/14 - 10/15 (2日間)'}</div>
+                            </div>
+                            {msg.proposalStatus === 'pending' ? (
+                              <button className="btn-primary btn-small w-full" onClick={() => handleApproveProposal(msg.id)} style={{ background: 'var(--primary-color)', color: '#FFFFFF', border: 'none', fontSize: '11px', padding: '6px', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', width: '100%' }}>
+                                承認する
+                              </button>
+                            ) : (
+                              <button className="btn-primary btn-small w-full" disabled style={{ background: '#DEF7EC', color: '#03543F', border: 'none', fontSize: '11px', padding: '6px', borderRadius: '4px', cursor: 'not-allowed', fontWeight: 'bold', width: '100%' }}>
+                                契約成立済み
+                              </button>
+                            )}
                           </div>
-                          <div className="contract-body" style={{ fontSize: '11px', color: 'var(--text-main)', marginBottom: '10px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                            <div><strong>案件名:</strong> {msg.proposalDetails?.title || activeChat?.title}</div>
-                            <div><strong>単価:</strong> {msg.proposalDetails?.price || '15,000円 / 日'}</div>
-                            <div><strong>期間:</strong> {msg.proposalDetails?.duration || '10/14 - 10/15 (2日間)'}</div>
-                          </div>
-                          {msg.proposalStatus === 'pending' ? (
-                            <button className="btn-primary btn-small w-full" onClick={() => handleApproveProposal(msg.id)} style={{ background: 'var(--primary-color)', color: '#FFFFFF', border: 'none', fontSize: '11px', padding: '6px', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', width: '100%' }}>
-                              承認する
-                            </button>
-                          ) : (
-                            <button className="btn-primary btn-small w-full" disabled style={{ background: '#DEF7EC', color: '#03543F', border: 'none', fontSize: '11px', padding: '6px', borderRadius: '4px', cursor: 'not-allowed', fontWeight: 'bold', width: '100%' }}>
-                              契約成立済み
-                            </button>
-                          )}
-                        </div>
-                      ) : (
-                        <p style={{ whiteSpace: 'pre-wrap' }}>{maskContactInfo(msg.text)}</p>
-                      )}
-                      <span className="message-time">{msg.time}</span>
-                    </div>
+                        ) : (
+                          <p style={{ whiteSpace: 'pre-wrap' }}>{maskContactInfo(msg.text)}</p>
+                        )}
+                        <span className="message-time">{msg.time}</span>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
@@ -547,33 +890,40 @@ export function MessagePage() {
                         {msg.senderName || '自分'}
                       </div>
                     )}
-                    <div className="message-bubble">
-                      {msg.isProposal ? (
-                        <div className="contract-card" style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '8px', padding: '12px', width: '220px' }}>
-                          <div className="contract-header" style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 'bold', color: 'var(--primary-color)', marginBottom: '8px' }}>
-                            <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>description</span>
-                            <span style={{ fontSize: '13px' }}>電子発注書</span>
+                    {msg.isReceipt || msg.isArrangement ? (
+                      <div style={{ animation: 'fadeIn 0.3s ease', display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'flex-end' }}>
+                        {msg.isReceipt ? renderReceiptCard(msg) : renderArrangementCard(msg)}
+                        <span className="message-time" style={{ alignSelf: 'flex-end', margin: '4px 4px 0 4px' }}>{msg.time}</span>
+                      </div>
+                    ) : (
+                      <div className="message-bubble">
+                        {msg.isProposal ? (
+                          <div className="contract-card" style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '8px', padding: '12px', width: '220px' }}>
+                            <div className="contract-header" style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 'bold', color: 'var(--primary-color)', marginBottom: '8px' }}>
+                              <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>description</span>
+                              <span style={{ fontSize: '13px' }}>電子発注書</span>
+                            </div>
+                            <div className="contract-body" style={{ fontSize: '11px', color: 'var(--text-main)', marginBottom: '10px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                              <div><strong>案件名:</strong> {msg.proposalDetails?.title || activeChat?.title}</div>
+                              <div><strong>単価:</strong> {msg.proposalDetails?.price || '15,000円 / 日'}</div>
+                              <div><strong>期間:</strong> {msg.proposalDetails?.duration || '10/14 - 10/15 (2日間)'}</div>
+                            </div>
+                            {msg.proposalStatus === 'pending' ? (
+                              <button className="btn-primary btn-small w-full" disabled style={{ background: 'var(--bg-gray)', color: 'var(--text-sub)', border: '1px solid var(--border-color)', fontSize: '11px', padding: '6px', borderRadius: '4px', cursor: 'not-allowed', width: '100%' }}>
+                                相手の承認待ち...
+                              </button>
+                            ) : (
+                              <button className="btn-primary btn-small w-full" disabled style={{ background: '#DEF7EC', color: '#03543F', border: 'none', fontSize: '11px', padding: '6px', borderRadius: '4px', cursor: 'not-allowed', fontWeight: 'bold', width: '100%' }}>
+                                契約成立済み
+                              </button>
+                            )}
                           </div>
-                          <div className="contract-body" style={{ fontSize: '11px', color: 'var(--text-main)', marginBottom: '10px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                            <div><strong>案件名:</strong> {msg.proposalDetails?.title || activeChat?.title}</div>
-                            <div><strong>単価:</strong> {msg.proposalDetails?.price || '15,000円 / 日'}</div>
-                            <div><strong>期間:</strong> {msg.proposalDetails?.duration || '10/14 - 10/15 (2日間)'}</div>
-                          </div>
-                          {msg.proposalStatus === 'pending' ? (
-                            <button className="btn-primary btn-small w-full" disabled style={{ background: 'var(--bg-gray)', color: 'var(--text-sub)', border: '1px solid var(--border-color)', fontSize: '11px', padding: '6px', borderRadius: '4px', cursor: 'not-allowed', width: '100%' }}>
-                              相手の承認待ち...
-                            </button>
-                          ) : (
-                            <button className="btn-primary btn-small w-full" disabled style={{ background: '#DEF7EC', color: '#03543F', border: 'none', fontSize: '11px', padding: '6px', borderRadius: '4px', cursor: 'not-allowed', fontWeight: 'bold', width: '100%' }}>
-                              契約成立済み
-                            </button>
-                          )}
-                        </div>
-                      ) : (
-                        <p style={{ whiteSpace: 'pre-wrap' }}>{maskContactInfo(msg.text)}</p>
-                      )}
-                      <span className="message-time">{msg.time}</span>
-                    </div>
+                        ) : (
+                          <p style={{ whiteSpace: 'pre-wrap' }}>{maskContactInfo(msg.text)}</p>
+                        )}
+                        <span className="message-time">{msg.time}</span>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
@@ -582,6 +932,70 @@ export function MessagePage() {
         </main>
 
         <footer className="chat-footer">
+          {/* 諸経費アクション（交通費・宿泊費の対応） */}
+          {activeChat && (
+            <div style={{ display: 'flex', gap: '8px', padding: '0 8px 8px 8px', borderBottom: '1px dashed #E2E8F0', marginBottom: '8px' }}>
+              {!isClient && (transportPaySeparate || accommodationPaySeparate) && (
+                <button 
+                  onClick={() => {
+                    setReceiptCategory(transportPaySeparate ? 'transport' : 'accommodation');
+                    setReceiptAmount(0);
+                    setReceiptNotes('');
+                    setShowReceiptModal(true);
+                  }}
+                  style={{
+                    flex: 1,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '6px',
+                    padding: '8px 12px',
+                    background: '#10B981',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '8px',
+                    fontSize: '12px',
+                    fontWeight: 'bold',
+                    cursor: 'pointer',
+                    boxShadow: '0 2px 4px rgba(16, 185, 129, 0.15)',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>receipt_long</span>
+                  領収書を提出する
+                </button>
+              )}
+              {isClient && (transportArranged || accommodationArranged) && (
+                <button 
+                  onClick={() => {
+                    setArrangementCategory(transportArranged ? 'transport' : 'accommodation');
+                    setArrangementInfo('');
+                    setShowArrangementModal(true);
+                  }}
+                  style={{
+                    flex: 1,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '6px',
+                    padding: '8px 12px',
+                    background: '#3B82F6',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '8px',
+                    fontSize: '12px',
+                    fontWeight: 'bold',
+                    cursor: 'pointer',
+                    boxShadow: '0 2px 4px rgba(59, 130, 246, 0.15)',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>campaign</span>
+                  手配情報を共有する
+                </button>
+              )}
+            </div>
+          )}
           {activeChat?.status !== 'group' && (
             <div className="chat-actions-top">
               <button className="btn-primary btn-small w-full" onClick={handlePropose} disabled={proposed} style={{ opacity: proposed ? 0.7 : 1 }}>
@@ -618,6 +1032,324 @@ export function MessagePage() {
           </div>
         </footer>
       </div>
+
+      {/* 領収書提出モーダル */}
+      {showReceiptModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0,0,0,0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 9999,
+          padding: '16px'
+        }}>
+          <div style={{
+            background: 'white',
+            borderRadius: '12px',
+            padding: '20px',
+            width: '100%',
+            maxWidth: '360px',
+            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+            textAlign: 'left'
+          }}>
+            <h3 style={{ margin: '0 0 16px 0', fontSize: '16px', fontWeight: 'bold', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span className="material-symbols-outlined" style={{ color: '#10B981' }}>receipt_long</span>
+              領収書を提出
+            </h3>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <label style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--text-sub)' }}>経費種別 *</label>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  {transportPaySeparate && (
+                    <button 
+                      type="button" 
+                      onClick={() => setReceiptCategory('transport')}
+                      style={{
+                        flex: 1,
+                        padding: '8px',
+                        borderRadius: '6px',
+                        border: receiptCategory === 'transport' ? '2px solid #10B981' : '1px solid #E2E8F0',
+                        background: receiptCategory === 'transport' ? '#DEF7EC' : 'white',
+                        color: receiptCategory === 'transport' ? '#03543F' : 'var(--text-main)',
+                        fontSize: '12px',
+                        fontWeight: 'bold',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      交通費
+                    </button>
+                  )}
+                  {accommodationPaySeparate && (
+                    <button 
+                      type="button" 
+                      onClick={() => setReceiptCategory('accommodation')}
+                      style={{
+                        flex: 1,
+                        padding: '8px',
+                        borderRadius: '6px',
+                        border: receiptCategory === 'accommodation' ? '2px solid #10B981' : '1px solid #E2E8F0',
+                        background: receiptCategory === 'accommodation' ? '#DEF7EC' : 'white',
+                        color: receiptCategory === 'accommodation' ? '#03543F' : 'var(--text-main)',
+                        fontSize: '12px',
+                        fontWeight: 'bold',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      宿泊費
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <label style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--text-sub)' }}>金額（税込） *</label>
+                <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                  <span style={{ position: 'absolute', left: '10px', fontSize: '14px', color: 'var(--text-sub)' }}>¥</span>
+                  <input 
+                    type="number"
+                    value={receiptAmount || ''}
+                    onChange={e => setReceiptAmount(Number(e.target.value))}
+                    placeholder="0"
+                    style={{
+                      width: '100%',
+                      padding: '8px 8px 8px 24px',
+                      borderRadius: '6px',
+                      border: '1px solid #ccc',
+                      fontSize: '14px'
+                    }}
+                  />
+                </div>
+                {relatedJob && (
+                  <div style={{ fontSize: '11px', color: '#B45309', marginTop: '2px' }}>
+                    {receiptCategory === 'transport' && relatedJob.expenses?.transportValue ? (
+                      `※交通費上限額: ¥${relatedJob.expenses.transportValue.toLocaleString()} / 日`
+                    ) : receiptCategory === 'accommodation' && relatedJob.expenses?.accommodationValue ? (
+                      `※宿泊費上限額: ¥${relatedJob.expenses.accommodationValue.toLocaleString()} / 泊`
+                    ) : (
+                      '※上限設定はありません（実費支給）'
+                    )}
+                  </div>
+                )}
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <label style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--text-sub)' }}>領収書画像 *</label>
+                <div style={{
+                  border: '1.5px dashed #10B981',
+                  borderRadius: '8px',
+                  padding: '12px',
+                  textAlign: 'center',
+                  background: '#F0FDF4',
+                  cursor: 'pointer'
+                }}>
+                  <span className="material-symbols-outlined" style={{ fontSize: '28px', color: '#10B981' }}>photo_camera</span>
+                  <div style={{ fontSize: '11px', color: '#047857', fontWeight: 'bold', marginTop: '4px' }}>領収書ファイルをアップロード済</div>
+                  <div style={{ fontSize: '10px', color: '#6B7280' }}>mock_receipt.jpg (142 KB)</div>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <label style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--text-sub)' }}>備考（任意）</label>
+                <textarea 
+                  value={receiptNotes}
+                  onChange={e => setReceiptNotes(e.target.value)}
+                  placeholder="利用区間、品目など"
+                  rows={2}
+                  style={{
+                    padding: '8px',
+                    borderRadius: '6px',
+                    border: '1px solid #ccc',
+                    fontSize: '12px',
+                    resize: 'none'
+                  }}
+                />
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '8px', marginTop: '20px' }}>
+              <button 
+                type="button" 
+                onClick={() => setShowReceiptModal(false)}
+                style={{
+                  flex: 1,
+                  padding: '10px',
+                  borderRadius: '6px',
+                  border: '1px solid #E2E8F0',
+                  background: 'white',
+                  fontSize: '13px',
+                  fontWeight: 'bold',
+                  cursor: 'pointer'
+                }}
+              >
+                キャンセル
+              </button>
+              <button 
+                type="button" 
+                onClick={handleSendReceipt}
+                disabled={!receiptAmount}
+                style={{
+                  flex: 1,
+                  padding: '10px',
+                  borderRadius: '6px',
+                  border: 'none',
+                  background: '#10B981',
+                  color: 'white',
+                  fontSize: '13px',
+                  fontWeight: 'bold',
+                  cursor: receiptAmount ? 'pointer' : 'not-allowed',
+                  opacity: receiptAmount ? 1 : 0.6
+                }}
+              >
+                提出する
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 手配情報共有モーダル */}
+      {showArrangementModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0,0,0,0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 9999,
+          padding: '16px'
+        }}>
+          <div style={{
+            background: 'white',
+            borderRadius: '12px',
+            padding: '20px',
+            width: '100%',
+            maxWidth: '360px',
+            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+            textAlign: 'left'
+          }}>
+            <h3 style={{ margin: '0 0 16px 0', fontSize: '16px', fontWeight: 'bold', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span className="material-symbols-outlined" style={{ color: '#3B82F6' }}>campaign</span>
+              手配情報を共有
+            </h3>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <label style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--text-sub)' }}>手配種別 *</label>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  {transportArranged && (
+                    <button 
+                      type="button" 
+                      onClick={() => setArrangementCategory('transport')}
+                      style={{
+                        flex: 1,
+                        padding: '8px',
+                        borderRadius: '6px',
+                        border: arrangementCategory === 'transport' ? '2px solid #3B82F6' : '1px solid #E2E8F0',
+                        background: arrangementCategory === 'transport' ? '#EFF6FF' : 'white',
+                        color: arrangementCategory === 'transport' ? '#1E40AF' : 'var(--text-main)',
+                        fontSize: '12px',
+                        fontWeight: 'bold',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      交通手配
+                    </button>
+                  )}
+                  {accommodationArranged && (
+                    <button 
+                      type="button" 
+                      onClick={() => setArrangementCategory('accommodation')}
+                      style={{
+                        flex: 1,
+                        padding: '8px',
+                        borderRadius: '6px',
+                        border: arrangementCategory === 'accommodation' ? '2px solid #3B82F6' : '1px solid #E2E8F0',
+                        background: arrangementCategory === 'accommodation' ? '#EFF6FF' : 'white',
+                        color: arrangementCategory === 'accommodation' ? '#1E40AF' : 'var(--text-main)',
+                        fontSize: '12px',
+                        fontWeight: 'bold',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      宿泊手配
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <label style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--text-sub)' }}>手配内容・予約情報 *</label>
+                <textarea 
+                  value={arrangementInfo}
+                  onChange={e => setArrangementInfo(e.target.value)}
+                  placeholder={
+                    arrangementCategory === 'transport' 
+                      ? '例：新幹線：東京 10:00発 → 名古屋 11:40着（のぞみ12号 3号車5D）' 
+                      : '例：宿泊先：ホテルサンルート徳島、チェックイン：10/14 15:00、予約番号：9982-12'
+                  }
+                  rows={4}
+                  style={{
+                    padding: '8px',
+                    borderRadius: '6px',
+                    border: '1px solid #ccc',
+                    fontSize: '12px',
+                    resize: 'none',
+                    lineHeight: '1.4'
+                  }}
+                />
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '8px', marginTop: '20px' }}>
+              <button 
+                type="button" 
+                onClick={() => setShowArrangementModal(false)}
+                style={{
+                  flex: 1,
+                  padding: '10px',
+                  borderRadius: '6px',
+                  border: '1px solid #E2E8F0',
+                  background: 'white',
+                  fontSize: '13px',
+                  fontWeight: 'bold',
+                  cursor: 'pointer'
+                }}
+              >
+                キャンセル
+              </button>
+              <button 
+                type="button" 
+                onClick={handleSendArrangement}
+                disabled={!arrangementInfo.trim()}
+                style={{
+                  flex: 1,
+                  padding: '10px',
+                  borderRadius: '6px',
+                  border: 'none',
+                  background: '#3B82F6',
+                  color: 'white',
+                  fontSize: '13px',
+                  fontWeight: 'bold',
+                  cursor: arrangementInfo.trim() ? 'pointer' : 'not-allowed',
+                  opacity: arrangementInfo.trim() ? 1 : 0.6
+                }}
+              >
+                共有する
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
