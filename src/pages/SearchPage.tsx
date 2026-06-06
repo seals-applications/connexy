@@ -2118,9 +2118,9 @@ export function SearchPage() {
           )}
         </main>
 
-        {selectedJob && (
+        {selectedJob && (selectedJob.authorId === currentUser?.id || currentUser?.companyType === 'agency' || currentUser?.companyType === 'both' || currentUser?.role === 'worker') && (
           <footer style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: 'white', padding: '16px', borderTop: '1px solid var(--border-color)', display: 'flex', gap: '12px', zIndex: 10 }}>
-            {selectedJob.authorId === currentUser?.id || currentUser?.role === 'contractor' || currentUser?.companyType === 'client' || currentUser?.companyType === 'both' ? (
+            {selectedJob.authorId === currentUser?.id ? (
               <button 
                 onClick={() => handleDuplicateJob(selectedJob)}
                 style={{ flex: 1, padding: '12px', background: '#D97706', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '14px', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}
