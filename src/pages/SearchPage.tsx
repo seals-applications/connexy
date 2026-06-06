@@ -759,6 +759,7 @@ export function SearchPage() {
           content: pinElement,
           title: `案件: ${group.jobs.length}件`,
         });
+        (marker as any).customCount = group.jobs.length;
 
         const jobsHtml = group.jobs.map(job => {
           return `
@@ -827,6 +828,7 @@ export function SearchPage() {
           content: pinElement,
           title: `人材: ${group.talents.length}名`,
         });
+        (marker as any).customCount = group.talents.length;
 
         const infoWindow = new InfoWindow({
           content: `
@@ -856,7 +858,17 @@ export function SearchPage() {
       map: mapRef.current,
       markers: newMarkers,
       renderer: {
-        render: ({ count, position }) => {
+        render: (cluster) => {
+          const { count, position, markers } = cluster;
+          let totalCount = 0;
+          if (markers) {
+            markers.forEach((m: any) => {
+              totalCount += m.customCount || 1;
+            });
+          } else {
+            totalCount = count;
+          }
+
           const clusterContainer = document.createElement('div');
           clusterContainer.style.cursor = 'pointer';
           
@@ -881,7 +893,7 @@ export function SearchPage() {
               box-shadow: 0 4px 10px rgba(0,0,0,0.3);
               transition: transform 0.15s ease;
             ">
-              ${count}
+              ${totalCount}
             </div>
           `;
 
