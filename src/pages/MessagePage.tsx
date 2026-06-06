@@ -503,7 +503,7 @@ export function MessagePage() {
                   <div className="chat-avatar bg-blue" style={{ fontSize: '11px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     {msg.avatar || activeChat?.avatar}
                   </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', flex: 1, minWidth: 0 }}>
                     {activeChat?.status === 'group' && (
                       <div style={{ fontSize: '10px', color: 'var(--text-sub)', marginLeft: '4px', marginBottom: '2px' }}>
                         {msg.senderName}
@@ -541,7 +541,7 @@ export function MessagePage() {
               )}
               {msg.type === 'sent' && (
                 <div className="message-row sent" style={{ animation: 'fadeIn 0.3s ease' }}>
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', flex: 1, minWidth: 0 }}>
                     {activeChat?.status === 'group' && (
                       <div style={{ fontSize: '10px', color: 'var(--text-sub)', marginRight: '4px', marginBottom: '2px', textAlign: 'right' }}>
                         {msg.senderName || '自分'}
