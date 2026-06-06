@@ -2098,10 +2098,10 @@ export function SearchPage() {
           <form onSubmit={handleCreateSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             {createFormType === 'job' ? (
               <>
-                {/* 共通条件カード */}
+                {/* 現場情報カード */}
                 <div style={{ background: '#F8FAFC', padding: '16px', borderRadius: '12px', border: '1px solid #E2E8F0', display: 'flex', flexDirection: 'column', gap: '16px' }}>
                   <div style={{ fontSize: '14px', fontWeight: 'bold', color: 'var(--primary)', borderBottom: '2px solid #E2E8F0', paddingBottom: '6px', marginBottom: '4px' }}>
-                    1. 共通条件（全日程・職種共通）
+                    1. 現場情報（勤務地・日程・諸経費）
                   </div>
 
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
@@ -2366,10 +2366,10 @@ export function SearchPage() {
                   </div>
                 </div>
 
-                {/* 個別条件カード */}
+                {/* 人員情報カード */}
                 <div style={{ background: '#FFFDF9', padding: '16px', borderRadius: '12px', border: '1px solid #FCD34D', display: 'flex', flexDirection: 'column', gap: '16px' }}>
                   <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#D97706', borderBottom: '2px solid #FCD34D', paddingBottom: '6px', marginBottom: '4px' }}>
-                    2. 個別条件（職種・単価の設定）
+                    2. 人員情報（職種・単価）
                   </div>
 
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
