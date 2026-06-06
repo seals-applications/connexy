@@ -1113,8 +1113,10 @@ export function MessagePage() {
                   <span style={{ position: 'absolute', left: '10px', fontSize: '14px', color: 'var(--text-sub)' }}>¥</span>
                   <input 
                     type="number"
+                    className="no-spin"
                     value={receiptAmount || ''}
                     onChange={e => setReceiptAmount(Number(e.target.value))}
+                    onWheel={e => e.currentTarget.blur()}
                     placeholder="0"
                     style={{
                       width: '100%',

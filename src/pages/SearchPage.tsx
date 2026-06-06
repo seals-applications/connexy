@@ -2306,8 +2306,10 @@ export function SearchPage() {
                             <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                               <input 
                                 type="number" 
+                                className="no-spin"
                                 value={expenses.transportValue || ''} 
                                 onChange={e => setExpenses(prev => ({ ...prev, transportValue: e.target.value ? Number(e.target.value) : 0 }))}
+                                onWheel={e => e.currentTarget.blur()}
                                 placeholder="上限額（任意）" 
                                 style={{ padding: '6px', borderRadius: '4px', border: '1px solid #ccc', fontSize: '12px', width: '100px' }} 
                               />
@@ -2334,8 +2336,10 @@ export function SearchPage() {
                             <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                               <input 
                                 type="number" 
+                                className="no-spin"
                                 value={expenses.accommodationValue || ''} 
                                 onChange={e => setExpenses(prev => ({ ...prev, accommodationValue: e.target.value ? Number(e.target.value) : 0 }))}
+                                onWheel={e => e.currentTarget.blur()}
                                 placeholder="上限額（任意）" 
                                 style={{ padding: '6px', borderRadius: '4px', border: '1px solid #ccc', fontSize: '12px', width: '100px' }} 
                               />
@@ -2414,9 +2418,11 @@ export function SearchPage() {
                         <label style={{ fontSize: '12px', color: 'var(--text-sub)' }}>日当単価 (円) *</label>
                         <input 
                           type="number" 
+                          className="no-spin"
                           required 
                           value={commonPrice || ''} 
                           onChange={e => setCommonPrice(Number(e.target.value))} 
+                          onWheel={e => e.currentTarget.blur()}
                           disabled={isSubmitting} 
                           style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }} 
                           placeholder="例: 15000" 
@@ -2437,9 +2443,11 @@ export function SearchPage() {
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                                   <input 
                                     type="number" 
+                                    className="no-spin"
                                     required 
                                     value={dailyPrices[date] || ''} 
                                     onChange={e => setDailyPrices(prev => ({ ...prev, [date]: Number(e.target.value) }))} 
+                                    onWheel={e => e.currentTarget.blur()}
                                     disabled={isSubmitting} 
                                     style={{ padding: '8px', borderRadius: '4px', border: '1px solid #ccc', width: '120px', fontSize: '13px' }} 
                                     placeholder="単価を入力" 

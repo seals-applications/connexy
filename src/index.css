@@ -9,6 +9,16 @@
   -webkit-tap-highlight-color: transparent;
 }
 
+/* Hide up/down arrows for number inputs with .no-spin class */
+.no-spin::-webkit-outer-spin-button,
+.no-spin::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.no-spin {
+  -moz-appearance: textfield;
+}
+
 :root {
   --primary: #2563EB; /* Vibrant Blue */
   --primary-light: #EFF6FF;
