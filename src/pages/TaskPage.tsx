@@ -383,7 +383,7 @@ export function TaskPage() {
                   <span>出勤打刻完了（稼働中）</span>
                 </div>
                 <div style={{ fontSize: '12px', opacity: 0.9 }}>
-                  打刻日時: 当日 {checkinTime}
+                  打刻日時: 当日 {checkinTime} <span style={{ fontSize: '10px', opacity: 0.6 }}>(デバッグ用ID: {currentUser?.staffId || currentUser?.id})</span>
                 </div>
                 <button 
                   type="button" 
@@ -587,7 +587,7 @@ export function TaskPage() {
                     <div>
                       <div style={{ fontWeight: 'bold', fontSize: '14px' }}>{s.name}</div>
                       <div style={{ fontSize: '11px', color: 'var(--text-sub)', marginTop: '2px' }}>
-                        拠点: {s.baseLocation} / 単価: ¥{s.price.toLocaleString()}
+                        拠点: {s.baseLocation} / 単価: ¥{s.price.toLocaleString()} <span style={{ fontSize: '10px', color: '#94A3B8', marginLeft: '6px' }}>(デバッグ用ID: {s.id})</span>
                       </div>
                     </div>
                     <div style={{ textAlign: 'right' }}>
