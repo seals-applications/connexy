@@ -94,6 +94,11 @@ export function MessagePage() {
     return !receiptAmount || Number(receiptAmount) <= 0;
   }, [receiptCategory, receiptItem, receiptDistance, receiptAmount]);
 
+  // 条件編集用のState
+  const [showEditConditionsModal, setShowEditConditionsModal] = useState(false);
+  const [editConditionsPrice, setEditConditionsPrice] = useState<number>(0);
+  const [editConditionsDate, setEditConditionsDate] = useState('');
+
   // メニュー・定型文・写真用のState
   const [showChatMenu, setShowChatMenu] = useState(false);
   const [showPhotoModal, setShowPhotoModal] = useState(false);
@@ -1114,6 +1119,69 @@ export function MessagePage() {
     }
   };
 
+  // 条件編集モーダルを開く
+  const handleOpenEditConditions = () => {
+    if (!relatedJob) return;
+    setEditConditionsPrice(relatedJob.price);
+    setEditConditionsDate(relatedJob.eventDate || '');
+    setShowEditConditionsModal(true);
+    setShowChatMenu(false);
+  };
+
+  // 条件変更を保存する
+  const handleSaveConditions = async () => {
+    if (!relatedJob || !activeChat || !currentUser) return;
+
+    try {
+      // 1. Supabaseの案件情報を更新
+      await api.updateJob(relatedJob.id, {
+        price: editConditionsPrice,
+        eventDate: editConditionsDate
+      });
+
+      // 2. システムログメッセージをチャットに追加
+      const now = new Date();
+      const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+      const systemLogMsg = {
+        id: 'sys_cond_' + Date.now(),
+        type: 'system',
+        text: `📢 クライアント企業が案件条件を変更しました。\n【変更後単価】: ¥${editConditionsPrice.toLocaleString()} / 日\n【変更後稼働日】: ${editConditionsDate || '未定'}`,
+        time: timeStr
+      };
+
+      const task = chatTasks.find(t => t.id === activeChat.id);
+      const msgs = task?.evaluations?.messages || getDefaultMessages(activeChat.id);
+      const updated = [...msgs, systemLogMsg];
+
+      // Resolve other user's company name correctly
+      const otherUser = allCompanies.find(c => {
+        const sortedIds = [currentUser.id, c.id].sort();
+        const generatedId = `chat_${sortedIds[0]}_${sortedIds[1]}`;
+        return generatedId === activeChat.id;
+      });
+      const clientName = currentUser.name;
+      const workerName = otherUser ? otherUser.name : '相手';
+
+      await api.saveContractTaskChat(
+        activeChat.id, 
+        updated, 
+        relatedJob.title, 
+        clientName, 
+        workerName, 
+        (task?.evaluations as any)?.appliedJobIds, 
+        (task?.evaluations as any)?.appliedJobStaffIds
+      );
+
+      // 3. 画面の再同期とクローズ
+      await handleSync();
+      setShowEditConditionsModal(false);
+      alert('案件の契約条件を更新し、チャットに反映しました。');
+    } catch (e) {
+      console.error(e);
+      alert('契約条件の更新に失敗しました。');
+    }
+  };
+
   const renderReceiptCard = (msg: any) => {
     const isApproved = msg.receiptDetails?.status === 'approved';
     const category = msg.receiptDetails?.category || 'transport';
@@ -1808,15 +1876,14 @@ export function MessagePage() {
                       </span>
                     </div>
                   </div>
-                  <button 
-                    className="btn-secondary btn-small"
-                    onClick={() => {
-                      alert('条件編集モーダルを開きます（デモ機能）');
-                      setShowChatMenu(false);
-                    }}
-                  >
-                    条件を編集
-                  </button>
+                  {isClient && (
+                    <button 
+                      className="btn-secondary btn-small"
+                      onClick={handleOpenEditConditions}
+                    >
+                      条件を編集
+                    </button>
+                  )}
                 </div>
               )}
               {[
@@ -2942,6 +3009,140 @@ export function MessagePage() {
                   }}
                 >
                   閉じる
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {showEditConditionsModal && relatedJob && (
+          <div style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(15, 23, 42, 0.4)',
+            backdropFilter: 'blur(8px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 3000,
+            padding: '16px'
+          }}>
+            <div style={{
+              background: 'white',
+              borderRadius: '16px',
+              padding: '24px',
+              width: '100%',
+              maxWidth: '440px',
+              boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+              display: 'flex',
+              flexDirection: 'column',
+              textAlign: 'left'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px', borderBottom: '1px solid #E2E8F0', paddingBottom: '12px' }}>
+                <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 'bold', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span className="material-symbols-outlined" style={{ color: 'var(--primary-color)' }}>edit_note</span>
+                  契約条件の編集
+                </h3>
+                <button 
+                  onClick={() => setShowEditConditionsModal(false)}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    color: '#9CA3AF',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: '4px',
+                    borderRadius: '50%'
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.background = '#F3F4F6'}
+                  onMouseLeave={e => e.currentTarget.style.background = 'none'}
+                >
+                  <span className="material-symbols-outlined">close</span>
+                </button>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '20px' }}>
+                {/* 日当単価編集 */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '13px', fontWeight: 'bold', color: '#475569' }}>日当単価 (円) *</label>
+                  <input 
+                    type="number"
+                    className="no-spin"
+                    value={editConditionsPrice || ''}
+                    onChange={(e) => setEditConditionsPrice(Number(e.target.value))}
+                    onWheel={(e) => e.currentTarget.blur()}
+                    style={{
+                      padding: '10px 12px',
+                      borderRadius: '8px',
+                      border: '1px solid #CBD5E1',
+                      fontSize: '14px',
+                      outline: 'none',
+                      width: '100%'
+                    }}
+                  />
+                </div>
+
+                {/* 稼働日編集 */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '13px', fontWeight: 'bold', color: '#475569' }}>稼働日程 *</label>
+                  <input 
+                    type="text"
+                    value={editConditionsDate}
+                    onChange={(e) => setEditConditionsDate(e.target.value)}
+                    placeholder="例: 10/14 - 10/15 (2日間)"
+                    style={{
+                      padding: '10px 12px',
+                      borderRadius: '8px',
+                      border: '1px solid #CBD5E1',
+                      fontSize: '14px',
+                      outline: 'none',
+                      width: '100%'
+                    }}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: '12px' }}>
+                <button 
+                  type="button" 
+                  onClick={() => setShowEditConditionsModal(false)}
+                  style={{
+                    flex: 1,
+                    padding: '12px',
+                    borderRadius: '8px',
+                    border: '1px solid #E2E8F0',
+                    background: '#F8FAFC',
+                    fontSize: '14px',
+                    fontWeight: 'bold',
+                    color: '#475569',
+                    cursor: 'pointer'
+                  }}
+                >
+                  キャンセル
+                </button>
+                <button 
+                  type="button" 
+                  onClick={handleSaveConditions}
+                  disabled={!editConditionsPrice || editConditionsPrice <= 0 || !editConditionsDate.trim()}
+                  style={{
+                    flex: 1,
+                    padding: '12px',
+                    borderRadius: '8px',
+                    border: 'none',
+                    background: (!editConditionsPrice || editConditionsPrice <= 0 || !editConditionsDate.trim()) ? '#CBD5E1' : 'var(--primary-color)',
+                    color: '#FFFFFF',
+                    fontSize: '14px',
+                    fontWeight: 'bold',
+                    cursor: (!editConditionsPrice || editConditionsPrice <= 0 || !editConditionsDate.trim()) ? 'not-allowed' : 'pointer',
+                    boxShadow: (!editConditionsPrice || editConditionsPrice <= 0 || !editConditionsDate.trim()) ? 'none' : '0 4px 6px -1px rgba(99, 102, 241, 0.2)'
+                  }}
+                >
+                  変更を保存
                 </button>
               </div>
             </div>

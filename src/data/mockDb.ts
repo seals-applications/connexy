@@ -638,6 +638,13 @@ export const api = {
     return newJob;
   },
 
+  updateJob: async (jobId: string, updates: Partial<Job>): Promise<void> => {
+    const row = unmapJob(updates);
+    delete row.id;
+    const { error } = await supabase.from('jobs').update(row).eq('id', jobId);
+    if (error) { console.error('updateJob error:', error); throw error; }
+  },
+
   addTalent: async (talent: Omit<Talent, 'id'>): Promise<Talent> => {
     const id = 't' + Date.now();
     const newTalent = { ...talent, id };
