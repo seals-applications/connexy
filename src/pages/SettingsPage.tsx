@@ -16,6 +16,8 @@ export function SettingsPage({ onLogoutSuccess }: SettingsPageProps) {
   const [showRoleOverlay, setShowRoleOverlay] = useState(false);
   const [roleSaving, setRoleSaving] = useState(false);
   const [staffRoles, setStaffRoles] = useState<Record<string, 'admin' | 'staff'>>({});
+  const [showRoleConfirmModal, setShowRoleConfirmModal] = useState(false);
+  const [changedRolesList, setChangedRolesList] = useState<Array<{ id: string, name: string, from: 'admin' | 'staff', to: 'admin' | 'staff' }>>([]);
   
   const [profileSaving, setProfileSaving] = useState(false);
   const [staffSaving, setStaffSaving] = useState(false);
@@ -261,20 +263,42 @@ export function SettingsPage({ onLogoutSuccess }: SettingsPageProps) {
     alert('スタッフ情報を更新しました');
   };
 
-  const handleRolesSave = async () => {
+  const handleRoleSaveClick = () => {
+    const changes: Array<{ id: string, name: string, from: 'admin' | 'staff', to: 'admin' | 'staff' }> = [];
+    for (const [staffId, role] of Object.entries(staffRoles)) {
+      const staff = staffs.find(s => s.id === staffId);
+      const currentRole = staff?.role || 'staff';
+      if (staff && currentRole !== role) {
+        changes.push({
+          id: staffId,
+          name: staff.name,
+          from: currentRole,
+          to: role
+        });
+      }
+    }
+
+    if (changes.length === 0) {
+      alert('変更された権限はありません。');
+      return;
+    }
+
+    setChangedRolesList(changes);
+    setShowRoleConfirmModal(true);
+  };
+
+  const handleRolesSaveConfirm = async () => {
     setRoleSaving(true);
     try {
-      for (const [staffId, role] of Object.entries(staffRoles)) {
-        const staff = staffs.find(s => s.id === staffId);
-        if (staff && staff.role !== role) {
-          await api.updateStaffRole(staffId, role);
-        }
+      for (const change of changedRolesList) {
+        await api.updateStaffRole(change.id, change.to);
       }
       const user = await api.getCurrentUser();
       if (user) {
         const fetchedStaffs = await api.getStaffsByUserId(user.id);
         setStaffs(fetchedStaffs);
       }
+      setShowRoleConfirmModal(false);
       setShowRoleOverlay(false);
       alert('スタッフ権限を更新しました');
     } catch (e) {
@@ -767,8 +791,8 @@ export function SettingsPage({ onLogoutSuccess }: SettingsPageProps) {
             <span className="material-symbols-outlined">arrow_back_ios_new</span>
           </button>
           <h1>スタッフ権限一括管理</h1>
-          <button className="text-btn primary-text" onClick={handleRolesSave} disabled={roleSaving}>
-            {roleSaving ? '保存中...' : '保存'}
+          <button className="text-btn primary-text" onClick={handleRoleSaveClick} disabled={roleSaving}>
+            保存
           </button>
         </header>
         <main className="list-area bg-gray" style={{ flex: 1, overflowY: 'auto', padding: '16px', paddingBottom: '100px' }}>
@@ -812,6 +836,53 @@ export function SettingsPage({ onLogoutSuccess }: SettingsPageProps) {
           </div>
         </main>
       </div>
+
+      {/* Role Change Confirmation Modal */}
+      {showRoleConfirmModal && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', zIndex: 4000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
+          <div style={{ background: 'white', borderRadius: '16px', padding: '24px', width: '100%', maxWidth: '400px', display: 'flex', flexDirection: 'column', gap: '16px', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }}>
+            <h3 style={{ margin: 0, fontSize: '16px', borderBottom: '1px solid var(--border-color)', paddingBottom: '10px', fontWeight: 'bold', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span className="material-symbols-outlined" style={{ color: 'var(--primary)' }}>security</span>
+              スタッフ権限変更の確認
+            </h3>
+            
+            <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-sub)', lineHeight: '1.5' }}>
+              以下のスタッフの権限を変更します。よろしいですか？
+            </p>
+
+            <div style={{ maxHeight: '200px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px', border: '1px solid var(--border-color)', padding: '12px', borderRadius: '8px', background: '#F8FAFC' }}>
+              {changedRolesList.map(c => (
+                <div key={c.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px', paddingBottom: '6px', borderBottom: '1px solid #E2E8F0' }}>
+                  <span style={{ fontWeight: 'bold', color: 'var(--text-main)' }}>{c.name}</span>
+                  <span style={{ color: 'var(--text-sub)' }}>
+                    {c.from === 'admin' ? '管理者' : '一般スタッフ'} ➔ <strong style={{ color: c.to === 'admin' ? '#0369A1' : '#475569' }}>{c.to === 'admin' ? '管理者' : '一般スタッフ'}</strong>
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
+              <button 
+                type="button" 
+                className="btn-secondary" 
+                style={{ flex: 1, margin: 0, padding: '10px', borderRadius: '8px', border: '1px solid #CBD5E1', background: 'white', color: '#475569', fontWeight: 'bold', fontSize: '13px', cursor: 'pointer' }} 
+                onClick={() => setShowRoleConfirmModal(false)}
+              >
+                キャンセル
+              </button>
+              <button 
+                type="button" 
+                className="btn-primary" 
+                style={{ flex: 1, margin: 0, padding: '10px', borderRadius: '8px', border: 'none', background: 'var(--primary)', color: 'white', fontWeight: 'bold', fontSize: '13px', cursor: 'pointer' }}
+                onClick={handleRolesSaveConfirm}
+                disabled={roleSaving}
+              >
+                {roleSaving ? '保存中...' : '変更を適用する'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );
