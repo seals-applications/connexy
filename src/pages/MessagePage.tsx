@@ -729,24 +729,17 @@ export function MessagePage() {
         await api.updateContractTaskStatus(groupChatId, 'working', initEvals);
       }
 
-      // 2. Append system message and reply message to the admin chat room
+      // 2. Append system message (with transition link to group chat) to the admin chat room
       const acceptSystemMsg = {
         id: 'sys_accept_' + Date.now(),
         type: 'system',
-        text: `🎉 内定が承諾され、契約が成立しました！\n【アサインメンバー】: ${staff ? staff.name : currentUser.name}\n【契約金額】: 日当 ¥${job.price.toLocaleString()}\n稼働に向けてチャットで詳細情報を共有してください。`,
-        time: timeStr
-      };
-
-      const replyMsg = {
-        id: 'msg_accept_reply_' + Date.now(),
-        senderId: currentUser.id,
-        senderName: currentUser.staffName ? `${currentUser.name}_${currentUser.staffName}` : `${currentUser.name}_代表`,
-        text: '内定の承諾を完了いたしました。当日はよろしくお願いいたします。',
-        time: timeStr
+        text: `内定が承諾されました`,
+        time: timeStr,
+        linkToChatId: groupChatId
       };
 
       const taskMessages = (task.evaluations as any)?.messages || [];
-      const updatedMsgs = [...taskMessages, acceptSystemMsg, replyMsg];
+      const updatedMsgs = [...taskMessages, acceptSystemMsg];
 
       await api.saveContractTaskChat(
         activeChat.id,
@@ -1736,8 +1729,34 @@ export function MessagePage() {
           {mappedMessages.map((msg, i) => (
             <div key={i}>
               {msg.type === 'system' && (
-                <div className="chat-system-message" style={{ animation: 'fadeIn 0.3s ease' }}>
-                  <span>{msg.text}</span>
+                <div className="chat-system-message" style={{ animation: 'fadeIn 0.3s ease', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ whiteSpace: 'pre-wrap', textAlign: 'center', lineHeight: '1.5' }}>{msg.text}</span>
+                  {msg.linkToChatId && (
+                    <button
+                      onClick={() => setActiveChatId(msg.linkToChatId)}
+                      style={{
+                        background: 'var(--primary-color)',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '6px',
+                        padding: '6px 12px',
+                        fontSize: '11px',
+                        fontWeight: 'bold',
+                        cursor: 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        boxShadow: '0 2px 4px rgba(99, 102, 241, 0.2)',
+                        marginTop: '4px',
+                        transition: 'transform 0.2s'
+                      }}
+                      onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.03)'}
+                      onMouseLeave={e => e.currentTarget.style.transform = 'none'}
+                    >
+                      <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>chat</span>
+                      現場グループチャットを開く
+                    </button>
+                  )}
                 </div>
               )}
               {msg.type === 'received' && (
