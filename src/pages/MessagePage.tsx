@@ -1217,7 +1217,7 @@ export function MessagePage() {
             </div>
           </div>
           
-          {activeChat?.status === 'group' ? (
+          {activeChat?.status === 'group' && (
             <div className="chat-conditions-pin" style={{ marginTop: '4px', background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '8px', padding: '8px 12px', display: 'block' }}>
               <div style={{ fontSize: '11px', color: 'var(--text-sub)', fontWeight: 'bold', marginBottom: '4px', textAlign: 'left' }}>参加メンバー:</div>
               <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', whiteSpace: 'nowrap', fontSize: '11px', color: 'var(--text-main)', width: '100%' }}>
@@ -1228,26 +1228,10 @@ export function MessagePage() {
                 ))}
               </div>
             </div>
-          ) : (
-            <div className="chat-conditions-pin" style={{ marginTop: '4px' }}>
-              <div className="condition-summary">
-                <span className={`status-badge ${
-                  activeChat?.status === 'negotiating' ? 'badge-negotiating' : 
-                  activeChat?.status === 'waiting' ? 'badge-waiting' : 'badge-contracted'
-                }`}>
-                  {activeChat?.status === 'negotiating' ? '商談中' : 
-                   activeChat?.status === 'waiting' ? '契約待ち' : '契約成立'}
-                </span>
-                <div className="condition-details">
-                  <span className="text-gray text-small">単価: 15,000円 / 期間: 10/14 - 10/15</span>
-                </div>
-              </div>
-              <button className="btn-secondary btn-small">条件を編集</button>
-            </div>
           )}
         </header>
 
-        <main className="list-area bg-gray p-16 chat-timeline" ref={chatTimelineRef} style={{ paddingTop: activeChat?.status === 'group' ? '140px' : '96px' }}>
+        <main className="list-area bg-gray p-16 chat-timeline" ref={chatTimelineRef} style={{ paddingTop: activeChat?.status === 'group' ? '140px' : '72px' }}>
           {mappedMessages.map((msg, i) => (
             <div key={i}>
               {msg.type === 'system' && (
@@ -1379,6 +1363,31 @@ export function MessagePage() {
               gap: '12px',
               animation: 'slideUp 0.2s ease-out'
             }}>
+              {activeChat?.status !== 'group' && (
+                <div className="chat-conditions-pin" style={{ gridColumn: 'span 3', background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '8px', padding: '8px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
+                  <div className="condition-summary">
+                    <span className={`status-badge ${
+                      activeChat?.status === 'negotiating' ? 'badge-negotiating' : 
+                      activeChat?.status === 'waiting' ? 'badge-waiting' : 'badge-contracted'
+                    }`} style={{ margin: 0 }}>
+                      {activeChat?.status === 'negotiating' ? '商談中' : 
+                       activeChat?.status === 'waiting' ? '契約待ち' : '契約成立'}
+                    </span>
+                    <div className="condition-details">
+                      <span className="text-gray text-small">単価: 15,000円 / 期間: 10/14 - 10/15</span>
+                    </div>
+                  </div>
+                  <button 
+                    className="btn-secondary btn-small"
+                    onClick={() => {
+                      alert('条件編集モーダルを開きます（デモ機能）');
+                      setShowChatMenu(false);
+                    }}
+                  >
+                    条件を編集
+                  </button>
+                </div>
+              )}
               {[
                 {
                   id: 'receipt',
