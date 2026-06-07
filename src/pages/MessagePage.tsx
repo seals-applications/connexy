@@ -56,7 +56,7 @@ export function MessagePage() {
   // 経費・手配用のState
   const [showReceiptModal, setShowReceiptModal] = useState(false);
   const [showArrangementModal, setShowArrangementModal] = useState(false);
-  const [receiptCategory, setReceiptCategory] = useState<'transport' | 'accommodation'>('transport');
+  const [receiptCategory, setReceiptCategory] = useState<'transport' | 'accommodation' | 'car'>('transport');
   const [receiptAmount, setReceiptAmount] = useState<number>(0);
   const [receiptItem, setReceiptItem] = useState('');
   const [receiptRoute, setReceiptRoute] = useState('');
@@ -64,6 +64,33 @@ export function MessagePage() {
   const [showReceiptsListModal, setShowReceiptsListModal] = useState(false);
   const [arrangementCategory, setArrangementCategory] = useState<'transport' | 'accommodation'>('transport');
   const [arrangementInfo, setArrangementInfo] = useState('');
+
+  // カテゴリーごとの追加フィールド用のState
+  const [receiptHotelName, setReceiptHotelName] = useState('');
+  const [receiptNights, setReceiptNights] = useState('');
+  const [receiptDistance, setReceiptDistance] = useState<number | ''>('');
+  const [receiptGasolineRate, setReceiptGasolineRate] = useState<number>(15);
+  const [receiptExpressway, setReceiptExpressway] = useState<number | ''>('');
+  const [receiptParking, setReceiptParking] = useState<number | ''>('');
+
+  useEffect(() => {
+    if (receiptCategory === 'car') {
+      const distance = Number(receiptDistance) || 0;
+      const rate = Number(receiptGasolineRate) || 0;
+      const gas = Math.round(distance * rate);
+      const expressway = Number(receiptExpressway) || 0;
+      const parking = Number(receiptParking) || 0;
+      setReceiptAmount(gas + expressway + parking);
+    }
+  }, [receiptCategory, receiptDistance, receiptGasolineRate, receiptExpressway, receiptParking]);
+
+  const isReceiptSubmitDisabled = useMemo(() => {
+    if (!receiptItem.trim()) return true;
+    if (receiptCategory === 'car') {
+      return !receiptDistance || Number(receiptDistance) <= 0;
+    }
+    return !receiptAmount || Number(receiptAmount) <= 0;
+  }, [receiptCategory, receiptItem, receiptDistance, receiptAmount]);
 
   // メニュー・定型文・写真用のState
   const [showChatMenu, setShowChatMenu] = useState(false);
@@ -500,28 +527,59 @@ export function MessagePage() {
       ? `${currentUser.name}_${currentUser.staffName}` 
       : `${currentUser.name}_代表`;
 
+    const categoryText = 
+      receiptCategory === 'transport' ? '公共交通機関' :
+      receiptCategory === 'accommodation' ? '宿泊費' : '車移動';
+
+    let detailsText = '';
+    let detailsObj: any = {
+      category: receiptCategory,
+      amount: receiptAmount,
+      item: receiptItem.trim(),
+      notes: receiptNotes.trim(),
+      status: 'pending'
+    };
+
+    if (receiptCategory === 'transport') {
+      detailsObj.route = receiptRoute.trim();
+      detailsText = `(品目: ${receiptItem.trim()}${receiptRoute ? `, 区間: ${receiptRoute.trim()}` : ''})`;
+    } else if (receiptCategory === 'accommodation') {
+      detailsObj.hotelName = receiptHotelName.trim();
+      detailsObj.nights = receiptNights.trim();
+      detailsText = `(品目: ${receiptItem.trim()}${receiptHotelName ? `, 宿泊先: ${receiptHotelName.trim()}` : ''}${receiptNights ? `, 日数: ${receiptNights.trim()}` : ''})`;
+    } else if (receiptCategory === 'car') {
+      const distance = Number(receiptDistance) || 0;
+      const rate = Number(receiptGasolineRate) || 0;
+      const gas = Math.round(distance * rate);
+      const expressway = Number(receiptExpressway) || 0;
+      const parking = Number(receiptParking) || 0;
+      
+      detailsObj.distance = distance;
+      detailsObj.gasolineRate = rate;
+      detailsObj.gasoline = gas;
+      detailsObj.expressway = expressway;
+      detailsObj.parking = parking;
+      detailsObj.route = receiptRoute.trim();
+
+      detailsText = `(品目: ${receiptItem.trim()}, 距離: ${distance}km, ガソリン代: ¥${gas.toLocaleString()}${expressway ? `, 高速代: ¥${expressway.toLocaleString()}` : ''}${parking ? `, 駐車場代: ¥${parking.toLocaleString()}` : ''})`;
+    }
+
     const receiptMsg = {
       id: 'rc_' + Date.now(),
       type: 'sent',
       senderId: currentUser.id,
       senderName,
-      text: `【領収書提出】${receiptCategory === 'transport' ? '交通費' : '宿泊費'}: ¥${receiptAmount.toLocaleString()} の精算申請 (品目: ${receiptItem.trim()})`,
+      text: `【領収書提出】${categoryText}: ¥${receiptAmount.toLocaleString()} の精算申請 ${detailsText}`,
       time: timeStr,
       isReceipt: true,
-      receiptDetails: {
-        category: receiptCategory,
-        amount: receiptAmount,
-        item: receiptItem.trim(),
-        route: receiptRoute.trim(),
-        notes: receiptNotes.trim(),
-        status: 'pending'
-      }
+      receiptDetails: detailsObj
     };
 
+    const memberName = currentUser.staffName || '代表';
     const systemLogMsg = {
       id: 'sys_rc_' + Date.now(),
       type: 'system',
-      text: `${currentUser.name}が${receiptCategory === 'transport' ? '交通費' : '宿泊費'}の領収書を提出しました。(¥${receiptAmount.toLocaleString()})`,
+      text: `${currentUser.name} ${memberName}が${categoryText}の領収書を提出しました`,
       time: timeStr
     };
 
@@ -539,6 +597,18 @@ export function MessagePage() {
       const updatedTasks = await api.getContractTasks();
       setChatTasks(updatedTasks);
       setShowReceiptModal(false);
+
+      // Reset states
+      setReceiptAmount(0);
+      setReceiptItem('');
+      setReceiptRoute('');
+      setReceiptNotes('');
+      setReceiptHotelName('');
+      setReceiptNights('');
+      setReceiptDistance('');
+      setReceiptGasolineRate(15);
+      setReceiptExpressway('');
+      setReceiptParking('');
     } catch (e) {
       console.error(e);
       alert('領収書の提出に失敗しました');
@@ -766,11 +836,21 @@ export function MessagePage() {
 
   const renderReceiptCard = (msg: any) => {
     const isApproved = msg.receiptDetails?.status === 'approved';
-    const categoryLabel = msg.receiptDetails?.category === 'transport' ? '交通費' : '宿泊費';
+    const category = msg.receiptDetails?.category || 'transport';
+    const categoryLabel = 
+      category === 'transport' ? '公共交通機関' :
+      category === 'accommodation' ? '宿泊費' : '車移動';
     const amount = msg.receiptDetails?.amount || 0;
     const item = msg.receiptDetails?.item || '';
     const route = msg.receiptDetails?.route || '';
     const notes = msg.receiptDetails?.notes || '';
+    const hotelName = msg.receiptDetails?.hotelName || '';
+    const nights = msg.receiptDetails?.nights || '';
+    const distance = msg.receiptDetails?.distance;
+    const gasolineRate = msg.receiptDetails?.gasolineRate;
+    const gasoline = msg.receiptDetails?.gasoline;
+    const expressway = msg.receiptDetails?.expressway;
+    const parking = msg.receiptDetails?.parking;
     
     return (
       <div className="receipt-card" style={{ 
@@ -809,9 +889,51 @@ export function MessagePage() {
             <span style={{ color: '#6B7280' }}>品目:</span>
             <span style={{ fontWeight: 'bold', color: '#374151' }}>{item || '未指定'}</span>
           </div>
+          {category === 'accommodation' && hotelName && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', borderBottom: '1px solid #E5E7EB', paddingBottom: '4px' }}>
+              <span style={{ color: '#6B7280', fontSize: '10px' }}>宿泊先:</span>
+              <span style={{ color: '#374151', fontWeight: 'bold' }}>{hotelName}</span>
+            </div>
+          )}
+          {category === 'accommodation' && nights && (
+            <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #E5E7EB', paddingBottom: '4px' }}>
+              <span style={{ color: '#6B7280' }}>宿泊日数:</span>
+              <span style={{ color: '#374151', fontWeight: 'bold' }}>{nights} 泊</span>
+            </div>
+          )}
+          {category === 'car' && distance !== undefined && (
+            <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #E5E7EB', paddingBottom: '4px' }}>
+              <span style={{ color: '#6B7280' }}>移動距離:</span>
+              <span style={{ color: '#374151', fontWeight: 'bold' }}>{distance} km</span>
+            </div>
+          )}
+          {category === 'car' && gasolineRate !== undefined && (
+            <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #E5E7EB', paddingBottom: '4px' }}>
+              <span style={{ color: '#6B7280' }}>ガソリン単価:</span>
+              <span style={{ color: '#374151', fontWeight: 'bold' }}>{gasolineRate} 円/km</span>
+            </div>
+          )}
+          {category === 'car' && gasoline !== undefined && (
+            <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #E5E7EB', paddingBottom: '4px' }}>
+              <span style={{ color: '#6B7280' }}>ガソリン代:</span>
+              <span style={{ color: '#374151', fontWeight: 'bold' }}>¥{gasoline.toLocaleString()}</span>
+            </div>
+          )}
+          {category === 'car' && expressway !== undefined && expressway > 0 && (
+            <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #E5E7EB', paddingBottom: '4px' }}>
+              <span style={{ color: '#6B7280' }}>高速代:</span>
+              <span style={{ color: '#374151', fontWeight: 'bold' }}>¥{expressway.toLocaleString()}</span>
+            </div>
+          )}
+          {category === 'car' && parking !== undefined && parking > 0 && (
+            <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #E5E7EB', paddingBottom: '4px' }}>
+              <span style={{ color: '#6B7280' }}>駐車場代:</span>
+              <span style={{ color: '#374151', fontWeight: 'bold' }}>¥{parking.toLocaleString()}</span>
+            </div>
+          )}
           {route && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', borderBottom: '1px solid #E5E7EB', paddingBottom: '4px' }}>
-              <span style={{ color: '#6B7280', fontSize: '10px' }}>利用区間:</span>
+              <span style={{ color: '#6B7280', fontSize: '10px' }}>{category === 'car' ? '移動ルート' : '利用区間'}:</span>
               <span style={{ color: '#374151' }}>{route}</span>
             </div>
           )}
@@ -1265,12 +1387,18 @@ export function MessagePage() {
                   color: '#10B981',
                   bgColor: '#E6F4EA',
                   enabled: !isClient && (transportPaySeparate || accommodationPaySeparate),
-                  action: () => {
+                   action: () => {
                     setReceiptCategory(transportPaySeparate ? 'transport' : 'accommodation');
                     setReceiptAmount(0);
                     setReceiptItem('');
                     setReceiptRoute('');
                     setReceiptNotes('');
+                    setReceiptHotelName('');
+                    setReceiptNights('');
+                    setReceiptDistance('');
+                    setReceiptGasolineRate(15);
+                    setReceiptExpressway('');
+                    setReceiptParking('');
                     setShowReceiptModal(true);
                     setShowChatMenu(false);
                   },
@@ -1480,43 +1608,71 @@ export function MessagePage() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                 <label style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--text-sub)' }}>経費種別 *</label>
-                <div style={{ display: 'flex', gap: '8px' }}>
+                <div style={{ display: 'flex', gap: '6px' }}>
                   {transportPaySeparate && (
                     <button 
                       type="button" 
-                      onClick={() => setReceiptCategory('transport')}
+                      onClick={() => {
+                        setReceiptCategory('transport');
+                        setReceiptItem('');
+                      }}
                       style={{
                         flex: 1,
-                        padding: '8px',
+                        padding: '8px 4px',
                         borderRadius: '6px',
                         border: receiptCategory === 'transport' ? '2px solid #10B981' : '1px solid #E2E8F0',
                         background: receiptCategory === 'transport' ? '#DEF7EC' : 'white',
                         color: receiptCategory === 'transport' ? '#03543F' : 'var(--text-main)',
-                        fontSize: '12px',
+                        fontSize: '11px',
                         fontWeight: 'bold',
                         cursor: 'pointer'
                       }}
                     >
-                      交通費
+                      公共交通機関
                     </button>
                   )}
                   {accommodationPaySeparate && (
                     <button 
                       type="button" 
-                      onClick={() => setReceiptCategory('accommodation')}
+                      onClick={() => {
+                        setReceiptCategory('accommodation');
+                        setReceiptItem('');
+                      }}
                       style={{
                         flex: 1,
-                        padding: '8px',
+                        padding: '8px 4px',
                         borderRadius: '6px',
                         border: receiptCategory === 'accommodation' ? '2px solid #10B981' : '1px solid #E2E8F0',
                         background: receiptCategory === 'accommodation' ? '#DEF7EC' : 'white',
                         color: receiptCategory === 'accommodation' ? '#03543F' : 'var(--text-main)',
-                        fontSize: '12px',
+                        fontSize: '11px',
                         fontWeight: 'bold',
                         cursor: 'pointer'
                       }}
                     >
                       宿泊費
+                    </button>
+                  )}
+                  {transportPaySeparate && (
+                    <button 
+                      type="button" 
+                      onClick={() => {
+                        setReceiptCategory('car');
+                        setReceiptItem('車移動経費');
+                      }}
+                      style={{
+                        flex: 1,
+                        padding: '8px 4px',
+                        borderRadius: '6px',
+                        border: receiptCategory === 'car' ? '2px solid #10B981' : '1px solid #E2E8F0',
+                        background: receiptCategory === 'car' ? '#DEF7EC' : 'white',
+                        color: receiptCategory === 'car' ? '#03543F' : 'var(--text-main)',
+                        fontSize: '11px',
+                        fontWeight: 'bold',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      車移動
                     </button>
                   )}
                 </div>
@@ -1533,21 +1689,27 @@ export function MessagePage() {
                     onChange={e => setReceiptAmount(Number(e.target.value))}
                     onWheel={e => e.currentTarget.blur()}
                     placeholder="0"
+                    readOnly={receiptCategory === 'car'}
+                    disabled={receiptCategory === 'car'}
                     style={{
                       width: '100%',
                       padding: '8px 8px 8px 24px',
                       borderRadius: '6px',
                       border: '1px solid #ccc',
-                      fontSize: '14px'
+                      fontSize: '14px',
+                      backgroundColor: receiptCategory === 'car' ? '#F3F4F6' : 'white',
+                      color: receiptCategory === 'car' ? '#9CA3AF' : '#1F2937'
                     }}
                   />
                 </div>
                 {relatedJob && (
                   <div style={{ fontSize: '11px', color: '#B45309', marginTop: '2px' }}>
                     {receiptCategory === 'transport' && relatedJob.expenses?.transportValue ? (
-                      `※交通費上限額: ¥${relatedJob.expenses.transportValue.toLocaleString()} / 日`
+                      `※公共交通機関上限額: ¥${relatedJob.expenses.transportValue.toLocaleString()} / 日`
                     ) : receiptCategory === 'accommodation' && relatedJob.expenses?.accommodationValue ? (
                       `※宿泊費上限額: ¥${relatedJob.expenses.accommodationValue.toLocaleString()} / 泊`
+                    ) : receiptCategory === 'car' ? (
+                      '※ガソリン代・高速代・駐車場代の合計値が自動反映されます'
                     ) : (
                       '※上限設定はありません（実費支給）'
                     )}
@@ -1556,7 +1718,9 @@ export function MessagePage() {
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                <label style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--text-sub)' }}>領収書画像 *</label>
+                <label style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--text-sub)' }}>
+                  {receiptCategory === 'car' ? '証明画像 *' : '領収書画像 *'}
+                </label>
                 <div style={{
                   border: '1.5px dashed #10B981',
                   borderRadius: '8px',
@@ -1566,9 +1730,18 @@ export function MessagePage() {
                   cursor: 'pointer'
                 }}>
                   <span className="material-symbols-outlined" style={{ fontSize: '28px', color: '#10B981' }}>photo_camera</span>
-                  <div style={{ fontSize: '11px', color: '#047857', fontWeight: 'bold', marginTop: '4px' }}>領収書ファイルをアップロード済</div>
-                  <div style={{ fontSize: '10px', color: '#6B7280' }}>mock_receipt.jpg (142 KB)</div>
+                  <div style={{ fontSize: '11px', color: '#047857', fontWeight: 'bold', marginTop: '4px' }}>
+                    {receiptCategory === 'car' ? 'ルート証明画像をアップロード済' : '領収書ファイルをアップロード済'}
+                  </div>
+                  <div style={{ fontSize: '10px', color: '#6B7280' }}>
+                    {receiptCategory === 'car' ? 'mock_route_distance.jpg (210 KB)' : 'mock_receipt.jpg (142 KB)'}
+                  </div>
                 </div>
+                {receiptCategory === 'car' && (
+                  <div style={{ fontSize: '10px', color: '#B45309', marginTop: '2px', lineHeight: '1.4' }}>
+                    ※車移動のガソリン代は、Googleマップ等の移動ルート（距離）がわかるスクリーンショット画像を添付してください。
+                  </div>
+                )}
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
@@ -1577,7 +1750,10 @@ export function MessagePage() {
                   type="text"
                   value={receiptItem}
                   onChange={e => setReceiptItem(e.target.value)}
-                  placeholder="例：タクシー代、新幹線チケット、宿泊費"
+                  placeholder={
+                    receiptCategory === 'transport' ? '例：電車代、タクシー代、新幹線代' :
+                    receiptCategory === 'accommodation' ? '例：ホテル宿泊代、カプセルホテル代' : '例：車移動経費'
+                  }
                   style={{
                     padding: '8px 12px',
                     borderRadius: '6px',
@@ -1587,21 +1763,168 @@ export function MessagePage() {
                 />
               </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                <label style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--text-sub)' }}>利用区間（任意）</label>
-                <input 
-                  type="text"
-                  value={receiptRoute}
-                  onChange={e => setReceiptRoute(e.target.value)}
-                  placeholder="例：東京駅 〜 品川駅（片道）"
-                  style={{
-                    padding: '8px 12px',
-                    borderRadius: '6px',
-                    border: '1px solid #ccc',
-                    fontSize: '13px'
-                  }}
-                />
-              </div>
+              {receiptCategory === 'transport' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <label style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--text-sub)' }}>利用区間（任意）</label>
+                  <input 
+                    type="text"
+                    value={receiptRoute}
+                    onChange={e => setReceiptRoute(e.target.value)}
+                    placeholder="例：東京駅 〜 品川駅（片道）"
+                    style={{
+                      padding: '8px 12px',
+                      borderRadius: '6px',
+                      border: '1px solid #ccc',
+                      fontSize: '13px'
+                    }}
+                  />
+                </div>
+              )}
+
+              {receiptCategory === 'accommodation' && (
+                <>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <label style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--text-sub)' }}>宿泊施設名（任意）</label>
+                    <input 
+                      type="text"
+                      value={receiptHotelName}
+                      onChange={e => setReceiptHotelName(e.target.value)}
+                      placeholder="例：〇〇ホテル新宿店"
+                      style={{
+                        padding: '8px 12px',
+                        borderRadius: '6px',
+                        border: '1px solid #ccc',
+                        fontSize: '13px'
+                      }}
+                    />
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <label style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--text-sub)' }}>宿泊日数（任意）</label>
+                    <input 
+                      type="text"
+                      value={receiptNights}
+                      onChange={e => setReceiptNights(e.target.value)}
+                      placeholder="例：1泊、2泊など"
+                      style={{
+                        padding: '8px 12px',
+                        borderRadius: '6px',
+                        border: '1px solid #ccc',
+                        fontSize: '13px'
+                      }}
+                    />
+                  </div>
+                </>
+              )}
+
+              {receiptCategory === 'car' && (
+                <>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      <label style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--text-sub)' }}>移動距離 (km) *</label>
+                      <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                        <input 
+                          type="number"
+                          step="0.1"
+                          value={receiptDistance === '' ? '' : receiptDistance}
+                          onChange={e => setReceiptDistance(e.target.value === '' ? '' : Number(e.target.value))}
+                          placeholder="0.0"
+                          style={{
+                            width: '100%',
+                            padding: '8px 30px 8px 12px',
+                            borderRadius: '6px',
+                            border: '1px solid #ccc',
+                            fontSize: '13px'
+                          }}
+                        />
+                        <span style={{ position: 'absolute', right: '10px', fontSize: '11px', color: 'var(--text-sub)' }}>km</span>
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      <label style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--text-sub)' }}>単価 (円/km) *</label>
+                      <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                        <input 
+                          type="number"
+                          value={receiptGasolineRate}
+                          onChange={e => setReceiptGasolineRate(Number(e.target.value))}
+                          placeholder="15"
+                          style={{
+                            width: '100%',
+                            padding: '8px 30px 8px 12px',
+                            borderRadius: '6px',
+                            border: '1px solid #ccc',
+                            fontSize: '13px'
+                          }}
+                        />
+                        <span style={{ position: 'absolute', right: '10px', fontSize: '11px', color: 'var(--text-sub)' }}>円</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#F8FAFC', padding: '8px 12px', borderRadius: '6px', border: '1px solid #E2E8F0', fontSize: '12px', color: '#475569' }}>
+                    <span>ガソリン代（自動計算）:</span>
+                    <span style={{ fontWeight: 'bold', color: '#1E293B' }}>¥{Math.round((Number(receiptDistance) || 0) * (Number(receiptGasolineRate) || 0)).toLocaleString()}</span>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      <label style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--text-sub)' }}>高速代 (任意)</label>
+                      <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                        <span style={{ position: 'absolute', left: '10px', fontSize: '13px', color: 'var(--text-sub)' }}>¥</span>
+                        <input 
+                          type="number"
+                          className="no-spin"
+                          value={receiptExpressway === '' ? '' : receiptExpressway}
+                          onChange={e => setReceiptExpressway(e.target.value === '' ? '' : Number(e.target.value))}
+                          placeholder="0"
+                          style={{
+                            width: '100%',
+                            padding: '8px 8px 8px 24px',
+                            borderRadius: '6px',
+                            border: '1px solid #ccc',
+                            fontSize: '13px'
+                          }}
+                        />
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      <label style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--text-sub)' }}>駐車場代 (任意)</label>
+                      <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                        <span style={{ position: 'absolute', left: '10px', fontSize: '13px', color: 'var(--text-sub)' }}>¥</span>
+                        <input 
+                          type="number"
+                          className="no-spin"
+                          value={receiptParking === '' ? '' : receiptParking}
+                          onChange={e => setReceiptParking(e.target.value === '' ? '' : Number(e.target.value))}
+                          placeholder="0"
+                          style={{
+                            width: '100%',
+                            padding: '8px 8px 8px 24px',
+                            borderRadius: '6px',
+                            border: '1px solid #ccc',
+                            fontSize: '13px'
+                          }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <label style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--text-sub)' }}>移動経路（任意）</label>
+                    <input 
+                      type="text"
+                      value={receiptRoute}
+                      onChange={e => setReceiptRoute(e.target.value)}
+                      placeholder="例：自宅 〜 現場"
+                      style={{
+                        padding: '8px 12px',
+                        borderRadius: '6px',
+                        border: '1px solid #ccc',
+                        fontSize: '13px'
+                      }}
+                    />
+                  </div>
+                </>
+              )}
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                 <label style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--text-sub)' }}>備考（任意）</label>
@@ -1641,7 +1964,7 @@ export function MessagePage() {
               <button 
                 type="button" 
                 onClick={handleSendReceipt}
-                disabled={!receiptAmount || !receiptItem.trim()}
+                disabled={isReceiptSubmitDisabled}
                 style={{
                   flex: 1,
                   padding: '10px',
@@ -1651,8 +1974,8 @@ export function MessagePage() {
                   color: 'white',
                   fontSize: '13px',
                   fontWeight: 'bold',
-                  cursor: (receiptAmount && receiptItem.trim()) ? 'pointer' : 'not-allowed',
-                  opacity: (receiptAmount && receiptItem.trim()) ? 1 : 0.6
+                  cursor: !isReceiptSubmitDisabled ? 'pointer' : 'not-allowed',
+                  opacity: !isReceiptSubmitDisabled ? 1 : 0.6
                 }}
               >
                 提出する
@@ -2090,11 +2413,21 @@ export function MessagePage() {
                 ) : (
                   messages.filter((m: any) => m.isReceipt).map((msg: any) => {
                     const isApproved = msg.receiptDetails?.status === 'approved';
-                    const categoryLabel = msg.receiptDetails?.category === 'transport' ? '交通費' : '宿泊費';
+                    const category = msg.receiptDetails?.category || 'transport';
+                    const categoryLabel = 
+                      category === 'transport' ? '公共交通機関' :
+                      category === 'accommodation' ? '宿泊費' : '車移動';
                     const amount = msg.receiptDetails?.amount || 0;
                     const item = msg.receiptDetails?.item || '未指定';
                     const route = msg.receiptDetails?.route || '';
                     const notes = msg.receiptDetails?.notes || '';
+                    const hotelName = msg.receiptDetails?.hotelName || '';
+                    const nights = msg.receiptDetails?.nights || '';
+                    const distance = msg.receiptDetails?.distance;
+                    const gasolineRate = msg.receiptDetails?.gasolineRate;
+                    const gasoline = msg.receiptDetails?.gasoline;
+                    const expressway = msg.receiptDetails?.expressway;
+                    const parking = msg.receiptDetails?.parking;
                     
                     return (
                       <div key={msg.id} style={{
@@ -2112,8 +2445,8 @@ export function MessagePage() {
                             fontWeight: 'bold',
                             padding: '2px 8px',
                             borderRadius: '12px',
-                            background: msg.receiptDetails?.category === 'transport' ? '#D1FAE5' : '#DBEAFE',
-                            color: msg.receiptDetails?.category === 'transport' ? '#065F46' : '#1E40AF'
+                            background: category === 'transport' ? '#D1FAE5' : category === 'accommodation' ? '#DBEAFE' : '#F3E8FF',
+                            color: category === 'transport' ? '#065F46' : category === 'accommodation' ? '#1E40AF' : '#6B21A8'
                           }}>
                             {categoryLabel}
                           </span>
@@ -2130,19 +2463,63 @@ export function MessagePage() {
                             {isApproved ? '精算完了' : '承認待ち'}
                           </span>
                         </div>
-
+ 
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', borderBottom: '1px dashed #E2E8F0', paddingBottom: '6px' }}>
                           <span style={{ fontSize: '13px', color: '#4B5563' }}>品目: <strong style={{ color: '#111827' }}>{item}</strong></span>
                           <span style={{ fontSize: '18px', fontWeight: 'bold', color: '#111827' }}>¥{amount.toLocaleString()}</span>
                         </div>
-
+ 
+                        {category === 'accommodation' && hotelName && (
+                          <div style={{ fontSize: '12px', color: '#4B5563', display: 'flex', gap: '4px' }}>
+                            <span style={{ color: '#9CA3AF', flexShrink: 0 }}>宿泊先:</span>
+                            <span style={{ color: '#1F2937', fontWeight: 'bold' }}>{hotelName}</span>
+                          </div>
+                        )}
+                        {category === 'accommodation' && nights && (
+                          <div style={{ fontSize: '12px', color: '#4B5563', display: 'flex', justifyContent: 'space-between' }}>
+                            <span style={{ color: '#9CA3AF' }}>宿泊日数:</span>
+                            <span style={{ color: '#1F2937', fontWeight: 'bold' }}>{nights} 泊</span>
+                          </div>
+                        )}
+ 
+                        {category === 'car' && distance !== undefined && (
+                          <div style={{ fontSize: '12px', color: '#4B5563', display: 'flex', justifyContent: 'space-between' }}>
+                            <span style={{ color: '#9CA3AF' }}>移動距離:</span>
+                            <span style={{ color: '#1F2937', fontWeight: 'bold' }}>{distance} km</span>
+                          </div>
+                        )}
+                        {category === 'car' && gasolineRate !== undefined && (
+                          <div style={{ fontSize: '12px', color: '#4B5563', display: 'flex', justifyContent: 'space-between' }}>
+                            <span style={{ color: '#9CA3AF' }}>ガソリン単価:</span>
+                            <span style={{ color: '#1F2937', fontWeight: 'bold' }}>{gasolineRate} 円/km</span>
+                          </div>
+                        )}
+                        {category === 'car' && gasoline !== undefined && (
+                          <div style={{ fontSize: '12px', color: '#4B5563', display: 'flex', justifyContent: 'space-between' }}>
+                            <span style={{ color: '#9CA3AF' }}>ガソリン代:</span>
+                            <span style={{ color: '#1F2937', fontWeight: 'bold' }}>¥{gasoline.toLocaleString()}</span>
+                          </div>
+                        )}
+                        {category === 'car' && expressway !== undefined && expressway > 0 && (
+                          <div style={{ fontSize: '12px', color: '#4B5563', display: 'flex', justifyContent: 'space-between' }}>
+                            <span style={{ color: '#9CA3AF' }}>高速代:</span>
+                            <span style={{ color: '#1F2937', fontWeight: 'bold' }}>¥{expressway.toLocaleString()}</span>
+                          </div>
+                        )}
+                        {category === 'car' && parking !== undefined && parking > 0 && (
+                          <div style={{ fontSize: '12px', color: '#4B5563', display: 'flex', justifyContent: 'space-between' }}>
+                            <span style={{ color: '#9CA3AF' }}>駐車場代:</span>
+                            <span style={{ color: '#1F2937', fontWeight: 'bold' }}>¥{parking.toLocaleString()}</span>
+                          </div>
+                        )}
+ 
                         {route && (
                           <div style={{ fontSize: '12px', color: '#4B5563', display: 'flex', gap: '4px' }}>
-                            <span style={{ color: '#9CA3AF', flexShrink: 0 }}>利用区間:</span>
+                            <span style={{ color: '#9CA3AF', flexShrink: 0 }}>{category === 'car' ? '移動ルート:' : '利用区間:'}</span>
                             <span style={{ color: '#1F2937' }}>{route}</span>
                           </div>
                         )}
-
+ 
                         {notes && (
                           <div style={{ fontSize: '12px', color: '#4B5563', display: 'flex', gap: '4px' }}>
                             <span style={{ color: '#9CA3AF', flexShrink: 0 }}>備考:</span>
