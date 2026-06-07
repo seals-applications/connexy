@@ -1500,44 +1500,46 @@ export function MessagePage() {
         </div>
         
         {/* チャット種別フィルターカプセル */}
-        <div style={{
-          display: 'flex',
-          background: '#F1F5F9',
-          padding: '2px',
-          borderRadius: '20px',
-          marginTop: '10px',
-          boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.05)',
-          width: '100%'
-        }}>
-          {[
-            { id: 'all', label: 'すべて' },
-            { id: 'admin', label: '管理者間' },
-            { id: 'staff', label: 'スタッフ含む' }
-          ].map(opt => {
-            const isSel = chatTypeFilter === opt.id;
-            return (
-              <button
-                key={opt.id}
-                onClick={() => setChatTypeFilter(opt.id as any)}
-                style={{
-                  flex: 1,
-                  padding: '6px 0',
-                  borderRadius: '18px',
-                  border: 'none',
-                  background: isSel ? '#FFFFFF' : 'transparent',
-                  color: isSel ? 'var(--primary-color)' : '#64748B',
-                  fontSize: '11px',
-                  fontWeight: 'bold',
-                  boxShadow: isSel ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
-                  cursor: 'pointer',
-                  transition: 'all 0.15s ease'
-                }}
-              >
-                {opt.label}
-              </button>
-            );
-          })}
-        </div>
+        {currentUser && currentUser.staffRole !== 'staff' && (
+          <div style={{
+            display: 'flex',
+            background: '#F1F5F9',
+            padding: '2px',
+            borderRadius: '20px',
+            marginTop: '10px',
+            boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.05)',
+            width: '100%'
+          }}>
+            {[
+              { id: 'all', label: 'すべて' },
+              { id: 'admin', label: '管理者間' },
+              { id: 'staff', label: 'スタッフ含む' }
+            ].map(opt => {
+              const isSel = chatTypeFilter === opt.id;
+              return (
+                <button
+                  key={opt.id}
+                  onClick={() => setChatTypeFilter(opt.id as any)}
+                  style={{
+                    flex: 1,
+                    padding: '6px 0',
+                    borderRadius: '18px',
+                    border: 'none',
+                    background: isSel ? '#FFFFFF' : 'transparent',
+                    color: isSel ? 'var(--primary-color)' : '#64748B',
+                    fontSize: '11px',
+                    fontWeight: 'bold',
+                    boxShadow: isSel ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease'
+                  }}
+                >
+                  {opt.label}
+                </button>
+              );
+            })}
+          </div>
+        )}
       </header>
       <main className="list-area" style={{ overflowY: 'auto' }}>
         <div className="chat-list">
