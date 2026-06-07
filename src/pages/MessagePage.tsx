@@ -842,6 +842,23 @@ export function MessagePage() {
     });
   }, [relatedJob, chatTasks]);
 
+  // 1対1チャットにおける対向の「会社名 氏名（代表）」を解決する
+  const headerTitle = useMemo(() => {
+    if (!activeChat || !currentUser) return '';
+    if (activeChat.status === 'group') return activeChat.name;
+
+    const parts = activeChat.id.split('_');
+    if (parts.length < 3) return activeChat.name;
+    
+    const opponentId = parts[1] === currentUser.id ? parts[2] : parts[1];
+    const opponent = allCompanies.find(c => c.id === opponentId);
+    if (opponent) {
+      const repName = opponent.representativeName || '';
+      return `${opponent.name} ${repName}`.trim();
+    }
+    return activeChat.name;
+  }, [activeChat, currentUser, allCompanies]);
+
   const headerHeight = useMemo(() => {
     let height = 72;
     if (activeChat?.status === 'group') {
@@ -1641,7 +1658,7 @@ export function MessagePage() {
             </button>
             <div className="chat-header-title" style={{ textAlign: 'center', flex: 1, overflow: 'hidden', padding: '0 8px' }}>
               <h1 style={{ fontSize: '15px', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {activeChat?.name}
+                {headerTitle}
               </h1>
               <div style={{ fontSize: '12px', color: 'var(--text-sub)', marginTop: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                 {activeChat?.title}
@@ -1764,9 +1781,9 @@ export function MessagePage() {
                     {msg.avatar || activeChat?.avatar}
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', flex: 1, minWidth: 0 }}>
-                    {activeChat?.status === 'group' && (
+                    {activeChat?.status === 'group' && msg.senderName && (
                       <div style={{ fontSize: '10px', color: 'var(--text-sub)', marginLeft: '4px', marginBottom: '2px' }}>
-                        {msg.senderName}
+                        {msg.senderName.replace('_', ' ')}
                       </div>
                     )}
                     {msg.isReceipt || msg.isArrangement || msg.isPhoto || msg.isLocation ? (
@@ -1814,7 +1831,7 @@ export function MessagePage() {
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', flex: 1, minWidth: 0 }}>
                     {activeChat?.status === 'group' && (
                       <div style={{ fontSize: '10px', color: 'var(--text-sub)', marginRight: '4px', marginBottom: '2px', textAlign: 'right' }}>
-                        {msg.senderName || '自分'}
+                        {(msg.senderName || '自分').replace('_', ' ')}
                       </div>
                     )}
                     {msg.isReceipt || msg.isArrangement || msg.isPhoto || msg.isLocation ? (
