@@ -42,6 +42,8 @@ export function MessagePage() {
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
   const [inputText, setInputText] = useState('');
   const chatTimelineRef = useRef<HTMLDivElement>(null);
+  const prevActiveChatIdRef = useRef<string | null>(null);
+  const prevMessagesCountRef = useRef<number>(0);
   const [allCompanies, setAllCompanies] = useState<any[]>([]);
   const [chatTasks, setChatTasks] = useState<any[]>([]);
   const [jobs, setJobs] = useState<any[]>([]);
@@ -328,10 +330,36 @@ export function MessagePage() {
   }, [messages]);
 
   useEffect(() => {
-    if (chatTimelineRef.current) {
-      chatTimelineRef.current.scrollTop = chatTimelineRef.current.scrollHeight;
+    if (!chatTimelineRef.current) return;
+    const container = chatTimelineRef.current;
+    
+    // Check if chat ID changed
+    const currentChatId = activeChat?.id || null;
+    const isChatChanged = prevActiveChatIdRef.current !== currentChatId;
+    prevActiveChatIdRef.current = currentChatId;
+
+    // Check if message count increased
+    const currentCount = mappedMessages.length;
+    const isNewMessage = currentCount > prevMessagesCountRef.current;
+    prevMessagesCountRef.current = currentCount;
+
+    // Determine if user is scrolled near bottom
+    // scrollHeight - scrollTop - clientHeight is the distance from the bottom
+    const distanceFromBottom = container.scrollHeight - container.scrollTop - container.clientHeight;
+    const isNearBottom = distanceFromBottom < 100; // 100px threshold
+
+    // If chat changed, we scroll to bottom.
+    // If a new message arrived, we scroll to bottom only if the user was already near the bottom, or if the user sent it.
+    if (isChatChanged) {
+      container.scrollTop = container.scrollHeight;
+    } else if (isNewMessage) {
+      const lastMessage = mappedMessages[mappedMessages.length - 1];
+      const sentByMe = lastMessage && lastMessage.senderId === currentUser?.id;
+      if (isNearBottom || sentByMe) {
+        container.scrollTop = container.scrollHeight;
+      }
     }
-  }, [mappedMessages, activeChat]);
+  }, [mappedMessages, activeChat, currentUser]);
 
   const handleSend = async () => {
     if (!inputText.trim() || !activeChat || !currentUser) return;
