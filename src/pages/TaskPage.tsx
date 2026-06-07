@@ -109,6 +109,7 @@ export function TaskPage() {
   const [selectedTask, setSelectedTask] = useState<ContractTask | null>(null);
   const [evalRating, setEvalRating] = useState<number>(5); // 1 to 5 stars
   const [evalComment, setEvalComment] = useState('');
+  const [evalHasLateness, setEvalHasLateness] = useState(false);
   
   // 評価対象のトグル用 (デモ用：どの登場人物の視点で評価するか)
   const [evalRole, setEvalRole] = useState<'client' | 'worker' | 'staffToField'>('client');
@@ -400,6 +401,7 @@ export function TaskPage() {
     setEvalRating(5);
     setEvalComment('');
     setEvalRole('client');
+    setEvalHasLateness(false);
   };
 
   // 報告送信
@@ -421,7 +423,8 @@ export function TaskPage() {
         evalRating,
         evalComment,
         evaluatorName,
-        target
+        target,
+        evalHasLateness
       );
 
       alert('完了報告と評価を送信しました。\n（※ブラインド評価のため、双方が完了するまで相手の評価は表示されません）');
@@ -1283,6 +1286,34 @@ export function TaskPage() {
               </div>
             </div>
 
+            {evalRole === 'client' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <label style={{ fontSize: '13px', fontWeight: 'bold' }}>遅刻・早退の有無 *</label>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '14px', background: '#F8FAFC', padding: '10px', borderRadius: '8px', border: '1px solid #E2E8F0' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                    <input 
+                      type="radio" 
+                      name="hasLateness" 
+                      checked={!evalHasLateness} 
+                      onChange={() => setEvalHasLateness(false)} 
+                      style={{ accentColor: 'var(--primary)', width: '16px', height: '16px' }}
+                    />
+                    <span>なし（定時出勤・定時稼働）</span>
+                  </label>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                    <input 
+                      type="radio" 
+                      name="hasLateness" 
+                      checked={evalHasLateness} 
+                      onChange={() => setEvalHasLateness(true)} 
+                      style={{ accentColor: 'var(--primary)', width: '16px', height: '16px' }}
+                    />
+                    <span style={{ color: '#EF4444', fontWeight: 'bold' }}>あり（遅刻・早退あり）</span>
+                  </label>
+                </div>
+              </div>
+            )}
+
             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
               <label style={{ fontSize: '13px', fontWeight: 'bold' }}>
                 コメント {evalRating <= 2 ? <span style={{ color: '#EF4444' }}>(★2以下は必須)</span> : <span style={{ color: 'var(--text-sub)' }}>(任意)</span>}
@@ -1891,15 +1922,11 @@ export function TaskPage() {
           const staffLogs = (proposedStaff.completedTrainings || []).filter((t: string) => t.startsWith('ATTENDANCE_LOG_'));
           const checkinCount = staffLogs.length;
 
-          // Calculate staff attendance rate. We check time at the end of log string, <= "09:00" is on-time.
+          // Calculate staff attendance rate. Count occurrences where there was NO lateness/early departure.
           let staffAttendanceRate = p.attendanceRate; // fallback to company rate
           if (staffLogs.length > 0) {
-            const onTimeCount = staffLogs.filter((t: string) => {
-              const parts = t.split('_');
-              const timeStr = parts[parts.length - 1]; // e.g., "08:50" or "09:05"
-              return timeStr <= '09:00';
-            }).length;
-            staffAttendanceRate = (onTimeCount / staffLogs.length) * 100;
+            const lateLogsCount = staffLogs.filter((t: string) => t.endsWith('_LATE') || t.includes('_LATE')).length;
+            staffAttendanceRate = ((staffLogs.length - lateLogsCount) / staffLogs.length) * 100;
           }
 
           // 1. Reliability Score (staff attendance rate & company avg rating)

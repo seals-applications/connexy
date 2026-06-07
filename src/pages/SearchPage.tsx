@@ -2200,15 +2200,10 @@ export function SearchPage() {
                       const staffLogs = (selectedStaff.completedTrainings || []).filter((t: string) => t.startsWith('ATTENDANCE_LOG_'));
                       const checkinCount = staffLogs.length;
 
-                      let staffAttendanceRate = 98; // fallback default
-                      if (staffLogs.length > 0) {
-                        const onTimeCount = staffLogs.filter((t: string) => {
-                          const parts = t.split('_');
-                          const timeStr = parts[parts.length - 1];
-                          return timeStr <= '09:00';
-                        }).length;
-                        staffAttendanceRate = Math.round((onTimeCount / staffLogs.length) * 100);
-                      }
+                      const lateLogsCount = staffLogs.filter((t: string) => t.endsWith('_LATE') || t.includes('_LATE')).length;
+                      const staffAttendanceRate = staffLogs.length > 0 
+                        ? Math.round(((staffLogs.length - lateLogsCount) / staffLogs.length) * 100) 
+                        : 100;
 
                       return (
                         <div style={{

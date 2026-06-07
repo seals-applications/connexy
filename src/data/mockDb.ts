@@ -27,6 +27,7 @@ export interface Evaluation {
   comment?: string;
   evaluatorName: string;
   createdAt: string;
+  hasLateness?: boolean;
 }
 
 // 研修(Training)の型定義
@@ -728,7 +729,8 @@ export const api = {
     rating: number,
     comment: string,
     evaluatorName: string,
-    target: 'byClient' | 'byWorker' | 'byStaffToField'
+    target: 'byClient' | 'byWorker' | 'byStaffToField',
+    hasLateness?: boolean
   ): Promise<ContractTask> => {
     const { data: taskData, error: taskError } = await supabase.from('contract_tasks').select('*').eq('id', taskId).single();
     if (taskError || !taskData) throw new Error('Task not found');
@@ -739,7 +741,8 @@ export const api = {
       rating,
       comment,
       evaluatorName,
-      createdAt: new Date().toISOString().replace('T', ' ').substring(0, 16)
+      createdAt: new Date().toISOString().replace('T', ' ').substring(0, 16),
+      hasLateness
     };
 
     if (!task.evaluations) task.evaluations = {};
@@ -757,6 +760,29 @@ export const api = {
       .eq('id', taskId);
 
     if (updateError) throw updateError;
+
+    // Append to staff attendance logs if it's Client's report containing lateness status
+    if (target === 'byClient' && hasLateness !== undefined) {
+      try {
+        const { data: staffsData } = await supabase.from('staffs').select('*');
+        if (staffsData) {
+          const staffRow = staffsData.find(s => s.name === task.workerName);
+          if (staffRow) {
+            const staff = mapStaff(staffRow);
+            const nowStr = new Date().toISOString().split('T')[0];
+            const timeStr = new Date().toTimeString().split(' ')[0].substring(0, 5);
+            const statusSuffix = hasLateness ? 'LATE' : 'OK';
+            const newLog = `ATTENDANCE_LOG_${nowStr}_${timeStr}_${statusSuffix}`;
+            const updatedTrainings = [...(staff.completedTrainings || []), newLog];
+            await supabase.from('staffs').update({ completed_trainings: updatedTrainings }).eq('id', staff.id);
+            console.log(`Successfully appended attendance log "${newLog}" for staff "${staff.name}"`);
+          }
+        }
+      } catch (e) {
+        console.error('Failed to append staff attendance log on report submit:', e);
+      }
+    }
+
     return task;
   },
 
@@ -891,7 +917,8 @@ export const api = {
         const selectedDates = shuffled.slice(0, 15);
         selectedDates.forEach(date => {
           const randTime = times[Math.floor(Math.random() * times.length)];
-          newLogs.push(`ATTENDANCE_LOG_${date}_${randTime}`);
+          const isLate = randTime > '09:00';
+          newLogs.push(`ATTENDANCE_LOG_${date}_${randTime}_${isLate ? 'LATE' : 'OK'}`);
         });
 
         // Merge and update
