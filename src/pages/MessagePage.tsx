@@ -13,6 +13,37 @@ interface ChatChannel {
   members?: string[];
 }
 
+const photoOptions = [
+  {
+    id: 'p1',
+    label: '現場の状況（開始前）',
+    url: 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?auto=format&fit=crop&w=600&q=80'
+  },
+  {
+    id: 'p2',
+    label: '業務中の様子',
+    url: 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=600&q=80'
+  },
+  {
+    id: 'p3',
+    label: '作業完了時の状況',
+    url: 'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&fit=crop&w=600&q=80'
+  },
+  {
+    id: 'p4',
+    label: 'スタッフ・ミーティング',
+    url: 'https://images.unsplash.com/photo-1521737604893-d14cc237f11d?auto=format&fit=crop&w=600&q=80'
+  }
+];
+
+const templates = [
+  '【出勤】おはようございます。本日アサインのスタッフが現場に到着しました。よろしくお願いいたします。',
+  '【完了】本日の業務がすべて完了いたしました。ご確認よろしくお願いいたします。お疲れ様でした。',
+  '【緊急】交通機関の遅延（事故・気象）により、本日の現場到着が〇〇分ほど遅れる見込みです。申し訳ございません。',
+  '【確認】お世話になっております。条件面・現場住所・注意事項を確認させていただきました。',
+  '【相談】業務内容に関して一点質問がございます。お手数ですが、お手隙の際にお電話またはチャットにてご連絡いただけますでしょうか。'
+];
+
 export function MessagePage() {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
@@ -30,6 +61,13 @@ export function MessagePage() {
   const [receiptNotes, setReceiptNotes] = useState('');
   const [arrangementCategory, setArrangementCategory] = useState<'transport' | 'accommodation'>('transport');
   const [arrangementInfo, setArrangementInfo] = useState('');
+
+  // メニュー・定型文・写真用のState
+  const [showChatMenu, setShowChatMenu] = useState(false);
+  const [showPhotoModal, setShowPhotoModal] = useState(false);
+  const [photoCaption, setPhotoCaption] = useState('');
+  const [selectedPhotoUrl, setSelectedPhotoUrl] = useState('');
+  const [showTemplateModal, setShowTemplateModal] = useState(false);
 
   const handleSync = async () => {
     try {
@@ -549,6 +587,126 @@ export function MessagePage() {
     }
   };
 
+  // 現在地共有処理
+  const handleShareLocation = () => {
+    if (!activeChat || !currentUser) return;
+    if (!navigator.geolocation) {
+      alert('お使いのブラウザは位置情報の共有に対応していません。');
+      return;
+    }
+
+    const chatId = activeChat.id;
+    const chatTitle = activeChat.title;
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude, longitude } = position.coords;
+        const now = new Date();
+        const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+        const senderName = currentUser.staffName 
+          ? `${currentUser.name}_${currentUser.staffName}` 
+          : `${currentUser.name}_代表`;
+
+        const mapUrl = `https://www.google.com/maps?q=${latitude},${longitude}`;
+        const locationMsg = {
+          id: 'loc_' + Date.now(),
+          type: 'sent',
+          senderId: currentUser.id,
+          senderName,
+          text: `📍 [現在地を共有しました]\n${mapUrl}`,
+          time: timeStr,
+          isLocation: true,
+          locationDetails: {
+            latitude,
+            longitude,
+            url: mapUrl
+          }
+        };
+
+        const systemLogMsg = {
+          id: 'sys_loc_' + Date.now(),
+          type: 'system',
+          text: `${currentUser.name}が現在地を共有しました。`,
+          time: timeStr
+        };
+
+        try {
+          const task = chatTasks.find(t => t.id === chatId);
+          const msgs = task?.evaluations?.messages || getDefaultMessages(chatId);
+          const updated = [...msgs, locationMsg, systemLogMsg];
+
+          const jobTitle = chatTitle || '商談チャット';
+          const clientName = chatId.includes('sigma') ? '商談相手' : 'クライアント企業';
+          const workerName = currentUser.name;
+
+          await api.saveContractTaskChat(chatId, updated, jobTitle, clientName, workerName);
+
+          const updatedTasks = await api.getContractTasks();
+          setChatTasks(updatedTasks);
+        } catch (err) {
+          console.error('Failed to send location:', err);
+          alert('位置情報の送信に失敗しました');
+        }
+      },
+      (error) => {
+        console.error('Geolocation error:', error);
+        alert('位置情報の取得に失敗しました。GPSまたは位置情報の権限設定を確認してください。');
+      }
+    );
+  };
+
+  // 写真の送信処理
+  const handleSendPhoto = async () => {
+    if (!activeChat || !currentUser || !selectedPhotoUrl) return;
+
+    const now = new Date();
+    const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    const senderName = currentUser.staffName 
+      ? `${currentUser.name}_${currentUser.staffName}` 
+      : `${currentUser.name}_代表`;
+
+    const photoMsg = {
+      id: 'photo_' + Date.now(),
+      type: 'sent',
+      senderId: currentUser.id,
+      senderName,
+      text: `【写真添付】${photoCaption || '現場写真'}`,
+      time: timeStr,
+      isPhoto: true,
+      photoDetails: {
+        url: selectedPhotoUrl,
+        caption: photoCaption || '現場写真'
+      }
+    };
+
+    const systemLogMsg = {
+      id: 'sys_photo_' + Date.now(),
+      type: 'system',
+      text: `${currentUser.name}が現場写真を送信しました。`,
+      time: timeStr
+    };
+
+    try {
+      const task = chatTasks.find(t => t.id === activeChat.id);
+      const msgs = task?.evaluations?.messages || getDefaultMessages(activeChat.id);
+      const updated = [...msgs, photoMsg, systemLogMsg];
+
+      const jobTitle = activeChat.title || '商談チャット';
+      const clientName = activeChat.id.includes('sigma') ? '商談相手' : 'クライアント企業';
+      const workerName = currentUser.name;
+
+      await api.saveContractTaskChat(activeChat.id, updated, jobTitle, clientName, workerName);
+
+      const updatedTasks = await api.getContractTasks();
+      setChatTasks(updatedTasks);
+      setShowPhotoModal(false);
+      setPhotoCaption('');
+    } catch (err) {
+      console.error('Failed to send photo:', err);
+      alert('写真の送信に失敗しました');
+    }
+  };
+
   // 精算承認処理
   const handleApproveReceipt = async (msgId: string) => {
     if (!activeChat || !currentUser) return;
@@ -728,6 +886,96 @@ export function MessagePage() {
     );
   };
 
+  const renderPhotoCard = (msg: any) => {
+    const url = msg.photoDetails?.url;
+    const caption = msg.photoDetails?.caption || '現場写真';
+    
+    return (
+      <div className="photo-card" style={{ 
+        background: '#FFFFFF', 
+        border: '1px solid #E2E8F0', 
+        borderRadius: '12px', 
+        overflow: 'hidden',
+        width: '220px',
+        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)',
+        color: '#1F2937',
+        textAlign: 'left'
+      }}>
+        <img 
+          src={url} 
+          alt={caption} 
+          style={{ width: '100%', height: '120px', objectFit: 'cover', display: 'block' }} 
+        />
+        <div style={{ padding: '8px 12px', fontSize: '12px', background: '#F8FAFC' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-main)', fontWeight: 'bold' }}>
+            <span className="material-symbols-outlined" style={{ fontSize: '16px', color: '#8B5CF6' }}>photo_camera</span>
+            <span style={{ wordBreak: 'break-all', whiteSpace: 'pre-wrap', lineHeight: '1.4' }}>{caption}</span>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderLocationCard = (msg: any) => {
+    const url = msg.locationDetails?.url || `https://www.google.com/maps?q=${msg.locationDetails?.latitude},${msg.locationDetails?.longitude}`;
+    
+    return (
+      <div className="location-card" style={{ 
+        background: '#FFFFFF', 
+        border: '2px solid #F59E0B', 
+        borderRadius: '12px', 
+        padding: '12px', 
+        width: '220px',
+        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)',
+        color: '#1F2937',
+        textAlign: 'left'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 'bold', color: '#D97706', marginBottom: '8px' }}>
+          <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>share_location</span>
+          <span style={{ fontSize: '12px' }}>現在地共有（GPS）</span>
+        </div>
+        <div style={{ 
+          fontSize: '11px', 
+          color: '#1F2937', 
+          background: '#FFFBEB', 
+          padding: '8px', 
+          borderRadius: '6px',
+          border: '1px solid #FDE68A',
+          marginBottom: '8px'
+        }}>
+          <div style={{ color: '#B45309', fontWeight: 'bold', marginBottom: '2px', fontSize: '10px' }}>位置情報:</div>
+          <div style={{ fontFamily: 'monospace', fontSize: '10px', color: '#78350F' }}>
+            {msg.locationDetails?.latitude?.toFixed(6)}, {msg.locationDetails?.longitude?.toFixed(6)}
+          </div>
+        </div>
+        <a 
+          href={url} 
+          target="_blank" 
+          rel="noopener noreferrer"
+          style={{ 
+            background: '#F59E0B', 
+            color: '#FFFFFF', 
+            textDecoration: 'none',
+            fontSize: '11px', 
+            padding: '6px 10px', 
+            borderRadius: '6px', 
+            cursor: 'pointer', 
+            fontWeight: 'bold', 
+            width: '100%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '4px',
+            boxShadow: '0 2px 4px rgba(245, 158, 11, 0.2)'
+          }}
+        >
+          <span className="material-symbols-outlined" style={{ fontSize: '13px' }}>map</span>
+          Googleマップで開く
+        </a>
+      </div>
+    );
+  };
+
   return (
     <div className="view active" style={{ display: 'flex' }}>
       <header className="solid-header">
@@ -845,9 +1093,12 @@ export function MessagePage() {
                         {msg.senderName}
                       </div>
                     )}
-                    {msg.isReceipt || msg.isArrangement ? (
+                    {msg.isReceipt || msg.isArrangement || msg.isPhoto || msg.isLocation ? (
                       <div style={{ animation: 'fadeIn 0.3s ease', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                        {msg.isReceipt ? renderReceiptCard(msg) : renderArrangementCard(msg)}
+                        {msg.isReceipt ? renderReceiptCard(msg) : 
+                         msg.isArrangement ? renderArrangementCard(msg) : 
+                         msg.isPhoto ? renderPhotoCard(msg) : 
+                         renderLocationCard(msg)}
                         <span className="message-time" style={{ alignSelf: 'flex-start', margin: '4px 4px 0 4px' }}>{msg.time}</span>
                       </div>
                     ) : (
@@ -890,9 +1141,12 @@ export function MessagePage() {
                         {msg.senderName || '自分'}
                       </div>
                     )}
-                    {msg.isReceipt || msg.isArrangement ? (
+                    {msg.isReceipt || msg.isArrangement || msg.isPhoto || msg.isLocation ? (
                       <div style={{ animation: 'fadeIn 0.3s ease', display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'flex-end' }}>
-                        {msg.isReceipt ? renderReceiptCard(msg) : renderArrangementCard(msg)}
+                        {msg.isReceipt ? renderReceiptCard(msg) : 
+                         msg.isArrangement ? renderArrangementCard(msg) : 
+                         msg.isPhoto ? renderPhotoCard(msg) : 
+                         renderLocationCard(msg)}
                         <span className="message-time" style={{ alignSelf: 'flex-end', margin: '4px 4px 0 4px' }}>{msg.time}</span>
                       </div>
                     ) : (
@@ -931,71 +1185,153 @@ export function MessagePage() {
           ))}
         </main>
 
-        <footer className="chat-footer">
-          {/* 諸経費アクション（交通費・宿泊費の対応） */}
-          {activeChat && (
-            <div style={{ display: 'flex', gap: '8px', padding: '0 8px 8px 8px', borderBottom: '1px dashed #E2E8F0', marginBottom: '8px' }}>
-              {!isClient && (transportPaySeparate || accommodationPaySeparate) && (
-                <button 
-                  onClick={() => {
+        <footer className="chat-footer" style={{ position: 'relative' }}>
+          {/* Menu panel positioned absolutely above the footer */}
+          {showChatMenu && (
+            <div style={{
+              position: 'absolute',
+              bottom: '100%',
+              left: '16px',
+              right: '16px',
+              background: 'rgba(255, 255, 255, 0.95)',
+              backdropFilter: 'blur(10px)',
+              borderRadius: '16px',
+              border: '1px solid rgba(226, 232, 240, 0.8)',
+              boxShadow: '0 -10px 25px -5px rgba(0, 0, 0, 0.05), 0 10px 20px -5px rgba(0, 0, 0, 0.08)',
+              padding: '16px',
+              marginBottom: '10px',
+              zIndex: 20,
+              display: 'grid',
+              gridTemplateColumns: 'repeat(3, 1fr)',
+              gap: '12px',
+              animation: 'slideUp 0.2s ease-out'
+            }}>
+              {[
+                {
+                  id: 'receipt',
+                  label: '領収書提出',
+                  icon: 'receipt_long',
+                  color: '#10B981',
+                  bgColor: '#E6F4EA',
+                  enabled: !isClient && (transportPaySeparate || accommodationPaySeparate),
+                  action: () => {
                     setReceiptCategory(transportPaySeparate ? 'transport' : 'accommodation');
                     setReceiptAmount(0);
                     setReceiptNotes('');
                     setShowReceiptModal(true);
-                  }}
-                  style={{
-                    flex: 1,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '6px',
-                    padding: '8px 12px',
-                    background: '#10B981',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '8px',
-                    fontSize: '12px',
-                    fontWeight: 'bold',
-                    cursor: 'pointer',
-                    boxShadow: '0 2px 4px rgba(16, 185, 129, 0.15)',
-                    transition: 'all 0.2s'
-                  }}
-                >
-                  <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>receipt_long</span>
-                  領収書を提出する
-                </button>
-              )}
-              {isClient && (transportArranged || accommodationArranged) && (
-                <button 
-                  onClick={() => {
+                    setShowChatMenu(false);
+                  },
+                  disabledMessage: 'この案件は領収書精算（別途支給）に対応していません。'
+                },
+                {
+                  id: 'arrange',
+                  label: '手配情報共有',
+                  icon: 'campaign',
+                  color: '#3B82F6',
+                  bgColor: '#E8F0FE',
+                  enabled: isClient && (transportArranged || accommodationArranged),
+                  action: () => {
                     setArrangementCategory(transportArranged ? 'transport' : 'accommodation');
                     setArrangementInfo('');
                     setShowArrangementModal(true);
+                    setShowChatMenu(false);
+                  },
+                  disabledMessage: 'この案件は交通・宿泊のクライアント手配に対応していません。'
+                },
+                {
+                  id: 'location',
+                  label: '現在地を共有',
+                  icon: 'share_location',
+                  color: '#F59E0B',
+                  bgColor: '#FEF3C7',
+                  enabled: true,
+                  action: () => {
+                    handleShareLocation();
+                    setShowChatMenu(false);
+                  }
+                },
+                {
+                  id: 'photo',
+                  label: '写真を送信',
+                  icon: 'photo_camera',
+                  color: '#8B5CF6',
+                  bgColor: '#F3E8FF',
+                  enabled: true,
+                  action: () => {
+                    setSelectedPhotoUrl(photoOptions[0].url);
+                    setPhotoCaption('');
+                    setShowPhotoModal(true);
+                    setShowChatMenu(false);
+                  }
+                },
+                {
+                  id: 'template',
+                  label: '定型文挿入',
+                  icon: 'quickreply',
+                  color: '#14B8A6',
+                  bgColor: '#E6FFFA',
+                  enabled: true,
+                  action: () => {
+                    setShowTemplateModal(true);
+                    setShowChatMenu(false);
+                  }
+                },
+                {
+                  id: 'propose',
+                  label: activeChat?.status === 'contracted' ? '契約完了済' : (proposed ? '提案済' : '条件提案・発注'),
+                  icon: 'edit_document',
+                  color: '#EC4899',
+                  bgColor: '#FCE7F3',
+                  enabled: activeChat?.status !== 'group' && activeChat?.status !== 'contracted' && !proposed,
+                  action: () => {
+                    handlePropose();
+                    setShowChatMenu(false);
+                  },
+                  disabledMessage: activeChat?.status === 'group' ? 'グループチャットでは発注提案は行えません。' : 'すでに契約が成立しているか、提案が送信されています。'
+                }
+              ].map(item => (
+                <button
+                  key={item.id}
+                  onClick={() => {
+                    if (item.enabled) {
+                      item.action();
+                    } else if (item.disabledMessage) {
+                      alert(item.disabledMessage);
+                    }
                   }}
                   style={{
-                    flex: 1,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '6px',
+                    background: 'transparent',
+                    border: 'none',
+                    padding: '8px 4px',
+                    cursor: 'pointer',
+                    opacity: item.enabled ? 1 : 0.4,
+                    transition: 'all 0.2s',
+                    outline: 'none'
+                  }}
+                >
+                  <div style={{
+                    width: '44px',
+                    height: '44px',
+                    borderRadius: '12px',
+                    background: item.bgColor,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    gap: '6px',
-                    padding: '8px 12px',
-                    background: '#3B82F6',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '8px',
-                    fontSize: '12px',
-                    fontWeight: 'bold',
-                    cursor: 'pointer',
-                    boxShadow: '0 2px 4px rgba(59, 130, 246, 0.15)',
-                    transition: 'all 0.2s'
-                  }}
-                >
-                  <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>campaign</span>
-                  手配情報を共有する
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
+                    transition: 'transform 0.15s ease'
+                  }} className="menu-icon-btn">
+                    <span className="material-symbols-outlined" style={{ fontSize: '22px', color: item.color }}>{item.icon}</span>
+                  </div>
+                  <span style={{ fontSize: '10px', fontWeight: 'bold', color: 'var(--text-main)', textAlign: 'center', whiteSpace: 'nowrap' }}>{item.label}</span>
                 </button>
-              )}
+              ))}
             </div>
           )}
+
           {activeChat?.status !== 'group' && (
             <div className="chat-actions-top">
               <button className="btn-primary btn-small w-full" onClick={handlePropose} disabled={proposed} style={{ opacity: proposed ? 0.7 : 1 }}>
@@ -1005,8 +1341,30 @@ export function MessagePage() {
             </div>
           )}
           <div className="chat-input-area">
-            <button className="icon-btn-dark text-gray">
-              <span className="material-symbols-outlined">add_circle</span>
+            <button 
+              className="icon-btn-dark text-gray"
+              onClick={() => setShowChatMenu(!showChatMenu)}
+              style={{ 
+                background: showChatMenu ? '#E2E8F0' : 'transparent', 
+                borderRadius: '50%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: '36px',
+                height: '36px',
+                padding: 0
+              }}
+            >
+              <span 
+                className="material-symbols-outlined"
+                style={{ 
+                  transform: showChatMenu ? 'rotate(45deg)' : 'none', 
+                  transition: 'transform 0.2s ease-in-out',
+                  color: showChatMenu ? '#475569' : 'var(--text-sub)'
+                }}
+              >
+                add_circle
+              </span>
             </button>
             <textarea
               className="form-control chat-textarea"
@@ -1352,7 +1710,235 @@ export function MessagePage() {
           </div>
         </div>
       )}
-    </div>
-  );
-}
 
+      {/* 現場写真送信モーダル */}
+      {showPhotoModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0,0,0,0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 9999,
+          padding: '16px'
+        }}>
+          <div style={{
+            background: 'white',
+            borderRadius: '12px',
+            padding: '20px',
+            width: '100%',
+            maxWidth: '360px',
+            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)',
+            textAlign: 'left'
+          }}>
+            <h3 style={{ margin: '0 0 16px 0', fontSize: '16px', fontWeight: 'bold', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span className="material-symbols-outlined" style={{ color: '#8B5CF6' }}>photo_camera</span>
+              現場写真を送信
+            </h3>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+
+                <label style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--text-sub)' }}>写真を選択 *</label>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px' }}>
+                  {photoOptions.map(p => (
+                    <div 
+                      key={p.id}
+                      onClick={() => setSelectedPhotoUrl(p.url)}
+                      style={{
+                        position: 'relative',
+                        borderRadius: '8px',
+                        overflow: 'hidden',
+                        height: '70px',
+                        border: selectedPhotoUrl === p.url ? '3px solid #8B5CF6' : '1px solid #E2E8F0',
+                        cursor: 'pointer',
+                        transition: 'transform 0.15s ease'
+                      }}
+                    >
+                      <img src={p.url} alt={p.label} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      <div style={{
+                        position: 'absolute',
+                        bottom: 0,
+                        left: 0,
+                        right: 0,
+                        background: 'rgba(0,0,0,0.6)',
+                        color: 'white',
+                        fontSize: '9px',
+                        padding: '2px 4px',
+                        textAlign: 'center',
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis'
+                      }}>
+                        {p.label}
+                      </div>
+                      {selectedPhotoUrl === p.url && (
+                        <div style={{
+                          position: 'absolute',
+                          top: '4px',
+                          right: '4px',
+                          background: '#8B5CF6',
+                          color: 'white',
+                          borderRadius: '50%',
+                          width: '16px',
+                          height: '16px',
+                          display: 'flex',
+                          alignItems: 'center',
+                           justifyContent: 'center'
+                         }}>
+                           <span className="material-symbols-outlined" style={{ fontSize: '10px', fontWeight: 'bold' }}>check</span>
+                         </div>
+                       )}
+                     </div>
+                   ))}
+                 </div>
+               </div>
+
+               <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                 <label style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--text-sub)' }}>説明・キャプション（任意）</label>
+                 <input 
+                   type="text" 
+                   value={photoCaption}
+                   onChange={e => setPhotoCaption(e.target.value)}
+                   placeholder="例：現在の現場の混雑状況です。"
+                   style={{
+                     padding: '8px 12px',
+                     borderRadius: '6px',
+                     border: '1px solid #ccc',
+                     fontSize: '13px'
+                   }}
+                 />
+               </div>
+             </div>
+
+             <div style={{ display: 'flex', gap: '8px', marginTop: '20px' }}>
+               <button 
+                 type="button" 
+                 onClick={() => setShowPhotoModal(false)}
+                 style={{
+                   flex: 1,
+                   padding: '10px',
+                   borderRadius: '6px',
+                   border: '1px solid #E2E8F0',
+                   background: 'white',
+                   fontSize: '13px',
+                   fontWeight: 'bold',
+                   cursor: 'pointer'
+                 }}
+               >
+                 キャンセル
+               </button>
+               <button 
+                 type="button" 
+                 onClick={handleSendPhoto}
+                 disabled={!selectedPhotoUrl}
+                 style={{
+                   flex: 1,
+                   padding: '10px',
+                   borderRadius: '6px',
+                   border: 'none',
+                   background: '#8B5CF6',
+                   color: 'white',
+                   fontSize: '13px',
+                   fontWeight: 'bold',
+                   cursor: selectedPhotoUrl ? 'pointer' : 'not-allowed',
+                   opacity: selectedPhotoUrl ? 1 : 0.6
+                 }}
+               >
+                 送信する
+               </button>
+             </div>
+           </div>
+         </div>
+       )}
+
+       {/* 定型文挿入モーダル */}
+       {showTemplateModal && (
+         <div style={{
+           position: 'fixed',
+           top: 0,
+           left: 0,
+           right: 0,
+           bottom: 0,
+           background: 'rgba(0,0,0,0.5)',
+           display: 'flex',
+           alignItems: 'center',
+           justifyContent: 'center',
+           zIndex: 9999,
+           padding: '16px'
+         }}>
+           <div style={{
+             background: 'white',
+             borderRadius: '12px',
+             padding: '20px',
+             width: '100%',
+             maxWidth: '400px',
+             boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)',
+             textAlign: 'left'
+           }}>
+             <h3 style={{ margin: '0 0 16px 0', fontSize: '16px', fontWeight: 'bold', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+               <span className="material-symbols-outlined" style={{ color: '#14B8A6' }}>quickreply</span>
+               定型文（テンプレート）を選択
+             </h3>
+             
+             <p style={{ margin: '0 0 12px 0', fontSize: '12px', color: 'var(--text-sub)' }}>
+               クリックするとメッセージ入力欄に挿入されます。
+             </p>
+
+             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '250px', overflowY: 'auto', padding: '2px' }}>
+               {templates.map((t, idx) => (
+                 <button 
+                   key={idx}
+                   onClick={() => {
+                     setInputText(prev => prev ? prev + '\n' + t : t);
+                     setShowTemplateModal(false);
+                   }}
+                   style={{
+                     width: '100%',
+                     padding: '12px',
+                     borderRadius: '8px',
+                     border: '1px solid #E2E8F0',
+                     background: '#F8FAFC',
+                     textAlign: 'left',
+                     fontSize: '12px',
+                     color: 'var(--text-main)',
+                     lineHeight: '1.5',
+                     cursor: 'pointer',
+                     transition: 'all 0.15s'
+                   }}
+                   onMouseEnter={e => e.currentTarget.style.background = '#E6FFFA'}
+                   onMouseLeave={e => e.currentTarget.style.background = '#F8FAFC'}
+                 >
+                   {t}
+                 </button>
+               ))}
+             </div>
+
+             <div style={{ display: 'flex', marginTop: '16px' }}>
+               <button 
+                 type="button" 
+                 onClick={() => setShowTemplateModal(false)}
+                 style={{
+                   flex: 1,
+                   padding: '10px',
+                   borderRadius: '6px',
+                   border: '1px solid #E2E8F0',
+                   background: 'white',
+                   fontSize: '13px',
+                   fontWeight: 'bold',
+                   cursor: 'pointer'
+                 }}
+               >
+                 閉じる
+               </button>
+             </div>
+           </div>
+         </div>
+       )}
+     </div>
+   );
+ }
