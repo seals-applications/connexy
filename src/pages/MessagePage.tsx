@@ -36,13 +36,6 @@ const photoOptions = [
   }
 ];
 
-const templates = [
-  '【出勤】おはようございます。本日アサインのスタッフが現場に到着しました。よろしくお願いいたします。',
-  '【完了】本日の業務がすべて完了いたしました。ご確認よろしくお願いいたします。お疲れ様でした。',
-  '【緊急】交通機関の遅延（事故・気象）により、本日の現場到着が〇〇分ほど遅れる見込みです。申し訳ございません。',
-  '【確認】お世話になっております。条件面・現場住所・注意事項を確認させていただきました。',
-  '【相談】業務内容に関して一点質問がございます。お手数ですが、お手隙の際にお電話またはチャットにてご連絡いただけますでしょうか。'
-];
 
 export function MessagePage() {
   const [currentUser, setCurrentUser] = useState<any>(null);
@@ -97,7 +90,6 @@ export function MessagePage() {
   const [showPhotoModal, setShowPhotoModal] = useState(false);
   const [photoCaption, setPhotoCaption] = useState('');
   const [selectedPhotoUrl, setSelectedPhotoUrl] = useState('');
-  const [showTemplateModal, setShowTemplateModal] = useState(false);
 
   const handleSync = async () => {
     try {
@@ -666,73 +658,7 @@ export function MessagePage() {
     }
   };
 
-  // 現在地共有処理
-  const handleShareLocation = () => {
-    if (!activeChat || !currentUser) return;
-    if (!navigator.geolocation) {
-      alert('お使いのブラウザは位置情報の共有に対応していません。');
-      return;
-    }
 
-    const chatId = activeChat.id;
-    const chatTitle = activeChat.title;
-
-    navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        const { latitude, longitude } = position.coords;
-        const now = new Date();
-        const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-        const senderName = currentUser.staffName 
-          ? `${currentUser.name}_${currentUser.staffName}` 
-          : `${currentUser.name}_代表`;
-
-        const mapUrl = `https://www.google.com/maps?q=${latitude},${longitude}`;
-        const locationMsg = {
-          id: 'loc_' + Date.now(),
-          type: 'sent',
-          senderId: currentUser.id,
-          senderName,
-          text: `📍 [現在地を共有しました]\n${mapUrl}`,
-          time: timeStr,
-          isLocation: true,
-          locationDetails: {
-            latitude,
-            longitude,
-            url: mapUrl
-          }
-        };
-
-        const systemLogMsg = {
-          id: 'sys_loc_' + Date.now(),
-          type: 'system',
-          text: `${currentUser.name}が現在地を共有しました。`,
-          time: timeStr
-        };
-
-        try {
-          const task = chatTasks.find(t => t.id === chatId);
-          const msgs = task?.evaluations?.messages || getDefaultMessages(chatId);
-          const updated = [...msgs, locationMsg, systemLogMsg];
-
-          const jobTitle = chatTitle || '商談チャット';
-          const clientName = chatId.includes('sigma') ? '商談相手' : 'クライアント企業';
-          const workerName = currentUser.name;
-
-          await api.saveContractTaskChat(chatId, updated, jobTitle, clientName, workerName);
-
-          const updatedTasks = await api.getContractTasks();
-          setChatTasks(updatedTasks);
-        } catch (err) {
-          console.error('Failed to send location:', err);
-          alert('位置情報の送信に失敗しました');
-        }
-      },
-      (error) => {
-        console.error('Geolocation error:', error);
-        alert('位置情報の取得に失敗しました。GPSまたは位置情報の権限設定を確認してください。');
-      }
-    );
-  };
 
   // 写真の送信処理
   const handleSendPhoto = async () => {
@@ -1178,36 +1104,6 @@ export function MessagePage() {
               </div>
             </div>
             <div style={{ display: 'flex', gap: '8px' }}>
-              {activeChat?.status !== 'group' && (
-                <button 
-                  className="icon-btn-dark" 
-                  onClick={() => setShowReceiptsListModal(true)} 
-                  title="領収書一覧"
-                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}
-                >
-                  <span className="material-symbols-outlined" style={{ color: '#10B981' }}>receipt_long</span>
-                  {pendingReceiptsCount > 0 && (
-                    <span style={{
-                      position: 'absolute',
-                      top: '-4px',
-                      right: '-4px',
-                      background: '#EF4444',
-                      color: 'white',
-                      borderRadius: '50%',
-                      width: '15px',
-                      height: '15px',
-                      fontSize: '8px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontWeight: 'bold',
-                      boxShadow: '0 0 0 2px white'
-                    }}>
-                      {pendingReceiptsCount}
-                    </span>
-                  )}
-                </button>
-              )}
               <button className="icon-btn-dark" onClick={handleSync} title="同期" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <span className="material-symbols-outlined" style={{ color: 'var(--primary-color)' }}>refresh</span>
               </button>
@@ -1392,7 +1288,7 @@ export function MessagePage() {
                 {
                   id: 'receipt',
                   label: '領収書提出',
-                  icon: 'receipt_long',
+                  icon: 'receipt',
                   color: '#10B981',
                   bgColor: '#E6F4EA',
                   enabled: !isClient && (transportPaySeparate || accommodationPaySeparate),
@@ -1414,6 +1310,19 @@ export function MessagePage() {
                   disabledMessage: 'この案件は領収書精算（別途支給）に対応していません。'
                 },
                 {
+                  id: 'receipt_list',
+                  label: '領収書一覧・承認',
+                  icon: 'receipt_long',
+                  color: '#10B981',
+                  bgColor: '#E6F4EA',
+                  enabled: activeChat?.status !== 'group',
+                  action: () => {
+                    setShowReceiptsListModal(true);
+                    setShowChatMenu(false);
+                  },
+                  disabledMessage: 'グループチャットでは領収書一覧の閲覧は行えません。'
+                },
+                {
                   id: 'arrange',
                   label: '手配情報共有',
                   icon: 'campaign',
@@ -1429,18 +1338,6 @@ export function MessagePage() {
                   disabledMessage: 'この案件は交通・宿泊のクライアント手配に対応していません。'
                 },
                 {
-                  id: 'location',
-                  label: '現在地を共有',
-                  icon: 'share_location',
-                  color: '#F59E0B',
-                  bgColor: '#FEF3C7',
-                  enabled: true,
-                  action: () => {
-                    handleShareLocation();
-                    setShowChatMenu(false);
-                  }
-                },
-                {
                   id: 'photo',
                   label: '写真を送信',
                   icon: 'photo_camera',
@@ -1451,18 +1348,6 @@ export function MessagePage() {
                     setSelectedPhotoUrl(photoOptions[0].url);
                     setPhotoCaption('');
                     setShowPhotoModal(true);
-                    setShowChatMenu(false);
-                  }
-                },
-                {
-                  id: 'template',
-                  label: '定型文挿入',
-                  icon: 'quickreply',
-                  color: '#14B8A6',
-                  bgColor: '#E6FFFA',
-                  enabled: true,
-                  action: () => {
-                    setShowTemplateModal(true);
                     setShowChatMenu(false);
                   }
                 },
@@ -1512,9 +1397,30 @@ export function MessagePage() {
                     alignItems: 'center',
                     justifyContent: 'center',
                     boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
-                    transition: 'transform 0.15s ease'
+                    transition: 'transform 0.15s ease',
+                    position: 'relative'
                   }} className="menu-icon-btn">
                     <span className="material-symbols-outlined" style={{ fontSize: '22px', color: item.color }}>{item.icon}</span>
+                    {item.id === 'receipt_list' && pendingReceiptsCount > 0 && (
+                      <span style={{
+                        position: 'absolute',
+                        top: '-4px',
+                        right: '-4px',
+                        background: '#EF4444',
+                        color: 'white',
+                        borderRadius: '50%',
+                        width: '16px',
+                        height: '16px',
+                        fontSize: '9px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontWeight: 'bold',
+                        boxShadow: '0 0 0 2px white'
+                      }}>
+                        {pendingReceiptsCount}
+                      </span>
+                    )}
                   </div>
                   <span style={{ fontSize: '10px', fontWeight: 'bold', color: 'var(--text-main)', textAlign: 'center', whiteSpace: 'nowrap' }}>{item.label}</span>
                 </button>
@@ -1527,10 +1433,6 @@ export function MessagePage() {
               <button className="btn-primary btn-small w-full" onClick={handlePropose} disabled={proposed} style={{ opacity: proposed ? 0.7 : 1 }}>
                 <span className="material-symbols-outlined icon-small">edit_document</span>
                 {activeChat?.status === 'contracted' ? '契約成立済み' : (proposed ? '提案を発行しました' : 'この条件で発注（契約提案）')}
-              </button>
-              <button className="btn-secondary btn-small w-full" onClick={() => setShowReceiptsListModal(true)} style={{ marginTop: '8px' }}>
-                <span className="material-symbols-outlined icon-small">receipt_long</span>
-                領収書一覧・承認
               </button>
             </div>
           )}
@@ -2277,89 +2179,6 @@ export function MessagePage() {
          </div>
        )}
 
-       {/* 定型文挿入モーダル */}
-       {showTemplateModal && (
-         <div style={{
-           position: 'fixed',
-           top: 0,
-           left: 0,
-           right: 0,
-           bottom: 0,
-           background: 'rgba(0,0,0,0.5)',
-           display: 'flex',
-           alignItems: 'center',
-           justifyContent: 'center',
-           zIndex: 9999,
-           padding: '16px'
-         }}>
-           <div style={{
-             background: 'white',
-             borderRadius: '12px',
-             padding: '20px',
-             width: '100%',
-             maxWidth: '400px',
-             boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)',
-             textAlign: 'left'
-           }}>
-             <h3 style={{ margin: '0 0 16px 0', fontSize: '16px', fontWeight: 'bold', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-               <span className="material-symbols-outlined" style={{ color: '#14B8A6' }}>quickreply</span>
-               定型文（テンプレート）を選択
-             </h3>
-             
-             <p style={{ margin: '0 0 12px 0', fontSize: '12px', color: 'var(--text-sub)' }}>
-               クリックするとメッセージ入力欄に挿入されます。
-             </p>
-
-             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '250px', overflowY: 'auto', padding: '2px' }}>
-               {templates.map((t, idx) => (
-                 <button 
-                   key={idx}
-                   onClick={() => {
-                     setInputText(prev => prev ? prev + '\n' + t : t);
-                     setShowTemplateModal(false);
-                   }}
-                   style={{
-                     width: '100%',
-                     padding: '12px',
-                     borderRadius: '8px',
-                     border: '1px solid #E2E8F0',
-                     background: '#F8FAFC',
-                     textAlign: 'left',
-                     fontSize: '12px',
-                     color: 'var(--text-main)',
-                     lineHeight: '1.5',
-                     cursor: 'pointer',
-                     transition: 'all 0.15s'
-                   }}
-                   onMouseEnter={e => e.currentTarget.style.background = '#E6FFFA'}
-                   onMouseLeave={e => e.currentTarget.style.background = '#F8FAFC'}
-                 >
-                   {t}
-                 </button>
-               ))}
-             </div>
-
-             <div style={{ display: 'flex', marginTop: '16px' }}>
-               <button 
-                 type="button" 
-                 onClick={() => setShowTemplateModal(false)}
-                 style={{
-                   flex: 1,
-                   padding: '10px',
-                   borderRadius: '6px',
-                   border: '1px solid #E2E8F0',
-                   background: 'white',
-                   fontSize: '13px',
-                   fontWeight: 'bold',
-                   cursor: 'pointer'
-                 }}
-               >
-                 閉じる
-               </button>
-             </div>
-           </div>
-         </div>
-       )}
 
         {/* 領収書一覧・承認モーダル */}
         {showReceiptsListModal && activeChat && (
