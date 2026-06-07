@@ -2151,43 +2151,135 @@ export function SearchPage() {
         )}
 
         {isNdaModalOpen && selectedJob && (
-          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', zIndex: 3000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <div style={{ background: 'white', padding: '24px', borderRadius: '16px', width: '90%', maxWidth: '400px', boxShadow: '0 20px 40px rgba(0,0,0,0.2)' }}>
-              <h3 style={{ margin: '0 0 16px 0', fontSize: '18px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span className="material-symbols-outlined" style={{ color: 'var(--primary)' }}>security</span>
+          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', zIndex: 3000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
+            <div style={{ background: 'white', padding: '24px', borderRadius: '16px', width: '100%', maxWidth: '420px', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 20px 40px rgba(0,0,0,0.2)', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <h3 style={{ margin: 0, fontSize: '18px', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 'bold', color: 'var(--text-main)' }}>
+                <span className="material-symbols-outlined" style={{ color: 'var(--primary)', fontSize: '24px' }}>security</span>
                 応募の確認と秘密保持
               </h3>
-              <p style={{ fontSize: '14px', color: '#475569', marginBottom: '16px', lineHeight: '1.6' }}>
+              <p style={{ fontSize: '13px', color: '#64748B', margin: 0, lineHeight: '1.5' }}>
                 マッチング成立後、正確な店舗情報・連絡先等がアプリ上で開示されます。情報漏洩には十分ご注意ください。
               </p>
               
               {/* 提案スタッフの選択 */}
-              <div style={{ marginBottom: '20px', textAlign: 'left' }}>
-                <label style={{ fontSize: '13px', fontWeight: 'bold', color: '#334155', display: 'block', marginBottom: '6px' }}>
+              <div style={{ textAlign: 'left', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <label style={{ fontSize: '13px', fontWeight: 'bold', color: '#334155' }}>
                   提案・アサインするスタッフを選択してください *
                 </label>
                 {myStaffs.length > 0 ? (
-                  <select
-                    value={selectedStaffId}
-                    onChange={e => setSelectedStaffId(e.target.value)}
-                    style={{
-                      width: '100%',
-                      padding: '10px',
-                      borderRadius: '8px',
-                      border: '1px solid #CBD5E1',
-                      fontSize: '14px',
-                      background: 'white',
-                      outline: 'none',
-                      color: 'var(--text-main)',
-                      fontWeight: 'bold'
-                    }}
-                  >
-                    {myStaffs.map(staff => (
-                      <option key={staff.id} value={staff.id}>
-                        {staff.name} ({staff.carriers.join(', ') || 'キャリア未指定'}) - 単価: ¥{staff.price.toLocaleString()}
-                      </option>
-                    ))}
-                  </select>
+                  <>
+                    <select
+                      value={selectedStaffId}
+                      onChange={e => setSelectedStaffId(e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '10px 12px',
+                        borderRadius: '8px',
+                        border: '1px solid #CBD5E1',
+                        fontSize: '14px',
+                        background: 'white',
+                        outline: 'none',
+                        color: 'var(--text-main)',
+                        fontWeight: 'bold',
+                        boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+                      }}
+                    >
+                      {myStaffs.map(staff => (
+                        <option key={staff.id} value={staff.id}>
+                          {staff.name} ({staff.carriers.join(', ') || 'キャリア未指定'}) - 単価: ¥{staff.price.toLocaleString()}
+                        </option>
+                      ))}
+                    </select>
+
+                    {/* 選択中のスタッフの簡易プロフィール */}
+                    {(() => {
+                      const selectedStaff = myStaffs.find(s => s.id === selectedStaffId);
+                      if (!selectedStaff) return null;
+                      
+                      // Calculate attendance logs count and attendance rate from staff logs
+                      const staffLogs = (selectedStaff.completedTrainings || []).filter((t: string) => t.startsWith('ATTENDANCE_LOG_'));
+                      const checkinCount = staffLogs.length;
+
+                      let staffAttendanceRate = 98; // fallback default
+                      if (staffLogs.length > 0) {
+                        const onTimeCount = staffLogs.filter((t: string) => {
+                          const parts = t.split('_');
+                          const timeStr = parts[parts.length - 1];
+                          return timeStr <= '09:00';
+                        }).length;
+                        staffAttendanceRate = Math.round((onTimeCount / staffLogs.length) * 100);
+                      }
+
+                      return (
+                        <div style={{
+                          marginTop: '4px',
+                          background: '#F8FAFC',
+                          border: '1px solid #E2E8F0',
+                          borderRadius: '10px',
+                          padding: '12px',
+                          fontSize: '12px',
+                          color: 'var(--text-main)',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '8px',
+                          boxShadow: '0 2px 4px rgba(0,0,0,0.02)'
+                        }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #E2E8F0', paddingBottom: '6px' }}>
+                            <span style={{ fontWeight: 'bold', color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                              <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>badge</span>
+                              スタッフプロフィール
+                            </span>
+                            <span style={{ fontSize: '11px', color: '#64748B', fontWeight: 'bold' }}>
+                              時間遵守率: <strong style={{ color: '#F59E0B' }}>{staffAttendanceRate}%</strong> (出勤{checkinCount}回)
+                            </span>
+                          </div>
+
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                            <div>
+                              <span style={{ color: 'var(--text-sub)', fontSize: '10px', display: 'block' }}>拠点 / 最寄り駅</span>
+                              <strong>{selectedStaff.baseLocation}</strong> ({selectedStaff.nearestStation || '未指定'})
+                            </div>
+                            <div>
+                              <span style={{ color: 'var(--text-sub)', fontSize: '10px', display: 'block' }}>単価</span>
+                              <strong>¥{selectedStaff.price.toLocaleString()} / 日</strong>
+                            </div>
+                            <div>
+                              <span style={{ color: 'var(--text-sub)', fontSize: '10px', display: 'block' }}>対応職種</span>
+                              <strong>{selectedStaff.skills.join(', ') || '一般'}</strong>
+                            </div>
+                            <div>
+                              <span style={{ color: 'var(--text-sub)', fontSize: '10px', display: 'block' }}>対応キャリア</span>
+                              <strong>{selectedStaff.carriers.join(', ') || 'キャリア未指定'}</strong>
+                            </div>
+                          </div>
+
+                          {selectedStaff.prText && (
+                            <div style={{ background: 'white', padding: '8px', borderRadius: '6px', border: '1px solid #E2E8F0', marginTop: '2px' }}>
+                              <span style={{ color: 'var(--text-sub)', fontSize: '10px', display: 'block', marginBottom: '2px' }}>自己PR・アピール</span>
+                              <div style={{ color: '#475569', lineHeight: '1.4', fontStyle: 'italic' }}>
+                                「{selectedStaff.prText}」
+                              </div>
+                            </div>
+                          )}
+
+                          {selectedStaff.completedTrainings && selectedStaff.completedTrainings.filter(t => !t.startsWith('ATTENDANCE_LOG_') && !t.startsWith('CHECKIN_STATUS_')).length > 0 && (
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '2px' }}>
+                              {selectedStaff.completedTrainings
+                                .filter(t => !t.startsWith('ATTENDANCE_LOG_') && !t.startsWith('CHECKIN_STATUS_'))
+                                .map(trId => {
+                                  const trName = trId === 'tr1' ? '接客マナー' : trId === 'tr2' ? 'クロージング' : trId === 'tr3' ? '管理者研修' : trId;
+                                  return (
+                                    <span key={trId} style={{ background: '#E0F2FE', color: '#0369A1', fontSize: '10px', padding: '1px 6px', borderRadius: '4px', fontWeight: 'bold' }}>
+                                      ✓ {trName}修了
+                                    </span>
+                                  );
+                                })}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
+                  </>
                 ) : (
                   <div style={{ padding: '10px', background: '#FFFBEB', border: '1px solid #FDE68A', borderRadius: '8px', color: '#B45309', fontSize: '12px', lineHeight: '1.4' }}>
                     ⚠️ アサイン可能なスタッフが登録されていません。<br />
@@ -2196,14 +2288,14 @@ export function SearchPage() {
                 )}
               </div>
 
-              <label style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', marginBottom: '24px', cursor: 'pointer', padding: '12px', background: '#F8FAFC', borderRadius: '8px', border: '1px solid #E2E8F0' }}>
-                <input type="checkbox" checked={ndaAgreed} onChange={e => setNdaAgreed(e.target.checked)} style={{ marginTop: '4px', width: '16px', height: '16px', accentColor: 'var(--primary)', flexShrink: 0 }} />
-                <span style={{ fontSize: '13px', color: '#1E293B', fontWeight: 'bold', lineHeight: '1.5' }}>
+              <label style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', margin: 0, cursor: 'pointer', padding: '12px', background: '#F8FAFC', borderRadius: '8px', border: '1px solid #E2E8F0' }}>
+                <input type="checkbox" checked={ndaAgreed} onChange={e => setNdaAgreed(e.target.checked)} style={{ marginTop: '3px', width: '16px', height: '16px', accentColor: 'var(--primary)', flexShrink: 0 }} />
+                <span style={{ fontSize: '12px', color: '#1E293B', fontWeight: 'bold', lineHeight: '1.4' }}>
                   本案件の条件等を理解し、開示される店舗情報等の秘密保持に同意します。
                 </span>
               </label>
 
-              <div style={{ display: 'flex', gap: '12px' }}>
+              <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
                 <button onClick={() => { setIsNdaModalOpen(false); setNdaAgreed(false); }} style={{ flex: 1, padding: '12px', background: '#F1F5F9', border: 'none', borderRadius: '8px', fontWeight: 'bold', color: '#475569', cursor: 'pointer' }}>キャンセル</button>
                 <button 
                   disabled={!ndaAgreed} 
