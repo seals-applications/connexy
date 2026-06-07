@@ -493,7 +493,7 @@ export function TaskPage() {
       const offerMsg = {
         id: 'sys_offer_' + Date.now(),
         type: 'system',
-        text: `【内定通知】元請け企業から本案件について内定（オファー）が通知されました。\n【提案人材】: ${staff.name}\n【契約金額】: 日当 ¥${job.price.toLocaleString()}\n下請け企業側での承諾をもって契約が成立します。`,
+        text: `内定オファーが届きました`,
         time: timeStr
       };
 
