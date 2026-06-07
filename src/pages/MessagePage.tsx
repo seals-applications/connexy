@@ -553,8 +553,8 @@ export function MessagePage() {
       proposalStatus: 'pending',
       proposalDetails: {
         title: activeChat.title || '契約提案',
-        price: '15,000円 / 日',
-        duration: '10/14 - 10/15 (2日間)'
+        price: relatedJob ? `${relatedJob.price.toLocaleString()}円 / 日` : '15,000円 / 日',
+        duration: relatedJob?.eventDate || '日付未定'
       }
     };
 
@@ -1787,14 +1787,25 @@ export function MessagePage() {
                 <div className="chat-conditions-pin" style={{ gridColumn: 'span 3', background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '8px', padding: '8px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
                   <div className="condition-summary">
                     <span className={`status-badge ${
+                      activeChat?.status === 'applying' ? 'badge-negotiating' : 
+                      activeChat?.status === 'offered' ? 'badge-waiting' : 
+                      activeChat?.status === 'rejected' ? 'badge-rejected' : 
+                      activeChat?.status === 'working' ? 'badge-contracted' : 
                       activeChat?.status === 'negotiating' ? 'badge-negotiating' : 
                       activeChat?.status === 'waiting' ? 'badge-waiting' : 'badge-contracted'
                     }`} style={{ margin: 0 }}>
-                      {activeChat?.status === 'negotiating' ? '商談中' : 
+                      {activeChat?.status === 'applying' ? '選考中' : 
+                       activeChat?.status === 'offered' ? '内定提示中' : 
+                       activeChat?.status === 'rejected' ? '辞退/不採用' : 
+                       activeChat?.status === 'working' ? '稼働中' : 
+                       activeChat?.status === 'negotiating' ? '商談中' : 
                        activeChat?.status === 'waiting' ? '契約待ち' : '契約成立'}
                     </span>
                     <div className="condition-details">
-                      <span className="text-gray text-small">単価: 15,000円 / 期間: 10/14 - 10/15</span>
+                      <span className="text-gray text-small">
+                        単価: {relatedJob ? `${relatedJob.price.toLocaleString()}円 / 日` : '15,000円 / 日'}
+                        {relatedJob?.eventDate ? ` / 期間: ${relatedJob.eventDate}` : ''}
+                      </span>
                     </div>
                   </div>
                   <button 
