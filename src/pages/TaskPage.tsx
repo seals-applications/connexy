@@ -472,27 +472,7 @@ export function TaskPage() {
       const staff = candidate.staff;
       const company = candidate.company;
 
-      // 1. Create a ContractTask for the actual job assignment
-      const newContractTask: ContractTask = {
-        id: `ct_${Date.now()}`,
-        jobId: job.id,
-        jobTitle: job.title,
-        workerName: staff.name,
-        companyName: company.name,
-        clientName: currentUser.name,
-        price: job.price,
-        date: (job.eventDate ? job.eventDate.split(', ')[0] : '') || new Date().toISOString().split('T')[0],
-        status: 'working',
-        evaluations: {
-          messages: [
-            { id: `sys_c_${Date.now()}`, type: 'system', text: 'マッチングが成立しました。業務完了後、実績報告と相互評価を行ってください。', time: '現在' }
-          ]
-        } as any
-      };
-
-      await api.createContractTask(newContractTask);
-
-      // 2. Update the chat room to add the contract announcement
+      // 1. Resolve the chat room ID
       let chatTaskId = candidate.chatTask?.id;
       if (!chatTaskId) {
         const sortedIds = [currentUser.id, company.id].sort();
@@ -510,30 +490,38 @@ export function TaskPage() {
       const now = new Date();
       const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
       
-      const contractMsg = {
-        id: 'sys_contract_' + Date.now(),
+      const offerMsg = {
+        id: 'sys_offer_' + Date.now(),
         type: 'system',
-        text: `🎉 契約オファーが承認されました！\n【アサインメンバー】: ${staff.name}\n【契約金額】: 日当 ¥${job.price.toLocaleString()}\n稼働に向けてチャットで詳細情報を共有してください。`,
+        text: `【内定通知】元請け企業から本案件について内定（オファー）が通知されました。\n【提案人材】: ${staff.name}\n【契約金額】: 日当 ¥${job.price.toLocaleString()}\n下請け企業側での承諾をもって契約が成立します。`,
         time: timeStr
       };
 
-      const updatedMsgs = [...msgs, contractMsg];
+      const updatedMsgs = [...msgs, offerMsg];
+      
+      // Update the chat task's status to 'offered' and save messages
+      const appliedJobStaffIds = (currentTask?.evaluations as any)?.appliedJobStaffIds || {};
+      appliedJobStaffIds[job.id] = staff.id;
+
       await api.saveContractTaskChat(
         chatTaskId,
         updatedMsgs,
         job.title,
         currentUser.name,
         company.name,
-        [job.id]
+        [job.id],
+        appliedJobStaffIds
       );
+      
+      await api.updateContractTaskStatus(chatTaskId, 'offered');
 
-      alert(`🎉 ${company.name} との契約が成立しました！\n「タスク管理」の「本日の現場」および「チャット」に情報が反映されます。`);
+      alert(`🎉 ${company.name} へ内定を通知しました！\n相手企業が承諾すると契約が確定します。チャットでやりとりを続けられます。`);
       setConfirmingCandidate(null);
       setScreeningJobId(null);
       await loadData();
     } catch (e) {
       console.error(e);
-      alert('契約処理中にエラーが発生しました。');
+      alert('内定通知の送信処理中にエラーが発生しました。');
     }
   };
 
@@ -2221,7 +2209,7 @@ export function TaskPage() {
                             }}
                           >
                             <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>handshake</span>
-                            契約オファー(発注)
+                            内定通知を送る
                           </button>
                         </div>
                       </div>
@@ -2303,16 +2291,16 @@ export function TaskPage() {
           <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', zIndex: 4000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
             <div style={{ background: 'white', borderRadius: '16px', padding: '24px', width: '100%', maxWidth: '400px', display: 'flex', flexDirection: 'column', gap: '16px', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }}>
               <h3 style={{ margin: 0, fontSize: '16px', borderBottom: '1px solid var(--border-color)', paddingBottom: '10px', fontWeight: 'bold', color: 'var(--text-main)' }}>
-                🤝 契約オファー（発注）の確定
+                🤝 内定通知（オファー）の送信
               </h3>
               
               <div style={{ fontSize: '13px', color: 'var(--text-main)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 <div>
-                  <span style={{ color: 'var(--text-sub)', fontSize: '11px', display: 'block' }}>発注先企業</span>
+                  <span style={{ color: 'var(--text-sub)', fontSize: '11px', display: 'block' }}>送付先企業</span>
                   <strong>{confirmingCandidate.company.name}</strong>
                 </div>
                 <div>
-                  <span style={{ color: 'var(--text-sub)', fontSize: '11px', display: 'block' }}>配置メンバー</span>
+                  <span style={{ color: 'var(--text-sub)', fontSize: '11px', display: 'block' }}>配置予定メンバー</span>
                   <strong>{confirmingCandidate.staff.name} ({getStaffGender(confirmingCandidate.staff.name)})</strong>
                 </div>
                 <div>
@@ -2323,7 +2311,7 @@ export function TaskPage() {
                   <span style={{ color: 'var(--text-sub)', fontSize: '11px', display: 'block' }}>ご契約条件</span>
                   <strong>日当：¥{activeScreeningJob.price.toLocaleString()} 円</strong>
                   <div style={{ fontSize: '10px', color: 'var(--text-sub)', marginTop: '2px' }}>
-                    ※契約後、両者のチャットルームに契約成立メッセージが送られ、タスクが「稼働中」になります。
+                    ※送信後、相手企業のチャットルームへ内定通知が届き、相手方の承諾をもって契約成立となります。
                   </div>
                 </div>
               </div>
@@ -2343,7 +2331,7 @@ export function TaskPage() {
                   style={{ flex: 1, margin: 0, padding: '10px', background: 'var(--primary)' }}
                   onClick={() => handleConfirmContract(confirmingCandidate)}
                 >
-                  発注を確定する
+                  内定通知を送信する
                 </button>
               </div>
             </div>

@@ -5,7 +5,7 @@ interface ChatChannel {
   id: string;
   name: string;
   title: string;
-  status: 'negotiating' | 'waiting' | 'contracted' | 'group';
+  status: 'negotiating' | 'waiting' | 'contracted' | 'group' | 'applying' | 'offered' | 'rejected' | 'working';
   avatar: string;
   avatarBg: string;
   preview: string;
@@ -47,6 +47,12 @@ export function MessagePage() {
   const [allCompanies, setAllCompanies] = useState<any[]>([]);
   const [chatTasks, setChatTasks] = useState<any[]>([]);
   const [jobs, setJobs] = useState<any[]>([]);
+  const [allStaffs, setAllStaffs] = useState<any[]>([]);
+
+  // サイドバー検索・アコーディオン用のState
+  const [sidebarSearch, setSidebarSearch] = useState('');
+  const [chatTypeFilter, setChatTypeFilter] = useState<'all' | 'admin' | 'staff'>('all');
+  const [expandedCompanies, setExpandedCompanies] = useState<Record<string, boolean>>({});
 
   // 経費・手配用のState
   const [showReceiptModal, setShowReceiptModal] = useState(false);
@@ -118,6 +124,9 @@ export function MessagePage() {
       const fetchedJobs = await api.getJobs();
       setJobs(fetchedJobs);
 
+      const staffs = await api.getAllStaffs();
+      setAllStaffs(staffs);
+
       // Check if there is an active chat room saved in local storage to open
       const savedActiveId = localStorage.getItem('connexy_active_chat_id');
       if (savedActiveId) {
@@ -135,6 +144,9 @@ export function MessagePage() {
         setChatTasks(tasks);
         const fetchedJobs = await api.getJobs();
         setJobs(fetchedJobs);
+
+        const staffs = await api.getAllStaffs();
+        setAllStaffs(staffs);
       } catch (err) {
         console.error('Polling error:', err);
       }
@@ -246,10 +258,14 @@ export function MessagePage() {
         }
 
         // Determine status dynamically
-        let status: 'negotiating' | 'waiting' | 'contracted' = 'negotiating';
-        const proposal = msgs.find((m: any) => m.isProposal);
-        if (proposal) {
-          status = proposal.proposalStatus === 'approved' ? 'contracted' : 'waiting';
+        let status: ChatChannel['status'] = 'negotiating';
+        if (task) {
+          status = task.status;
+        } else {
+          const proposal = msgs.find((m: any) => m.isProposal);
+          if (proposal) {
+            status = proposal.proposalStatus === 'approved' ? 'contracted' : 'waiting';
+          }
         }
 
         // Predefined avatar mapping
@@ -291,6 +307,45 @@ export function MessagePage() {
 
     return [groupChannel, ...directChannels];
   }, [currentUser, allCompanies, chatTasks]);
+
+  const filteredChannels = useMemo(() => {
+    return channels.filter(c => {
+      // 1. Search keyword matching (case-insensitive)
+      if (sidebarSearch.trim() !== '') {
+        const kw = sidebarSearch.toLowerCase();
+        const nameMatch = c.name?.toLowerCase().includes(kw);
+        const titleMatch = c.title?.toLowerCase().includes(kw);
+        const previewMatch = c.preview?.toLowerCase().includes(kw);
+        if (!nameMatch && !titleMatch && !previewMatch) {
+          return false;
+        }
+      }
+
+      // 2. Chat type filter matching
+      const isAdminOnly = c.status === 'applying' || c.status === 'offered' || c.status === 'rejected' || c.status === 'negotiating' || c.status === 'waiting';
+      const isWithStaff = c.status === 'working' || c.status === 'contracted' || c.status === 'group';
+
+      if (chatTypeFilter === 'admin' && !isAdminOnly) return false;
+      if (chatTypeFilter === 'staff' && !isWithStaff) return false;
+
+      return true;
+    });
+  }, [channels, sidebarSearch, chatTypeFilter]);
+
+  const groupedChannels = useMemo(() => {
+    const groups: Record<string, ChatChannel[]> = {};
+    filteredChannels.forEach(c => {
+      let groupName = c.name;
+      if (c.status === 'group') {
+        groupName = '現場グループチャット';
+      }
+      if (!groups[groupName]) {
+        groups[groupName] = [];
+      }
+      groups[groupName].push(c);
+    });
+    return groups;
+  }, [filteredChannels]);
 
   const activeChat = useMemo(() => {
     if (!activeChatId) return null;
@@ -501,6 +556,138 @@ export function MessagePage() {
     }
   };
 
+  const handleAcceptUnofficialOffer = async () => {
+    if (!activeChat || !currentUser || !chatTasks) return;
+    const task = chatTasks.find(t => t.id === activeChat.id);
+    if (!task) return;
+
+    try {
+      const jobId = (task.evaluations as any)?.appliedJobIds?.[0];
+      const job = jobs.find(j => j.id === jobId);
+      if (!job) {
+        alert('対象の案件が見つかりません。');
+        return;
+      }
+
+      const staffId = (task.evaluations as any)?.appliedJobStaffIds?.[jobId];
+      const staff = allStaffs.find(s => s.id === staffId);
+
+      const now = new Date();
+      const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+      // 1. Create a ContractTask for the actual job assignment (status = 'working')
+      const newContractTask = {
+        id: `ct_${Date.now()}`,
+        jobId: job.id,
+        jobTitle: job.title,
+        workerName: staff ? staff.name : currentUser.name,
+        companyName: currentUser.name,
+        clientName: task.clientName,
+        price: job.price,
+        date: (job.eventDate ? job.eventDate.split(', ')[0] : '') || new Date().toISOString().split('T')[0],
+        status: 'working' as const,
+        evaluations: {
+          messages: [
+            { id: `sys_c_${Date.now()}`, type: 'system', text: 'マッチングが成立しました。業務完了後、実績報告と相互評価を行ってください。', time: '現在' }
+          ]
+        }
+      };
+
+      await api.createContractTask(newContractTask as any);
+
+      // 2. Append system message and reply message to the chat room
+      const acceptSystemMsg = {
+        id: 'sys_accept_' + Date.now(),
+        type: 'system',
+        text: `🎉 内定が承諾され、契約が成立しました！\n【アサインメンバー】: ${staff ? staff.name : currentUser.name}\n【契約金額】: 日当 ¥${job.price.toLocaleString()}\n稼働に向けてチャットで詳細情報を共有してください。`,
+        time: timeStr
+      };
+
+      const replyMsg = {
+        id: 'msg_accept_reply_' + Date.now(),
+        senderId: currentUser.id,
+        senderName: currentUser.staffName ? `${currentUser.name}_${currentUser.staffName}` : `${currentUser.name}_代表`,
+        text: '内定の承諾を完了いたしました。当日はよろしくお願いいたします。',
+        time: timeStr
+      };
+
+      const taskMessages = (task.evaluations as any)?.messages || [];
+      const updatedMsgs = [...taskMessages, acceptSystemMsg, replyMsg];
+
+      await api.saveContractTaskChat(
+        activeChat.id,
+        updatedMsgs,
+        job.title,
+        task.clientName,
+        currentUser.name,
+        [job.id],
+        (task.evaluations as any)?.appliedJobStaffIds
+      );
+
+      await api.updateContractTaskStatus(activeChat.id, 'working');
+
+      alert('🎉 内定を承諾しました。契約が確定しました！');
+      const updatedTasks = await api.getContractTasks();
+      setChatTasks(updatedTasks);
+    } catch (err) {
+      console.error('Failed to accept unofficial offer:', err);
+      alert('承諾処理中にエラーが発生しました。');
+    }
+  };
+
+  const handleDeclineUnofficialOffer = async () => {
+    if (!activeChat || !currentUser || !chatTasks) return;
+    const task = chatTasks.find(t => t.id === activeChat.id);
+    if (!task) return;
+
+    if (!confirm('本当にこの内定を辞退しますか？')) return;
+
+    try {
+      const jobId = (task.evaluations as any)?.appliedJobIds?.[0];
+      const job = jobs.find(j => j.id === jobId);
+
+      const now = new Date();
+      const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+      const declineSystemMsg = {
+        id: 'sys_decline_' + Date.now(),
+        type: 'system',
+        text: `❌ 下請け企業により内定が辞退されました。`,
+        time: timeStr
+      };
+
+      const replyMsg = {
+        id: 'msg_decline_reply_' + Date.now(),
+        senderId: currentUser.id,
+        senderName: currentUser.staffName ? `${currentUser.name}_${currentUser.staffName}` : `${currentUser.name}_代表`,
+        text: '申し訳ございませんが、今回は日程や体制の都合上辞退させていただきます。',
+        time: timeStr
+      };
+
+      const taskMessages = (task.evaluations as any)?.messages || [];
+      const updatedMsgs = [...taskMessages, declineSystemMsg, replyMsg];
+
+      await api.saveContractTaskChat(
+        activeChat.id,
+        updatedMsgs,
+        job ? job.title : activeChat.title,
+        task.clientName,
+        currentUser.name,
+        job ? [job.id] : undefined,
+        (task.evaluations as any)?.appliedJobStaffIds
+      );
+
+      await api.updateContractTaskStatus(activeChat.id, 'rejected');
+
+      alert('内定を辞退しました。');
+      const updatedTasks = await api.getContractTasks();
+      setChatTasks(updatedTasks);
+    } catch (err) {
+      console.error('Failed to decline unofficial offer:', err);
+      alert('辞退処理中にエラーが発生しました。');
+    }
+  };
+
   // チャットに関連する案件情報の解決
   const relatedJob = useMemo(() => {
     if (!activeChat || !chatTasks) return null;
@@ -513,10 +700,20 @@ export function MessagePage() {
   const isClient = useMemo(() => {
     if (!currentUser) return false;
     if (relatedJob) {
-      return currentUser.id === relatedJob.companyId;
+      return currentUser.id === relatedJob.authorId || currentUser.id === (relatedJob as any).companyId;
     }
     return currentUser.id === 'sigma';
   }, [currentUser, relatedJob]);
+
+  const headerHeight = useMemo(() => {
+    let height = 72;
+    if (activeChat?.status === 'group') {
+      height = 140;
+    } else if (activeChat?.status === 'offered' && !isClient) {
+      height = 160;
+    }
+    return `${height}px`;
+  }, [activeChat, isClient]);
 
   const transportPaySeparate = useMemo(() => {
     if (!relatedJob) return true;
@@ -1075,50 +1272,167 @@ export function MessagePage() {
 
   return (
     <div className="view active" style={{ display: 'flex' }}>
-      <header className="solid-header">
+      <header className="solid-header" style={{ height: 'auto', paddingBottom: '12px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <h1 style={{ margin: 0 }}>メッセージ</h1>
           <button className="icon-btn-dark" onClick={handleSync} title="同期" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <span className="material-symbols-outlined" style={{ color: 'var(--primary-color)' }}>refresh</span>
           </button>
         </div>
-        <div className="header-search chat-search">
+        <div className="header-search chat-search" style={{ marginTop: '8px' }}>
           <div className="search-bar">
             <span className="material-symbols-outlined icon">search</span>
-            <input type="text" placeholder="メッセージ・案件名で検索" />
+            <input 
+              type="text" 
+              placeholder="メッセージ・案件名で検索" 
+              value={sidebarSearch}
+              onChange={(e) => setSidebarSearch(e.target.value)}
+            />
           </div>
         </div>
+        
+        {/* チャット種別フィルターカプセル */}
+        <div style={{
+          display: 'flex',
+          background: '#F1F5F9',
+          padding: '2px',
+          borderRadius: '20px',
+          marginTop: '10px',
+          boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.05)',
+          width: '100%'
+        }}>
+          {[
+            { id: 'all', label: 'すべて' },
+            { id: 'admin', label: '管理者間' },
+            { id: 'staff', label: 'スタッフ含む' }
+          ].map(opt => {
+            const isSel = chatTypeFilter === opt.id;
+            return (
+              <button
+                key={opt.id}
+                onClick={() => setChatTypeFilter(opt.id as any)}
+                style={{
+                  flex: 1,
+                  padding: '6px 0',
+                  borderRadius: '18px',
+                  border: 'none',
+                  background: isSel ? '#FFFFFF' : 'transparent',
+                  color: isSel ? 'var(--primary-color)' : '#64748B',
+                  fontSize: '11px',
+                  fontWeight: 'bold',
+                  boxShadow: isSel ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease'
+                }}
+              >
+                {opt.label}
+              </button>
+            );
+          })}
+        </div>
       </header>
-      <main className="list-area">
+      <main className="list-area" style={{ overflowY: 'auto' }}>
         <div className="chat-list">
-          {channels.map((channel) => (
-            <div key={channel.id} className="chat-item" onClick={() => setActiveChatId(channel.id)}>
-              <div className={`chat-avatar ${channel.avatarBg}`}>{channel.avatar}</div>
-              <div className="chat-content">
-                <div className="chat-header">
-                  <span className="company-name">{channel.name}</span>
-                  <span className="chat-time">{channel.time}</span>
+          {Object.keys(groupedChannels).length > 0 ? (
+            Object.keys(groupedChannels).map((groupName) => {
+              const groupChannels = groupedChannels[groupName];
+              const isExpanded = expandedCompanies[groupName] !== false;
+              
+              return (
+                <div key={groupName} style={{ marginBottom: '8px' }}>
+                  {/* アコーディオンヘッダー */}
+                  <div 
+                    onClick={() => setExpandedCompanies(prev => ({ ...prev, [groupName]: !isExpanded }))}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '10px 16px',
+                      background: '#F8FAFC',
+                      borderBottom: '1px solid #E2E8F0',
+                      cursor: 'pointer',
+                      fontSize: '12px',
+                      fontWeight: 'bold',
+                      color: 'var(--text-main)',
+                      transition: 'background 0.2s'
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span className="material-symbols-outlined" style={{ fontSize: '16px', color: '#64748B' }}>
+                        {groupName === '現場グループチャット' ? 'groups' : 'corporate_fare'}
+                      </span>
+                      <span>{groupName} ({groupChannels.length})</span>
+                    </div>
+                    <span 
+                      className="material-symbols-outlined" 
+                      style={{ 
+                        fontSize: '18px', 
+                        color: '#64748B', 
+                        transform: isExpanded ? 'rotate(180deg)' : 'none', 
+                        transition: 'transform 0.2s' 
+                      }}
+                    >
+                      expand_more
+                    </span>
+                  </div>
+
+                  {/* アコーディオンコンテンツ */}
+                  {isExpanded && (
+                    <div style={{ borderBottom: '1px solid #E2E8F0' }}>
+                      {groupChannels.map((channel) => {
+                        const isSelected = activeChatId === channel.id;
+                        
+                        return (
+                          <div 
+                            key={channel.id} 
+                            className={`chat-item ${isSelected ? 'active' : ''}`} 
+                            onClick={() => setActiveChatId(channel.id)}
+                            style={{ paddingLeft: '24px', background: isSelected ? '#F0F9FF' : 'white' }}
+                          >
+                            <div className={`chat-avatar ${channel.avatarBg}`}>{channel.avatar}</div>
+                            <div className="chat-content">
+                              <div className="chat-header">
+                                <span className="company-name" style={{ fontSize: '13px', fontWeight: 'bold' }}>
+                                  {channel.name}
+                                </span>
+                                <span className="chat-time">{channel.time}</span>
+                              </div>
+                              <div className="chat-title" style={{ fontSize: '11px', color: 'var(--text-sub)' }}>
+                                {channel.title}
+                              </div>
+                              <p className="chat-preview">{channel.preview}</p>
+                            </div>
+                            <span className={`status-badge ${
+                              channel.status === 'applying' || channel.status === 'negotiating' ? 'badge-negotiating' : 
+                              channel.status === 'offered' || channel.status === 'waiting' ? 'badge-waiting' : 
+                              channel.status === 'contracted' || channel.status === 'working' ? 'badge-contracted' : 'badge-contracted'
+                            }`} style={channel.status === 'group' ? { backgroundColor: '#FDBA74', color: '#7C2D12' } : 
+                                      channel.status === 'rejected' ? { backgroundColor: '#FEE2E2', color: '#991B1B' } : {}}>
+                              {channel.status === 'applying' ? '選考中' : 
+                               channel.status === 'negotiating' ? '商談中' : 
+                               channel.status === 'offered' ? '内定通知済' : 
+                               channel.status === 'waiting' ? '契約待ち' : 
+                               channel.status === 'working' || channel.status === 'contracted' ? '契約成立' : 
+                               channel.status === 'rejected' ? '辞退/不採用' : '現場グループ'}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
-                <div className="chat-title">{channel.title}</div>
-                <p className="chat-preview">{channel.preview}</p>
-              </div>
-              <span className={`status-badge ${
-                channel.status === 'negotiating' ? 'badge-negotiating' : 
-                channel.status === 'waiting' ? 'badge-waiting' : 
-                channel.status === 'contracted' ? 'badge-contracted' : 'badge-contracted'
-              }`} style={channel.status === 'group' ? { backgroundColor: '#FDBA74', color: '#7C2D12' } : {}}>
-                {channel.status === 'negotiating' ? '商談中' : 
-                 channel.status === 'waiting' ? '契約待ち' : 
-                 channel.status === 'contracted' ? '契約成立' : '現場グループ'}
-              </span>
+              );
+            })
+          ) : (
+            <div style={{ padding: '24px', textAlign: 'center', color: 'var(--text-sub)', fontSize: '13px' }}>
+              チャットが見つかりませんでした。
             </div>
-          ))}
+          )}
         </div>
       </main>
 
-      {/* Chat Overlay */}
       <div className={`overlay-view ${activeChat ? 'show' : ''}`} style={{ display: activeChat ? 'flex' : 'none', transform: activeChat ? 'translateX(0)' : 'translateX(100%)' }}>
-        <header className="solid-header overlay-header chat-header-fixed" style={{ height: activeChat?.status === 'group' ? '125px' : 'auto' }}>
+        <header className="solid-header overlay-header chat-header-fixed" style={{ height: 'auto', paddingBottom: '12px' }}>
           <div className="chat-header-top" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <button className="icon-btn-dark" onClick={() => setActiveChatId(null)}>
               <span className="material-symbols-outlined">arrow_back_ios_new</span>
@@ -1153,9 +1467,62 @@ export function MessagePage() {
               </div>
             </div>
           )}
+
+          {activeChat?.status === 'offered' && !isClient && (
+            <div style={{
+              background: '#FFFBEB',
+              border: '1px solid #FEF3C7',
+              borderRadius: '8px',
+              padding: '10px 12px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '8px',
+              alignItems: 'center',
+              marginTop: '8px'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', fontWeight: 'bold', color: '#B45309', textAlign: 'left', width: '100%' }}>
+                <span className="material-symbols-outlined" style={{ color: '#F59E0B', fontSize: '18px' }}>campaign</span>
+                <span>内定（契約オファー）を受信しました。</span>
+              </div>
+              <div style={{ display: 'flex', gap: '8px', width: '100%' }}>
+                <button 
+                  onClick={handleDeclineUnofficialOffer}
+                  style={{
+                    flex: 1,
+                    padding: '6px 0',
+                    borderRadius: '6px',
+                    border: '1px solid #F59E0B',
+                    background: 'white',
+                    color: '#B45309',
+                    fontSize: '11px',
+                    fontWeight: 'bold',
+                    cursor: 'pointer'
+                  }}
+                >
+                  辞退する
+                </button>
+                <button 
+                  onClick={handleAcceptUnofficialOffer}
+                  style={{
+                    flex: 1,
+                    padding: '6px 0',
+                    borderRadius: '6px',
+                    border: 'none',
+                    background: '#D97706',
+                    color: 'white',
+                    fontSize: '11px',
+                    fontWeight: 'bold',
+                    cursor: 'pointer'
+                  }}
+                >
+                  承諾する
+                </button>
+              </div>
+            </div>
+          )}
         </header>
 
-        <main className="list-area bg-gray p-16 chat-timeline" ref={chatTimelineRef} style={{ paddingTop: activeChat?.status === 'group' ? '140px' : '72px' }}>
+        <main className="list-area bg-gray p-16 chat-timeline" ref={chatTimelineRef} style={{ paddingTop: headerHeight }}>
           {mappedMessages.map((msg, i) => (
             <div key={i}>
               {msg.type === 'system' && (

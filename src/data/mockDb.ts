@@ -131,7 +131,7 @@ export interface ContractTask {
   clientName: string;
   price: number;
   date: string;
-  status: 'working' | 'report_pending' | 'completed' | 'disputed';
+  status: 'applying' | 'offered' | 'working' | 'report_pending' | 'completed' | 'disputed' | 'rejected';
   disputedReason?: string;
   evaluations?: {
     byClient?: Evaluation;
@@ -747,6 +747,7 @@ export const api = {
     } else {
       evaluations.appliedJobIds = appliedJobIds || [];
       evaluations.appliedJobStaffIds = appliedJobStaffIds || {};
+      const isApplication = appliedJobIds && appliedJobIds.length > 0;
       const row = {
         id: taskId,
         job_id: 'chat',
@@ -755,12 +756,22 @@ export const api = {
         worker_name: workerName,
         price: 0,
         date: new Date().toISOString().split('T')[0],
-        status: 'working',
+        status: isApplication ? 'applying' : 'working',
         evaluations
       };
       const { error } = await supabase.from('contract_tasks').insert([row]);
       if (error) throw error;
     }
+  },
+
+  updateContractTaskStatus: async (taskId: string, status: 'applying' | 'offered' | 'working' | 'report_pending' | 'completed' | 'disputed' | 'rejected', additionalEvals?: any): Promise<void> => {
+    const { data: taskData } = await supabase.from('contract_tasks').select('evaluations').eq('id', taskId).single();
+    let evaluations = taskData?.evaluations || {};
+    if (additionalEvals) {
+      evaluations = { ...evaluations, ...additionalEvals };
+    }
+    const { error } = await supabase.from('contract_tasks').update({ status, evaluations }).eq('id', taskId);
+    if (error) throw error;
   },
 
   createContractTask: async (task: ContractTask): Promise<void> => {
