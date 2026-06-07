@@ -44,6 +44,7 @@ export function SearchPage() {
   // スタッフ関連のState
   const [myStaffs, setMyStaffs] = useState<Staff[]>([]);
   const [selectedStaffId, setSelectedStaffId] = useState<string>('');
+  const [talentPrice, setTalentPrice] = useState<number>(15000);
 
   // フィルタ関連のState
   const [includeUrgent, setIncludeUrgent] = useState(true);
@@ -402,7 +403,7 @@ export function SearchPage() {
         maskedName: selectedStaff.maskedName,
         companyName: currentUser.name, 
         description: selectedStaff.prText || '',
-        price: selectedStaff.price,
+        price: talentPrice,
         locationName: selectedStaff.baseLocation, // Group by baseLocation
         baseLocation: selectedStaff.baseLocation,
         nearestStation: selectedStaff.nearestStation,
@@ -419,6 +420,7 @@ export function SearchPage() {
       };
       const savedTalent = await api.addTalent(newTalent);
       setTalents(prev => [...prev, savedTalent]);
+      setTalentPrice(15000);
     }
     
     setIsSubmitting(false);
@@ -2732,6 +2734,21 @@ export function SearchPage() {
                       登録されているスタッフがいません。先にスタッフを登録してください。
                     </div>
                   )}
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '16px' }}>
+                  <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)' }}>希望日当単価 (円) *</label>
+                  <input 
+                    type="number" 
+                    className="no-spin"
+                    required 
+                    value={talentPrice || ''} 
+                    onChange={e => setTalentPrice(Number(e.target.value))} 
+                    onWheel={e => e.currentTarget.blur()}
+                    disabled={isSubmitting} 
+                    style={{ padding: '12px', borderRadius: '8px', border: '1px solid #ccc', fontSize: '15px' }} 
+                    placeholder="例: 15000" 
+                  />
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '16px' }}>
