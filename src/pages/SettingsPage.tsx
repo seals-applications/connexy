@@ -13,6 +13,9 @@ export function SettingsPage({ onLogoutSuccess }: SettingsPageProps) {
   const [showStaffOverlay, setShowStaffOverlay] = useState(false);
   const [showAddStaffOverlay, setShowAddStaffOverlay] = useState(false);
   const [showEditStaffOverlay, setShowEditStaffOverlay] = useState(false);
+  const [showRoleOverlay, setShowRoleOverlay] = useState(false);
+  const [roleSaving, setRoleSaving] = useState(false);
+  const [staffRoles, setStaffRoles] = useState<Record<string, 'admin' | 'staff'>>({});
   
   const [profileSaving, setProfileSaving] = useState(false);
   const [staffSaving, setStaffSaving] = useState(false);
@@ -163,7 +166,7 @@ export function SettingsPage({ onLogoutSuccess }: SettingsPageProps) {
       experience: formData.experience,
       prText: formData.prText,
       hasCertificate: formData.hasCertificate,
-      role: formData.role,
+      role: 'staff',
       loginId: formData.loginId,
       password: formData.password,
       furigana: formData.furigana,
@@ -236,7 +239,6 @@ export function SettingsPage({ onLogoutSuccess }: SettingsPageProps) {
       experience: editFormData.experience,
       prText: editFormData.prText,
       hasCertificate: editFormData.hasCertificate,
-      role: editFormData.role,
       loginId: editFormData.loginId,
       password: editFormData.password,
       furigana: editFormData.furigana,
@@ -257,6 +259,30 @@ export function SettingsPage({ onLogoutSuccess }: SettingsPageProps) {
     setShowEditStaffOverlay(false);
     setEditingStaff(null);
     alert('スタッフ情報を更新しました');
+  };
+
+  const handleRolesSave = async () => {
+    setRoleSaving(true);
+    try {
+      for (const [staffId, role] of Object.entries(staffRoles)) {
+        const staff = staffs.find(s => s.id === staffId);
+        if (staff && staff.role !== role) {
+          await api.updateStaffRole(staffId, role);
+        }
+      }
+      const user = await api.getCurrentUser();
+      if (user) {
+        const fetchedStaffs = await api.getStaffsByUserId(user.id);
+        setStaffs(fetchedStaffs);
+      }
+      setShowRoleOverlay(false);
+      alert('スタッフ権限を更新しました');
+    } catch (e) {
+      console.error(e);
+      alert('権限の更新中にエラーが発生しました。');
+    } finally {
+      setRoleSaving(false);
+    }
   };
 
   return (
@@ -301,6 +327,18 @@ export function SettingsPage({ onLogoutSuccess }: SettingsPageProps) {
             <div className="settings-item" onClick={() => setShowStaffOverlay(true)}>
               <span className="material-symbols-outlined item-icon">groups</span>
               <span>スタッフ管理 ({staffs.length}名)</span>
+              <span className="material-symbols-outlined item-arrow">chevron_right</span>
+            </div>
+            <div className="settings-item" onClick={() => {
+              if (isUserAdmin) {
+                setStaffRoles(Object.fromEntries(staffs.map(s => [s.id, s.role || 'staff'])));
+                setShowRoleOverlay(true);
+              } else {
+                alert('管理者権限が必要です。');
+              }
+            }} style={{ opacity: isUserAdmin ? 1 : 0.6 }}>
+              <span className="material-symbols-outlined item-icon">admin_panel_settings</span>
+              <span>スタッフ権限一括管理 {!isUserAdmin && ' (制限中)'}</span>
               <span className="material-symbols-outlined item-arrow">chevron_right</span>
             </div>
           </div>
@@ -470,20 +508,6 @@ export function SettingsPage({ onLogoutSuccess }: SettingsPageProps) {
         </header>
         <main className="list-area bg-gray" style={{ flex: 1, overflowY: 'auto', padding: '16px', paddingBottom: '100px' }}>
           <form onSubmit={handleStaffSave} style={{ display: 'flex', flexDirection: 'column', gap: '16px', background: 'white', padding: '16px', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }}>
-            
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)' }}>権限区分 *</label>
-              <select 
-                value={formData.role} 
-                onChange={e => setFormData({...formData, role: e.target.value as 'admin' | 'staff'})} 
-                disabled={staffSaving} 
-                style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc', background: 'white', fontSize: '14px' }}
-              >
-                <option value="staff">一般スタッフ (Staff)</option>
-                <option value="admin">管理者 (Admin)</option>
-              </select>
-            </div>
-
             <div style={{ display: 'flex', gap: '12px' }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: 1 }}>
                 <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)' }}>ログイン用ID *</label>
@@ -616,20 +640,6 @@ export function SettingsPage({ onLogoutSuccess }: SettingsPageProps) {
         </header>
         <main className="list-area bg-gray" style={{ flex: 1, overflowY: 'auto', padding: '16px', paddingBottom: '100px' }}>
           <form onSubmit={handleStaffUpdate} style={{ display: 'flex', flexDirection: 'column', gap: '16px', background: 'white', padding: '16px', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }}>
-            
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)' }}>権限区分 *</label>
-              <select 
-                value={editFormData.role} 
-                onChange={e => setEditFormData({...editFormData, role: e.target.value as 'admin' | 'staff'})} 
-                disabled={staffSaving} 
-                style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc', background: 'white', fontSize: '14px' }}
-              >
-                <option value="staff">一般スタッフ (Staff)</option>
-                <option value="admin">管理者 (Admin)</option>
-              </select>
-            </div>
-
             <div style={{ display: 'flex', gap: '12px' }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: 1 }}>
                 <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)' }}>ログイン用ID *</label>
@@ -750,6 +760,60 @@ export function SettingsPage({ onLogoutSuccess }: SettingsPageProps) {
           </form>
         </main>
       </div>
+
+      {/* Role Management Overlay */}
+      <div className={`overlay-view ${showRoleOverlay ? 'show' : ''}`} style={{ display: showRoleOverlay ? 'flex' : 'none', transform: showRoleOverlay ? 'translateX(0)' : 'translateX(100%)', zIndex: 3000 }}>
+        <header className="solid-header overlay-header">
+          <button className="icon-btn-dark" onClick={() => setShowRoleOverlay(false)}>
+            <span className="material-symbols-outlined">arrow_back_ios_new</span>
+          </button>
+          <h1>スタッフ権限一括管理</h1>
+          <button className="text-btn primary-text" onClick={handleRolesSave} disabled={roleSaving}>
+            {roleSaving ? '保存中...' : '保存'}
+          </button>
+        </header>
+        <main className="list-area bg-gray" style={{ flex: 1, overflowY: 'auto', padding: '16px', paddingBottom: '100px' }}>
+          <p style={{ fontSize: '13px', color: 'var(--text-sub)', margin: '0 0 16px 0', lineHeight: '1.5' }}>
+            スタッフのログイン権限（管理者または一般スタッフ）を一括で管理できます。
+          </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            {staffs.map(s => (
+              <div key={s.id} style={{ background: 'white', padding: '14px 16px', borderRadius: '12px', border: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 1px 3px rgba(0,0,0,0.01)' }}>
+                <div>
+                  <div style={{ fontWeight: 'bold', fontSize: '14px', color: 'var(--text-main)' }}>{s.name}</div>
+                  <div style={{ fontSize: '12px', color: 'var(--text-sub)', marginTop: '2px' }}>{s.maskedName} / {s.baseLocation}</div>
+                </div>
+                <div>
+                  <select
+                    value={staffRoles[s.id] || 'staff'}
+                    onChange={e => setStaffRoles(prev => ({ ...prev, [s.id]: e.target.value as 'admin' | 'staff' }))}
+                    disabled={roleSaving}
+                    style={{
+                      padding: '8px 12px',
+                      borderRadius: '8px',
+                      border: '1px solid var(--border-color)',
+                      background: '#F8FAFC',
+                      fontSize: '13px',
+                      fontWeight: 'bold',
+                      color: 'var(--text-main)',
+                      outline: 'none'
+                    }}
+                  >
+                    <option value="staff">一般スタッフ</option>
+                    <option value="admin">管理者</option>
+                  </select>
+                </div>
+              </div>
+            ))}
+            {staffs.length === 0 && (
+              <div style={{ textAlign: 'center', padding: '32px 16px', background: 'white', borderRadius: '12px', color: 'var(--text-sub)', fontSize: '13px', border: '1px dashed var(--border-color)' }}>
+                登録されているスタッフはいません。
+              </div>
+            )}
+          </div>
+        </main>
+      </div>
+
     </div>
   );
 }
