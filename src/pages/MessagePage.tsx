@@ -401,11 +401,10 @@ export function MessagePage() {
       }
 
       // 2. Chat type filter matching
-      const isAdminOnly = c.status === 'applying' || c.status === 'offered' || c.status === 'rejected' || c.status === 'negotiating' || c.status === 'waiting';
-      const isWithStaff = c.status === 'working' || c.status === 'contracted' || c.status === 'group';
+      const isGroupChat = c.status === 'group' || c.id.startsWith('chat_group_') || c.id === 'chat_au_group';
 
-      if (chatTypeFilter === 'admin' && !isAdminOnly) return false;
-      if (chatTypeFilter === 'staff' && !isWithStaff) return false;
+      if (chatTypeFilter === 'admin' && isGroupChat) return false;
+      if (chatTypeFilter === 'staff' && !isGroupChat) return false;
 
       return true;
     });
