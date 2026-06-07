@@ -56,6 +56,12 @@ const quizData: Record<string, Array<{ question: string, options: string[], answ
   ]
 };
 
+const getStaffGender = (name: string): '男性' | '女性' => {
+  const femaleNames = ['舞', '優花', '陽子', '沙織', '美咲', '愛', '結衣', '莉子', '咲良', '葵', 'さくら', 'つばさ'];
+  const isFemale = femaleNames.some(fn => name.includes(fn));
+  return isFemale ? '女性' : '男性';
+};
+
 export function TaskPage() {
   const [tasks, setTasks] = useState<ContractTask[]>([]);
   const [trainings, setTrainings] = useState<Training[]>([]);
@@ -1074,7 +1080,7 @@ export function TaskPage() {
                   <div>
                     <div style={{ fontWeight: 'bold', fontSize: '14px' }}>{s.name}</div>
                     <div style={{ fontSize: '11px', color: 'var(--text-sub)', marginTop: '2px' }}>
-                      拠点: {s.baseLocation} / 単価: ¥{s.price.toLocaleString()} <span style={{ fontSize: '10px', color: '#94A3B8', marginLeft: '6px' }}>(デバッグ用ID: {s.id})</span>
+                      拠点: {s.baseLocation} / 性別: {getStaffGender(s.name)} <span style={{ fontSize: '10px', color: '#94A3B8', marginLeft: '6px' }}>(デバッグ用ID: {s.id})</span>
                     </div>
                   </div>
                   <div style={{ textAlign: 'right' }}>
@@ -1632,7 +1638,7 @@ export function TaskPage() {
                                   </div>
                                 </div>
                                 <div>
-                                  <strong style={{ color: 'var(--text-sub)' }}>💼 職種 / キャリア / 販路:</strong>
+                                  <strong style={{ color: 'var(--text-sub)' }}>💼 スキル / キャリア / 販路:</strong>
                                   <div style={{ marginTop: '2px', fontWeight: 'bold' }}>
                                     {job.roleType} / {job.carrier} / {job.salesChannel} ({job.workLocation})
                                   </div>
@@ -1748,7 +1754,7 @@ export function TaskPage() {
                                   </div>
                                 </div>
                                 <div>
-                                  <strong style={{ color: 'var(--text-sub)' }}>💼 職種 / キャリア / 販路:</strong>
+                                  <strong style={{ color: 'var(--text-sub)' }}>💼 スキル / キャリア / 販路:</strong>
                                   <div style={{ marginTop: '2px', fontWeight: 'bold' }}>
                                     {job.roleType} / {job.carrier} / {job.salesChannel} ({job.workLocation})
                                   </div>
@@ -2148,7 +2154,7 @@ export function TaskPage() {
                         <div style={{ borderTop: '1px dashed #E2E8F0', paddingTop: '10px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', fontWeight: 'bold', color: 'var(--primary)' }}>
                             <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>person</span>
-                            <span>提案人材: {c.staff.name}</span>
+                            <span>提案人材: {c.staff.name} ({getStaffGender(c.staff.name)})</span>
                           </div>
                           
                           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', fontSize: '11px' }}>
@@ -2248,7 +2254,7 @@ export function TaskPage() {
                             <div>
                               <h4 style={{ margin: 0, fontSize: '13px', fontWeight: 'bold' }}>{c.company.name}</h4>
                               <div style={{ fontSize: '10px', color: 'var(--text-sub)', marginTop: '2px' }}>
-                                現場まで {c.distance.toFixed(1)} km ({c.staff.nearestStation}) • 提案人材: {c.staff.name}
+                                現場まで {c.distance.toFixed(1)} km ({c.staff.nearestStation}) • 提案人材: {c.staff.name} ({getStaffGender(c.staff.name)})
                               </div>
                             </div>
                           </div>
@@ -2307,7 +2313,7 @@ export function TaskPage() {
                 </div>
                 <div>
                   <span style={{ color: 'var(--text-sub)', fontSize: '11px', display: 'block' }}>配置メンバー</span>
-                  <strong>{confirmingCandidate.staff.name}</strong>
+                  <strong>{confirmingCandidate.staff.name} ({getStaffGender(confirmingCandidate.staff.name)})</strong>
                 </div>
                 <div>
                   <span style={{ color: 'var(--text-sub)', fontSize: '11px', display: 'block' }}>対象案件</span>

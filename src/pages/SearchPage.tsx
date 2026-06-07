@@ -9,6 +9,12 @@ import { formatJobDates } from '../utils/dateFormatter';
 import { generateMaskedLocation, extractArea } from '../utils/maskingUtils';
 import Autocomplete from 'react-google-autocomplete';
 
+export const getStaffGender = (name: string): '男性' | '女性' => {
+  const femaleNames = ['舞', '優花', '陽子', '沙織', '美咲', '愛', '結衣', '莉子', '咲良', '葵', 'さくら', 'つばさ'];
+  const isFemale = femaleNames.some(fn => name.includes(fn));
+  return isFemale ? '女性' : '男性';
+};
+
 export function SearchPage() {
   const navigate = useNavigate();
   const mapRef = useRef<any>(null);
@@ -2186,7 +2192,7 @@ export function SearchPage() {
                     >
                       {myStaffs.map(staff => (
                         <option key={staff.id} value={staff.id}>
-                          {staff.name} ({staff.carriers.join(', ') || 'キャリア未指定'}) - 単価: ¥{staff.price.toLocaleString()}
+                          {staff.name} ({staff.carriers.join(', ') || 'キャリア未指定'})
                         </option>
                       ))}
                     </select>
@@ -2235,11 +2241,11 @@ export function SearchPage() {
                               <strong>{selectedStaff.baseLocation}</strong> ({selectedStaff.nearestStation || '未指定'})
                             </div>
                             <div>
-                              <span style={{ color: 'var(--text-sub)', fontSize: '10px', display: 'block' }}>単価</span>
-                              <strong>¥{selectedStaff.price.toLocaleString()} / 日</strong>
+                              <span style={{ color: 'var(--text-sub)', fontSize: '10px', display: 'block' }}>性別</span>
+                              <strong>{getStaffGender(selectedStaff.name)}</strong>
                             </div>
                             <div>
-                              <span style={{ color: 'var(--text-sub)', fontSize: '10px', display: 'block' }}>対応職種</span>
+                              <span style={{ color: 'var(--text-sub)', fontSize: '10px', display: 'block' }}>対応スキル</span>
                               <strong>{selectedStaff.skills.join(', ') || '一般'}</strong>
                             </div>
                             <div>
@@ -2617,11 +2623,11 @@ export function SearchPage() {
                 {/* 人員情報カード */}
                 <div style={{ background: '#FFFDF9', padding: '16px', borderRadius: '12px', border: '1px solid #FCD34D', display: 'flex', flexDirection: 'column', gap: '16px' }}>
                   <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#D97706', borderBottom: '2px solid #FCD34D', paddingBottom: '6px', marginBottom: '4px' }}>
-                    2. 人員情報（職種・単価）
+                    2. 人員情報（スキル・単価）
                   </div>
 
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                    <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)' }}>職種 *</label>
+                    <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)' }}>スキル *</label>
                     <select required value={formData.roleType} onChange={e => setFormData({...formData, roleType: e.target.value})} disabled={isSubmitting} style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc', background: 'white' }}>
                       <option value="" disabled>選択してください</option>
                       <option value="キャンペーンクルー">キャンペーンクルー</option>
@@ -2824,9 +2830,9 @@ export function SearchPage() {
                   </div>
                 </div>
 
-                {/* 職種 */}
+                {/* スキル */}
                 <div className="filter-group">
-                  <span className="filter-group-title">職種</span>
+                  <span className="filter-group-title">スキル</span>
                   <div className="filter-options-flex">
                     {['キャンペーンクルー', 'クローザー', 'ディレクター'].map(role => {
                       const isChecked = filterJobRoles.includes(role);
@@ -2971,7 +2977,7 @@ export function SearchPage() {
 
                 {/* スキル */}
                 <div className="filter-group">
-                  <span className="filter-group-title">対応職種</span>
+                  <span className="filter-group-title">対応スキル</span>
                   <div className="filter-options-flex">
                     {['キャンペーンクルー', 'クローザー', 'ディレクター'].map(skill => {
                       const isChecked = filterTalentSkills.includes(skill);
