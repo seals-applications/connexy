@@ -1656,11 +1656,11 @@ export function MessagePage() {
             <button className="icon-btn-dark" onClick={() => setActiveChatId(null)}>
               <span className="material-symbols-outlined">arrow_back_ios_new</span>
             </button>
-            <div className="chat-header-title" style={{ textAlign: 'center', flex: 1, overflow: 'hidden', padding: '0 8px' }}>
-              <h1 style={{ fontSize: '15px', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            <div className="chat-header-title" style={{ textAlign: 'center', flex: 1, overflow: 'hidden', minWidth: 0, padding: '0 8px' }}>
+              <h1 style={{ fontSize: '14px', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                 {headerTitle}
               </h1>
-              <div style={{ fontSize: '12px', color: 'var(--text-sub)', marginTop: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              <div style={{ fontSize: '11px', color: 'var(--text-sub)', marginTop: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                 {activeChat?.title}
               </div>
             </div>
