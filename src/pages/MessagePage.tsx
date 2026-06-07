@@ -839,6 +839,17 @@ export function MessagePage() {
     return currentUser.id === 'sigma';
   }, [currentUser, relatedJob]);
 
+  // 該当の案件に対してすでに何らかの応募（applying, offered, working, rejected）が存在するかどうか
+  const hasApplications = useMemo(() => {
+    if (!relatedJob) return false;
+    return chatTasks.some(t => {
+      const jobIds = (t.evaluations as any)?.appliedJobIds || [];
+      const hasJob = jobIds.includes(relatedJob.id);
+      const isAppliedStatus = t.status === 'applying' || t.status === 'offered' || t.status === 'working' || t.status === 'rejected';
+      return hasJob && isAppliedStatus;
+    });
+  }, [relatedJob, chatTasks]);
+
   const headerHeight = useMemo(() => {
     let height = 72;
     if (activeChat?.status === 'group') {
@@ -1876,7 +1887,7 @@ export function MessagePage() {
                       </span>
                     </div>
                   </div>
-                  {isClient && (
+                  {isClient && !hasApplications && (
                     <button 
                       className="btn-secondary btn-small"
                       onClick={handleOpenEditConditions}
