@@ -11,6 +11,7 @@ interface ChatChannel {
   preview: string;
   time: string;
   members?: string[];
+  companyGroupName?: string;
 }
 
 const photoOptions = [
@@ -200,7 +201,9 @@ export function MessagePage() {
   const channels = useMemo(() => {
     if (!currentUser) return [];
 
-    // 1. Group chat channel
+    const isStaffUser = !!currentUser.staffId;
+
+    // 1. Static Group chat channel (Mock compatibility)
     const groupChannel: ChatChannel = {
       id: 'chat_au_group',
       name: '【グループ】auショップ新宿西口店 現場連絡',
@@ -215,7 +218,8 @@ export function MessagePage() {
         'ベータエージェンシー_鈴木さん',
         'ベータエージェンシー_佐藤さん',
         'ベータエージェンシー_田中さん'
-      ]
+      ],
+      companyGroupName: '現場グループチャット'
     };
 
     const groupTask = chatTasks.find(t => t.id === 'chat_au_group');
@@ -228,8 +232,74 @@ export function MessagePage() {
       }
     }
 
-    // 2. Direct channels with all other companies
-    const directChannels = allCompanies
+    // 2. Dynamic Group chat channels from Supabase
+    const dynamicGroupChannels: ChatChannel[] = chatTasks
+      .filter(t => t.id.startsWith('chat_group_'))
+      .map(task => {
+        const evaluations = task.evaluations || {};
+        const assignedStaffIds = evaluations.assignedStaffIds || [];
+
+        // Access Control for Staff User
+        if (isStaffUser && !assignedStaffIds.includes(currentUser.staffId)) {
+          return null; // This staff member is not assigned to this group
+        }
+
+        // Access Control for Admin User
+        const parsedParts = task.id.split('_'); // ['chat', 'group', jobId, companyId]
+        const jobId = parsedParts[2];
+        const companyId = parsedParts[3];
+
+        const job = jobs.find(j => j.id === jobId);
+        const isClient = currentUser.id === job?.authorId;
+        const isAgency = currentUser.id === companyId;
+
+        // Admins must belong to either client or agency for this chat
+        if (!isStaffUser && !isClient && !isAgency) {
+          return null;
+        }
+
+        const taskMessages = evaluations.messages || [];
+        const lastMsg = taskMessages.length > 0 ? taskMessages[taskMessages.length - 1] : null;
+        let preview = '現場グループチャットが開設されました';
+        let time = '';
+        if (lastMsg) {
+          preview = lastMsg.type === 'system' ? lastMsg.text : lastMsg.text;
+          time = lastMsg.time || '';
+        }
+
+        // Resolve staff names for member list
+        const staffsInThisGroup = allStaffs.filter(s => assignedStaffIds.includes(s.id));
+        const staffNames = staffsInThisGroup.map(s => `${s.name}さん`);
+        const agencyCompany = allCompanies.find(c => c.id === companyId);
+        const clientCompany = allCompanies.find(c => c.id === job?.authorId);
+
+        const members = [
+          `${clientCompany?.name || '元請け'}_担当者`,
+          `${agencyCompany?.name || '下請け'}_担当者`,
+          ...staffNames
+        ];
+
+        // Determine company name for accordion categorization
+        const opponentCompany = isStaffUser ? clientCompany : (isClient ? agencyCompany : clientCompany);
+        const companyGroupName = opponentCompany?.name || '現場グループチャット';
+
+        return {
+          id: task.id,
+          name: `【グループ】${task.jobTitle} - ${agencyCompany?.name || 'パートナー会社'} 現場連絡`,
+          title: task.jobTitle,
+          status: 'group',
+          avatar: '協',
+          avatarBg: 'bg-orange',
+          preview,
+          time,
+          members,
+          companyGroupName
+        } as ChatChannel;
+      })
+      .filter((c): c is ChatChannel => c !== null);
+
+    // 3. Direct channels with all other companies (Admins only)
+    const directChannels = isStaffUser ? [] : allCompanies
       .filter(c => c.id !== currentUser.id)
       .map(c => {
         const sortedIds = [currentUser.id, c.id].sort();
@@ -293,7 +363,8 @@ export function MessagePage() {
           avatar,
           avatarBg,
           preview,
-          time
+          time,
+          companyGroupName: c.name
         } as ChatChannel;
       })
       .filter(channel => {
@@ -305,8 +376,11 @@ export function MessagePage() {
         return isDefaultMockRoom || existsInDb;
       });
 
-    return [groupChannel, ...directChannels];
-  }, [currentUser, allCompanies, chatTasks]);
+    // For staff users, also allow access to the mock group chat for demonstration if applicable
+    const allowedGroupChannels = [groupChannel, ...dynamicGroupChannels];
+
+    return [...allowedGroupChannels, ...directChannels];
+  }, [currentUser, allCompanies, chatTasks, jobs, allStaffs]);
 
   const filteredChannels = useMemo(() => {
     return channels.filter(c => {
@@ -335,8 +409,8 @@ export function MessagePage() {
   const groupedChannels = useMemo(() => {
     const groups: Record<string, ChatChannel[]> = {};
     filteredChannels.forEach(c => {
-      let groupName = c.name;
-      if (c.status === 'group') {
+      let groupName = c.companyGroupName || c.name;
+      if (c.id === 'chat_au_group') {
         groupName = '現場グループチャット';
       }
       if (!groups[groupName]) {
@@ -595,7 +669,62 @@ export function MessagePage() {
 
       await api.createContractTask(newContractTask as any);
 
-      // 2. Append system message and reply message to the chat room
+      // 1.1 Dynamically create or integrate to Company-isolated Group Chat
+      const groupChatId = `chat_group_${job.id}_${currentUser.id}`;
+      const existingGroupTask = chatTasks.find(t => t.id === groupChatId);
+      const staffName = staff ? staff.name : currentUser.name;
+
+      if (existingGroupTask) {
+        // If dynamic group chat already exists, append the new staff member
+        const existingEvals = existingGroupTask.evaluations || {};
+        const assignedStaffIds = [...(existingEvals.assignedStaffIds || [])];
+        if (staffId && !assignedStaffIds.includes(staffId)) {
+          assignedStaffIds.push(staffId);
+        }
+        
+        const systemAddMsg = {
+          id: `sys_add_${Date.now()}`,
+          type: 'system',
+          text: `(システム) 新しいアサインメンバー ${staffName} がグループに参加しました。`,
+          time: timeStr
+        };
+
+        const groupMessages = existingEvals.messages || [];
+        const updatedGroupMsgs = [...groupMessages, systemAddMsg];
+
+        const newEvals = {
+          ...existingEvals,
+          assignedStaffIds,
+          messages: updatedGroupMsgs
+        };
+
+        await api.updateContractTaskStatus(groupChatId, 'working', newEvals);
+      } else {
+        // Create new company-isolated group chat
+        const welcomeMsg = {
+          id: `sys_welcome_${Date.now()}`,
+          type: 'system',
+          text: `現場連絡グループチャットが開設されました。\n【メンバー】: 元請け担当者、下請け担当者、${staffName}`,
+          time: timeStr
+        };
+        const initEvals = {
+          assignedStaffIds: staffId ? [staffId] : [],
+          messages: [welcomeMsg]
+        };
+
+        await api.saveContractTaskChat(
+          groupChatId,
+          [welcomeMsg],
+          job.title,
+          task.clientName,
+          currentUser.name,
+          [job.id],
+          (task.evaluations as any)?.appliedJobStaffIds
+        );
+        await api.updateContractTaskStatus(groupChatId, 'working', initEvals);
+      }
+
+      // 2. Append system message and reply message to the admin chat room
       const acceptSystemMsg = {
         id: 'sys_accept_' + Date.now(),
         type: 'system',
