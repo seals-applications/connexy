@@ -329,18 +329,6 @@ export function SettingsPage({ onLogoutSuccess }: SettingsPageProps) {
               <span>スタッフ管理 ({staffs.length}名)</span>
               <span className="material-symbols-outlined item-arrow">chevron_right</span>
             </div>
-            <div className="settings-item" onClick={() => {
-              if (isUserAdmin) {
-                setStaffRoles(Object.fromEntries(staffs.map(s => [s.id, s.role || 'staff'])));
-                setShowRoleOverlay(true);
-              } else {
-                alert('管理者権限が必要です。');
-              }
-            }} style={{ opacity: isUserAdmin ? 1 : 0.6 }}>
-              <span className="material-symbols-outlined item-icon">admin_panel_settings</span>
-              <span>スタッフ権限一括管理 {!isUserAdmin && ' (制限中)'}</span>
-              <span className="material-symbols-outlined item-arrow">chevron_right</span>
-            </div>
           </div>
 
           <div className="settings-group" style={{ marginTop: '24px' }}>
@@ -437,14 +425,25 @@ export function SettingsPage({ onLogoutSuccess }: SettingsPageProps) {
         <main className="list-area bg-gray" style={{ flex: 1, overflowY: 'auto', padding: '16px', paddingBottom: '100px' }}>
           
           {isUserAdmin && (
-            <div style={{ marginBottom: '20px' }}>
+            <div style={{ marginBottom: '20px', display: 'flex', gap: '10px' }}>
               <button 
                 onClick={() => setShowAddStaffOverlay(true)} 
                 className="btn-primary" 
-                style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 24px', width: '100%', justifyContent: 'center', borderRadius: '12px', fontWeight: 'bold', fontSize: '15px', border: 'none', background: 'var(--primary)', color: 'white', cursor: 'pointer', boxShadow: '0 4px 12px rgba(37, 99, 235, 0.15)' }}
+                style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '6px', padding: '12px 16px', justifyContent: 'center', borderRadius: '12px', fontWeight: 'bold', fontSize: '14px', border: 'none', background: 'var(--primary)', color: 'white', cursor: 'pointer', boxShadow: '0 4px 12px rgba(37, 99, 235, 0.15)' }}
               >
-                <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>add_circle</span>
+                <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>add_circle</span>
                 スタッフを追加
+              </button>
+              <button 
+                onClick={() => {
+                  setStaffRoles(Object.fromEntries(staffs.map(s => [s.id, s.role || 'staff'])));
+                  setShowRoleOverlay(true);
+                }}
+                className="btn-secondary" 
+                style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '6px', padding: '12px 16px', justifyContent: 'center', borderRadius: '12px', fontWeight: 'bold', fontSize: '14px', border: '1px solid #CBD5E1', background: 'white', color: '#475569', cursor: 'pointer', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>admin_panel_settings</span>
+                権限を一括管理
               </button>
             </div>
           )}
