@@ -1185,7 +1185,7 @@ export function MessagePage() {
           ))}
         </main>
 
-        <footer className="chat-footer" style={{ position: 'relative' }}>
+        <footer className="chat-footer">
           {/* Menu panel positioned absolutely above the footer */}
           {showChatMenu && (
             <div style={{
