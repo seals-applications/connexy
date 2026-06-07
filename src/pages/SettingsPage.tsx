@@ -33,7 +33,11 @@ export function SettingsPage({ onLogoutSuccess }: SettingsPageProps) {
     hasCertificate: false,
     role: 'staff' as 'admin' | 'staff',
     loginId: '',
-    password: ''
+    password: '',
+    furigana: '',
+    commuteMethod: '公共交通機関' as '公共交通機関' | '自家用車',
+    gender: '男性' as '男性' | '女性',
+    birthday: ''
   });
 
   const [editFormData, setEditFormData] = useState({
@@ -43,7 +47,11 @@ export function SettingsPage({ onLogoutSuccess }: SettingsPageProps) {
     hasCertificate: false,
     role: 'staff' as 'admin' | 'staff',
     loginId: '',
-    password: ''
+    password: '',
+    furigana: '',
+    commuteMethod: '公共交通機関' as '公共交通機関' | '自家用車',
+    gender: '男性' as '男性' | '女性',
+    birthday: ''
   });
 
   const availableSkills = ['キャンペーンクルー', 'クローザー', 'ディレクター'];
@@ -149,7 +157,7 @@ export function SettingsPage({ onLogoutSuccess }: SettingsPageProps) {
       baseLocation: formData.baseLocation,
       nearestStation: formData.nearestStation,
       preferredArea: formData.locationName,
-      price: Number(formData.price),
+      price: 15000,
       skills: formData.skills,
       carriers: formData.carriers,
       experience: formData.experience,
@@ -157,7 +165,11 @@ export function SettingsPage({ onLogoutSuccess }: SettingsPageProps) {
       hasCertificate: formData.hasCertificate,
       role: formData.role,
       loginId: formData.loginId,
-      password: formData.password
+      password: formData.password,
+      furigana: formData.furigana,
+      commuteMethod: formData.commuteMethod,
+      gender: formData.gender,
+      birthday: formData.birthday
     };
 
     const savedStaff = await api.addStaff(newStaff);
@@ -170,7 +182,11 @@ export function SettingsPage({ onLogoutSuccess }: SettingsPageProps) {
       hasCertificate: false,
       role: 'staff',
       loginId: '',
-      password: ''
+      password: '',
+      furigana: '',
+      commuteMethod: '公共交通機関',
+      gender: '男性',
+      birthday: ''
     });
 
     setStaffSaving(false);
@@ -194,7 +210,11 @@ export function SettingsPage({ onLogoutSuccess }: SettingsPageProps) {
       hasCertificate: staff.hasCertificate || false,
       role: staff.role || 'staff',
       loginId: staff.loginId || '',
-      password: staff.password || ''
+      password: staff.password || '',
+      furigana: staff.furigana || '',
+      commuteMethod: staff.commuteMethod || '公共交通機関',
+      gender: staff.gender || '男性',
+      birthday: staff.birthday || ''
     });
     setShowEditStaffOverlay(true);
   };
@@ -210,7 +230,7 @@ export function SettingsPage({ onLogoutSuccess }: SettingsPageProps) {
       baseLocation: editFormData.baseLocation,
       nearestStation: editFormData.nearestStation,
       preferredArea: editFormData.locationName,
-      price: Number(editFormData.price),
+      price: 15000,
       skills: editFormData.skills,
       carriers: editFormData.carriers,
       experience: editFormData.experience,
@@ -218,7 +238,11 @@ export function SettingsPage({ onLogoutSuccess }: SettingsPageProps) {
       hasCertificate: editFormData.hasCertificate,
       role: editFormData.role,
       loginId: editFormData.loginId,
-      password: editFormData.password
+      password: editFormData.password,
+      furigana: editFormData.furigana,
+      commuteMethod: editFormData.commuteMethod,
+      gender: editFormData.gender,
+      birthday: editFormData.birthday
     };
 
     await api.updateStaff(editingStaff.id, updatedFields);
@@ -406,6 +430,14 @@ export function SettingsPage({ onLogoutSuccess }: SettingsPageProps) {
                     </span>
                   </div>
                   <div style={{ fontSize: '12px', color: 'var(--text-sub)', marginTop: '4px' }}>{s.baseLocation} / {s.skills.join(', ')}</div>
+                  {(s.furigana || s.gender || s.birthday || s.commuteMethod) && (
+                    <div style={{ fontSize: '11px', color: 'var(--text-sub)', marginTop: '2px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                      {s.furigana && <span>フリガナ: {s.furigana}</span>}
+                      {s.gender && <span>性別: {s.gender}</span>}
+                      {s.birthday && <span>生年月日: {s.birthday}</span>}
+                      {s.commuteMethod && <span>通勤: {s.commuteMethod}</span>}
+                    </div>
+                  )}
                   {s.loginId && isUserAdmin && (
                     <div style={{ fontSize: '11px', color: '#6B7280', marginTop: '4px', background: '#F8FAFC', padding: '4px 8px', borderRadius: '4px', display: 'inline-block' }}>
                       ID: <strong>{s.loginId}</strong> / PW: <strong>{s.password}</strong>
@@ -464,8 +496,52 @@ export function SettingsPage({ onLogoutSuccess }: SettingsPageProps) {
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)' }}>実名 *</label>
+              <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)' }}>氏名（フルネーム） *</label>
               <input type="text" required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} disabled={staffSaving} style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }} placeholder="例: 鈴木 一郎" />
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)' }}>フリガナ *</label>
+              <input type="text" required value={formData.furigana} onChange={e => setFormData({...formData, furigana: e.target.value})} disabled={staffSaving} style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }} placeholder="例: スズキ イチロウ" />
+            </div>
+
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: 1 }}>
+                <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)' }}>性別 *</label>
+                <select 
+                  value={formData.gender} 
+                  onChange={e => setFormData({...formData, gender: e.target.value as '男性' | '女性'})} 
+                  disabled={staffSaving} 
+                  style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc', background: 'white', fontSize: '14px' }}
+                >
+                  <option value="男性">男性</option>
+                  <option value="女性">女性</option>
+                </select>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: 1 }}>
+                <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)' }}>生年月日 *</label>
+                <input 
+                  type="date" 
+                  required 
+                  value={formData.birthday} 
+                  onChange={e => setFormData({...formData, birthday: e.target.value})} 
+                  disabled={staffSaving} 
+                  style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc', fontSize: '14px' }} 
+                />
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)' }}>通勤方法 *</label>
+              <select 
+                value={formData.commuteMethod} 
+                onChange={e => setFormData({...formData, commuteMethod: e.target.value as '公共交通機関' | '自家用車'})} 
+                disabled={staffSaving} 
+                style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc', background: 'white', fontSize: '14px' }}
+              >
+                <option value="公共交通機関">公共交通機関</option>
+                <option value="自家用車">自家用車</option>
+              </select>
             </div>
             
             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
@@ -486,13 +562,6 @@ export function SettingsPage({ onLogoutSuccess }: SettingsPageProps) {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
               <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)' }}>希望勤務エリア *</label>
               <input type="text" required value={formData.locationName} onChange={e => setFormData({...formData, locationName: e.target.value})} disabled={staffSaving} style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }} placeholder="例: 電車で30分以内、渋谷から10km以内" />
-            </div>
-
-            <div style={{ display: 'flex', gap: '12px' }}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: 1 }}>
-                <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)' }}>希望単価 (円) *</label>
-                <input type="number" required value={formData.price} onChange={e => setFormData({...formData, price: Number(e.target.value)})} disabled={staffSaving} style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }} />
-              </div>
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -573,8 +642,52 @@ export function SettingsPage({ onLogoutSuccess }: SettingsPageProps) {
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)' }}>実名 *</label>
+              <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)' }}>氏名（フルネーム） *</label>
               <input type="text" required value={editFormData.name} onChange={e => setEditFormData({...editFormData, name: e.target.value})} disabled={staffSaving} style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }} placeholder="例: 鈴木 一郎" />
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)' }}>フリガナ *</label>
+              <input type="text" required value={editFormData.furigana} onChange={e => setEditFormData({...editFormData, furigana: e.target.value})} disabled={staffSaving} style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }} placeholder="例: スズキ イチロウ" />
+            </div>
+
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: 1 }}>
+                <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)' }}>性別 *</label>
+                <select 
+                  value={editFormData.gender} 
+                  onChange={e => setEditFormData({...editFormData, gender: e.target.value as '男性' | '女性'})} 
+                  disabled={staffSaving} 
+                  style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc', background: 'white', fontSize: '14px' }}
+                >
+                  <option value="男性">男性</option>
+                  <option value="女性">女性</option>
+                </select>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: 1 }}>
+                <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)' }}>生年月日 *</label>
+                <input 
+                  type="date" 
+                  required 
+                  value={editFormData.birthday} 
+                  onChange={e => setEditFormData({...editFormData, birthday: e.target.value})} 
+                  disabled={staffSaving} 
+                  style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc', fontSize: '14px' }} 
+                />
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)' }}>通勤方法 *</label>
+              <select 
+                value={editFormData.commuteMethod} 
+                onChange={e => setEditFormData({...editFormData, commuteMethod: e.target.value as '公共交通機関' | '自家用車'})} 
+                disabled={staffSaving} 
+                style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc', background: 'white', fontSize: '14px' }}
+              >
+                <option value="公共交通機関">公共交通機関</option>
+                <option value="自家用車">自家用車</option>
+              </select>
             </div>
             
             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
@@ -595,13 +708,6 @@ export function SettingsPage({ onLogoutSuccess }: SettingsPageProps) {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
               <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)' }}>希望勤務エリア *</label>
               <input type="text" required value={editFormData.locationName} onChange={e => setEditFormData({...editFormData, locationName: e.target.value})} disabled={staffSaving} style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }} placeholder="例: 電車で30分以内、渋谷から10km以内" />
-            </div>
-
-            <div style={{ display: 'flex', gap: '12px' }}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: 1 }}>
-                <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)' }}>希望単価 (円) *</label>
-                <input type="number" required value={editFormData.price} onChange={e => setEditFormData({...editFormData, price: Number(e.target.value)})} disabled={staffSaving} style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }} />
-              </div>
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>

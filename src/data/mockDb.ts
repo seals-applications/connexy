@@ -115,6 +115,10 @@ export interface Staff {
   role?: 'admin' | 'staff';
   loginId?: string;
   password?: string;
+  furigana?: string;
+  commuteMethod?: '公共交通機関' | '自家用車';
+  gender?: '男性' | '女性';
+  birthday?: string;
 }
 
 // 契約タスク(ContractTask)の型定義
@@ -330,6 +334,31 @@ const mapStaff = (row: any): Staff => {
   const localRole = localStorage.getItem('staff_role_' + row.id) as 'admin' | 'staff' | null;
   const localLogin = localStorage.getItem('staff_login_' + row.id);
   const localPassword = localStorage.getItem('staff_password_' + row.id);
+
+  const completedTrainings = row.completed_trainings || [];
+  let furigana = '';
+  let commuteMethod: '公共交通機関' | '自家用車' | undefined = undefined;
+  let gender: '男性' | '女性' | undefined = undefined;
+  let birthday = '';
+
+  completedTrainings.forEach((t: string) => {
+    if (t.startsWith('STAFF_FURIGANA_')) {
+      furigana = t.replace('STAFF_FURIGANA_', '');
+    } else if (t.startsWith('STAFF_COMMUTE_')) {
+      const val = t.replace('STAFF_COMMUTE_', '');
+      if (val === '公共交通機関' || val === '自家用車') {
+        commuteMethod = val;
+      }
+    } else if (t.startsWith('STAFF_GENDER_')) {
+      const val = t.replace('STAFF_GENDER_', '');
+      if (val === '男性' || val === '女性') {
+        gender = val;
+      }
+    } else if (t.startsWith('STAFF_BIRTHDAY_')) {
+      birthday = t.replace('STAFF_BIRTHDAY_', '');
+    }
+  });
+
   return {
     id: row.id,
     userId: row.user_id,
@@ -343,11 +372,15 @@ const mapStaff = (row: any): Staff => {
     carriers: row.carriers || [],
     experience: row.experience,
     prText: row.pr_text,
-    completedTrainings: row.completed_trainings || [],
+    completedTrainings,
     hasCertificate: row.has_certificate,
     role: localRole || row.role || 'staff',
     loginId: localLogin || row.login_id || '',
-    password: localPassword || row.password || ''
+    password: localPassword || row.password || '',
+    furigana,
+    commuteMethod,
+    gender,
+    birthday
   };
 };
 
@@ -363,6 +396,13 @@ const unmapStaff = (staff: Partial<Staff>): any => {
   if ('hasCertificate' in staff) { row.has_certificate = staff.hasCertificate; delete row.hasCertificate; }
   if ('role' in staff) { row.role = staff.role; }
   if ('loginId' in staff) { row.login_id = staff.loginId; delete row.loginId; }
+
+  // Strip custom fields
+  delete row.furigana;
+  delete row.commuteMethod;
+  delete row.gender;
+  delete row.birthday;
+
   return row;
 };
 
@@ -609,7 +649,13 @@ export const api = {
 
   addStaff: async (staff: Omit<Staff, 'id'>): Promise<Staff> => {
     const id = 's' + Date.now();
-    const newStaff = { ...staff, id, completedTrainings: [] };
+    const extraTags: string[] = [];
+    if (staff.furigana) extraTags.push('STAFF_FURIGANA_' + staff.furigana);
+    if (staff.commuteMethod) extraTags.push('STAFF_COMMUTE_' + staff.commuteMethod);
+    if (staff.gender) extraTags.push('STAFF_GENDER_' + staff.gender);
+    if (staff.birthday) extraTags.push('STAFF_BIRTHDAY_' + staff.birthday);
+
+    const newStaff = { ...staff, id, completedTrainings: extraTags };
     if (newStaff.role) {
       localStorage.setItem('staff_role_' + id, newStaff.role);
     }
@@ -867,7 +913,38 @@ export const api = {
     if (staff.password) {
       localStorage.setItem('staff_password_' + staffId, staff.password);
     }
-    const row = unmapStaff(staff);
+
+    // Get current staff from DB to preserve existing completedTrainings
+    const { data: existingStaffData } = await supabase.from('staffs').select('completed_trainings').eq('id', staffId).single();
+    let completedTrainings: string[] = [];
+    if (existingStaffData && existingStaffData.completed_trainings) {
+      completedTrainings = [...existingStaffData.completed_trainings];
+    }
+
+    // Filter out old tags if the new ones are being updated
+    if ('furigana' in staff) {
+      completedTrainings = completedTrainings.filter(t => !t.startsWith('STAFF_FURIGANA_'));
+      if (staff.furigana) completedTrainings.push('STAFF_FURIGANA_' + staff.furigana);
+    }
+    if ('commuteMethod' in staff) {
+      completedTrainings = completedTrainings.filter(t => !t.startsWith('STAFF_COMMUTE_'));
+      if (staff.commuteMethod) completedTrainings.push('STAFF_COMMUTE_' + staff.commuteMethod);
+    }
+    if ('gender' in staff) {
+      completedTrainings = completedTrainings.filter(t => !t.startsWith('STAFF_GENDER_'));
+      if (staff.gender) completedTrainings.push('STAFF_GENDER_' + staff.gender);
+    }
+    if ('birthday' in staff) {
+      completedTrainings = completedTrainings.filter(t => !t.startsWith('STAFF_BIRTHDAY_'));
+      if (staff.birthday) completedTrainings.push('STAFF_BIRTHDAY_' + staff.birthday);
+    }
+
+    const updatedStaff: Partial<Staff> = {
+      ...staff,
+      completedTrainings
+    };
+
+    const row = unmapStaff(updatedStaff);
     const { error } = await supabase.from('staffs').update(row).eq('id', staffId);
     if (error) {
       console.warn('updateStaff database update failed, attempting fallback update without role/login_id/password columns:', error);
