@@ -531,7 +531,7 @@ export function TaskPage() {
         appliedJobStaffIds
       );
       
-      await api.updateContractTaskStatus(chatTaskId, 'offered');
+      await api.updateContractTaskStatus(chatTaskId, 'offered', { offeredJobId: job.id });
 
       alert(`🎉 ${company.name} へ内定を通知しました！\n相手企業が承諾すると契約が確定します。チャットでやりとりを続けられます。`);
       setConfirmingCandidate(null);
@@ -2021,6 +2021,17 @@ export function TaskPage() {
                              (proximityScore * proximityWeight) +
                              newcomerBonus;
 
+          // Check if candidate is contracted for this specific job
+          const isCandidateContractedForThisJob = tasks.some(t => 
+            t.jobId === activeScreeningJob.id && 
+            (t.companyName === p.name || t.workerName === p.name || (t.id.includes(p.id) && t.id.includes(currentUser?.id || ''))) &&
+            ['working', 'report_pending', 'completed', 'disputed'].includes(t.status)
+          );
+
+          // Check if candidate is offered for this specific job
+          const isCandidateOfferedForThisJob = chatTask?.status === 'offered' && 
+            (chatTask?.evaluations as any)?.offeredJobId === activeScreeningJob.id;
+
           return {
             company: p,
             staff: proposedStaff,
@@ -2032,7 +2043,9 @@ export function TaskPage() {
             matchScore,
             scheduleScore,
             proximityScore,
-            chatTask
+            chatTask,
+            isCandidateContractedForThisJob,
+            isCandidateOfferedForThisJob
           };
         }).sort((a, b) => b.score - a.score);
 
@@ -2214,7 +2227,7 @@ export function TaskPage() {
                             <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>chat</span>
                             チャットで相談
                           </button>
-                          {isJobContracted && c.chatTask?.status === 'working' ? (
+                          {c.isCandidateContractedForThisJob ? (
                             <button 
                               type="button"
                               disabled
@@ -2260,7 +2273,7 @@ export function TaskPage() {
                               <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>lock</span>
                               他社で契約確定
                             </button>
-                          ) : c.chatTask?.status === 'offered' ? (
+                          ) : c.isCandidateOfferedForThisJob ? (
                             <button 
                               type="button"
                               disabled
@@ -2283,30 +2296,7 @@ export function TaskPage() {
                               <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>pending</span>
                               内定通知済み
                             </button>
-                          ) : c.chatTask?.status === 'working' ? (
-                            <button 
-                              type="button"
-                              disabled
-                              style={{ 
-                                flex: 1, 
-                                padding: '8px', 
-                                borderRadius: '8px', 
-                                border: 'none', 
-                                background: '#D1FAE5', 
-                                color: '#065F46', 
-                                fontSize: '12px', 
-                                fontWeight: 'bold', 
-                                cursor: 'not-allowed',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                gap: '4px'
-                              }}
-                            >
-                              <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>check_circle</span>
-                              契約確定
-                            </button>
-                          ) : c.chatTask?.status === 'rejected' ? (
+                          ) : c.chatTask?.status === 'rejected' && (c.chatTask?.evaluations as any)?.offeredJobId === activeScreeningJob.id ? (
                             <button 
                               type="button"
                               disabled
@@ -2405,7 +2395,7 @@ export function TaskPage() {
                             >
                               チャット
                             </button>
-                            {isJobContracted && c.chatTask?.status === 'working' ? (
+                            {c.isCandidateContractedForThisJob ? (
                               <button 
                                 type="button"
                                 disabled
@@ -2421,7 +2411,7 @@ export function TaskPage() {
                               >
                                 他社で契約確定
                               </button>
-                            ) : c.chatTask?.status === 'offered' ? (
+                            ) : c.isCandidateOfferedForThisJob ? (
                               <button 
                                 type="button"
                                 disabled
@@ -2429,15 +2419,7 @@ export function TaskPage() {
                               >
                                 内定通知済み
                               </button>
-                            ) : c.chatTask?.status === 'working' ? (
-                              <button 
-                                type="button"
-                                disabled
-                                style={{ padding: '4px 8px', background: '#D1FAE5', border: 'none', borderRadius: '4px', fontSize: '10px', fontWeight: 'bold', color: '#065F46', cursor: 'not-allowed' }}
-                              >
-                                契約確定
-                              </button>
-                            ) : c.chatTask?.status === 'rejected' ? (
+                            ) : c.chatTask?.status === 'rejected' && (c.chatTask?.evaluations as any)?.offeredJobId === activeScreeningJob.id ? (
                               <button 
                                 type="button"
                                 disabled
