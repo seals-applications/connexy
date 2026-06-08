@@ -574,7 +574,7 @@ export function MessagePage() {
       const workerName = otherUser ? otherUser.name : '相手';
       const jobTitle = activeChat.title || '商談チャット';
 
-      await api.saveContractTaskChat(activeChat.id, updated, jobTitle, clientName, workerName);
+      await api.saveContractTaskChat(activeChat.id, updated, jobTitle, clientName, workerName, relatedJob ? [relatedJob.id] : undefined);
 
       const updatedTasks = await api.getContractTasks();
       setChatTasks(updatedTasks);
@@ -625,7 +625,7 @@ export function MessagePage() {
       const workerName = otherUser ? otherUser.name : '相手';
       const jobTitle = activeChat.title || '商談チャット';
 
-      await api.saveContractTaskChat(activeChat.id, finalMessages, jobTitle, clientName, workerName);
+      await api.saveContractTaskChat(activeChat.id, finalMessages, jobTitle, clientName, workerName, relatedJob ? [relatedJob.id] : undefined);
 
       const updatedTasks = await api.getContractTasks();
       setChatTasks(updatedTasks);
@@ -751,6 +751,36 @@ export function MessagePage() {
       );
 
       await api.updateContractTaskStatus(activeChat.id, 'working');
+
+      // 3. Automatically reject and notify other candidates for this job
+      const otherChatTasks = chatTasks.filter(t => 
+        t.id !== activeChat.id && 
+        t.id.startsWith('chat_') && 
+        !t.id.startsWith('chat_group_') &&
+        (t.evaluations as any)?.appliedJobIds?.includes(job.id) &&
+        (t.status === 'applying' || t.status === 'offered')
+      );
+
+      for (const t of otherChatTasks) {
+        const rejectSystemMsg = {
+          id: 'sys_reject_auto_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9),
+          type: 'system',
+          text: `【選考結果のお知らせ】\nご提案いただき誠にありがとうございました。\n厳正なる選考の結果、大変恐縮ながら今回は採用を見送らせていただくこととなりました。\nまたの機会がございましたら何卒よろしくお願い申し上げます。`,
+          time: timeStr
+        };
+        const taskMessages = (t.evaluations as any)?.messages || [];
+        const updatedMsgsForOther = [...taskMessages, rejectSystemMsg];
+        await api.saveContractTaskChat(
+          t.id,
+          updatedMsgsForOther,
+          t.jobTitle,
+          t.clientName,
+          t.workerName,
+          (t.evaluations as any)?.appliedJobIds,
+          (t.evaluations as any)?.appliedJobStaffIds
+        );
+        await api.updateContractTaskStatus(t.id, 'rejected');
+      }
 
       alert('🎉 内定を承諾しました。契約が確定しました！');
       const updatedTasks = await api.getContractTasks();
@@ -2003,16 +2033,20 @@ export function MessagePage() {
                 },
                 {
                   id: 'propose',
-                  label: activeChat?.status === 'contracted' ? '契約完了済' : (proposed ? '提案済' : '条件提案・発注'),
+                  label: activeChat?.status === 'working' ? '契約確定' : activeChat?.status === 'offered' ? '内定提示中' : activeChat?.status === 'rejected' ? '選考終了' : (proposed ? '提案済' : '条件提案・発注'),
                   icon: 'edit_document',
                   color: '#EC4899',
                   bgColor: '#FCE7F3',
-                  enabled: activeChat?.status !== 'group' && activeChat?.status !== 'contracted' && !proposed,
+                  enabled: activeChat?.status !== 'group' && activeChat?.status !== 'working' && activeChat?.status !== 'offered' && activeChat?.status !== 'rejected' && !proposed,
                   action: () => {
                     handlePropose();
                     setShowChatMenu(false);
                   },
-                  disabledMessage: activeChat?.status === 'group' ? 'グループチャットでは発注提案は行えません。' : 'すでに契約が成立しているか、提案が送信されています。'
+                  disabledMessage: activeChat?.status === 'group' 
+                    ? 'グループチャットでは発注提案は行えません。' 
+                    : ['working', 'offered', 'rejected'].includes(activeChat?.status || '')
+                      ? 'すでに内定提示中か、契約が成立しているため提案は行えません。'
+                      : 'すでに提案が送信されています。'
                 }
               ].map(item => (
                 <button

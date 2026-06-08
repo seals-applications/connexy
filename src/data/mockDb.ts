@@ -70,6 +70,7 @@ export interface Job {
     accommodationType: 'none' | 'pay_separate' | 'arranged' | 'actual' | 'flat';
     accommodationValue?: number;
   };
+  status?: 'active' | 'cancelled';
 }
 
 // 人材(Talent)の型定義
@@ -192,8 +193,13 @@ const mapJob = (row: any): Job => {
   const requirements: string[] = row.requirements || [];
   let dailyPrices: Job['dailyPrices'] = undefined;
   let expenses: Job['expenses'] = undefined;
+  let status: 'active' | 'cancelled' = 'active';
 
   const cleanRequirements = requirements.filter(req => {
+    if (req === '__STATUS_CANCELLED__') {
+      status = 'cancelled';
+      return false;
+    }
     if (req.startsWith('__DAILY_PRICES__::')) {
       try {
         dailyPrices = JSON.parse(req.substring('__DAILY_PRICES__::'.length));
@@ -235,12 +241,14 @@ const mapJob = (row: any): Job => {
     allowedCompanyIds: row.allowed_company_ids,
     exactLocation: row.exact_location,
     dailyPrices,
-    expenses
+    expenses,
+    status
   };
 };
 
 const unmapJob = (job: Partial<Job>): any => {
   const row: any = { ...job };
+  if ('status' in row) delete row.status;
   if ('authorId' in job) { row.author_id = job.authorId; delete row.authorId; }
   if ('locationName' in job) { row.location_name = job.locationName; delete row.locationName; }
   if ('workHours' in job) { row.work_hours = job.workHours; delete row.workHours; }
@@ -256,6 +264,9 @@ const unmapJob = (job: Partial<Job>): any => {
 
   // Serialize dailyPrices and expenses into requirements array
   const requirements = [...(job.requirements || [])];
+  if (job.status === 'cancelled') {
+    requirements.push('__STATUS_CANCELLED__');
+  }
   if (job.dailyPrices) {
     requirements.push(`__DAILY_PRICES__::${JSON.stringify(job.dailyPrices)}`);
   }

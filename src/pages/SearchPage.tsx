@@ -40,6 +40,7 @@ export function SearchPage() {
   const [isCreateFormOpen, setIsCreateFormOpen] = useState(false);
   const [createFormType, setCreateFormType] = useState<'job' | 'talent'>('job');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isEditingLocationName, setIsEditingLocationName] = useState(false);
   
   // スタッフ関連のState
   const [myStaffs, setMyStaffs] = useState<Staff[]>([]);
@@ -215,6 +216,7 @@ export function SearchPage() {
     setTempSelectedLocation({ lat: job.exactLat || job.lat, lng: job.exactLng || job.lng });
 
     setCreateFormType('job');
+    setIsEditingLocationName(false);
     setIsCreateFormOpen(true);
     setSelectedJob(null);
   };
@@ -291,6 +293,7 @@ export function SearchPage() {
     setMyStaffs(staffs);
     if (staffs.length > 0) setSelectedStaffId(staffs[0].id);
     setCreateFormType(mode);
+    setIsEditingLocationName(false);
     setIsCreateFormOpen(true);
   };
 
@@ -376,6 +379,7 @@ export function SearchPage() {
         accommodationValue: 0
       });
       setIsSamePriceAllDates(true);
+      setIsEditingLocationName(false);
     } else {
       const selectedStaff = myStaffs.find(s => s.id === selectedStaffId);
       if (!selectedStaff) {
@@ -809,6 +813,10 @@ export function SearchPage() {
         if (job.authorId === currentUser.id) return false;
         if (appliedJobIds.includes(job.id)) return false;
       }
+
+      // 0.1 契約確定済みの案件（statusが 'working', 'report_pending', 'completed', 'disputed' などのタスクが存在する案件）は非表示にする
+      const isContracted = contractTasks.some(t => t.jobId === job.id && ['working', 'report_pending', 'completed', 'disputed'].includes(t.status));
+      if (isContracted) return false;
 
       // 1. エリアフィルタ
       let matchesArea = true;
@@ -2467,22 +2475,87 @@ export function SearchPage() {
                     <span style={{ fontSize: '11px', color: 'var(--text-sub)' }}>
                       ※地図をクリックすると住所が自動入力され、公開用の表示名も自動生成されます
                     </span>
-                  </div>
 
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', background: 'white', padding: '12px', borderRadius: '8px', border: '1px dashed #ccc' }}>
-                    <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)' }}>公開用の表示名 (マスキング済) *</label>
-                    <input 
-                      type="text" 
-                      required 
-                      value={formData.locationName} 
-                      onChange={e => setFormData({...formData, locationName: e.target.value})} 
-                      disabled={isSubmitting} 
-                      style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }} 
-                      placeholder="例: 新宿区のYデンキ" 
-                    />
-                    <span style={{ fontSize: '11px', color: 'var(--primary)' }}>
-                      ※アプリ上にはこの名称のみが表示されます。必要に応じて手動で調整してください。
-                    </span>
+                    {/* 公開用表示名プレビュー（チップ形式） */}
+                    <div style={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      flexWrap: 'wrap', 
+                      gap: '8px', 
+                      marginTop: '2px',
+                      background: '#F8FAFC',
+                      padding: '8px 12px',
+                      borderRadius: '6px',
+                      border: '1px solid #E2E8F0'
+                    }}>
+                      <span style={{ fontSize: '12px', color: 'var(--text-sub)', fontWeight: 'bold' }}>求職者への公開名:</span>
+                      {isEditingLocationName ? (
+                        <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flex: 1, minWidth: '200px' }}>
+                          <input 
+                            type="text" 
+                            required 
+                            value={formData.locationName} 
+                            onChange={e => setFormData({...formData, locationName: e.target.value})} 
+                            disabled={isSubmitting} 
+                            style={{ flex: 1, padding: '4px 8px', fontSize: '12px', borderRadius: '4px', border: '1px solid #CBD5E1', background: 'white' }} 
+                            placeholder="例: 新宿区の量販店" 
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setIsEditingLocationName(false)}
+                            style={{
+                              padding: '4px 8px',
+                              background: 'var(--primary)',
+                              color: 'white',
+                              border: 'none',
+                              borderRadius: '4px',
+                              fontSize: '11px',
+                              cursor: 'pointer',
+                              fontWeight: 'bold'
+                            }}
+                          >
+                            確定
+                          </button>
+                        </div>
+                      ) : (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span style={{ 
+                            display: 'inline-flex', 
+                            alignItems: 'center', 
+                            padding: '3px 8px', 
+                            background: '#EFF6FF', 
+                            color: '#1E40AF', 
+                            borderRadius: '12px', 
+                            border: '1px solid #BFDBFE', 
+                            fontSize: '12px', 
+                            fontWeight: 'bold' 
+                          }}>
+                            <span className="material-symbols-outlined" style={{ fontSize: '14px', marginRight: '4px', color: '#3B82F6' }}>visibility</span>
+                            {formData.locationName || '(正確な店舗名を入力すると自動生成されます)'}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => setIsEditingLocationName(true)}
+                            style={{
+                              padding: '2px 6px',
+                              background: 'none',
+                              border: '1px solid #CBD5E1',
+                              borderRadius: '4px',
+                              fontSize: '10px',
+                              color: 'var(--primary)',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '2px',
+                              fontWeight: 'bold'
+                            }}
+                          >
+                            <span className="material-symbols-outlined" style={{ fontSize: '11px' }}>edit</span>
+                            編集
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </div>
 
                   <div style={{ display: 'flex', gap: '12px' }}>
