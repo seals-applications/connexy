@@ -41,6 +41,7 @@ export function SearchPage() {
   const [createFormType, setCreateFormType] = useState<'job' | 'talent'>('job');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isEditingLocationName, setIsEditingLocationName] = useState(false);
+  const [mapSelectionKey, setMapSelectionKey] = useState(0);
   
   // スタッフ関連のState
   const [myStaffs, setMyStaffs] = useState<Staff[]>([]);
@@ -662,18 +663,20 @@ export function SearchPage() {
         setFormData(prev => ({ 
           ...prev, 
           exactLocation: addressText,
-          locationName: generateMaskedLocation(addressText, addressText, prev.salesChannel, prev.carrier)
+          locationName: generateMaskedLocation(addressText, addressText, prev.salesChannel, prev.carrier, prev.workLocation)
         }));
         setTempSelectedLocation({ lat, lng });
+        setMapSelectionKey(k => k + 1);
       } catch (err) {
         console.warn('逆ジオコーディングに失敗しました', err);
         const fallbackText = `ピンを指定した地点 (${lat.toFixed(4)}, ${lng.toFixed(4)})`;
         setFormData(prev => ({ 
           ...prev, 
           exactLocation: fallbackText,
-          locationName: generateMaskedLocation(fallbackText, fallbackText, prev.salesChannel, prev.carrier)
+          locationName: generateMaskedLocation(fallbackText, fallbackText, prev.salesChannel, prev.carrier, prev.workLocation)
         }));
         setTempSelectedLocation({ lat, lng });
+        setMapSelectionKey(k => k + 1);
       } finally {
         setIsSelectingLocationOnMap(false);
         setIsCreateFormOpen(true);
@@ -2385,6 +2388,7 @@ export function SearchPage() {
                     <div style={{ display: 'flex', gap: '8px' }}>
                       {import.meta.env.VITE_GOOGLE_MAPS_API_KEY ? (
                         <Autocomplete
+                          key={`autocomplete_${mapSelectionKey}`}
                           apiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY}
                           onPlaceSelected={(place: any) => {
                             if (place.geometry) {
@@ -2399,6 +2403,7 @@ export function SearchPage() {
                                 exactLocation: address,
                                 locationName: generateMaskedLocation(fullAddress, address, prev.salesChannel, prev.carrier, prev.workLocation)
                               }));
+                              setMapSelectionKey(k => k + 1);
                               
                               if (mapRef.current) {
                                 if (tempMarkerRef.current) {
@@ -2437,6 +2442,7 @@ export function SearchPage() {
                         />
                       ) : (
                         <input 
+                          key={`input_${mapSelectionKey}`}
                           type="text" 
                           required 
                           value={formData.exactLocation} 
