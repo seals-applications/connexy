@@ -80,19 +80,7 @@ export function ManagementPage() {
   const [selectedCalendarDate, setSelectedCalendarDate] = useState<string>('2026-06-13');
   const [calendarFilterStaffId, setCalendarFilterStaffId] = useState<string>('all');
 
-  const getTasksForDate = (dateStr: string) => {
-    return tasks.filter(t => {
-      if (!['working', 'report_pending', 'completed'].includes(t.status)) return false;
-      const isDateMatch = t.date === dateStr;
-      if (!isDateMatch) return false;
-      if (isUserAdmin) {
-        if (calendarFilterStaffId === 'all') return true;
-        const targetStaff = allStaffs.find(s => s.id === calendarFilterStaffId);
-        return t.workerName === targetStaff?.name;
-      }
-      return t.workerName === myStaff?.name || t.workerName === currentUser?.name;
-    });
-  };
+
 
 
   const calendarCells = useMemo(() => {
@@ -243,6 +231,29 @@ export function ManagementPage() {
     if (!currentUser?.staffId) return null;
     return allStaffs.find(s => s.id === currentUser.staffId) || null;
   }, [allStaffs, currentUser]);
+
+  const getTasksForDate = (dateStr: string) => {
+    return tasks.filter(t => {
+      if (!['working', 'report_pending', 'completed'].includes(t.status)) return false;
+      const isDateMatch = t.date === dateStr;
+      if (!isDateMatch) return false;
+      if (isUserAdmin) {
+        // Only show tasks related to our company:
+        // (1) Worker is our company's staff
+        const isOurStaff = companyStaffs.some(s => s.name === t.workerName);
+        // (2) Job is posted by our company
+        const isOurJob = myJobs.some(j => j.id === t.jobId);
+        
+        if (!isOurStaff && !isOurJob) return false;
+
+        if (calendarFilterStaffId === 'all') return true;
+        const targetStaff = allStaffs.find(s => s.id === calendarFilterStaffId);
+        return t.workerName === targetStaff?.name;
+      }
+      return t.workerName === myStaff?.name || t.workerName === currentUser?.name;
+    });
+  };
+
 
   // Screening chat startup
   const handleStartScreeningChat = (chatTask: ContractTask | undefined, candidateCompanyId: string) => {
