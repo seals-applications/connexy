@@ -3188,7 +3188,7 @@ export function SearchPage() {
       {viewMode === 'map' && !isSelectingLocationOnMap && selectedMapJobs && (
         <div style={{
           position: 'absolute',
-          bottom: 0,
+          bottom: 'calc(var(--nav-height) + env(safe-area-inset-bottom))',
           left: 0,
           right: 0,
           backgroundColor: 'white',
@@ -3317,7 +3317,7 @@ export function SearchPage() {
       {viewMode === 'map' && !isSelectingLocationOnMap && selectedMapTalents && (
         <div style={{
           position: 'absolute',
-          bottom: 0,
+          bottom: 'calc(var(--nav-height) + env(safe-area-inset-bottom))',
           left: 0,
           right: 0,
           backgroundColor: 'white',
