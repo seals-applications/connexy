@@ -512,7 +512,8 @@ export function TaskPage() {
         id: 'sys_offer_' + Date.now(),
         type: 'system',
         text: `内定オファーが届きました`,
-        time: timeStr
+        time: timeStr,
+        isOffer: true
       };
 
       const updatedMsgs = [...msgs, offerMsg];

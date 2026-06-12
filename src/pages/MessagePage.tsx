@@ -59,6 +59,12 @@ export function MessagePage() {
   // 経費・手配用のState
   const [showReceiptModal, setShowReceiptModal] = useState(false);
   const [showArrangementModal, setShowArrangementModal] = useState(false);
+
+  // 内定通知表示用のState
+  const [showOfferModal, setShowOfferModal] = useState(false);
+  const [selectedOfferMsg, setSelectedOfferMsg] = useState<any>(null);
+  const [confirmingOfferAction, setConfirmingOfferAction] = useState<'accept' | 'decline' | null>(null);
+
   const [receiptCategory, setReceiptCategory] = useState<'transport' | 'accommodation' | 'car'>('transport');
   const [receiptAmount, setReceiptAmount] = useState<number>(0);
   const [receiptItem, setReceiptItem] = useState('');
@@ -469,19 +475,47 @@ export function MessagePage() {
     return getDefaultMessages(activeChat.id);
   }, [activeChat, chatTasks, currentUser]);
 
+  // チャットに関連する案件情報の解決
+  const relatedJob = useMemo(() => {
+    if (!activeChat || !chatTasks) return null;
+    const task = chatTasks.find(t => t.id === activeChat.id);
+    const jobIds = (task?.evaluations as any)?.appliedJobIds || [];
+    if (jobIds.length === 0) return null;
+    return jobs.find(j => j.id === jobIds[0]) || null;
+  }, [activeChat, chatTasks, jobs]);
+
+  const isClient = useMemo(() => {
+    if (!currentUser) return false;
+    if (relatedJob) {
+      return currentUser.id === relatedJob.authorId || currentUser.id === (relatedJob as any).companyId;
+    }
+    return currentUser.id === 'sigma';
+  }, [currentUser, relatedJob]);
+
+  const clientName = useMemo(() => {
+    if (!activeChat || !chatTasks) return '元請け企業';
+    const task = chatTasks.find(t => t.id === activeChat.id);
+    return task?.clientName || '元請け企業';
+  }, [activeChat, chatTasks]);
+
   const mappedMessages = useMemo(() => {
     return messages.map((msg: any) => {
-      if (msg.type === 'system') return msg;
+      const isOffer = msg.isOffer || (msg.id && msg.id.startsWith('sys_offer_') && (msg.text?.includes('内定') || msg.isOffer));
+      if (msg.type === 'system' && !isOffer) return msg;
+
       let type = msg.type;
-      if (msg.senderId) {
+      if (isOffer) {
+        type = isClient ? 'sent' : 'received';
+      } else if (msg.senderId) {
         type = (currentUser && msg.senderId === currentUser.id) ? 'sent' : 'received';
       }
       return {
         ...msg,
-        type
+        type,
+        isOffer
       };
     });
-  }, [messages, currentUser]);
+  }, [messages, currentUser, isClient]);
 
   const proposed = useMemo(() => {
     return messages.some((m: any) => m.isProposal);
@@ -831,12 +865,12 @@ export function MessagePage() {
     }
   };
 
-  const handleDeclineUnofficialOffer = async () => {
+  const handleDeclineUnofficialOffer = async (skipConfirm: boolean = false) => {
     if (!activeChat || !currentUser || !chatTasks) return;
     const task = chatTasks.find(t => t.id === activeChat.id);
     if (!task) return;
 
-    if (!confirm('本当にこの内定を辞退しますか？')) return;
+    if (!skipConfirm && !confirm('本当にこの内定を辞退しますか？')) return;
 
     try {
       const jobId = (task.evaluations as any)?.appliedJobIds?.[0];
@@ -884,22 +918,7 @@ export function MessagePage() {
     }
   };
 
-  // チャットに関連する案件情報の解決
-  const relatedJob = useMemo(() => {
-    if (!activeChat || !chatTasks) return null;
-    const task = chatTasks.find(t => t.id === activeChat.id);
-    const jobIds = (task?.evaluations as any)?.appliedJobIds || [];
-    if (jobIds.length === 0) return null;
-    return jobs.find(j => j.id === jobIds[0]) || null;
-  }, [activeChat, chatTasks, jobs]);
 
-  const isClient = useMemo(() => {
-    if (!currentUser) return false;
-    if (relatedJob) {
-      return currentUser.id === relatedJob.authorId || currentUser.id === (relatedJob as any).companyId;
-    }
-    return currentUser.id === 'sigma';
-  }, [currentUser, relatedJob]);
 
   // 該当の案件に対してすでに何らかの応募（applying, offered, working, rejected）が存在するかどうか
   const hasApplications = useMemo(() => {
@@ -1749,14 +1768,7 @@ export function MessagePage() {
                 {activeChat?.title}
               </div>
             </div>
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <button className="icon-btn-dark" onClick={handleSync} title="同期" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <span className="material-symbols-outlined" style={{ color: 'var(--primary-color)' }}>refresh</span>
-              </button>
-              <button className="icon-btn-dark" onClick={() => alert('運営に通報しました')} title="通報する">
-                <span className="material-symbols-outlined" style={{ color: '#EF4444' }}>report</span>
-              </button>
-            </div>
+            <div style={{ width: '40px' }} />
           </div>
           
           {activeChat?.status === 'group' && (
@@ -1790,36 +1802,25 @@ export function MessagePage() {
               </div>
               <div style={{ display: 'flex', gap: '8px', width: '100%' }}>
                 <button 
-                  onClick={handleDeclineUnofficialOffer}
-                  style={{
-                    flex: 1,
-                    padding: '6px 0',
-                    borderRadius: '6px',
-                    border: '1px solid #F59E0B',
-                    background: 'white',
-                    color: '#B45309',
-                    fontSize: '11px',
-                    fontWeight: 'bold',
-                    cursor: 'pointer'
+                  onClick={() => {
+                    setSelectedOfferMsg(null);
+                    setShowOfferModal(true);
                   }}
-                >
-                  辞退する
-                </button>
-                <button 
-                  onClick={handleAcceptUnofficialOffer}
                   style={{
                     flex: 1,
-                    padding: '6px 0',
+                    padding: '8px 0',
                     borderRadius: '6px',
                     border: 'none',
                     background: '#D97706',
                     color: 'white',
-                    fontSize: '11px',
+                    fontSize: '11.5px',
                     fontWeight: 'bold',
-                    cursor: 'pointer'
+                    cursor: 'pointer',
+                    textAlign: 'center',
+                    boxShadow: '0 2px 4px rgba(217, 119, 6, 0.2)'
                   }}
                 >
-                  承諾する
+                  【内定通知を開く】
                 </button>
               </div>
             </div>
@@ -1902,6 +1903,33 @@ export function MessagePage() {
                               </button>
                             )}
                           </div>
+                        ) : msg.isOffer ? (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '4px 0' }}>
+                            <div style={{ fontWeight: 'bold', fontSize: '13px' }}>内定オファー</div>
+                            <button
+                              onClick={() => {
+                                setSelectedOfferMsg(msg);
+                                setShowOfferModal(true);
+                              }}
+                              style={{
+                                background: '#FFFFFF',
+                                border: '1px solid var(--primary-color)',
+                                color: 'var(--primary-color)',
+                                padding: '6px 12px',
+                                borderRadius: '6px',
+                                fontSize: '12px',
+                                fontWeight: 'bold',
+                                cursor: 'pointer',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: '4px',
+                                boxShadow: '0 2px 4px rgba(99, 102, 241, 0.1)'
+                              }}
+                            >
+                              【内定通知を開く】
+                            </button>
+                          </div>
                         ) : (
                           <p style={{ whiteSpace: 'pre-wrap' }}>{maskContactInfo(msg.text)}</p>
                         )}
@@ -1949,6 +1977,32 @@ export function MessagePage() {
                                 契約成立済み
                               </button>
                             )}
+                          </div>
+                        ) : msg.isOffer ? (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '4px 0' }}>
+                            <div style={{ fontWeight: 'bold', fontSize: '13px' }}>内定オファー</div>
+                            <button
+                              onClick={() => {
+                                setSelectedOfferMsg(msg);
+                                setShowOfferModal(true);
+                              }}
+                              style={{
+                                background: 'rgba(255, 255, 255, 0.2)',
+                                border: '1px solid #FFFFFF',
+                                color: '#FFFFFF',
+                                padding: '6px 12px',
+                                borderRadius: '6px',
+                                fontSize: '12px',
+                                fontWeight: 'bold',
+                                cursor: 'pointer',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: '4px'
+                              }}
+                            >
+                              【内定通知を開く】
+                            </button>
                           </div>
                         ) : (
                           <p style={{ whiteSpace: 'pre-wrap' }}>{maskContactInfo(msg.text)}</p>
@@ -2225,6 +2279,323 @@ export function MessagePage() {
           </div>
         </footer>
       </div>
+
+      {/* 内定通知詳細モーダル */}
+      {showOfferModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(15, 23, 42, 0.6)',
+          backdropFilter: 'blur(8px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 9999,
+          padding: '16px'
+        }}>
+          <div style={{
+            background: '#FFFFFF',
+            borderRadius: '16px',
+            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+            width: '100%',
+            maxWidth: '400px',
+            overflow: 'hidden',
+            display: 'flex',
+            flexDirection: 'column',
+            animation: 'fadeIn 0.2s ease-out'
+          }}>
+            {/* Modal Header */}
+            <div style={{
+              padding: '16px 20px',
+              borderBottom: '1px solid #F1F5F9',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              background: 'linear-gradient(135deg, #EEF2F6 0%, #E2E8F0 100%)'
+            }}>
+              <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 'bold', color: '#1E293B', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span className="material-symbols-outlined" style={{ color: 'var(--primary-color)' }}>verified</span>
+                内定通知書
+              </h3>
+              <button 
+                onClick={() => {
+                  setShowOfferModal(false);
+                  setConfirmingOfferAction(null);
+                }}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  padding: '4px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#64748B'
+                }}
+              >
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div style={{ padding: '20px', overflowY: 'auto', maxHeight: '70vh' }}>
+              {selectedOfferMsg && <span style={{ display: 'none' }}>{selectedOfferMsg.id}</span>}
+              {confirmingOfferAction === null ? (
+                <>
+                  <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+                    <div style={{ fontSize: '12px', color: '#64748B', marginBottom: '4px' }}>クライアント企業</div>
+                    <div style={{ fontSize: '15px', fontWeight: 'bold', color: '#0F172A' }}>{clientName}</div>
+                    <div style={{ fontSize: '12px', color: '#94A3B8', marginTop: '4px' }}>から内定オファーが届いています。</div>
+                  </div>
+
+                  <div style={{
+                    background: '#F8FAFC',
+                    border: '1px solid #E2E8F0',
+                    borderRadius: '12px',
+                    padding: '16px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '12px',
+                    fontSize: '13px',
+                    color: '#334155',
+                    marginBottom: '20px'
+                  }}>
+                    <div>
+                      <strong style={{ color: '#64748B', display: 'block', fontSize: '11px', marginBottom: '2px' }}>案件名</strong>
+                      <span style={{ fontWeight: 'bold', color: '#0F172A' }}>{relatedJob?.title || activeChat?.title}</span>
+                    </div>
+                    <hr style={{ border: 0, borderTop: '1px solid #E2E8F0', margin: 0 }} />
+                    <div>
+                      <strong style={{ color: '#64748B', display: 'block', fontSize: '11px', marginBottom: '2px' }}>契約単価</strong>
+                      <span style={{ fontWeight: 'bold', color: 'var(--primary-color)', fontSize: '14px' }}>
+                        {relatedJob?.price || '15,000円 / 日'}
+                      </span>
+                    </div>
+                    <hr style={{ border: 0, borderTop: '1px solid #E2E8F0', margin: 0 }} />
+                    <div>
+                      <strong style={{ color: '#64748B', display: 'block', fontSize: '11px', marginBottom: '2px' }}>日程</strong>
+                      <span>{relatedJob?.eventDate || '未定'}</span>
+                    </div>
+                    <hr style={{ border: 0, borderTop: '1px solid #E2E8F0', margin: 0 }} />
+                    <div>
+                      <strong style={{ color: '#64748B', display: 'block', fontSize: '11px', marginBottom: '2px' }}>勤務地</strong>
+                      <span>{relatedJob?.workLocation || '未定'}</span>
+                    </div>
+                    {relatedJob?.description && (
+                      <>
+                        <hr style={{ border: 0, borderTop: '1px solid #E2E8F0', margin: 0 }} />
+                        <div>
+                          <strong style={{ color: '#64748B', display: 'block', fontSize: '11px', marginBottom: '2px' }}>詳細内容</strong>
+                          <span style={{ fontSize: '12px', whiteSpace: 'pre-wrap', color: '#475569' }}>{relatedJob.description}</span>
+                        </div>
+                      </>
+                    )}
+                  </div>
+
+                  {/* Actions */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {!isClient ? (
+                      <div style={{ display: 'flex', gap: '10px' }}>
+                        <button
+                          onClick={() => setConfirmingOfferAction('decline')}
+                          style={{
+                            flex: 1,
+                            padding: '12px',
+                            borderRadius: '8px',
+                            border: '1px solid #EF4444',
+                            background: '#FFFFFF',
+                            color: '#EF4444',
+                            fontSize: '14px',
+                            fontWeight: 'bold',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s'
+                          }}
+                        >
+                          辞退する
+                        </button>
+                        <button
+                          onClick={() => setConfirmingOfferAction('accept')}
+                          style={{
+                            flex: 1,
+                            padding: '12px',
+                            borderRadius: '8px',
+                            border: 'none',
+                            background: '#10B981',
+                            color: '#FFFFFF',
+                            fontSize: '14px',
+                            fontWeight: 'bold',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s',
+                            boxShadow: '0 4px 6px -1px rgba(16, 185, 129, 0.2)'
+                          }}
+                        >
+                          承諾する
+                        </button>
+                      </div>
+                    ) : (
+                      <div style={{
+                        textAlign: 'center',
+                        fontSize: '12px',
+                        color: '#64748B',
+                        background: '#F1F5F9',
+                        padding: '10px',
+                        borderRadius: '8px'
+                      }}>
+                        ※ 内定の承諾・辞退は下請け企業（相手側）の操作となります。
+                      </div>
+                    )}
+                    <button
+                      onClick={() => {
+                        setShowOfferModal(false);
+                        setConfirmingOfferAction(null);
+                      }}
+                      style={{
+                        padding: '10px',
+                        borderRadius: '8px',
+                        border: '1px solid #E2E8F0',
+                        background: '#F8FAFC',
+                        color: '#64748B',
+                        fontSize: '13px',
+                        fontWeight: 'bold',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      閉じる
+                    </button>
+                  </div>
+                </>
+              ) : confirmingOfferAction === 'accept' ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                  <div style={{ textAlign: 'center' }}>
+                    <div style={{
+                      width: '48px',
+                      height: '48px',
+                      borderRadius: '50%',
+                      background: '#DEF7EC',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      margin: '0 auto 12px auto'
+                    }}>
+                      <span className="material-symbols-outlined" style={{ color: '#059669', fontSize: '28px' }}>check_circle</span>
+                    </div>
+                    <h4 style={{ margin: '0 0 8px 0', fontSize: '16px', fontWeight: 'bold', color: '#0F172A' }}>内定の承諾確認</h4>
+                    <p style={{ margin: 0, fontSize: '13px', color: '#475569', lineHeight: '1.6', textAlign: 'left' }}>
+                      本当にこの内定を<strong>承諾</strong>しますか？<br />
+                      承諾すると契約が確定し、案件ステータスが「契約成立」となります。また、現場連絡用のグループチャットが開設されます。
+                    </p>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '10px' }}>
+                    <button
+                      onClick={() => setConfirmingOfferAction(null)}
+                      style={{
+                        flex: 1,
+                        padding: '12px',
+                        borderRadius: '8px',
+                        border: '1px solid #E2E8F0',
+                        background: '#FFFFFF',
+                        color: '#64748B',
+                        fontSize: '14px',
+                        fontWeight: 'bold',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      戻る
+                    </button>
+                    <button
+                      onClick={async () => {
+                        setShowOfferModal(false);
+                        setConfirmingOfferAction(null);
+                        await handleAcceptUnofficialOffer();
+                      }}
+                      style={{
+                        flex: 1,
+                        padding: '12px',
+                        borderRadius: '8px',
+                        border: 'none',
+                        background: '#10B981',
+                        color: '#FFFFFF',
+                        fontSize: '14px',
+                        fontWeight: 'bold',
+                        cursor: 'pointer',
+                        boxShadow: '0 4px 6px -1px rgba(16, 185, 129, 0.2)'
+                      }}
+                    >
+                      承諾を確定する
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                  <div style={{ textAlign: 'center' }}>
+                    <div style={{
+                      width: '48px',
+                      height: '48px',
+                      borderRadius: '50%',
+                      background: '#FEE2E2',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      margin: '0 auto 12px auto'
+                    }}>
+                      <span className="material-symbols-outlined" style={{ color: '#DC2626', fontSize: '28px' }}>error</span>
+                    </div>
+                    <h4 style={{ margin: '0 0 8px 0', fontSize: '16px', fontWeight: 'bold', color: '#0F172A' }}>内定の辞退確認</h4>
+                    <p style={{ margin: 0, fontSize: '13px', color: '#475569', lineHeight: '1.6', textAlign: 'left' }}>
+                      本当にこの内定を<strong>辞退</strong>しますか？<br />
+                      辞退すると選考が終了し、辞退した旨が相手企業に通知されます。この操作は取り消せません。
+                    </p>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '10px' }}>
+                    <button
+                      onClick={() => setConfirmingOfferAction(null)}
+                      style={{
+                        flex: 1,
+                        padding: '12px',
+                        borderRadius: '8px',
+                        border: '1px solid #E2E8F0',
+                        background: '#FFFFFF',
+                        color: '#64748B',
+                        fontSize: '14px',
+                        fontWeight: 'bold',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      戻る
+                    </button>
+                    <button
+                      onClick={async () => {
+                        setShowOfferModal(false);
+                        setConfirmingOfferAction(null);
+                        await handleDeclineUnofficialOffer(true);
+                      }}
+                      style={{
+                        flex: 1,
+                        padding: '12px',
+                        borderRadius: '8px',
+                        border: 'none',
+                        background: '#EF4444',
+                        color: '#FFFFFF',
+                        fontSize: '14px',
+                        fontWeight: 'bold',
+                        cursor: 'pointer',
+                        boxShadow: '0 4px 6px -1px rgba(239, 68, 68, 0.2)'
+                      }}
+                    >
+                      辞退を確定する
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 領収書提出モーダル */}
       {showReceiptModal && (
