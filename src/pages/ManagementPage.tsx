@@ -72,13 +72,19 @@ export function ManagementPage() {
 
   // Tab/Subpage state
   const isUserAdmin = !currentUser?.staffId || currentUser.staffRole === 'admin';
-  const [subPage, setSubPage] = useState<'none' | 'posts' | 'staffs' | 'reports' | 'logs' | 'training' | 'calendar'>('none');
+  const [subPage, setSubPage] = useState<'none' | 'posts' | 'staffs' | 'reports' | 'logs' | 'training'>('none');
 
   // Calendar states
   const [calendarYear, setCalendarYear] = useState<number>(2026);
   const [calendarMonth, setCalendarMonth] = useState<number>(6);
   const [selectedCalendarDate, setSelectedCalendarDate] = useState<string>('2026-06-13');
   const [calendarFilterStaffId, setCalendarFilterStaffId] = useState<string>('all');
+  const [calendarFilterOtherStaffName, setCalendarFilterOtherStaffName] = useState<string>('all');
+
+  // Sub-tabs inside overlays
+  const [postsSubTab, setPostsSubTab] = useState<'list' | 'calendar'>('list');
+  const [logsSubTab, setLogsSubTab] = useState<'calendar' | 'history'>('calendar');
+
 
 
 
@@ -232,31 +238,297 @@ export function ManagementPage() {
     return allStaffs.find(s => s.id === currentUser.staffId) || null;
   }, [allStaffs, currentUser]);
 
-  const getTasksForDate = (dateStr: string) => {
+  const otherStaffsOnOurJobs = useMemo(() => {
+    const staffNames = new Set<string>();
+    tasks.forEach(t => {
+      if (myJobs.some(j => j.id === t.jobId) && !companyStaffs.some(s => s.name === t.workerName)) {
+        staffNames.add(t.workerName);
+      }
+    });
+    return Array.from(staffNames);
+  }, [tasks, myJobs, companyStaffs]);
+
+  const getTasksForDate = (dateStr: string, calendarType: 'own_staff' | 'other_staff' = 'own_staff') => {
     return tasks.filter(t => {
       if (!['working', 'report_pending', 'completed'].includes(t.status)) return false;
       const isDateMatch = t.date === dateStr;
       if (!isDateMatch) return false;
-      if (isUserAdmin) {
-        // Only show tasks related to our company:
-        // (1) Worker is our company's staff
+      
+      if (calendarType === 'own_staff') {
         const isOurStaff = companyStaffs.some(s => s.name === t.workerName);
-        // (2) Job is posted by our company
-        const isOurJob = myJobs.some(j => j.id === t.jobId);
+        if (!isOurStaff) return false;
         
-        if (!isOurStaff && !isOurJob) return false;
-
-        if (calendarFilterStaffId === 'all') return true;
-        const targetStaff = allStaffs.find(s => s.id === calendarFilterStaffId);
-        return t.workerName === targetStaff?.name;
+        if (isUserAdmin) {
+          if (calendarFilterStaffId === 'all') return true;
+          const targetStaff = allStaffs.find(s => s.id === calendarFilterStaffId);
+          return t.workerName === targetStaff?.name;
+        }
+        return t.workerName === myStaff?.name || t.workerName === currentUser?.name;
+      } else {
+        // calendarType === 'other_staff'
+        const isOurJob = myJobs.some(j => j.id === t.jobId);
+        const isOurStaff = companyStaffs.some(s => s.name === t.workerName);
+        if (!isOurJob || isOurStaff) return false;
+        
+        if (calendarFilterOtherStaffName === 'all') return true;
+        return t.workerName === calendarFilterOtherStaffName;
       }
-      return t.workerName === myStaff?.name || t.workerName === currentUser?.name;
     });
   };
 
 
+
+  const renderCalendar = (calendarType: 'own_staff' | 'other_staff') => {
+    return (
+      <>
+        {/* Staff filter dropdown */}
+        {isUserAdmin && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'white', padding: '10px 14px', borderRadius: '12px', border: '1px solid var(--border-color)', marginBottom: '12px' }}>
+            <span className="material-symbols-outlined" style={{ fontSize: '18px', color: 'var(--text-sub)' }}>filter_alt</span>
+            <span style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--text-main)' }}>スタッフ絞り込み:</span>
+            {calendarType === 'own_staff' ? (
+              <select
+                value={calendarFilterStaffId}
+                onChange={e => setCalendarFilterStaffId(e.target.value)}
+                style={{ flex: 1, padding: '6px 10px', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'white', fontSize: '12px', color: 'var(--text-main)' }}
+              >
+                <option value="all">全員を表示</option>
+                {companyStaffs.map(s => (
+                  <option key={s.id} value={s.id}>{s.name}</option>
+                ))}
+              </select>
+            ) : (
+              <select
+                value={calendarFilterOtherStaffName}
+                onChange={e => setCalendarFilterOtherStaffName(e.target.value)}
+                style={{ flex: 1, padding: '6px 10px', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'white', fontSize: '12px', color: 'var(--text-main)' }}
+              >
+                <option value="all">全員を表示</option>
+                {otherStaffsOnOurJobs.map(name => (
+                  <option key={name} value={name}>{name}</option>
+                ))}
+              </select>
+            )}
+          </div>
+        )}
+
+        {/* Calendar Selector / Month switcher */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'white', padding: '12px 16px', borderRadius: '12px', border: '1px solid var(--border-color)', marginBottom: '16px' }}>
+          <button 
+            type="button"
+            onClick={() => {
+              if (calendarMonth === 1) {
+                setCalendarMonth(12);
+                setCalendarYear(calendarYear - 1);
+              } else {
+                setCalendarMonth(calendarMonth - 1);
+              }
+            }}
+            style={{ border: 'none', background: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', color: 'var(--primary)' }}
+          >
+            <span className="material-symbols-outlined">chevron_left</span>
+            <span style={{ fontSize: '12px', fontWeight: 'bold' }}>前月</span>
+          </button>
+          
+          <div style={{ fontSize: '16px', fontWeight: 'bold', color: 'var(--text-main)' }}>
+            {calendarYear}年 {calendarMonth}月
+          </div>
+
+          <button 
+            type="button"
+            onClick={() => {
+              if (calendarMonth === 12) {
+                setCalendarMonth(1);
+                setCalendarYear(calendarYear + 1);
+              } else {
+                setCalendarMonth(calendarMonth + 1);
+              }
+            }}
+            style={{ border: 'none', background: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', color: 'var(--primary)' }}
+          >
+            <span style={{ fontSize: '12px', fontWeight: 'bold' }}>次月</span>
+            <span className="material-symbols-outlined">chevron_right</span>
+          </button>
+        </div>
+
+        {/* Calendar Grid */}
+        <div style={{ background: 'white', borderRadius: '16px', border: '1px solid var(--border-color)', padding: '12px', boxShadow: '0 2px 10px rgba(0,0,0,0.02)', marginBottom: '16px' }}>
+          {/* Weekdays */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', textAlign: 'center', borderBottom: '1px solid #F1F5F9', paddingBottom: '8px', marginBottom: '8px' }}>
+            {['日', '月', '火', '水', '木', '金', '土'].map((d, idx) => {
+              let color = 'var(--text-main)';
+              if (idx === 0) color = '#EF4444'; // Sunday
+              if (idx === 6) color = '#3B82F6'; // Saturday
+              return (
+                <div key={d} style={{ fontSize: '12px', fontWeight: 'bold', color }}>{d}</div>
+              );
+            })}
+          </div>
+
+          {/* Days Grid */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', rowGap: '6px', columnGap: '4px' }}>
+            {calendarCells.map((cell, idx) => {
+              const isSelected = cell.dateStr === selectedCalendarDate;
+              const dateTasks = cell.dateStr ? getTasksForDate(cell.dateStr, calendarType) : [];
+              const hasTasks = dateTasks.length > 0;
+              
+              // Color for day number
+              let dayColor = 'var(--text-main)';
+              if (idx % 7 === 0) dayColor = '#EF4444'; // Sunday
+              if (idx % 7 === 6) dayColor = '#3B82F6'; // Saturday
+              if (!cell.day) dayColor = 'transparent';
+
+              return (
+                <div 
+                  key={idx}
+                  onClick={() => {
+                    if (cell.dateStr) setSelectedCalendarDate(cell.dateStr);
+                  }}
+                  style={{
+                    aspectRatio: '1',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '4px 2px',
+                    borderRadius: '8px',
+                    background: isSelected ? 'var(--primary)' : 'transparent',
+                    cursor: cell.day ? 'pointer' : 'default',
+                    border: isSelected ? '1px solid var(--primary)' : '1px solid transparent',
+                  }}
+                  className={cell.day ? 'calendar-day-hover' : ''}
+                >
+                  <span style={{ 
+                    fontSize: '11px', 
+                    fontWeight: isSelected ? 'bold' : 'normal', 
+                    color: isSelected ? 'white' : dayColor 
+                  }}>
+                    {cell.day || ''}
+                  </span>
+
+                  <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '14px', marginTop: '2px' }}>
+                    {cell.day && hasTasks && (
+                      isUserAdmin ? (
+                        <span 
+                          style={{ 
+                            fontSize: '9px', 
+                            fontWeight: 'bold',
+                            padding: '1px 4px',
+                            borderRadius: '4px',
+                            background: isSelected ? 'rgba(255, 255, 255, 0.25)' : (calendarType === 'own_staff' ? '#EFF6FF' : '#FEF3C7'),
+                            color: isSelected ? 'white' : (calendarType === 'own_staff' ? 'var(--primary)' : '#D97706')
+                          }}
+                        >
+                          {dateTasks.length}名
+                        </span>
+                      ) : (
+                        <span 
+                          style={{ 
+                            fontSize: '9px', 
+                            fontWeight: 'bold',
+                            padding: '1px 4px',
+                            borderRadius: '4px',
+                            background: isSelected ? 'rgba(255, 255, 255, 0.25)' : '#ECFDF5',
+                            color: isSelected ? 'white' : '#059669'
+                          }}
+                        >
+                          1名
+                        </span>
+                      )
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Selected Date Details */}
+        <div>
+          <h4 style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span className="material-symbols-outlined" style={{ fontSize: '18px', color: 'var(--primary)' }}>event_available</span>
+            {selectedCalendarDate.split('-')[0]}年{selectedCalendarDate.split('-')[1]}月{selectedCalendarDate.split('-')[2]}日の予定
+          </h4>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            {(() => {
+              const dayTasks = getTasksForDate(selectedCalendarDate, calendarType);
+              if (dayTasks.length === 0) {
+                return (
+                  <div style={{ textAlign: 'center', padding: '20px', background: 'white', borderRadius: '12px', color: 'var(--text-sub)', fontSize: '12px', border: '1px solid var(--border-color)' }}>
+                    この日のアサイン予定はありません。
+                  </div>
+                );
+              }
+
+              return dayTasks.map(task => {
+                const job = allJobsList.find(j => j.id === task.jobId);
+                
+                return (
+                  <div 
+                    key={task.id} 
+                    style={{ 
+                      background: 'white', 
+                      borderRadius: '12px', 
+                      padding: '14px', 
+                      border: '1px solid var(--border-color)', 
+                      boxShadow: '0 2px 6px rgba(0,0,0,0.01)',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '8px'
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ 
+                        fontSize: '10px', 
+                        fontWeight: 'bold', 
+                        padding: '2px 8px', 
+                        borderRadius: '10px', 
+                        background: task.status === 'completed' ? '#D1FAE5' : task.status === 'report_pending' ? '#FEF3C7' : '#EFF6FF',
+                        color: task.status === 'completed' ? '#065F46' : task.status === 'report_pending' ? '#D97706' : '#1D4ED8'
+                      }}>
+                        {task.status === 'completed' ? '完了' : task.status === 'report_pending' ? '完了報告待ち' : '確定/稼働予定'}
+                      </span>
+                      {job?.jobCode && (
+                        <span style={{ fontSize: '10px', background: '#F1F5F9', color: '#475569', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold' }}>
+                          {job.jobCode}
+                        </span>
+                      )}
+                    </div>
+
+                    <h5 style={{ margin: 0, fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)' }}>
+                      {task.jobTitle}
+                    </h5>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '11px', color: 'var(--text-sub)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>badge</span>
+                        <span>稼働メンバー: <strong>{task.workerName}</strong></span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>corporate_fare</span>
+                        <span>取引企業: {isUserAdmin ? task.companyName : task.clientName}</span>
+                      </div>
+                      {job?.locationName && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>pin_drop</span>
+                          <span>エリア: {job.locationName} ({job.exactLocation || '住所詳細なし'})</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              });
+            })()}
+          </div>
+        </div>
+      </>
+    );
+  };
+
   // Screening chat startup
   const handleStartScreeningChat = (chatTask: ContractTask | undefined, candidateCompanyId: string) => {
+
     if (chatTask) {
       // Navigate to chat
       window.location.hash = `/message?channelId=${chatTask.id}`;
@@ -668,17 +940,16 @@ export function ManagementPage() {
 
   // Dashboard Menu selector
   const menuItems = isUserAdmin ? [
-    { id: 'calendar', label: '出勤予定カレンダー', desc: 'スタッフのアサインシフトと現場スケジュール', icon: 'calendar_month', bg: '#EFF6FF', color: '#1D4ED8' },
-    { id: 'posts', label: '掲載・選考', desc: '募集中の案件リストと候補者のアサイン選考', icon: 'campaign', bg: '#FEF3C7', color: '#D97706' },
+    { id: 'posts', label: '案件管理', desc: '掲載案件の管理・アサイン選考、他社スタッフの出勤予定', icon: 'campaign', bg: '#FEF3C7', color: '#D97706' },
     { id: 'staffs', label: 'スタッフ管理', desc: 'メンバー登録、アカウント追加、権限管理', icon: 'groups', bg: '#ECFDF5', color: '#059669' },
     { id: 'reports', label: '報告・評価', desc: '業務完了報告の確認とスタッフ相互評価', icon: 'rate_review', bg: '#FDF2F8', color: '#DB2777' },
-    { id: 'logs', label: '出勤履歴/CSV', desc: '過去の打刻履歴確認とCSVデータエクスポート', icon: 'history', bg: '#F1F5F9', color: '#475569' },
+    { id: 'logs', label: '出勤管理', desc: '自社スタッフの出勤予定カレンダーと打刻履歴', icon: 'history', bg: '#EFF6FF', color: '#1D4ED8' },
   ] : [
-    { id: 'calendar', label: '出勤予定カレンダー', desc: '自身の出勤・シフトスケジュールの確認', icon: 'calendar_month', bg: '#EFF6FF', color: '#1D4ED8' },
     { id: 'training', label: '研修・クイズ', desc: '動画視聴と理解度テストの受講（バッジ獲得）', icon: 'school', bg: '#ECFDF5', color: '#059669' },
     { id: 'reports', label: '報告・評価', desc: '完了した業務の評価と元請けへの評価送信', icon: 'rate_review', bg: '#FDF2F8', color: '#DB2777' },
-    { id: 'logs', label: '出勤履歴', desc: '自身の打刻履歴', icon: 'history', bg: '#F1F5F9', color: '#475569' },
+    { id: 'logs', label: '出勤管理', desc: '自身の出勤予定カレンダーと打刻履歴', icon: 'history', bg: '#EFF6FF', color: '#1D4ED8' },
   ];
+
 
   return (
     <div className="view active" style={{ display: 'flex', flexDirection: 'column', height: '100%', position: 'relative', overflow: 'hidden' }}>
@@ -758,244 +1029,7 @@ export function ManagementPage() {
 
       {/* 2. Slide-In Overlays for Subpages */}
 
-      {/* (A) Calendar Overlay */}
-      <div className={`overlay-view ${subPage === 'calendar' ? 'show' : ''}`} style={{ zIndex: 1100, display: 'flex', flexDirection: 'column' }}>
-        <header className="solid-header overlay-header" style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-          <button className="icon-btn-dark" onClick={() => setSubPage('none')}>
-            <span className="material-symbols-outlined">arrow_back_ios_new</span>
-          </button>
-          <h1 style={{ fontSize: '16px', fontWeight: 'bold' }}>出勤予定カレンダー</h1>
-          <div style={{ width: '40px' }}></div>
-        </header>
-        <main className="list-area bg-gray hide-scrollbar" style={{ flex: 1, overflowY: 'auto', padding: '16px', paddingBottom: '90px' }}>
-          {/* Staff filter dropdown */}
-          {isUserAdmin && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'white', padding: '10px 14px', borderRadius: '12px', border: '1px solid var(--border-color)', marginBottom: '12px' }}>
-              <span className="material-symbols-outlined" style={{ fontSize: '18px', color: 'var(--text-sub)' }}>filter_alt</span>
-              <span style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--text-main)' }}>スタッフ絞り込み:</span>
-              <select
-                value={calendarFilterStaffId}
-                onChange={e => setCalendarFilterStaffId(e.target.value)}
-                style={{ flex: 1, padding: '6px 10px', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'white', fontSize: '12px', color: 'var(--text-main)' }}
-              >
-                <option value="all">全員を表示</option>
-                {companyStaffs.map(s => (
-                  <option key={s.id} value={s.id}>{s.name}</option>
-                ))}
-              </select>
-            </div>
-          )}
 
-          {/* Calendar Selector / Month switcher */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'white', padding: '12px 16px', borderRadius: '12px', border: '1px solid var(--border-color)', marginBottom: '16px' }}>
-            <button 
-              onClick={() => {
-                if (calendarMonth === 1) {
-                  setCalendarMonth(12);
-                  setCalendarYear(calendarYear - 1);
-                } else {
-                  setCalendarMonth(calendarMonth - 1);
-                }
-              }}
-              style={{ border: 'none', background: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', color: 'var(--primary)' }}
-            >
-              <span className="material-symbols-outlined">chevron_left</span>
-              <span style={{ fontSize: '12px', fontWeight: 'bold' }}>前月</span>
-            </button>
-            
-            <div style={{ fontSize: '16px', fontWeight: 'bold', color: 'var(--text-main)' }}>
-              {calendarYear}年 {calendarMonth}月
-            </div>
-
-            <button 
-              onClick={() => {
-                if (calendarMonth === 12) {
-                  setCalendarMonth(1);
-                  setCalendarYear(calendarYear + 1);
-                } else {
-                  setCalendarMonth(calendarMonth + 1);
-                }
-              }}
-              style={{ border: 'none', background: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', color: 'var(--primary)' }}
-            >
-              <span style={{ fontSize: '12px', fontWeight: 'bold' }}>次月</span>
-              <span className="material-symbols-outlined">chevron_right</span>
-            </button>
-          </div>
-
-          {/* Calendar Grid */}
-          <div style={{ background: 'white', borderRadius: '16px', border: '1px solid var(--border-color)', padding: '12px', boxShadow: '0 2px 10px rgba(0,0,0,0.02)', marginBottom: '16px' }}>
-            {/* Weekdays */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', textAlign: 'center', borderBottom: '1px solid #F1F5F9', paddingBottom: '8px', marginBottom: '8px' }}>
-              {['日', '月', '火', '水', '木', '金', '土'].map((d, idx) => {
-                let color = 'var(--text-main)';
-                if (idx === 0) color = '#EF4444'; // Sunday
-                if (idx === 6) color = '#3B82F6'; // Saturday
-                return (
-                  <div key={d} style={{ fontSize: '12px', fontWeight: 'bold', color }}>{d}</div>
-                );
-              })}
-            </div>
-
-            {/* Days Grid */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', rowGap: '6px', columnGap: '4px' }}>
-              {calendarCells.map((cell, idx) => {
-                const isSelected = cell.dateStr === selectedCalendarDate;
-                const dateTasks = cell.dateStr ? getTasksForDate(cell.dateStr) : [];
-                const hasTasks = dateTasks.length > 0;
-                
-                // Color for day number
-                let dayColor = 'var(--text-main)';
-                if (idx % 7 === 0) dayColor = '#EF4444'; // Sunday
-                if (idx % 7 === 6) dayColor = '#3B82F6'; // Saturday
-                if (!cell.day) dayColor = 'transparent';
-
-                return (
-                  <div 
-                    key={idx}
-                    onClick={() => {
-                      if (cell.dateStr) setSelectedCalendarDate(cell.dateStr);
-                    }}
-                    style={{
-                      aspectRatio: '1',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      padding: '4px 2px',
-                      borderRadius: '8px',
-                      background: isSelected ? 'var(--primary)' : 'transparent',
-                      cursor: cell.day ? 'pointer' : 'default',
-                      border: isSelected ? '1px solid var(--primary)' : '1px solid transparent',
-                    }}
-                    className={cell.day ? 'calendar-day-hover' : ''}
-                  >
-                    <span style={{ 
-                      fontSize: '11px', 
-                      fontWeight: isSelected ? 'bold' : 'normal', 
-                      color: isSelected ? 'white' : dayColor 
-                    }}>
-                      {cell.day || ''}
-                    </span>
-
-                    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '14px', marginTop: '2px' }}>
-                      {cell.day && hasTasks && (
-                        isUserAdmin ? (
-                          <span 
-                            style={{ 
-                              fontSize: '9px', 
-                              fontWeight: 'bold',
-                              padding: '1px 4px',
-                              borderRadius: '4px',
-                              background: isSelected ? 'rgba(255, 255, 255, 0.25)' : '#EFF6FF',
-                              color: isSelected ? 'white' : 'var(--primary)'
-                            }}
-                          >
-                            {dateTasks.length}名
-                          </span>
-                        ) : (
-                          <span 
-                            style={{ 
-                              fontSize: '9px', 
-                              fontWeight: 'bold',
-                              padding: '1px 4px',
-                              borderRadius: '4px',
-                              background: isSelected ? 'rgba(255, 255, 255, 0.25)' : '#ECFDF5',
-                              color: isSelected ? 'white' : '#059669'
-                            }}
-                          >
-                            1名
-                          </span>
-                        )
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Selected Date Details */}
-          <div>
-            <h4 style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <span className="material-symbols-outlined" style={{ fontSize: '18px', color: 'var(--primary)' }}>event_available</span>
-              {selectedCalendarDate.split('-')[0]}年{selectedCalendarDate.split('-')[1]}月{selectedCalendarDate.split('-')[2]}日の予定
-            </h4>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              {(() => {
-                const dayTasks = getTasksForDate(selectedCalendarDate);
-                if (dayTasks.length === 0) {
-                  return (
-                    <div style={{ textAlign: 'center', padding: '20px', background: 'white', borderRadius: '12px', color: 'var(--text-sub)', fontSize: '12px', border: '1px solid var(--border-color)' }}>
-                      この日のアサイン予定はありません。
-                    </div>
-                  );
-                }
-
-                return dayTasks.map(task => {
-                  const job = allJobsList.find(j => j.id === task.jobId);
-                  
-                  return (
-                    <div 
-                      key={task.id} 
-                      style={{ 
-                        background: 'white', 
-                        borderRadius: '12px', 
-                        padding: '14px', 
-                        border: '1px solid var(--border-color)', 
-                        boxShadow: '0 2px 6px rgba(0,0,0,0.01)',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: '8px'
-                      }}
-                    >
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ 
-                          fontSize: '10px', 
-                          fontWeight: 'bold', 
-                          padding: '2px 8px', 
-                          borderRadius: '10px', 
-                          background: task.status === 'completed' ? '#D1FAE5' : task.status === 'report_pending' ? '#FEF3C7' : '#EFF6FF',
-                          color: task.status === 'completed' ? '#065F46' : task.status === 'report_pending' ? '#D97706' : '#1D4ED8'
-                        }}>
-                          {task.status === 'completed' ? '完了' : task.status === 'report_pending' ? '完了報告待ち' : '確定/稼働予定'}
-                        </span>
-                        {job?.jobCode && (
-                          <span style={{ fontSize: '10px', background: '#F1F5F9', color: '#475569', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold' }}>
-                            {job.jobCode}
-                          </span>
-                        )}
-                      </div>
-
-                      <h5 style={{ margin: 0, fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)' }}>
-                        {task.jobTitle}
-                      </h5>
-
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '11px', color: 'var(--text-sub)' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                          <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>badge</span>
-                          <span>稼働メンバー: <strong>{task.workerName}</strong></span>
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                          <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>corporate_fare</span>
-                          <span>取引企業: {isUserAdmin ? task.companyName : task.clientName}</span>
-                        </div>
-                        {job?.locationName && (
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                            <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>pin_drop</span>
-                            <span>エリア: {job.locationName} ({job.exactLocation || '住所詳細なし'})</span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  );
-                });
-              })()}
-            </div>
-          </div>
-        </main>
-      </div>
 
       {/* (B) Posts Overlay */}
       {isUserAdmin && (
@@ -1004,87 +1038,130 @@ export function ManagementPage() {
             <button className="icon-btn-dark" onClick={() => setSubPage('none')}>
               <span className="material-symbols-outlined">arrow_back_ios_new</span>
             </button>
-            <h1 style={{ fontSize: '16px', fontWeight: 'bold' }}>掲載・選考</h1>
+            <h1 style={{ fontSize: '16px', fontWeight: 'bold' }}>案件管理</h1>
             <div style={{ width: '40px' }}></div>
           </header>
-          <main className="list-area bg-gray" style={{ flex: 1, overflowY: 'auto', padding: '16px', paddingBottom: '90px' }}>
-            <div>
-              <h3 className="section-title" style={{ marginTop: 0, marginBottom: '12px', fontSize: '14px' }}>
-                掲載中の案件リスト ({myJobs.length}件)
-              </h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                {myJobs.map(job => {
-                  const isExpanded = expandedJobId === job.id;
-                  const isPast = isJobPast(job);
-                  const isContracted = tasks.some(t => t.jobId === job.id && ['working', 'report_pending', 'completed', 'disputed'].includes(t.status));
-                  const isOffered = tasks.some(t => t.jobId === job.id && t.status === 'offered');
-                  
-                  return (
-                    <div key={job.id} style={{ background: 'white', borderRadius: '12px', border: '1px solid var(--border-color)', boxShadow: '0 2px 6px rgba(0,0,0,0.02)', overflow: 'hidden' }}>
-                      <div onClick={() => setExpandedJobId(isExpanded ? null : job.id)} style={{ padding: '14px', cursor: 'pointer', display: 'flex', gap: '12px', justifyContent: 'space-between' }}>
-                        <div style={{ flex: 1 }}>
-                          <div style={{ display: 'flex', gap: '6px', marginBottom: '6px', flexWrap: 'wrap' }}>
-                            {(() => {
-                              if (job.status === 'cancelled') return <span style={{ fontSize: '10px', fontWeight: 'bold', padding: '2px 8px', borderRadius: '10px', background: '#FEE2E2', color: '#991B1B' }}>キャンセル済み</span>;
-                              if (isPast) return <span style={{ fontSize: '10px', fontWeight: 'bold', padding: '2px 8px', borderRadius: '10px', background: '#E2E8F0', color: '#64748B' }}>過去の案件</span>;
-                              if (isContracted) return <span style={{ fontSize: '10px', fontWeight: 'bold', padding: '2px 8px', borderRadius: '10px', background: '#D1FAE5', color: '#065F46' }}>確定</span>;
-                              if (isOffered) return <span style={{ fontSize: '10px', fontWeight: 'bold', padding: '2px 8px', borderRadius: '10px', background: '#FEF3C7', color: '#D97706' }}>内定通知済み</span>;
-                              return <span style={{ fontSize: '10px', fontWeight: 'bold', padding: '2px 8px', borderRadius: '10px', background: '#EFF6FF', color: '#1D4ED8' }}>掲載中</span>;
-                            })()}
+          <main className="list-area bg-gray hide-scrollbar" style={{ flex: 1, overflowY: 'auto', padding: '16px', paddingBottom: '90px' }}>
+            <div style={{ display: 'flex', background: '#E2E8F0', padding: '2px', borderRadius: '8px', marginBottom: '16px' }}>
+              <button
+                type="button"
+                onClick={() => setPostsSubTab('list')}
+                style={{
+                  flex: 1,
+                  padding: '8px',
+                  borderRadius: '6px',
+                  border: 'none',
+                  background: postsSubTab === 'list' ? 'white' : 'transparent',
+                  color: postsSubTab === 'list' ? 'var(--text-main)' : 'var(--text-sub)',
+                  fontSize: '12px',
+                  fontWeight: 'bold',
+                  cursor: 'pointer',
+                  boxShadow: postsSubTab === 'list' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none'
+                }}
+              >
+                掲載案件・選考
+              </button>
+              <button
+                type="button"
+                onClick={() => setPostsSubTab('calendar')}
+                style={{
+                  flex: 1,
+                  padding: '8px',
+                  borderRadius: '6px',
+                  border: 'none',
+                  background: postsSubTab === 'calendar' ? 'white' : 'transparent',
+                  color: postsSubTab === 'calendar' ? 'var(--text-main)' : 'var(--text-sub)',
+                  fontSize: '12px',
+                  fontWeight: 'bold',
+                  cursor: 'pointer',
+                  boxShadow: postsSubTab === 'calendar' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none'
+                }}
+              >
+                他社スタッフ稼働予定
+              </button>
+            </div>
+
+            {postsSubTab === 'list' ? (
+              <div>
+                <h3 className="section-title" style={{ marginTop: 0, marginBottom: '12px', fontSize: '14px' }}>
+                  掲載中の案件リスト ({myJobs.length}件)
+                </h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  {myJobs.map(job => {
+                    const isExpanded = expandedJobId === job.id;
+                    const isPast = isJobPast(job);
+                    const isContracted = tasks.some(t => t.jobId === job.id && ['working', 'report_pending', 'completed', 'disputed'].includes(t.status));
+                    const isOffered = tasks.some(t => t.jobId === job.id && t.status === 'offered');
+                    
+                    return (
+                      <div key={job.id} style={{ background: 'white', borderRadius: '12px', border: '1px solid var(--border-color)', boxShadow: '0 2px 6px rgba(0,0,0,0.02)', overflow: 'hidden' }}>
+                        <div onClick={() => setExpandedJobId(isExpanded ? null : job.id)} style={{ padding: '14px', cursor: 'pointer', display: 'flex', gap: '12px', justifyContent: 'space-between' }}>
+                          <div style={{ flex: 1 }}>
+                            <div style={{ display: 'flex', gap: '6px', marginBottom: '6px', flexWrap: 'wrap' }}>
+                              {(() => {
+                                if (job.status === 'cancelled') return <span style={{ fontSize: '10px', fontWeight: 'bold', padding: '2px 8px', borderRadius: '10px', background: '#FEE2E2', color: '#991B1B' }}>キャンセル済み</span>;
+                                if (isPast) return <span style={{ fontSize: '10px', fontWeight: 'bold', padding: '2px 8px', borderRadius: '10px', background: '#E2E8F0', color: '#64748B' }}>過去の案件</span>;
+                                if (isContracted) return <span style={{ fontSize: '10px', fontWeight: 'bold', padding: '2px 8px', borderRadius: '10px', background: '#D1FAE5', color: '#065F46' }}>確定</span>;
+                                if (isOffered) return <span style={{ fontSize: '10px', fontWeight: 'bold', padding: '2px 8px', borderRadius: '10px', background: '#FEF3C7', color: '#D97706' }}>内定通知済み</span>;
+                                return <span style={{ fontSize: '10px', fontWeight: 'bold', padding: '2px 8px', borderRadius: '10px', background: '#EFF6FF', color: '#1D4ED8' }}>掲載中</span>;
+                              })()}
+                            </div>
+                            <h4 style={{ margin: 0, fontSize: '14px', fontWeight: 'bold', display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center' }}>
+                              <span>{job.title}</span>
+                              {job.jobCode && <span style={{ fontSize: '10px', background: '#F1F5F9', color: '#475569', padding: '2px 6px', borderRadius: '4px' }}>{job.jobCode}</span>}
+                            </h4>
+                            <div style={{ display: 'flex', gap: '8px', fontSize: '11px', color: 'var(--text-sub)', marginTop: '6px', alignItems: 'center', flexWrap: 'wrap' }}>
+                              <span>¥{job.price.toLocaleString()} / 日</span>
+                              <span>•</span>
+                              <span>締切: {job.applicationDeadline}</span>
+                              {job.status !== 'cancelled' && !isPast && (
+                                <>
+                                  <span>•</span>
+                                  <button
+                                    type="button"
+                                    onClick={(e) => { e.stopPropagation(); setScreeningJobId(job.id); }}
+                                    style={{ background: 'var(--primary)', color: 'white', border: 'none', borderRadius: '4px', padding: '2px 8px', fontSize: '10px', fontWeight: 'bold', cursor: 'pointer' }}
+                                  >
+                                    選考・マッチング
+                                  </button>
+                                </>
+                              )}
+                            </div>
                           </div>
-                          <h4 style={{ margin: 0, fontSize: '14px', fontWeight: 'bold', display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center' }}>
-                            <span>{job.title}</span>
-                            {job.jobCode && <span style={{ fontSize: '10px', background: '#F1F5F9', color: '#475569', padding: '2px 6px', borderRadius: '4px' }}>{job.jobCode}</span>}
-                          </h4>
-                          <div style={{ display: 'flex', gap: '8px', fontSize: '11px', color: 'var(--text-sub)', marginTop: '6px', alignItems: 'center', flexWrap: 'wrap' }}>
-                            <span>¥{job.price.toLocaleString()} / 日</span>
-                            <span>•</span>
-                            <span>締切: {job.applicationDeadline}</span>
-                            {job.status !== 'cancelled' && !isPast && (
-                              <>
-                                <span>•</span>
-                                <button
-                                  type="button"
-                                  onClick={(e) => { e.stopPropagation(); setScreeningJobId(job.id); }}
-                                  style={{ background: 'var(--primary)', color: 'white', border: 'none', borderRadius: '4px', padding: '2px 8px', fontSize: '10px', fontWeight: 'bold', cursor: 'pointer' }}
-                                >
-                                  選考・マッチング
+                          <span className="material-symbols-outlined" style={{ color: 'var(--text-sub)', transform: isExpanded ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>
+                            expand_more
+                          </span>
+                        </div>
+
+                        {isExpanded && (
+                          <div style={{ padding: '14px', borderTop: '1px solid #F3F4F6', background: '#F8FAFC', fontSize: '12px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                            <div><strong>📍 勤務エリア:</strong> {job.locationName || '未指定'} ({job.exactLocation || '住所詳細なし'})</div>
+                            <div><strong>📅 開催日日程:</strong> {(job.eventDate ? job.eventDate.split(', ') : []).join(', ')}</div>
+                            <div><strong>💼 条件:</strong> {job.roleType} / {job.carrier} / {job.salesChannel}</div>
+                            {job.detailedDescription && <div><strong>📝 詳細内容:</strong> <div style={{ background: 'white', padding: '8px', borderRadius: '6px', border: '1px solid #E2E8F0', marginTop: '4px', whiteSpace: 'pre-wrap' }}>{job.detailedDescription}</div></div>}
+                            
+                            {job.status !== 'cancelled' && !isPast && !isContracted && (
+                              <div style={{ display: 'flex', justifyContent: 'flex-end', borderTop: '1px solid #E2E8F0', paddingTop: '10px', marginTop: '4px' }}>
+                                <button type="button" onClick={() => handleCancelJob(job.id)} style={{ padding: '6px 12px', background: '#FEF2F2', border: '1px solid #FCA5A5', borderRadius: '6px', color: '#DC2626', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}>
+                                  この募集をキャンセルする
                                 </button>
-                              </>
+                              </div>
                             )}
                           </div>
-                        </div>
-                        <span className="material-symbols-outlined" style={{ color: 'var(--text-sub)', transform: isExpanded ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>
-                          expand_more
-                        </span>
+                        )}
                       </div>
-
-                      {isExpanded && (
-                        <div style={{ padding: '14px', borderTop: '1px solid #F3F4F6', background: '#F8FAFC', fontSize: '12px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                          <div><strong>📍 勤務エリア:</strong> {job.locationName || '未指定'} ({job.exactLocation || '住所詳細なし'})</div>
-                          <div><strong>📅 開催日日程:</strong> {(job.eventDate ? job.eventDate.split(', ') : []).join(', ')}</div>
-                          <div><strong>💼 条件:</strong> {job.roleType} / {job.carrier} / {job.salesChannel}</div>
-                          {job.detailedDescription && <div><strong>📝 詳細内容:</strong> <div style={{ background: 'white', padding: '8px', borderRadius: '6px', border: '1px solid #E2E8F0', marginTop: '4px', whiteSpace: 'pre-wrap' }}>{job.detailedDescription}</div></div>}
-                          
-                          {job.status !== 'cancelled' && !isPast && !isContracted && (
-                            <div style={{ display: 'flex', justifyContent: 'flex-end', borderTop: '1px solid #E2E8F0', paddingTop: '10px', marginTop: '4px' }}>
-                              <button type="button" onClick={() => handleCancelJob(job.id)} style={{ padding: '6px 12px', background: '#FEF2F2', border: '1px solid #FCA5A5', borderRadius: '6px', color: '#DC2626', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}>
-                                この募集をキャンセルする
-                              </button>
-                            </div>
-                          )}
-                        </div>
-                      )}
+                    );
+                  })}
+                  {myJobs.length === 0 && (
+                    <div style={{ textAlign: 'center', padding: '24px', background: 'white', borderRadius: '12px', color: 'var(--text-sub)', fontSize: '13px' }}>
+                      現在掲載している案件はありません。
                     </div>
-                  );
-                })}
-                {myJobs.length === 0 && (
-                  <div style={{ textAlign: 'center', padding: '24px', background: 'white', borderRadius: '12px', color: 'var(--text-sub)', fontSize: '13px' }}>
-                    現在掲載している案件はありません。
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
-            </div>
+            ) : (
+              renderCalendar('other_staff')
+            )}
           </main>
         </div>
       )}
@@ -1233,108 +1310,151 @@ export function ManagementPage() {
           <button className="icon-btn-dark" onClick={() => setSubPage('none')}>
             <span className="material-symbols-outlined">arrow_back_ios_new</span>
           </button>
-          <h1 style={{ fontSize: '16px', fontWeight: 'bold' }}>出勤履歴</h1>
+          <h1 style={{ fontSize: '16px', fontWeight: 'bold' }}>出勤管理</h1>
           <div style={{ width: '40px' }}></div>
         </header>
-        <main className="list-area bg-gray" style={{ flex: 1, overflowY: 'auto', padding: '16px', paddingBottom: '90px' }}>
-          <div>
-            <h3 className="section-title" style={{ marginTop: 0 }}>年月と対象の指定</h3>
-            <div style={{ background: 'white', padding: '16px', borderRadius: '12px', border: '1px solid var(--border-color)', marginBottom: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              {isUserAdmin && companyStaffs.length > 0 && (
-                <div>
-                  <label style={{ fontSize: '11px', color: 'var(--text-sub)', fontWeight: 'bold', display: 'block', marginBottom: '4px' }}>スタッフを選択</label>
-                  <select 
-                    value={selectedHistoryStaffId || ''} 
-                    onChange={e => setSelectedHistoryStaffId(e.target.value)} 
-                    style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'white' }}
-                  >
-                    {companyStaffs.map(s => (
-                      <option key={s.id} value={s.id}>{s.name} ({s.role === 'admin' ? '管理者' : '一般'})</option>
-                    ))}
-                  </select>
-                </div>
-              )}
+        <main className="list-area bg-gray hide-scrollbar" style={{ flex: 1, overflowY: 'auto', padding: '16px', paddingBottom: '90px' }}>
+          <div style={{ display: 'flex', background: '#E2E8F0', padding: '2px', borderRadius: '8px', marginBottom: '16px' }}>
+            <button
+              type="button"
+              onClick={() => setLogsSubTab('calendar')}
+              style={{
+                flex: 1,
+                padding: '8px',
+                borderRadius: '6px',
+                border: 'none',
+                background: logsSubTab === 'calendar' ? 'white' : 'transparent',
+                color: logsSubTab === 'calendar' ? 'var(--text-main)' : 'var(--text-sub)',
+                fontSize: '12px',
+                fontWeight: 'bold',
+                cursor: 'pointer',
+                boxShadow: logsSubTab === 'calendar' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none'
+              }}
+            >
+              出勤予定
+            </button>
+            <button
+              type="button"
+              onClick={() => setLogsSubTab('history')}
+              style={{
+                flex: 1,
+                padding: '8px',
+                borderRadius: '6px',
+                border: 'none',
+                background: logsSubTab === 'history' ? 'white' : 'transparent',
+                color: logsSubTab === 'history' ? 'var(--text-main)' : 'var(--text-sub)',
+                fontSize: '12px',
+                fontWeight: 'bold',
+                cursor: 'pointer',
+                boxShadow: logsSubTab === 'history' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none'
+              }}
+            >
+              出勤履歴
+            </button>
+          </div>
 
-              {!isUserAdmin && (
-                <div style={{ background: '#F8FAFC', padding: '8px 12px', borderRadius: '6px', fontSize: '12px', fontWeight: 'bold' }}>
-                  対象者: {myStaff?.name || currentUser?.name}
-                </div>
-              )}
+          {logsSubTab === 'calendar' ? (
+            renderCalendar('own_staff')
+          ) : (
+            <div>
+              <h3 className="section-title" style={{ marginTop: 0 }}>年月と対象の指定</h3>
+              <div style={{ background: 'white', padding: '16px', borderRadius: '12px', border: '1px solid var(--border-color)', marginBottom: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {isUserAdmin && companyStaffs.length > 0 && (
+                  <div>
+                    <label style={{ fontSize: '11px', color: 'var(--text-sub)', fontWeight: 'bold', display: 'block', marginBottom: '4px' }}>スタッフを選択</label>
+                    <select 
+                      value={selectedHistoryStaffId || ''} 
+                      onChange={e => setSelectedHistoryStaffId(e.target.value)} 
+                      style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'white' }}
+                    >
+                      {companyStaffs.map(s => (
+                        <option key={s.id} value={s.id}>{s.name} ({s.role === 'admin' ? '管理者' : '一般'})</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
 
-              <div style={{ display: 'flex', gap: '10px' }}>
-                <div style={{ flex: 1 }}>
-                  <label style={{ fontSize: '11px', color: 'var(--text-sub)', fontWeight: 'bold', display: 'block', marginBottom: '4px' }}>年</label>
-                  <select value={selectedHistoryYear} onChange={e => setSelectedHistoryYear(Number(e.target.value))} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'white' }}>
-                    <option value="2026">2026年</option>
-                    <option value="2025">2025年</option>
-                  </select>
-                </div>
-                <div style={{ flex: 1 }}>
-                  <label style={{ fontSize: '11px', color: 'var(--text-sub)', fontWeight: 'bold', display: 'block', marginBottom: '4px' }}>月</label>
-                  <select value={selectedHistoryMonth} onChange={e => setSelectedHistoryMonth(Number(e.target.value))} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'white' }}>
-                    {Array.from({ length: 12 }, (_, i) => i + 1).map(m => (
-                      <option key={m} value={m}>{m}月</option>
-                    ))}
-                  </select>
+                {!isUserAdmin && (
+                  <div style={{ background: '#F8FAFC', padding: '8px 12px', borderRadius: '6px', fontSize: '12px', fontWeight: 'bold' }}>
+                    対象者: {myStaff?.name || currentUser?.name}
+                  </div>
+                )}
+
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <div style={{ flex: 1 }}>
+                    <label style={{ fontSize: '11px', color: 'var(--text-sub)', fontWeight: 'bold', display: 'block', marginBottom: '4px' }}>年</label>
+                    <select value={selectedHistoryYear} onChange={e => setSelectedHistoryYear(Number(e.target.value))} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'white' }}>
+                      <option value="2026">2026年</option>
+                      <option value="2025">2025年</option>
+                    </select>
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <label style={{ fontSize: '11px', color: 'var(--text-sub)', fontWeight: 'bold', display: 'block', marginBottom: '4px' }}>月</label>
+                    <select value={selectedHistoryMonth} onChange={e => setSelectedHistoryMonth(Number(e.target.value))} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'white' }}>
+                      {Array.from({ length: 12 }, (_, i) => i + 1).map(m => (
+                        <option key={m} value={m}>{m}月</option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            {(() => {
-              const activeStaffObj = isUserAdmin 
-                ? companyStaffs.find(s => s.id === selectedHistoryStaffId)
-                : myStaff;
-              
-              const historyLogs = getAttendanceLogsForStaff(activeStaffObj || null);
-              const filterPrefix = `${selectedHistoryYear}-${String(selectedHistoryMonth).padStart(2, '0')}`;
-              const filteredLogs = historyLogs.filter(l => l.date.startsWith(filterPrefix));
+              {(() => {
+                const activeStaffObj = isUserAdmin 
+                  ? companyStaffs.find(s => s.id === selectedHistoryStaffId)
+                  : myStaff;
+                
+                const historyLogs = getAttendanceLogsForStaff(activeStaffObj || null);
+                const filterPrefix = `${selectedHistoryYear}-${String(selectedHistoryMonth).padStart(2, '0')}`;
+                const filteredLogs = historyLogs.filter(l => l.date.startsWith(filterPrefix));
 
-              return (
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                    <h3 className="section-title" style={{ margin: 0 }}>打刻履歴 ({filteredLogs.length}件)</h3>
-                    {isUserAdmin && activeStaffObj && (
-                      <button 
-                        onClick={() => handleDownloadCSV(filteredLogs, activeStaffObj.name)}
-                        style={{ background: '#059669', color: 'white', border: 'none', padding: '6px 12px', borderRadius: '6px', fontWeight: 'bold', fontSize: '11px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
-                      >
-                        <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>download</span>
-                        CSV出力
-                      </button>
-                    )}
-                  </div>
+                return (
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                      <h3 className="section-title" style={{ margin: 0 }}>打刻履歴 ({filteredLogs.length}件)</h3>
+                      {isUserAdmin && activeStaffObj && (
+                        <button 
+                          onClick={() => handleDownloadCSV(filteredLogs, activeStaffObj.name)}
+                          style={{ background: '#059669', color: 'white', border: 'none', padding: '6px 12px', borderRadius: '6px', fontWeight: 'bold', fontSize: '11px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+                        >
+                          <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>download</span>
+                          CSV出力
+                        </button>
+                      )}
+                    </div>
 
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    {filteredLogs.map((log, idx) => {
-                      const staffName = activeStaffObj?.name || currentUser?.name || 'スタッフ';
-                      const task = tasks.find(t => t.date === log.date && (t.workerName === staffName || t.workerName === currentUser?.name));
-                      const jCode = task ? allJobsList.find(j => j.id === task.jobId)?.jobCode : null;
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      {filteredLogs.map((log, idx) => {
+                        const staffName = activeStaffObj?.name || currentUser?.name || 'スタッフ';
+                        const task = tasks.find(t => t.date === log.date && (t.workerName === staffName || t.workerName === currentUser?.name));
+                        const jCode = task ? allJobsList.find(j => j.id === task.jobId)?.jobCode : null;
 
-                      return (
-                        <div key={idx} style={{ background: 'white', padding: '12px 14px', borderRadius: '8px', border: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <div>
-                            <div style={{ fontWeight: 'bold', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                              <span>{log.date}</span>
-                              {jCode && <span style={{ background: '#EFF6FF', color: '#1D4ED8', fontSize: '9px', padding: '1px 4px', borderRadius: '3px' }}>{jCode}</span>}
+                        return (
+                          <div key={idx} style={{ background: 'white', padding: '12px 14px', borderRadius: '8px', border: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div>
+                              <div style={{ fontWeight: 'bold', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <span>{log.date}</span>
+                                {jCode && <span style={{ background: '#EFF6FF', color: '#1D4ED8', fontSize: '9px', padding: '1px 4px', borderRadius: '3px' }}>{jCode}</span>}
+                              </div>
+                              <div style={{ fontSize: '11px', color: 'var(--text-sub)', marginTop: '2px' }}>
+                                出勤時間: <strong>{log.checkin}</strong>
+                              </div>
                             </div>
-                            <div style={{ fontSize: '11px', color: 'var(--text-sub)', marginTop: '2px' }}>
-                              出勤時間: <strong>{log.checkin}</strong>
-                            </div>
+                            <span style={{ fontSize: '11px', background: '#D1FAE5', color: '#065F46', padding: '2px 8px', borderRadius: '6px', fontWeight: 'bold' }}>確認済</span>
                           </div>
-                          <span style={{ fontSize: '11px', background: '#D1FAE5', color: '#065F46', padding: '2px 8px', borderRadius: '6px', fontWeight: 'bold' }}>確認済</span>
+                        );
+                      })}
+                      {filteredLogs.length === 0 && (
+                        <div style={{ textAlign: 'center', padding: '16px', background: 'white', borderRadius: '12px', color: 'var(--text-sub)', fontSize: '12px' }}>
+                          打刻データはありません。
                         </div>
-                      );
-                    })}
-                    {filteredLogs.length === 0 && (
-                      <div style={{ textAlign: 'center', padding: '16px', background: 'white', borderRadius: '12px', color: 'var(--text-sub)', fontSize: '12px' }}>
-                        打刻データはありません。
-                      </div>
-                    )}
+                      )}
+                    </div>
                   </div>
-                </div>
-              );
-            })()}
-          </div>
+                );
+              })()}
+            </div>
+          )}
         </main>
       </div>
 
