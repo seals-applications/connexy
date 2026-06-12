@@ -904,8 +904,14 @@ export function SearchPage() {
       // 'newest' (新着順：モックのため配列の逆順)
       list.reverse();
     }
+
+    if (includeUrgent) {
+      const urgents = list.filter(j => j.isUrgent);
+      const normals = list.filter(j => !j.isUrgent);
+      return [...urgents, ...normals];
+    }
     return list;
-  }, [filteredJobs, jobSortOrder]);
+  }, [filteredJobs, jobSortOrder, includeUrgent]);
 
   const filteredTalentGroups = useMemo(() => {
     return groupedTalents.filter(group => {
