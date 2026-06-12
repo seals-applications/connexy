@@ -12,6 +12,7 @@ interface ChatChannel {
   time: string;
   members?: string[];
   companyGroupName?: string;
+  isUnread?: boolean;
 }
 
 const photoOptions = [
@@ -234,6 +235,13 @@ export function MessagePage() {
       if (lastGroupMsg) {
         groupChannel.preview = lastGroupMsg.type === 'system' ? lastGroupMsg.text : lastGroupMsg.text;
         groupChannel.time = lastGroupMsg.time || '';
+        
+        const isSystem = lastGroupMsg.type === 'system';
+        const isNotMe = lastGroupMsg.senderId !== currentUser.id;
+        if (isSystem || isNotMe) {
+          const lastReadId = localStorage.getItem('connexy_last_read_msg_chat_au_group');
+          groupChannel.isUnread = lastReadId !== lastGroupMsg.id;
+        }
       }
     }
 
@@ -267,9 +275,20 @@ export function MessagePage() {
         const lastMsg = taskMessages.length > 0 ? taskMessages[taskMessages.length - 1] : null;
         let preview = '現場グループチャットが開設されました';
         let time = '';
+        let isUnread = false;
         if (lastMsg) {
           preview = lastMsg.type === 'system' ? lastMsg.text : lastMsg.text;
           time = lastMsg.time || '';
+          
+          const isSystem = lastMsg.type === 'system';
+          const isNotMe = lastMsg.senderId !== currentUser.id;
+          if (isSystem || isNotMe) {
+            const lastReadId = localStorage.getItem('connexy_last_read_msg_' + task.id);
+            isUnread = lastReadId !== lastMsg.id;
+          }
+        } else {
+          const lastReadId = localStorage.getItem('connexy_last_read_msg_' + task.id);
+          isUnread = lastReadId !== 'created';
         }
 
         // Resolve staff names for member list
@@ -298,7 +317,8 @@ export function MessagePage() {
           preview,
           time,
           members,
-          companyGroupName
+          companyGroupName,
+          isUnread
         } as ChatChannel;
       })
       .filter((c): c is ChatChannel => c !== null);
@@ -321,6 +341,7 @@ export function MessagePage() {
         const lastMsg = msgs.length > 0 ? msgs[msgs.length - 1] : null;
         let preview = 'チャットを開始しました';
         let time = '';
+        let isUnread = false;
         if (lastMsg) {
           if (lastMsg.type === 'system') {
             preview = lastMsg.text;
@@ -330,6 +351,13 @@ export function MessagePage() {
             preview = lastMsg.text;
           }
           time = lastMsg.time || '';
+          
+          const isSystem = lastMsg.type === 'system';
+          const isNotMe = lastMsg.senderId !== currentUser.id;
+          if (isSystem || isNotMe) {
+            const lastReadId = localStorage.getItem('connexy_last_read_msg_' + channelId);
+            isUnread = lastReadId !== lastMsg.id;
+          }
         }
 
         // Determine status dynamically
@@ -369,7 +397,8 @@ export function MessagePage() {
           avatarBg,
           preview,
           time,
-          companyGroupName: c.name
+          companyGroupName: c.name,
+          isUnread
         } as ChatChannel;
       })
       .filter(channel => {
@@ -385,7 +414,7 @@ export function MessagePage() {
     const allowedGroupChannels = [groupChannel, ...dynamicGroupChannels];
 
     return [...allowedGroupChannels, ...directChannels];
-  }, [currentUser, allCompanies, chatTasks, jobs, allStaffs]);
+  }, [currentUser, allCompanies, chatTasks, jobs, allStaffs, activeChatId]);
 
   const filteredChannels = useMemo(() => {
     return channels.filter(c => {
@@ -1649,7 +1678,22 @@ export function MessagePage() {
                             onClick={() => setActiveChatId(channel.id)}
                             style={{ paddingLeft: '24px', background: isSelected ? '#F0F9FF' : 'white' }}
                           >
-                            <div className={`chat-avatar ${channel.avatarBg}`}>{channel.avatar}</div>
+                            <div style={{ position: 'relative', flexShrink: 0 }}>
+                              <div className={`chat-avatar ${channel.avatarBg}`}>{channel.avatar}</div>
+                              {channel.isUnread && (
+                                <span className="unread-dot" style={{
+                                  position: 'absolute',
+                                  top: '-2px',
+                                  right: '-2px',
+                                  width: '10px',
+                                  height: '10px',
+                                  backgroundColor: '#EF4444',
+                                  borderRadius: '50%',
+                                  border: '2px solid white',
+                                  boxShadow: '0 1px 3px rgba(0,0,0,0.2)'
+                                }} />
+                              )}
+                            </div>
                             <div className="chat-content">
                               <div className="chat-header">
                                 <span className="company-name" style={{ fontSize: '13px', fontWeight: 'bold' }}>
