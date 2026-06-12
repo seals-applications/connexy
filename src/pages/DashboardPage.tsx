@@ -37,15 +37,16 @@ export function DashboardPage() {
   if (detailType === 'income') {
     return (
       <div className="view active" style={{ animation: 'fadeIn 0.2s ease-out' }}>
-        <header className="solid-header" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <header className="solid-header overlay-header">
           <button 
-            className="icon-btn" 
+            type="button"
+            className="icon-btn-dark" 
             onClick={() => setDetailType('none')}
-            style={{ color: '#FFFFFF', padding: '0', display: 'flex', alignItems: 'center' }}
           >
-            <span className="material-symbols-outlined" style={{ fontSize: '24px' }}>arrow_back</span>
+            <span className="material-symbols-outlined">arrow_back_ios_new</span>
           </button>
-          <h1 style={{ margin: 0, fontSize: '18px' }}>入金予定明細</h1>
+          <h1 style={{ margin: 0, fontSize: '18px', textAlign: 'center', flex: 1 }}>入金予定明細</h1>
+          <div style={{ width: '40px' }}></div>
         </header>
 
         <main className="list-area p-16" style={{ background: '#F8FAFC' }}>
@@ -78,11 +79,11 @@ export function DashboardPage() {
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '6px', paddingLeft: '12px', borderLeft: '2px solid #3B82F6' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', color: '#475569' }}>
-                    <span>【現場名C】</span>
+                    <span>【JOB-108273】</span>
                     <span>18.0万円</span>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', color: '#475569' }}>
-                    <span>【現場名D】</span>
+                    <span>【JOB-492715】</span>
                     <span>15.0万円</span>
                   </div>
                 </div>
@@ -96,7 +97,7 @@ export function DashboardPage() {
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '6px', paddingLeft: '12px', borderLeft: '2px solid #3B82F6' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', color: '#475569' }}>
-                    <span>【現場名E】</span>
+                    <span>【JOB-882371】</span>
                     <span>19.0万円</span>
                   </div>
                 </div>
@@ -126,15 +127,16 @@ export function DashboardPage() {
   if (detailType === 'transfer') {
     return (
       <div className="view active" style={{ animation: 'fadeIn 0.2s ease-out' }}>
-        <header className="solid-header" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <header className="solid-header overlay-header">
           <button 
-            className="icon-btn" 
+            type="button"
+            className="icon-btn-dark" 
             onClick={() => setDetailType('none')}
-            style={{ color: '#FFFFFF', padding: '0', display: 'flex', alignItems: 'center' }}
           >
-            <span className="material-symbols-outlined" style={{ fontSize: '24px' }}>arrow_back</span>
+            <span className="material-symbols-outlined">arrow_back_ios_new</span>
           </button>
-          <h1 style={{ margin: 0, fontSize: '18px' }}>振込予定明細</h1>
+          <h1 style={{ margin: 0, fontSize: '18px', textAlign: 'center', flex: 1 }}>振込予定明細</h1>
+          <div style={{ width: '40px' }}></div>
         </header>
 
         <main className="list-area p-16" style={{ background: '#F8FAFC' }}>
@@ -167,11 +169,11 @@ export function DashboardPage() {
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '6px', paddingLeft: '12px', borderLeft: '2px solid #818CF8' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', color: '#475569' }}>
-                    <span>【現場名C】</span>
+                    <span>【JOB-108273】</span>
                     <span>18.0万円</span>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', color: '#475569' }}>
-                    <span>【現場名D】</span>
+                    <span>【JOB-492715】</span>
                     <span>15.0万円</span>
                   </div>
                 </div>
@@ -185,7 +187,7 @@ export function DashboardPage() {
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '6px', paddingLeft: '12px', borderLeft: '2px solid #818CF8' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', color: '#475569' }}>
-                    <span>【現場名E】</span>
+                    <span>【JOB-882371】</span>
                     <span>19.0万円</span>
                   </div>
                 </div>
