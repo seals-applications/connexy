@@ -969,15 +969,6 @@ export function MessagePage() {
     return `${height}px`;
   }, [activeChat, isClient]);
 
-  const transportPaySeparate = useMemo(() => {
-    if (!relatedJob) return true;
-    return relatedJob.expenses?.transportType === 'pay_separate' || relatedJob.expenses?.transportType === 'actual' || relatedJob.expenses?.transportType === 'flat';
-  }, [relatedJob]);
-
-  const accommodationPaySeparate = useMemo(() => {
-    if (!relatedJob) return true;
-    return relatedJob.expenses?.accommodationType === 'pay_separate' || relatedJob.expenses?.accommodationType === 'actual' || relatedJob.expenses?.accommodationType === 'flat';
-  }, [relatedJob]);
 
   const transportArranged = useMemo(() => {
     if (!relatedJob) return true;
@@ -1040,7 +1031,7 @@ export function MessagePage() {
       type: 'sent',
       senderId: currentUser.id,
       senderName,
-      text: `【領収書提出】${categoryText}: ¥${receiptAmount.toLocaleString()} の精算申請 ${detailsText}`,
+      text: `【経費申請】${categoryText}: ¥${receiptAmount.toLocaleString()} の精算申請 ${detailsText}`,
       time: timeStr,
       isReceipt: true,
       receiptDetails: detailsObj
@@ -1050,7 +1041,7 @@ export function MessagePage() {
     const systemLogMsg = {
       id: 'sys_rc_' + Date.now(),
       type: 'system',
-      text: `${currentUser.name} ${memberName}が${categoryText}の領収書を提出しました`,
+      text: `${currentUser.name} ${memberName}が${categoryText}の経費申請を行いました`,
       time: timeStr
     };
 
@@ -1334,7 +1325,7 @@ export function MessagePage() {
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 'bold', color: isApproved ? '#047857' : '#B45309' }}>
             <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>receipt_long</span>
-            <span style={{ fontSize: '13px' }}>領収書提出 ({categoryLabel})</span>
+            <span style={{ fontSize: '13px' }}>経費申請 ({categoryLabel})</span>
           </div>
           <span style={{ 
             fontSize: '10px', 
@@ -2081,13 +2072,13 @@ export function MessagePage() {
               {[
                 {
                   id: 'receipt',
-                  label: '領収書提出',
+                  label: '経費申請',
                   icon: 'receipt',
                   color: '#10B981',
                   bgColor: '#E6F4EA',
-                  enabled: !isClient && (transportPaySeparate || accommodationPaySeparate),
+                  enabled: !isClient,
                    action: () => {
-                    setReceiptCategory(transportPaySeparate ? 'transport' : 'accommodation');
+                    setReceiptCategory('transport');
                     setReceiptAmount(0);
                     setReceiptItem('');
                     setReceiptRoute('');
@@ -2101,7 +2092,7 @@ export function MessagePage() {
                     setShowReceiptModal(true);
                     setShowChatMenu(false);
                   },
-                  disabledMessage: 'この案件は領収書精算（別途支給）に対応していません。'
+                  disabledMessage: '経費申請は下請け企業側の操作となります。'
                 },
                 {
                   id: 'receipt_list',
@@ -2745,79 +2736,73 @@ export function MessagePage() {
           }}>
             <h3 style={{ margin: '0 0 16px 0', fontSize: '16px', fontWeight: 'bold', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '8px' }}>
               <span className="material-symbols-outlined" style={{ color: '#10B981' }}>receipt_long</span>
-              領収書を提出
+              経費申請
             </h3>
             
             <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                 <label style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--text-sub)' }}>経費種別 *</label>
                 <div style={{ display: 'flex', gap: '6px' }}>
-                  {transportPaySeparate && (
-                    <button 
-                      type="button" 
-                      onClick={() => {
-                        setReceiptCategory('transport');
-                        setReceiptItem('');
-                      }}
-                      style={{
-                        flex: 1,
-                        padding: '8px 4px',
-                        borderRadius: '6px',
-                        border: receiptCategory === 'transport' ? '2px solid #10B981' : '1px solid #E2E8F0',
-                        background: receiptCategory === 'transport' ? '#DEF7EC' : 'white',
-                        color: receiptCategory === 'transport' ? '#03543F' : 'var(--text-main)',
-                        fontSize: '11px',
-                        fontWeight: 'bold',
-                        cursor: 'pointer'
-                      }}
-                    >
-                      公共交通機関
-                    </button>
-                  )}
-                  {accommodationPaySeparate && (
-                    <button 
-                      type="button" 
-                      onClick={() => {
-                        setReceiptCategory('accommodation');
-                        setReceiptItem('');
-                      }}
-                      style={{
-                        flex: 1,
-                        padding: '8px 4px',
-                        borderRadius: '6px',
-                        border: receiptCategory === 'accommodation' ? '2px solid #10B981' : '1px solid #E2E8F0',
-                        background: receiptCategory === 'accommodation' ? '#DEF7EC' : 'white',
-                        color: receiptCategory === 'accommodation' ? '#03543F' : 'var(--text-main)',
-                        fontSize: '11px',
-                        fontWeight: 'bold',
-                        cursor: 'pointer'
-                      }}
-                    >
-                      宿泊費
-                    </button>
-                  )}
-                  {transportPaySeparate && (
-                    <button 
-                      type="button" 
-                      onClick={() => {
-                        setReceiptCategory('car');
-                        setReceiptItem('車移動経費');
-                      }}
-                      style={{
-                        flex: 1,
-                        padding: '8px 4px',
-                        borderRadius: '6px',
-                        border: receiptCategory === 'car' ? '2px solid #10B981' : '1px solid #E2E8F0',
-                        background: receiptCategory === 'car' ? '#DEF7EC' : 'white',
-                        color: receiptCategory === 'car' ? '#03543F' : 'var(--text-main)',
-                        fontSize: '11px',
-                        fontWeight: 'bold',
-                        cursor: 'pointer'
-                      }}
-                    >
-                      車移動
-                    </button>
-                  )}
+                  <button 
+                    type="button" 
+                    onClick={() => {
+                      setReceiptCategory('transport');
+                      setReceiptItem('');
+                    }}
+                    style={{
+                      flex: 1,
+                      padding: '8px 4px',
+                      borderRadius: '6px',
+                      border: receiptCategory === 'transport' ? '2px solid #10B981' : '1px solid #E2E8F0',
+                      background: receiptCategory === 'transport' ? '#DEF7EC' : 'white',
+                      color: receiptCategory === 'transport' ? '#03543F' : 'var(--text-main)',
+                      fontSize: '11px',
+                      fontWeight: 'bold',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    公共交通機関
+                  </button>
+                  <button 
+                    type="button" 
+                    onClick={() => {
+                      setReceiptCategory('accommodation');
+                      setReceiptItem('');
+                    }}
+                    style={{
+                      flex: 1,
+                      padding: '8px 4px',
+                      borderRadius: '6px',
+                      border: receiptCategory === 'accommodation' ? '2px solid #10B981' : '1px solid #E2E8F0',
+                      background: receiptCategory === 'accommodation' ? '#DEF7EC' : 'white',
+                      color: receiptCategory === 'accommodation' ? '#03543F' : 'var(--text-main)',
+                      fontSize: '11px',
+                      fontWeight: 'bold',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    宿泊費
+                  </button>
+                  <button 
+                    type="button" 
+                    onClick={() => {
+                      setReceiptCategory('car');
+                      setReceiptItem('車移動経費');
+                    }}
+                    style={{
+                      flex: 1,
+                      padding: '8px 4px',
+                      borderRadius: '6px',
+                      border: receiptCategory === 'car' ? '2px solid #10B981' : '1px solid #E2E8F0',
+                      background: receiptCategory === 'car' ? '#DEF7EC' : 'white',
+                      color: receiptCategory === 'car' ? '#03543F' : 'var(--text-main)',
+                      fontSize: '11px',
+                      fontWeight: 'bold',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    車移動
+                  </button>
                 </div>
               </div>
 
