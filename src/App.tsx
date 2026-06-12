@@ -3,16 +3,17 @@ import { useState, useEffect } from 'react';
 import { api } from './data/mockDb';
 import type { User } from './data/mockDb';
 import { BottomNav } from './components/BottomNav';
+import { HomePage } from './pages/HomePage';
 import { SearchPage } from './pages/SearchPage';
 import { MessagePage } from './pages/MessagePage';
-import { TaskPage } from './pages/TaskPage';
-import { DashboardPage } from './pages/DashboardPage';
-import { SettingsPage } from './pages/SettingsPage';
+import { ManagementPage } from './pages/ManagementPage';
 import { LoginPage } from './pages/LoginPage';
+import { SettingsDrawer } from './components/SettingsDrawer';
 
 function App() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showSettingsDrawer, setShowSettingsDrawer] = useState(false);
 
   const checkUser = async () => {
     try {
@@ -31,6 +32,15 @@ function App() {
       await checkUser();
     };
     init();
+
+    // Listen to custom settings drawer open event
+    const handleOpenSettings = () => {
+      setShowSettingsDrawer(true);
+    };
+    window.addEventListener('open-settings-menu', handleOpenSettings);
+    return () => {
+      window.removeEventListener('open-settings-menu', handleOpenSettings);
+    };
   }, []);
 
   if (loading) {
@@ -56,15 +66,19 @@ function App() {
     <Router>
       <div id="app-container">
         <Routes>
-          <Route path="/" element={<SearchPage />} />
+          <Route path="/" element={<HomePage />} />
+          <Route path="/search" element={<SearchPage />} />
           <Route path="/message" element={<MessagePage />} />
-          <Route path="/task" element={<TaskPage />} />
-          <Route path="/dashboard" element={<DashboardPage />} />
-          <Route path="/settings" element={<SettingsPage onLogoutSuccess={checkUser} />} />
+          <Route path="/manage" element={<ManagementPage />} />
           <Route path="/login" element={<Navigate to="/" replace />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
         <BottomNav />
+        <SettingsDrawer 
+          isOpen={showSettingsDrawer} 
+          onClose={() => setShowSettingsDrawer(false)} 
+          onLogoutSuccess={checkUser} 
+        />
       </div>
     </Router>
   );

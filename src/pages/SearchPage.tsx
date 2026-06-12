@@ -1399,7 +1399,8 @@ export function SearchPage() {
       )}
       {!isSelectingLocationOnMap && (
       <header className="glass-header" style={{ zIndex: 1000, position: 'relative' }}>
-        <div className="header-top">
+        <div className="header-top" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+          <div style={{ width: '40px' }}></div>
           <div className="toggle-switch">
             <input
               type="radio"
@@ -1425,6 +1426,14 @@ export function SearchPage() {
             <label htmlFor="mode-talent">人材を探す</label>
             <div className="toggle-slider"></div>
           </div>
+          <button 
+            type="button" 
+            className="icon-btn-dark" 
+            onClick={() => window.dispatchEvent(new Event('open-settings-menu'))}
+            style={{ padding: '4px' }}
+          >
+            <span className="material-symbols-outlined" style={{ fontSize: '24px' }}>menu</span>
+          </button>
         </div>
         <div className="header-search" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
           {/* ビュー切り替えカプセルボタン */}
@@ -2845,7 +2854,7 @@ export function SearchPage() {
                     type="button" 
                     onClick={() => {
                       setIsCreateFormOpen(false);
-                      navigate('/settings', { state: { openStaffOverlay: true } });
+                      navigate('/manage');
                     }}
                     style={{ background: 'none', border: 'none', color: 'var(--primary)', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', fontSize: '14px' }}
                   >

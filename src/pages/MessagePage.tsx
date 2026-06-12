@@ -1583,8 +1583,8 @@ export function MessagePage() {
       <header className="solid-header" style={{ height: 'auto', paddingBottom: '12px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <h1 style={{ margin: 0 }}>メッセージ</h1>
-          <button className="icon-btn-dark" onClick={handleSync} title="同期" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <span className="material-symbols-outlined" style={{ color: 'var(--primary-color)' }}>refresh</span>
+          <button className="icon-btn-dark" onClick={() => window.dispatchEvent(new Event('open-settings-menu'))} title="メニュー" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <span className="material-symbols-outlined">menu</span>
           </button>
         </div>
         <div className="header-search chat-search" style={{ marginTop: '8px' }}>

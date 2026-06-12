@@ -159,6 +159,12 @@ export function BottomNav() {
     <nav className="bottom-nav">
       <Link to="/" className={`nav-item ${location.pathname === '/' ? 'active' : ''}`}>
         <div className="nav-icon-wrapper">
+          <span className="material-symbols-outlined nav-icon">home</span>
+        </div>
+        <span className="nav-label">ホーム</span>
+      </Link>
+      <Link to="/search" className={`nav-item ${location.pathname === '/search' ? 'active' : ''}`}>
+        <div className="nav-icon-wrapper">
           <span className="material-symbols-outlined nav-icon">location_on</span>
         </div>
         <span className="nav-label">探す</span>
@@ -170,24 +176,12 @@ export function BottomNav() {
         </div>
         <span className="nav-label">メッセージ</span>
       </Link>
-      <Link to="/task" className={`nav-item ${location.pathname === '/task' ? 'active' : ''}`}>
+      <Link to="/manage" className={`nav-item ${location.pathname === '/manage' ? 'active' : ''}`}>
         <div className="nav-icon-wrapper">
-          <span className="material-symbols-outlined nav-icon">task_alt</span>
+          <span className="material-symbols-outlined nav-icon">assignment</span>
           {pendingCount > 0 && <span className="badge" style={{ backgroundColor: '#EF4444' }}>{pendingCount}</span>}
         </div>
-        <span className="nav-label">タスク</span>
-      </Link>
-      <Link to="/dashboard" className={`nav-item ${location.pathname === '/dashboard' ? 'active' : ''}`}>
-        <div className="nav-icon-wrapper">
-          <span className="material-symbols-outlined nav-icon">bar_chart</span>
-        </div>
-        <span className="nav-label">ダッシュボード</span>
-      </Link>
-      <Link to="/settings" className={`nav-item ${location.pathname === '/settings' ? 'active' : ''}`}>
-        <div className="nav-icon-wrapper">
-          <span className="material-symbols-outlined nav-icon">settings</span>
-        </div>
-        <span className="nav-label">設定</span>
+        <span className="nav-label">管理</span>
       </Link>
     </nav>
   );
