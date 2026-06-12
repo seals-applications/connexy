@@ -64,6 +64,7 @@ export function MessagePage() {
   const [showOfferModal, setShowOfferModal] = useState(false);
   const [selectedOfferMsg, setSelectedOfferMsg] = useState<any>(null);
   const [confirmingOfferAction, setConfirmingOfferAction] = useState<'accept' | 'decline' | null>(null);
+  const [showMembersModal, setShowMembersModal] = useState(false);
 
   const [receiptCategory, setReceiptCategory] = useState<'transport' | 'accommodation' | 'car'>('transport');
   const [receiptAmount, setReceiptAmount] = useState<number>(0);
@@ -497,6 +498,16 @@ export function MessagePage() {
     const task = chatTasks.find(t => t.id === activeChat.id);
     return task?.clientName || '元請け企業';
   }, [activeChat, chatTasks]);
+
+  const activeMembers = useMemo(() => {
+    if (!activeChat) return [];
+    if (activeChat.members && activeChat.members.length > 0) {
+      return activeChat.members;
+    }
+    const myName = currentUser ? (currentUser.staffName ? `${currentUser.name}_${currentUser.staffName}` : `${currentUser.name}_代表`) : '自分';
+    const opponentName = activeChat.name || '対話相手';
+    return [myName, opponentName];
+  }, [activeChat, currentUser]);
 
   const mappedMessages = useMemo(() => {
     return messages.map((msg: any) => {
@@ -1768,21 +1779,15 @@ export function MessagePage() {
                 {activeChat?.title}
               </div>
             </div>
-            <div style={{ width: '40px' }} />
+            <button
+              className="icon-btn-dark"
+              onClick={() => setShowMembersModal(true)}
+              title="参加メンバー"
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            >
+              <span className="material-symbols-outlined" style={{ color: 'var(--primary-color)' }}>groups</span>
+            </button>
           </div>
-          
-          {activeChat?.status === 'group' && (
-            <div className="chat-conditions-pin" style={{ marginTop: '4px', background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '8px', padding: '8px 12px', display: 'block' }}>
-              <div style={{ fontSize: '11px', color: 'var(--text-sub)', fontWeight: 'bold', marginBottom: '4px', textAlign: 'left' }}>参加メンバー:</div>
-              <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', whiteSpace: 'nowrap', fontSize: '11px', color: 'var(--text-main)', width: '100%' }}>
-                {activeChat.members?.map((m, idx) => (
-                  <span key={idx} style={{ background: '#E2E8F0', padding: '2px 8px', borderRadius: '12px', flexShrink: 0 }}>
-                    {m}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
 
           {activeChat?.status === 'offered' && !isClient && (
             <div style={{
@@ -2279,6 +2284,123 @@ export function MessagePage() {
           </div>
         </footer>
       </div>
+
+      {/* 参加メンバー一覧モーダル */}
+      {showMembersModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(15, 23, 42, 0.6)',
+          backdropFilter: 'blur(8px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 9999,
+          padding: '16px'
+        }}>
+          <div style={{
+            background: '#FFFFFF',
+            borderRadius: '16px',
+            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+            width: '100%',
+            maxWidth: '360px',
+            overflow: 'hidden',
+            display: 'flex',
+            flexDirection: 'column',
+            animation: 'fadeIn 0.2s ease-out'
+          }}>
+            {/* Modal Header */}
+            <div style={{
+              padding: '16px 20px',
+              borderBottom: '1px solid #F1F5F9',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              background: 'linear-gradient(135deg, #EEF2F6 0%, #E2E8F0 100%)'
+            }}>
+              <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 'bold', color: '#1E293B', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span className="material-symbols-outlined" style={{ color: 'var(--primary-color)' }}>groups</span>
+                参加メンバー一覧
+              </h3>
+              <button 
+                onClick={() => setShowMembersModal(false)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  padding: '4px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#64748B'
+                }}
+              >
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div style={{ padding: '20px', overflowY: 'auto', maxHeight: '50vh', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {activeMembers.map((m: string, idx: number) => {
+                const cleanName = m.replace('_', ' ');
+                const isMe = cleanName.includes('(自分)') || cleanName.endsWith('自分') || cleanName.includes(currentUser?.name || '');
+                const initial = cleanName.charAt(0);
+                
+                return (
+                  <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '8px 12px', background: '#F8FAFC', border: '1px solid #F1F5F9', borderRadius: '10px' }}>
+                    <div style={{
+                      width: '32px',
+                      height: '32px',
+                      borderRadius: '50%',
+                      background: isMe ? 'var(--primary-color)' : 'var(--secondary-color, #6366F1)',
+                      color: '#FFFFFF',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '13px',
+                      fontWeight: 'bold'
+                    }}>
+                      {initial}
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0 }}>
+                      <span style={{ fontSize: '13px', fontWeight: 'bold', color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {cleanName}
+                      </span>
+                      {isMe && (
+                        <span style={{ alignSelf: 'flex-start', fontSize: '9px', background: '#DEF7EC', color: '#03543F', padding: '1px 6px', borderRadius: '4px', fontWeight: 'bold', marginTop: '2px' }}>
+                          ログイン中
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Modal Footer */}
+            <div style={{ padding: '16px 20px', borderTop: '1px solid #F1F5F9', display: 'flex', justifyContent: 'flex-end', background: '#F8FAFC' }}>
+              <button
+                onClick={() => setShowMembersModal(false)}
+                style={{
+                  padding: '8px 16px',
+                  borderRadius: '8px',
+                  border: '1px solid #E2E8F0',
+                  background: '#FFFFFF',
+                  color: '#64748B',
+                  fontSize: '13px',
+                  fontWeight: 'bold',
+                  cursor: 'pointer'
+                }}
+              >
+                閉じる
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 内定通知詳細モーダル */}
       {showOfferModal && (
