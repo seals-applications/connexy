@@ -266,7 +266,9 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
                     style={styles.select}
                   >
                     <option value="">-- ユーザーを選択してください --</option>
-                    <option value={`${selectedCompany}:pass`}>企業代表者 (管理者)</option>
+                    <option value={`${selectedCompany}:pass`}>
+                      {companies.find(c => c.id === selectedCompany)?.representativeName || '企業代表者'} (管理者)
+                    </option>
                     {companyStaffs.map(s => (
                       <option key={s.id} value={`${s.loginId}:${s.password}`}>
                         {s.name} ({s.role === 'admin' ? '管理者' : '一般メンバー'}) [ID: {s.loginId}]
