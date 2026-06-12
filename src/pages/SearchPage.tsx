@@ -51,6 +51,10 @@ export function SearchPage() {
   // フィルタ関連のState
   const [includeUrgent, setIncludeUrgent] = useState(true);
 
+  // マップ上のピンをクリックした際に下部ボトムシートに表示する案件・人材データ
+  const [selectedMapJobs, setSelectedMapJobs] = useState<Job[] | null>(null);
+  const [selectedMapTalents, setSelectedMapTalents] = useState<{ locationName: string, talents: Talent[] } | null>(null);
+
   // 案件作成用の新規State
   const [selectedJobDates, setSelectedJobDates] = useState<string[]>([]);
   const [isSelectingLocationOnMap, setIsSelectingLocationOnMap] = useState(false);
@@ -88,6 +92,13 @@ export function SearchPage() {
       setTempKeyword(searchKeyword);
     }
   }, [isFilterSheetOpen, searchKeyword]);
+
+  useEffect(() => {
+    if (viewMode === 'list') {
+      setSelectedMapJobs(null);
+      setSelectedMapTalents(null);
+    }
+  }, [viewMode]);
 
   // 汎用フォームState (Job用) + Talent用希望勤務日
   const [formData, setFormData] = useState({
@@ -472,6 +483,11 @@ export function SearchPage() {
 
         mapRef.current = map;
         setIsMapLoaded(true);
+
+        map.addListener('click', () => {
+          setSelectedMapJobs(null);
+          setSelectedMapTalents(null);
+        });
 
         if (navigator.geolocation) {
           navigator.geolocation.getCurrentPosition(
@@ -960,7 +976,6 @@ export function SearchPage() {
     }
 
     const AdvancedMarkerElement = advancedMarkerClassRef.current;
-    const InfoWindow = infoWindowClassRef.current;
 
     const newMarkers: any[] = [];
 
@@ -1006,31 +1021,9 @@ export function SearchPage() {
         });
         (marker as any).customCount = group.jobs.length;
 
-        const jobsHtml = group.jobs.map(job => {
-          return `
-          <div style="background: ${job.isUrgent ? '#FEF2F2' : '#F9FAFB'}; border: 1px solid ${job.isUrgent ? '#FECACA' : '#E5E7EB'}; padding: 8px; border-radius: 6px; margin-bottom: 8px;">
-            <div style="font-weight: bold; font-size: 13px; color: #111827; margin-bottom: 4px; line-height: 1.3;">${job.title}</div>
-            <div style="font-size: 11px; color: #6B7280; margin-bottom: 4px;">${job.carrier || ''} ${job.salesChannel || ''}</div>
-            <div style="font-weight: bold; font-size: 13px; color: var(--primary);">¥${job.price.toLocaleString()}/日</div>
-            <button class="view-job-btn" data-id="${job.id}" style="margin-top: 6px; width: 100%; padding: 6px; background: var(--primary); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold;">詳細を見る</button>
-          </div>
-          `;
-        }).join('');
-
-        const infoWindow = new InfoWindow({
-          content: `
-            <div style="font-family: 'Inter', sans-serif; max-height: 250px; overflow-y: auto; padding-right: 8px; width: 220px;">
-              <div style="font-size: 13px; font-weight: bold; color: #6B7280; margin-bottom: 8px; text-align: center; border-bottom: 2px solid #E5E7EB; padding-bottom: 4px;">このエリアの募集: ${group.jobs.length}件</div>
-              ${jobsHtml}
-            </div>
-          `
-        });
-
         marker.addListener('click', () => {
-          infoWindow.open({
-            anchor: marker,
-            map: mapRef.current,
-          });
+          setSelectedMapJobs(group.jobs);
+          setSelectedMapTalents(null);
         });
 
         newMarkers.push(marker);
@@ -1075,21 +1068,9 @@ export function SearchPage() {
         });
         (marker as any).customCount = group.talents.length;
 
-        const infoWindow = new InfoWindow({
-          content: `
-            <div style="font-family: 'Inter', sans-serif; text-align: center; width: 180px;">
-              <b style="font-size: 14px; display: block; margin-bottom: 6px; color: #111827;">${group.locationName}</b>
-              <div style="font-size: 13px; color: #10B981; font-weight: bold; margin-bottom: 10px;">人材: ${group.talents.length}名</div>
-              <button class="view-area-btn" data-area="${group.locationName}" style="width: 100%; padding: 6px; background: #10B981; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 12px;">リストを見る</button>
-            </div>
-          `
-        });
-
         marker.addListener('click', () => {
-          infoWindow.open({
-            anchor: marker,
-            map: mapRef.current,
-          });
+          setSelectedMapTalents({ locationName: group.locationName, talents: group.talents });
+          setSelectedMapJobs(null);
         });
 
         newMarkers.push(marker);
@@ -3202,6 +3183,223 @@ export function SearchPage() {
           </div>
         </div>
       </div>
+
+      {/* マップピン詳細のボトムシート */}
+      {viewMode === 'map' && !isSelectingLocationOnMap && selectedMapJobs && (
+        <div style={{
+          position: 'absolute',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          backgroundColor: 'white',
+          borderTopLeftRadius: '20px',
+          borderTopRightRadius: '20px',
+          boxShadow: '0 -10px 25px rgba(0,0,0,0.15)',
+          zIndex: 1500,
+          padding: '20px 16px 24px 16px',
+          maxHeight: '45vh',
+          overflowY: 'auto',
+          borderTop: '1px solid var(--border-color)',
+          fontFamily: "'Inter', sans-serif",
+          animation: 'slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards'
+        }}>
+          <div style={{
+            width: '40px',
+            height: '4px',
+            backgroundColor: '#E5E7EB',
+            borderRadius: '2px',
+            margin: '0 auto 16px auto'
+          }}></div>
+
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <span style={{ fontSize: '15px', fontWeight: 'bold', color: 'var(--text-main)' }}>
+              このエリアの募集: {selectedMapJobs.length}件
+            </span>
+            <button 
+              onClick={() => setSelectedMapJobs(null)}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: 'var(--text-sub)',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '4px'
+              }}
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: '24px' }}>close</span>
+            </button>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {selectedMapJobs.map(job => (
+              <div 
+                key={job.id} 
+                className={`job-card-modern ${job.isUrgent ? 'job-card-urgent' : ''}`}
+                style={{ 
+                  margin: 0,
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
+                  border: job.isUrgent ? '1px solid #FECACA' : '1px solid var(--border-color)',
+                  padding: '16px',
+                  borderRadius: '12px',
+                  background: job.isUrgent ? '#FEF2F2' : 'white'
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
+                  <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                    {job.isUrgent && (
+                      <span className="badge-urgent" style={{ fontSize: '10px', padding: '2px 6px' }}>緊急募集</span>
+                    )}
+                    <span className="badge-role" style={{ fontSize: '10px', padding: '2px 6px' }}>{job.roleType}</span>
+                  </div>
+                  <div className="job-price" style={{ fontSize: '15px' }}>
+                    <span className="price-num">¥{job.price.toLocaleString()}</span>
+                    <span className="price-unit">/日</span>
+                  </div>
+                </div>
+
+                <h4 style={{ 
+                  fontSize: '14px', 
+                  fontWeight: 'bold', 
+                  color: 'var(--text-main)', 
+                  margin: '8px 0',
+                  lineHeight: '1.4'
+                }}>
+                  {job.title}
+                </h4>
+
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '12px' }}>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', fontSize: '11px', color: 'var(--text-sub)' }}>
+                    {job.carrier && (
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
+                        <span className="material-symbols-outlined" style={{ fontSize: '13px' }}>phone_android</span>
+                        {job.carrier}
+                      </span>
+                    )}
+                    {job.salesChannel && (
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
+                        <span className="material-symbols-outlined" style={{ fontSize: '13px' }}>storefront</span>
+                        {job.salesChannel}
+                      </span>
+                    )}
+                  </div>
+                  <button 
+                    className="view-job-btn" 
+                    data-id={job.id}
+                    onClick={() => {
+                      if (currentUser?.status === 'pending') {
+                        alert('本人確認書類（登記簿等）の審査中です。\n審査完了後に詳細情報が閲覧可能になります。');
+                        return;
+                      }
+                      setSelectedJob(job);
+                    }}
+                    style={{ 
+                      padding: '6px 14px', 
+                      background: 'var(--primary)', 
+                      color: 'white', 
+                      border: 'none', 
+                      borderRadius: '8px', 
+                      cursor: 'pointer', 
+                      fontSize: '12px', 
+                      fontWeight: 'bold' 
+                    }}
+                  >
+                    詳細を見る
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {viewMode === 'map' && !isSelectingLocationOnMap && selectedMapTalents && (
+        <div style={{
+          position: 'absolute',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          backgroundColor: 'white',
+          borderTopLeftRadius: '20px',
+          borderTopRightRadius: '20px',
+          boxShadow: '0 -10px 25px rgba(0,0,0,0.15)',
+          zIndex: 1500,
+          padding: '20px 16px 24px 16px',
+          maxHeight: '45vh',
+          overflowY: 'auto',
+          borderTop: '1px solid var(--border-color)',
+          fontFamily: "'Inter', sans-serif",
+          animation: 'slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards'
+        }}>
+          <div style={{
+            width: '40px',
+            height: '4px',
+            backgroundColor: '#E5E7EB',
+            borderRadius: '2px',
+            margin: '0 auto 16px auto'
+          }}></div>
+
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div>
+              <span style={{ fontSize: '15px', fontWeight: 'bold', color: 'var(--text-main)', display: 'block' }}>
+                {selectedMapTalents.locationName}
+              </span>
+              <span style={{ fontSize: '12px', color: '#10B981', fontWeight: 'bold' }}>
+                対応可能な人材: {selectedMapTalents.talents.length}名
+              </span>
+            </div>
+            <button 
+              onClick={() => setSelectedMapTalents(null)}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: 'var(--text-sub)',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '4px'
+              }}
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: '24px' }}>close</span>
+            </button>
+          </div>
+
+          <button 
+            className="view-area-btn" 
+            data-area={selectedMapTalents.locationName}
+            onClick={() => {
+              const areaName = selectedMapTalents.locationName;
+              if (areaName.includes('渋谷')) setFilterArea('shibuya');
+              else if (areaName.includes('新宿')) setFilterArea('shinjuku');
+              else if (areaName.includes('池袋') || areaName.includes('豊島')) setFilterArea('ikebukuro');
+              else setFilterArea('all');
+              setViewMode('list');
+              setSelectedMapTalents(null);
+            }}
+            style={{ 
+              width: '100%', 
+              padding: '12px', 
+              background: '#10B981', 
+              color: 'white', 
+              border: 'none', 
+              borderRadius: '10px', 
+              cursor: 'pointer', 
+              fontWeight: 'bold', 
+              fontSize: '14px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '6px',
+              boxShadow: '0 4px 12px rgba(16,185,129,0.2)'
+            }}
+          >
+            <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>list</span>
+            このエリアの人材リストを表示
+          </button>
+        </div>
+      )}
 
       <div className="fab-container">
         <button className="fab-main" onClick={handleOpenCreateForm}>
