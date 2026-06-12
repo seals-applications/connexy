@@ -1754,7 +1754,14 @@ export function TaskPage() {
                                     <span style={{ fontSize: '10px', fontWeight: 'bold', padding: '2px 8px', borderRadius: '10px', background: '#FEF3C7', color: '#D97706' }}>限定公開</span>
                                   )}
                                 </div>
-                                <h4 style={{ margin: 0, fontSize: '14px', fontWeight: 'bold', color: job.status === 'cancelled' || isJobPast(job) ? '#64748B' : 'var(--text-main)' }}>{job.title}</h4>
+                                <h4 style={{ margin: 0, fontSize: '14px', fontWeight: 'bold', color: job.status === 'cancelled' || isJobPast(job) ? '#64748B' : 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                                  <span>{job.title}</span>
+                                  {job.jobCode && (
+                                    <span style={{ fontSize: '10px', background: '#F1F5F9', color: '#475569', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold' }}>
+                                      {job.jobCode}
+                                    </span>
+                                  )}
+                                </h4>
                                 <div style={{ display: 'flex', gap: '8px', fontSize: '11px', color: 'var(--text-sub)', marginTop: '6px', alignItems: 'center', flexWrap: 'wrap' }}>
                                   <span>単価: ¥{job.price.toLocaleString()} / 日</span>
                                   <span>•</span>
@@ -2155,7 +2162,14 @@ export function TaskPage() {
               {/* 案件概要 */}
               <div style={{ background: 'white', padding: '14px 16px', borderRadius: '12px', border: '1px solid var(--border-color)', marginBottom: '16px', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
                 <span style={{ fontSize: '10px', fontWeight: 'bold', background: '#EFF6FF', color: 'var(--primary)', padding: '2px 8px', borderRadius: '10px' }}>選考対象案件</span>
-                <h3 style={{ margin: '6px 0 4px 0', fontSize: '15px', fontWeight: 'bold' }}>{activeScreeningJob.title}</h3>
+                <h3 style={{ margin: '6px 0 4px 0', fontSize: '15px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                  <span>{activeScreeningJob.title}</span>
+                  {activeScreeningJob.jobCode && (
+                    <span style={{ fontSize: '10px', background: '#F1F5F9', color: '#475569', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold' }}>
+                      {activeScreeningJob.jobCode}
+                    </span>
+                  )}
+                </h3>
                 <div style={{ fontSize: '11px', color: 'var(--text-sub)', display: 'flex', gap: '8px' }}>
                   <span>単価: ¥{activeScreeningJob.price.toLocaleString()} / 日</span>
                   <span>•</span>
@@ -2549,7 +2563,14 @@ export function TaskPage() {
                 </div>
                 <div>
                   <span style={{ color: 'var(--text-sub)', fontSize: '11px', display: 'block' }}>対象案件</span>
-                  <strong>{activeScreeningJob.title}</strong>
+                  <strong>
+                    {activeScreeningJob.title}
+                    {activeScreeningJob.jobCode && (
+                      <span style={{ marginLeft: '6px', background: '#F1F5F9', color: '#475569', fontSize: '10px', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold' }}>
+                        {activeScreeningJob.jobCode}
+                      </span>
+                    )}
+                  </strong>
                 </div>
                 <div style={{ background: '#F8FAFC', padding: '10px', borderRadius: '8px', border: '1px solid #E2E8F0', marginTop: '4px' }}>
                   <span style={{ color: 'var(--text-sub)', fontSize: '11px', display: 'block' }}>ご契約条件</span>
