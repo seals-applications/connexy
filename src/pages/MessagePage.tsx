@@ -1911,6 +1911,7 @@ export function MessagePage() {
                             </div>
 
                             <div style={{ fontSize: '11px', color: 'var(--text-main)', marginBottom: '12px', display: 'flex', flexDirection: 'column', gap: '6px', textAlign: 'left', background: '#FFFDF5', padding: '10px', borderRadius: '8px', border: '1px solid #FEF3C7' }}>
+                              {relatedJob?.jobCode && <div><strong>案件コード:</strong> <span style={{ color: '#0F172A', fontWeight: 'bold' }}>{relatedJob.jobCode}</span></div>}
                               <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}><strong>案件名:</strong> <span style={{ color: '#0F172A', fontWeight: 'bold' }}>{relatedJob?.title || activeChat?.title}</span></div>
                               <div><strong>契約金額:</strong> <span style={{ color: '#D97706', fontWeight: 'bold' }}>{relatedJob?.price || '15,000円 / 日'}</span></div>
                               <div><strong>日程:</strong> <span style={{ color: '#0F172A' }}>{relatedJob?.eventDate || '調整中'}</span></div>
@@ -2003,6 +2004,7 @@ export function MessagePage() {
                             </div>
 
                             <div style={{ fontSize: '11px', color: 'var(--text-main)', marginBottom: '12px', display: 'flex', flexDirection: 'column', gap: '6px', textAlign: 'left', background: '#FFFDF5', padding: '10px', borderRadius: '8px', border: '1px solid #FEF3C7' }}>
+                              {relatedJob?.jobCode && <div><strong>案件コード:</strong> <span style={{ color: '#0F172A', fontWeight: 'bold' }}>{relatedJob.jobCode}</span></div>}
                               <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}><strong>案件名:</strong> <span style={{ color: '#0F172A', fontWeight: 'bold' }}>{relatedJob?.title || activeChat?.title}</span></div>
                               <div><strong>契約金額:</strong> <span style={{ color: '#D97706', fontWeight: 'bold' }}>{relatedJob?.price || '15,000円 / 日'}</span></div>
                               <div><strong>日程:</strong> <span style={{ color: '#0F172A' }}>{relatedJob?.eventDate || '調整中'}</span></div>
@@ -2088,6 +2090,7 @@ export function MessagePage() {
                     </span>
                     <div className="condition-details">
                       <span className="text-gray text-small">
+                        {relatedJob?.jobCode && `案件コード: ${relatedJob.jobCode} / `}
                         単価: {relatedJob ? `${relatedJob.price.toLocaleString()}円 / 日` : '15,000円 / 日'}
                         {relatedJob?.eventDate ? ` / 期間: ${relatedJob.eventDate}` : ''}
                       </span>
@@ -2510,6 +2513,11 @@ export function MessagePage() {
                     color: '#334155',
                     marginBottom: '20px'
                   }}>
+                    <div>
+                      <strong style={{ color: '#64748B', display: 'block', fontSize: '11px', marginBottom: '2px' }}>案件コード</strong>
+                      <span style={{ fontWeight: 'bold', color: '#0F172A' }}>{relatedJob?.jobCode || '未発行'}</span>
+                    </div>
+                    <hr style={{ border: 0, borderTop: '1px solid #E2E8F0', margin: 0 }} />
                     <div>
                       <strong style={{ color: '#64748B', display: 'block', fontSize: '11px', marginBottom: '2px' }}>案件名</strong>
                       <span style={{ fontWeight: 'bold', color: '#0F172A' }}>{relatedJob?.title || activeChat?.title}</span>

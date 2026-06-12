@@ -71,7 +71,18 @@ export interface Job {
     accommodationValue?: number;
   };
   status?: 'active' | 'cancelled';
+  jobCode?: string;
 }
+
+// Hashing function to get consistent job codes for legacy seed jobs
+const getConsistentJobCode = (jobId: string) => {
+  let hash = 0;
+  for (let i = 0; i < jobId.length; i++) {
+    hash = jobId.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const codeNum = Math.abs(hash % 900000) + 100000;
+  return `JOB-${codeNum}`;
+};
 
 // 人材(Talent)の型定義
 export interface Talent {
@@ -194,6 +205,7 @@ const mapJob = (row: any): Job => {
   let dailyPrices: Job['dailyPrices'] = undefined;
   let expenses: Job['expenses'] = undefined;
   let status: 'active' | 'cancelled' = 'active';
+  let jobCode: string | undefined = undefined;
 
   const cleanRequirements = requirements.filter(req => {
     if (req === '__STATUS_CANCELLED__') {
@@ -216,8 +228,16 @@ const mapJob = (row: any): Job => {
       }
       return false;
     }
+    if (req.startsWith('__JOB_CODE__::')) {
+      jobCode = req.substring('__JOB_CODE__::'.length);
+      return false;
+    }
     return true;
   });
+
+  if (!jobCode) {
+    jobCode = getConsistentJobCode(row.id);
+  }
 
   return {
     id: row.id,
@@ -242,13 +262,15 @@ const mapJob = (row: any): Job => {
     exactLocation: row.exact_location,
     dailyPrices,
     expenses,
-    status
+    status,
+    jobCode
   };
 };
 
 const unmapJob = (job: Partial<Job>): any => {
   const row: any = { ...job };
   if ('status' in row) delete row.status;
+  if ('jobCode' in row) delete row.jobCode;
   if ('authorId' in job) { row.author_id = job.authorId; delete row.authorId; }
   if ('locationName' in job) { row.location_name = job.locationName; delete row.locationName; }
   if ('workHours' in job) { row.work_hours = job.workHours; delete row.workHours; }
@@ -262,7 +284,7 @@ const unmapJob = (job: Partial<Job>): any => {
   if ('allowedCompanyIds' in job) { row.allowed_company_ids = job.allowedCompanyIds; delete row.allowedCompanyIds; }
   if ('exactLocation' in job) { row.exact_location = job.exactLocation; delete row.exactLocation; }
 
-  // Serialize dailyPrices and expenses into requirements array
+  // Serialize dailyPrices, expenses and jobCode into requirements array
   const requirements = [...(job.requirements || [])];
   if (job.status === 'cancelled') {
     requirements.push('__STATUS_CANCELLED__');
@@ -272,6 +294,9 @@ const unmapJob = (job: Partial<Job>): any => {
   }
   if (job.expenses) {
     requirements.push(`__EXPENSES__::${JSON.stringify(job.expenses)}`);
+  }
+  if (job.jobCode) {
+    requirements.push(`__JOB_CODE__::${job.jobCode}`);
   }
   row.requirements = requirements;
 
@@ -642,7 +667,8 @@ export const api = {
 
   addJob: async (job: Omit<Job, 'id'>): Promise<Job> => {
     const id = 'j' + Date.now();
-    const newJob = { ...job, id };
+    const jobCode = 'JOB-' + Math.floor(100000 + Math.random() * 900000);
+    const newJob = { ...job, id, jobCode };
     const row = unmapJob(newJob);
     const { error } = await supabase.from('jobs').insert([row]);
     if (error) { console.error('addJob error:', error); throw error; }

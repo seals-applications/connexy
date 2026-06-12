@@ -68,6 +68,12 @@ export function TaskPage() {
   const [myStaff, setMyStaff] = useState<Staff | null>(null);
   const [companyStaffs, setCompanyStaffs] = useState<Staff[]>([]);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [allJobsList, setAllJobsList] = useState<Job[]>([]);
+
+  const getJobCodeForTask = (jobId: string) => {
+    const job = allJobsList.find(j => j.id === jobId);
+    return job?.jobCode || '';
+  };
   const isUserAdmin = !currentUser?.staffId || currentUser.staffRole === 'admin';
 
   // 出退勤State
@@ -242,6 +248,7 @@ export function TaskPage() {
 
       // 自社掲示中の案件と人材をフェッチ
       const allJobs = await api.getJobs();
+      setAllJobsList(allJobs);
       const allTalents = await api.getTalents();
       setMyJobs(allJobs.filter(j => j.authorId === user.id));
       setMyTalents(allTalents.filter(t => t.userId === user.id));
@@ -406,8 +413,26 @@ export function TaskPage() {
       alert("ダウンロードできる出勤データがありません。");
       return;
     }
-    const headers = ["日付", "出勤時間"];
-    const rows = logs.map(log => [log.date, log.checkin]);
+    const headers = ["日付", "出勤時間", "案件コード"];
+    const rows = logs.map(log => {
+      // Lookup job code
+      const task = tasks.find(t => t.date === log.date && (t.workerName === staffName || t.workerName === currentUser?.name));
+      let logJobCode = '';
+      if (task) {
+        const job = allJobsList.find(j => j.id === task.jobId);
+        if (job) logJobCode = job.jobCode || '';
+      }
+      if (!logJobCode) {
+        const pseudoId = `j_${log.date}_${staffName}`;
+        let hash = 0;
+        for (let i = 0; i < pseudoId.length; i++) {
+          hash = pseudoId.charCodeAt(i) + ((hash << 5) - hash);
+        }
+        const codeNum = Math.abs(hash % 900000) + 100000;
+        logJobCode = `JOB-${codeNum}`;
+      }
+      return [log.date, log.checkin, logJobCode];
+    });
     const csvContent = "\uFEFF" + [headers.join(","), ...rows.map(e => e.join(","))].join("\n");
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
@@ -932,9 +957,16 @@ export function TaskPage() {
                   <span style={{ fontSize: '12px', color: 'var(--text-sub)' }}>稼働日: {task.date}</span>
                 </div>
                 <h4 style={{ margin: '0 0 4px 0', fontSize: '15px' }}>{task.jobTitle}</h4>
-                <p style={{ margin: '0 0 12px 0', fontSize: '13px', color: 'var(--text-sub)' }}>
-                  稼働スタッフ: {task.workerName} （{task.companyName}）
-                </p>
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '12px', flexWrap: 'wrap' }}>
+                  {getJobCodeForTask(task.jobId) && (
+                    <span style={{ background: '#F1F5F9', color: '#475569', fontSize: '10px', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold' }}>
+                      {getJobCodeForTask(task.jobId)}
+                    </span>
+                  )}
+                  <span style={{ fontSize: '12px', color: 'var(--text-sub)' }}>
+                    稼働スタッフ: {task.workerName} （{task.companyName}）
+                  </span>
+                </div>
                 
                 {task.status === 'disputed' && task.disputedReason && (
                   <div style={{ background: '#FEF2F2', borderLeft: '4px solid #EF4444', padding: '8px 12px', borderRadius: '4px', marginBottom: '12px', fontSize: '12px' }}>
@@ -999,9 +1031,16 @@ export function TaskPage() {
                     <span style={{ fontSize: '12px', color: 'var(--text-sub)' }}>稼働日: {task.date}</span>
                   </div>
                   <h4 style={{ margin: '0 0 4px 0', fontSize: '15px' }}>{task.jobTitle}</h4>
-                  <p style={{ margin: '0 0 12px 0', fontSize: '13px', color: 'var(--text-sub)' }}>
-                    稼働スタッフ: {task.workerName} （{task.companyName}）
-                  </p>
+                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '12px', flexWrap: 'wrap' }}>
+                    {getJobCodeForTask(task.jobId) && (
+                      <span style={{ background: '#F1F5F9', color: '#475569', fontSize: '10px', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold' }}>
+                        {getJobCodeForTask(task.jobId)}
+                      </span>
+                    )}
+                    <span style={{ fontSize: '12px', color: 'var(--text-sub)' }}>
+                      稼働スタッフ: {task.workerName} （{task.companyName}）
+                    </span>
+                  </div>
 
                   <div style={{ background: '#F8FAFC', padding: '12px', borderRadius: '8px', border: '1px solid #E2E8F0', fontSize: '13px' }}>
                     {bothEvaluated ? (
@@ -1206,23 +1245,54 @@ export function TaskPage() {
                 {/* Day-by-day logs */}
                 <h3 className="section-title">日次打刻履歴</h3>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '24px' }}>
-                  {filteredLogs.map((log, idx) => (
-                    <div key={idx} style={{ background: 'white', padding: '14px 16px', borderRadius: '12px', border: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 1px 3px rgba(0,0,0,0.01)' }}>
-                      <div>
-                        <div style={{ fontWeight: 'bold', fontSize: '14px', color: 'var(--text-main)' }}>
-                          {log.date} ({new Date(log.date).toLocaleDateString('ja-JP', { weekday: 'short' })})
+                  {filteredLogs.map((log, idx) => {
+                    const activeStaff = isUserAdmin 
+                      ? companyStaffs.find(s => s.id === selectedHistoryStaffId) 
+                      : myStaff;
+                    const staffName = activeStaff?.name || currentUser?.name || '清水 真一';
+                    
+                    // Helper to get job code for date and staff
+                    const getJobCodeForDate = (dateStr: string, nameStr: string) => {
+                      const task = tasks.find(t => t.date === dateStr && (t.workerName === nameStr || t.workerName === currentUser?.name));
+                      if (task) {
+                        const job = allJobsList.find(j => j.id === task.jobId);
+                        if (job) return job.jobCode;
+                      }
+                      // Fallback consistent hash
+                      const pseudoId = `j_${dateStr}_${nameStr}`;
+                      let hash = 0;
+                      for (let i = 0; i < pseudoId.length; i++) {
+                        hash = pseudoId.charCodeAt(i) + ((hash << 5) - hash);
+                      }
+                      const codeNum = Math.abs(hash % 900000) + 100000;
+                      return `JOB-${codeNum}`;
+                    };
+
+                    const logJobCode = getJobCodeForDate(log.date, staffName);
+
+                    return (
+                      <div key={idx} style={{ background: 'white', padding: '14px 16px', borderRadius: '12px', border: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 1px 3px rgba(0,0,0,0.01)' }}>
+                        <div>
+                          <div style={{ fontWeight: 'bold', fontSize: '14px', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span>{log.date} ({new Date(log.date).toLocaleDateString('ja-JP', { weekday: 'short' })})</span>
+                            {logJobCode && (
+                              <span style={{ background: '#EFF6FF', color: '#1E40AF', fontSize: '10px', padding: '1px 5px', borderRadius: '4px', fontWeight: 'bold' }}>
+                                {logJobCode}
+                              </span>
+                            )}
+                          </div>
+                          <div style={{ fontSize: '12px', color: 'var(--text-sub)', marginTop: '4px' }}>
+                            出勤: <strong style={{ color: '#2563EB' }}>{log.checkin}</strong>
+                          </div>
                         </div>
-                        <div style={{ fontSize: '12px', color: 'var(--text-sub)', marginTop: '4px' }}>
-                          出勤: <strong style={{ color: '#2563EB' }}>{log.checkin}</strong>
+                        <div>
+                          <span style={{ background: '#D1FAE5', color: '#065F46', padding: '4px 8px', borderRadius: '8px', fontSize: '11px', fontWeight: 'bold' }}>
+                            出勤完了
+                          </span>
                         </div>
                       </div>
-                      <div>
-                        <span style={{ background: '#D1FAE5', color: '#065F46', padding: '4px 8px', borderRadius: '8px', fontSize: '11px', fontWeight: 'bold' }}>
-                          出勤完了
-                        </span>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
 
                   {filteredLogs.length === 0 && (
                     <div style={{ textAlign: 'center', padding: '32px 16px', background: 'white', borderRadius: '12px', color: 'var(--text-sub)', fontSize: '13px', border: '1px dashed var(--border-color)' }}>
@@ -1271,7 +1341,14 @@ export function TaskPage() {
             
             <div>
               <div style={{ fontSize: '12px', color: 'var(--text-sub)' }}>対象タスク</div>
-              <div style={{ fontSize: '14px', fontWeight: 'bold' }}>{selectedTask.jobTitle}</div>
+              <div style={{ fontSize: '14px', fontWeight: 'bold' }}>
+                {selectedTask.jobTitle}
+                {getJobCodeForTask(selectedTask.jobId) && (
+                  <span style={{ marginLeft: '6px', background: '#F1F5F9', color: '#475569', fontSize: '10px', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold' }}>
+                    {getJobCodeForTask(selectedTask.jobId)}
+                  </span>
+                )}
+              </div>
             </div>
 
             {/* デモ用視点切り替え */}

@@ -1721,7 +1721,14 @@ export function SearchPage() {
                     )}
 
                     <div className="job-title-row">
-                      <h3>{job.title}</h3>
+                      <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                        <span>{job.title}</span>
+                        {job.jobCode && (
+                          <span style={{ fontSize: '10px', background: '#F1F5F9', color: '#475569', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold' }}>
+                            {job.jobCode}
+                          </span>
+                        )}
+                      </h3>
                       {remainingDaysText && (
                         <span style={{ margin: 0, fontSize: '11px', whiteSpace: 'nowrap', padding: '4px 8px', borderRadius: '8px', color: remainingDaysColor, backgroundColor: remainingDaysBg, fontWeight: 'bold' }}>
                           {remainingDaysText}
@@ -2000,6 +2007,13 @@ export function SearchPage() {
                   {selectedJob.roleType && <span style={{ fontSize: '12px', padding: '4px 10px', background: '#DCFCE7', color: '#15803D', borderRadius: '16px', fontWeight: 'bold' }}>{selectedJob.roleType}</span>}
                   {selectedJob.workLocation && <span style={{ fontSize: '12px', padding: '4px 10px', background: '#F3F4F6', color: '#374151', borderRadius: '16px' }}>{selectedJob.workLocation}</span>}
                 </div>
+                 {selectedJob.jobCode && (
+                  <div style={{ marginBottom: '8px' }}>
+                    <span style={{ fontSize: '11px', background: '#F1F5F9', color: '#475569', padding: '2px 8px', borderRadius: '4px', fontWeight: 'bold' }}>
+                      案件コード: {selectedJob.jobCode}
+                    </span>
+                  </div>
+                )}
                 <h2 style={{ margin: '0 0 12px 0', fontSize: '20px', lineHeight: '1.4' }}>{selectedJob.title}</h2>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-sub)', fontSize: '14px' }}>
                   <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>corporate_fare</span>
