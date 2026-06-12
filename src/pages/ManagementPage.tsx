@@ -633,7 +633,7 @@ export function ManagementPage() {
   return (
     <div className="view active" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       {/* Header */}
-      <header className="solid-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <header className="solid-header" style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <span style={{ fontSize: '18px', fontWeight: 'bold', color: 'var(--text-main)' }}>管理・手続き</span>
         </div>

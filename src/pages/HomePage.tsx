@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { api } from '../data/mockDb';
-import type { User, ContractTask } from '../data/mockDb';
+import type { ContractTask } from '../data/mockDb';
 
 type DetailType = 'none' | 'income' | 'transfer';
 
@@ -37,7 +37,6 @@ const mockAnnouncements: Announcement[] = [
 ];
 
 export function HomePage() {
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [tasks, setTasks] = useState<ContractTask[]>([]);
   const [detailType, setDetailType] = useState<DetailType>('none');
   const [hasPendingReports, setHasPendingReports] = useState(false);
@@ -51,8 +50,6 @@ export function HomePage() {
 
   useEffect(() => {
     const loadData = async () => {
-      const user = await api.getCurrentUser();
-      setCurrentUser(user);
       const fetchedTasks = await api.getContractTasks();
       setTasks(fetchedTasks);
       setHasPendingReports(fetchedTasks.some(t => t.status === 'report_pending'));
@@ -276,7 +273,7 @@ export function HomePage() {
   return (
     <div className="view active" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       {/* Home Header */}
-      <header className="solid-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'relative' }}>
+      <header className="solid-header" style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', position: 'relative' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <div style={{ fontSize: '18px', fontWeight: 'bold', color: 'var(--text-main)' }}>Connexy</div>
           <span style={{ fontSize: '10px', background: 'var(--primary)', color: 'white', padding: '2px 8px', borderRadius: '10px', fontWeight: 'bold' }}>ホーム</span>
@@ -288,26 +285,6 @@ export function HomePage() {
 
       {/* Home Main Content */}
       <main className="list-area bg-gray" style={{ flex: 1, overflowY: 'auto', padding: '16px', paddingBottom: '90px' }}>
-        {/* Profile Card */}
-        <div style={{ background: 'white', borderRadius: '14px', padding: '16px', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px', boxShadow: '0 2px 6px rgba(0,0,0,0.01)' }}>
-          <div className="profile-avatar" style={{ width: '40px', height: '40px', fontSize: '16px' }}>
-            {currentUser?.name.charAt(0) || '株'}
-          </div>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: '15px', fontWeight: 'bold', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              {currentUser?.name || '会社名'}
-              <span className="premium-badge" style={{ margin: 0, padding: '2px 6px', fontSize: '10px' }}>
-                <span className="material-symbols-outlined" style={{ fontSize: '11px' }}>stars</span>
-                プレミアム
-              </span>
-            </div>
-            {currentUser?.staffName && (
-              <div style={{ fontSize: '11px', color: 'var(--text-sub)', marginTop: '2px' }}>
-                ログイン: {currentUser.staffName} ({currentUser.staffRole === 'admin' ? '管理者' : 'メンバー'})
-              </div>
-            )}
-          </div>
-        </div>
 
         {/* 運営からのお知らせ掲示板 */}
         <div style={{ background: 'white', borderRadius: '14px', padding: '16px', border: '1px solid var(--border-color)', marginBottom: '16px', boxShadow: '0 2px 6px rgba(0,0,0,0.01)' }}>

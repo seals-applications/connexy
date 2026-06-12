@@ -119,10 +119,16 @@ export function SettingsDrawer({ isOpen, onClose, onLogoutSuccess }: SettingsDra
               {currentUser?.name.charAt(0) || '株'}
             </div>
             <div style={{ flex: 1 }}>
-              <div style={{ fontSize: '15px', fontWeight: 'bold', color: 'var(--text-main)' }}>{currentUser?.name}</div>
+              <div style={{ fontSize: '15px', fontWeight: 'bold', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                {currentUser?.name || '会社名'}
+                <span className="premium-badge" style={{ margin: 0, padding: '2px 6px', fontSize: '10px', display: 'inline-flex', alignItems: 'center', gap: '2px' }}>
+                  <span className="material-symbols-outlined" style={{ fontSize: '11px' }}>stars</span>
+                  プレミアム
+                </span>
+              </div>
               {currentUser?.staffName && (
                 <div style={{ fontSize: '12px', color: 'var(--text-sub)', marginTop: '2px' }}>
-                  {currentUser.staffName} ({currentUser.staffRole === 'admin' ? '管理者' : '一般'})
+                  ログイン: {currentUser.staffName} ({currentUser.staffRole === 'admin' ? '管理者' : '一般'})
                 </div>
               )}
             </div>
