@@ -21,8 +21,24 @@ export function BottomNav() {
         const users = await api.getUsers();
         const fetchedJobs = await api.getJobs();
 
-        // 1. タスクの報告待ちカウント
-        const count = tasks.filter(t => t.status === 'report_pending').length;
+        // 1. タスクの報告待ちカウント（自社関連のみ）
+        const isUserAdmin = !currentUser.staffId || currentUser.staffRole === 'admin';
+        const myJobs = fetchedJobs.filter(j => j.authorId === currentUser.id);
+        const myStaffs = await api.getStaffsByUserId(currentUser.id);
+        const myStaff = myStaffs.find(s => s.id === currentUser.staffId) || null;
+
+        const count = tasks.filter(t => {
+          if (t.status !== 'report_pending') return false;
+          const isClient = myJobs.some(j => j.id === t.jobId) || t.clientName === currentUser.name;
+          const isWorkerOrAgency = myStaffs.some(s => s.name === t.workerName) || t.companyName === currentUser.name;
+          
+          if (isUserAdmin) {
+            return isClient || isWorkerOrAgency;
+          } else {
+            const myName = myStaff?.name || currentUser.name;
+            return t.workerName === myName;
+          }
+        }).length;
         setPendingCount(count);
 
         // 2. 未読チャット数のカウント

@@ -79,7 +79,7 @@ export function ManagementPage() {
   const [calendarMonth, setCalendarMonth] = useState<number>(6);
   const [selectedCalendarDate, setSelectedCalendarDate] = useState<string>('2026-06-13');
   const [calendarFilterStaffId, setCalendarFilterStaffId] = useState<string>('all');
-  const [calendarFilterOtherStaffName, setCalendarFilterOtherStaffName] = useState<string>('all');
+  const [calendarFilterOtherCompanyName, setCalendarFilterOtherCompanyName] = useState<string>('all');
 
   // Sub-tabs inside overlays
   const [postsSubTab, setPostsSubTab] = useState<'list' | 'calendar'>('list');
@@ -238,14 +238,14 @@ export function ManagementPage() {
     return allStaffs.find(s => s.id === currentUser.staffId) || null;
   }, [allStaffs, currentUser]);
 
-  const otherStaffsOnOurJobs = useMemo(() => {
-    const staffNames = new Set<string>();
+  const otherCompaniesOnOurJobs = useMemo(() => {
+    const companyNames = new Set<string>();
     tasks.forEach(t => {
-      if (myJobs.some(j => j.id === t.jobId) && !companyStaffs.some(s => s.name === t.workerName)) {
-        staffNames.add(t.workerName);
+      if (myJobs.some(j => j.id === t.jobId) && !companyStaffs.some(s => s.name === t.workerName) && t.companyName) {
+        companyNames.add(t.companyName);
       }
     });
-    return Array.from(staffNames);
+    return Array.from(companyNames);
   }, [tasks, myJobs, companyStaffs]);
 
   const relatedTasks = useMemo(() => {
@@ -285,8 +285,8 @@ export function ManagementPage() {
         const isOurStaff = companyStaffs.some(s => s.name === t.workerName);
         if (!isOurJob || isOurStaff) return false;
         
-        if (calendarFilterOtherStaffName === 'all') return true;
-        return t.workerName === calendarFilterOtherStaffName;
+        if (calendarFilterOtherCompanyName === 'all') return true;
+        return t.companyName === calendarFilterOtherCompanyName;
       }
     });
   };
@@ -314,12 +314,12 @@ export function ManagementPage() {
               </select>
             ) : (
               <select
-                value={calendarFilterOtherStaffName}
-                onChange={e => setCalendarFilterOtherStaffName(e.target.value)}
+                value={calendarFilterOtherCompanyName}
+                onChange={e => setCalendarFilterOtherCompanyName(e.target.value)}
                 style={{ flex: 1, padding: '6px 10px', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'white', fontSize: '12px', color: 'var(--text-main)' }}
               >
-                <option value="all">全員を表示</option>
-                {otherStaffsOnOurJobs.map(name => (
+                <option value="all">すべての会社を表示</option>
+                {otherCompaniesOnOurJobs.map(name => (
                   <option key={name} value={name}>{name}</option>
                 ))}
               </select>
@@ -1031,7 +1031,33 @@ export function ManagementPage() {
                     <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>{item.icon}</span>
                   </div>
                   <div>
-                    <div style={{ fontSize: '14px', fontWeight: 'bold', color: 'var(--text-main)' }}>{item.label}</div>
+                    <div style={{ fontSize: '14px', fontWeight: 'bold', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span>{item.label}</span>
+                      {(() => {
+                        let count = 0;
+                        if (item.id === 'reports') {
+                          count = relatedTasks.filter(t => t.status === 'report_pending' || t.status === 'disputed').length;
+                        } else if (item.id === 'posts') {
+                          count = tasks.filter(t => t.status === 'applying' && myJobs.some(j => j.id === t.jobId)).length;
+                        }
+                        if (count > 0) {
+                          return (
+                            <span style={{ 
+                              background: '#EF4444', 
+                              color: 'white', 
+                              fontSize: '10px', 
+                              fontWeight: 'bold', 
+                              padding: '2px 6px', 
+                              borderRadius: '10px',
+                              lineHeight: 1
+                            }}>
+                              {count}
+                            </span>
+                          );
+                        }
+                        return null;
+                      })()}
+                    </div>
                     <div style={{ fontSize: '11px', color: 'var(--text-sub)', marginTop: '2px' }}>{item.desc}</div>
                   </div>
                 </div>
