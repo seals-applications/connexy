@@ -1900,30 +1900,47 @@ export function MessagePage() {
                             )}
                           </div>
                         ) : msg.isOffer ? (
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '4px 0' }}>
-                            <div style={{ fontWeight: 'bold', fontSize: '13px' }}>内定オファー</div>
+                          <div style={{ background: '#FFFFFF', border: '1px solid #FEF3C7', borderRadius: '12px', padding: '14px', width: '230px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)', boxSizing: 'border-box' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 'bold', color: '#D97706', marginBottom: '10px' }}>
+                              <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>workspace_premium</span>
+                              <span style={{ fontSize: '13px' }}>内定通知オファー</span>
+                            </div>
+                            
+                            <div style={{ fontSize: '11px', color: '#4B5563', marginBottom: '12px', lineHeight: '1.5', textAlign: 'left' }}>
+                              選考の結果、以下の案件について内定オファーが届いています。条件をご確認ください。
+                            </div>
+
+                            <div style={{ fontSize: '11px', color: 'var(--text-main)', marginBottom: '12px', display: 'flex', flexDirection: 'column', gap: '6px', textAlign: 'left', background: '#FFFDF5', padding: '10px', borderRadius: '8px', border: '1px solid #FEF3C7' }}>
+                              <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}><strong>案件名:</strong> <span style={{ color: '#0F172A', fontWeight: 'bold' }}>{relatedJob?.title || activeChat?.title}</span></div>
+                              <div><strong>契約金額:</strong> <span style={{ color: '#D97706', fontWeight: 'bold' }}>{relatedJob?.price || '15,000円 / 日'}</span></div>
+                              <div><strong>日程:</strong> <span style={{ color: '#0F172A' }}>{relatedJob?.eventDate || '調整中'}</span></div>
+                            </div>
+
                             <button
                               onClick={() => {
                                 setSelectedOfferMsg(msg);
                                 setShowOfferModal(true);
                               }}
                               style={{
-                                background: '#FFFFFF',
-                                border: '1px solid var(--primary-color)',
-                                color: 'var(--primary-color)',
-                                padding: '6px 12px',
-                                borderRadius: '6px',
-                                fontSize: '12px',
+                                background: 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)',
+                                color: '#FFFFFF',
+                                border: 'none',
+                                padding: '8px 12px',
+                                borderRadius: '8px',
+                                fontSize: '11px',
                                 fontWeight: 'bold',
                                 cursor: 'pointer',
+                                width: '100%',
                                 display: 'inline-flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
                                 gap: '4px',
-                                boxShadow: '0 2px 4px rgba(99, 102, 241, 0.1)'
+                                boxShadow: '0 4px 6px rgba(217, 119, 6, 0.2)',
+                                transition: 'all 0.2s'
                               }}
                             >
-                              【内定通知を開く】
+                              <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>open_in_new</span>
+                              内定通知を開く
                             </button>
                           </div>
                         ) : (
@@ -1975,29 +1992,46 @@ export function MessagePage() {
                             )}
                           </div>
                         ) : msg.isOffer ? (
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '4px 0' }}>
-                            <div style={{ fontWeight: 'bold', fontSize: '13px' }}>内定オファー</div>
+                          <div style={{ background: '#FFFFFF', border: '1px solid #FEF3C7', borderRadius: '12px', padding: '14px', width: '230px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)', boxSizing: 'border-box' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 'bold', color: '#D97706', marginBottom: '10px' }}>
+                              <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>workspace_premium</span>
+                              <span style={{ fontSize: '13px' }}>内定通知オファー</span>
+                            </div>
+                            
+                            <div style={{ fontSize: '11px', color: '#4B5563', marginBottom: '12px', lineHeight: '1.5', textAlign: 'left' }}>
+                              下請け企業に対し、以下の条件で内定オファーを提示しました（回答待ち）。
+                            </div>
+
+                            <div style={{ fontSize: '11px', color: 'var(--text-main)', marginBottom: '12px', display: 'flex', flexDirection: 'column', gap: '6px', textAlign: 'left', background: '#FFFDF5', padding: '10px', borderRadius: '8px', border: '1px solid #FEF3C7' }}>
+                              <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}><strong>案件名:</strong> <span style={{ color: '#0F172A', fontWeight: 'bold' }}>{relatedJob?.title || activeChat?.title}</span></div>
+                              <div><strong>契約金額:</strong> <span style={{ color: '#D97706', fontWeight: 'bold' }}>{relatedJob?.price || '15,000円 / 日'}</span></div>
+                              <div><strong>日程:</strong> <span style={{ color: '#0F172A' }}>{relatedJob?.eventDate || '調整中'}</span></div>
+                            </div>
+
                             <button
                               onClick={() => {
                                 setSelectedOfferMsg(msg);
                                 setShowOfferModal(true);
                               }}
                               style={{
-                                background: 'rgba(255, 255, 255, 0.2)',
-                                border: '1px solid #FFFFFF',
-                                color: '#FFFFFF',
-                                padding: '6px 12px',
-                                borderRadius: '6px',
-                                fontSize: '12px',
+                                background: '#FFFFFF',
+                                color: '#D97706',
+                                border: '1px solid #D97706',
+                                padding: '8px 12px',
+                                borderRadius: '8px',
+                                fontSize: '11px',
                                 fontWeight: 'bold',
                                 cursor: 'pointer',
+                                width: '100%',
                                 display: 'inline-flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
-                                gap: '4px'
+                                gap: '4px',
+                                transition: 'all 0.2s'
                               }}
                             >
-                              【内定通知を開く】
+                              <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>visibility</span>
+                              条件を確認する
                             </button>
                           </div>
                         ) : (
