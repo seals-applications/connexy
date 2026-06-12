@@ -78,16 +78,22 @@ export function ManagementPage() {
   const [calendarYear, setCalendarYear] = useState<number>(2026);
   const [calendarMonth, setCalendarMonth] = useState<number>(6);
   const [selectedCalendarDate, setSelectedCalendarDate] = useState<string>('2026-06-13');
+  const [calendarFilterStaffId, setCalendarFilterStaffId] = useState<string>('all');
 
   const getTasksForDate = (dateStr: string) => {
     return tasks.filter(t => {
       if (!['working', 'report_pending', 'completed'].includes(t.status)) return false;
       const isDateMatch = t.date === dateStr;
       if (!isDateMatch) return false;
-      if (isUserAdmin) return true;
+      if (isUserAdmin) {
+        if (calendarFilterStaffId === 'all') return true;
+        const targetStaff = allStaffs.find(s => s.id === calendarFilterStaffId);
+        return t.workerName === targetStaff?.name;
+      }
       return t.workerName === myStaff?.name || t.workerName === currentUser?.name;
     });
   };
+
 
   const calendarCells = useMemo(() => {
     const daysInMonth = new Date(calendarYear, calendarMonth, 0).getDate();
@@ -750,7 +756,25 @@ export function ManagementPage() {
           <h1 style={{ fontSize: '16px', fontWeight: 'bold' }}>出勤予定カレンダー</h1>
           <div style={{ width: '40px' }}></div>
         </header>
-        <main className="list-area bg-gray" style={{ flex: 1, overflowY: 'auto', padding: '16px', paddingBottom: '90px' }}>
+        <main className="list-area bg-gray hide-scrollbar" style={{ flex: 1, overflowY: 'auto', padding: '16px', paddingBottom: '90px' }}>
+          {/* Staff filter dropdown */}
+          {isUserAdmin && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'white', padding: '10px 14px', borderRadius: '12px', border: '1px solid var(--border-color)', marginBottom: '12px' }}>
+              <span className="material-symbols-outlined" style={{ fontSize: '18px', color: 'var(--text-sub)' }}>filter_alt</span>
+              <span style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--text-main)' }}>スタッフ絞り込み:</span>
+              <select
+                value={calendarFilterStaffId}
+                onChange={e => setCalendarFilterStaffId(e.target.value)}
+                style={{ flex: 1, padding: '6px 10px', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'white', fontSize: '12px', color: 'var(--text-main)' }}
+              >
+                <option value="all">全員を表示</option>
+                {companyStaffs.map(s => (
+                  <option key={s.id} value={s.id}>{s.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
+
           {/* Calendar Selector / Month switcher */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'white', padding: '12px 16px', borderRadius: '12px', border: '1px solid var(--border-color)', marginBottom: '16px' }}>
             <button 
@@ -843,29 +867,34 @@ export function ManagementPage() {
                       {cell.day || ''}
                     </span>
 
-                    <div style={{ display: 'flex', gap: '2px', height: '6px', alignItems: 'center' }}>
+                    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '14px', marginTop: '2px' }}>
                       {cell.day && hasTasks && (
                         isUserAdmin ? (
-                          dateTasks.slice(0, 3).map((_, tIdx) => (
-                            <span 
-                              key={tIdx} 
-                              style={{ 
-                                width: '4px', 
-                                height: '4px', 
-                                borderRadius: '50%', 
-                                background: isSelected ? 'white' : 'var(--primary)' 
-                              }} 
-                            />
-                          ))
+                          <span 
+                            style={{ 
+                              fontSize: '9px', 
+                              fontWeight: 'bold',
+                              padding: '1px 4px',
+                              borderRadius: '4px',
+                              background: isSelected ? 'rgba(255, 255, 255, 0.25)' : '#EFF6FF',
+                              color: isSelected ? 'white' : 'var(--primary)'
+                            }}
+                          >
+                            {dateTasks.length}名
+                          </span>
                         ) : (
                           <span 
                             style={{ 
-                              width: '5px', 
-                              height: '5px', 
-                              borderRadius: '50%', 
-                              background: isSelected ? 'white' : '#10B981' 
-                            }} 
-                          />
+                              fontSize: '9px', 
+                              fontWeight: 'bold',
+                              padding: '1px 4px',
+                              borderRadius: '4px',
+                              background: isSelected ? 'rgba(255, 255, 255, 0.25)' : '#ECFDF5',
+                              color: isSelected ? 'white' : '#059669'
+                            }}
+                          >
+                            1名
+                          </span>
                         )
                       )}
                     </div>
