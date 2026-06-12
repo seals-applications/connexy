@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
 import { api } from '../data/mockDb';
 
+type DetailType = 'none' | 'income' | 'transfer';
+
 export function DashboardPage() {
   const [showBalance, setShowBalance] = useState(false);
   const [hasPendingReports, setHasPendingReports] = useState(false);
-  const [showDetails, setShowDetails] = useState(false);
+  const [detailType, setDetailType] = useState<DetailType>('none');
 
   useEffect(() => {
     const checkReports = async () => {
@@ -32,13 +34,13 @@ export function DashboardPage() {
     }
   };
 
-  if (showDetails) {
+  if (detailType === 'income') {
     return (
       <div className="view active" style={{ animation: 'fadeIn 0.2s ease-out' }}>
         <header className="solid-header" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <button 
             className="icon-btn" 
-            onClick={() => setShowDetails(false)}
+            onClick={() => setDetailType('none')}
             style={{ color: '#FFFFFF', padding: '0', display: 'flex', alignItems: 'center' }}
           >
             <span className="material-symbols-outlined" style={{ fontSize: '24px' }}>arrow_back</span>
@@ -62,8 +64,8 @@ export function DashboardPage() {
             
             <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px', borderBottom: '2px dashed #E2E8F0', paddingBottom: '16px', marginBottom: '16px' }}>
               <span style={{ fontSize: '18px', fontWeight: 'bold', color: '#1E3A8A' }}>¥</span>
-              <span style={{ fontSize: '32px', fontWeight: 'bold', color: '#1E3A8A' }}>482,500</span>
-              <span style={{ fontSize: '14px', color: '#64748B', marginLeft: 'auto', fontWeight: 'bold' }}>(総額 48.25万円)</span>
+              <span style={{ fontSize: '32px', fontWeight: 'bold', color: '#1E3A8A' }}>520,000</span>
+              <span style={{ fontSize: '14px', color: '#64748B', marginLeft: 'auto', fontWeight: 'bold' }}>(総額 52.0万円)</span>
             </div>
 
             {/* Breakdown List */}
@@ -99,17 +101,115 @@ export function DashboardPage() {
                   </div>
                 </div>
               </div>
+            </div>
+          </div>
+          
+          <div style={{
+            background: '#FFFFFF',
+            borderRadius: '12px',
+            padding: '16px',
+            border: '1px solid #E2E8F0',
+            display: 'flex',
+            gap: '12px',
+            alignItems: 'flex-start'
+          }}>
+            <span className="material-symbols-outlined" style={{ color: '#3B82F6', fontSize: '20px' }}>info</span>
+            <div style={{ fontSize: '12px', color: '#475569', lineHeight: '1.5' }}>
+              この金額は元請け企業から支払われる予定の売上額（手数料差引前）です。実際の銀行口座への振込予定額は「振込予定額」の明細をご確認ください。
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  if (detailType === 'transfer') {
+    return (
+      <div className="view active" style={{ animation: 'fadeIn 0.2s ease-out' }}>
+        <header className="solid-header" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <button 
+            className="icon-btn" 
+            onClick={() => setDetailType('none')}
+            style={{ color: '#FFFFFF', padding: '0', display: 'flex', alignItems: 'center' }}
+          >
+            <span className="material-symbols-outlined" style={{ fontSize: '24px' }}>arrow_back</span>
+          </button>
+          <h1 style={{ margin: 0, fontSize: '18px' }}>振込予定明細</h1>
+        </header>
+
+        <main className="list-area p-16" style={{ background: '#F8FAFC' }}>
+          {/* Detailed breakdown card */}
+          <div style={{
+            background: '#FFFFFF',
+            borderRadius: '16px',
+            padding: '20px',
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)',
+            border: '1px solid #E2E8F0',
+            marginBottom: '16px'
+          }}>
+            <div style={{ fontSize: '12px', color: '#64748B', fontWeight: 'bold', marginBottom: '6px' }}>
+              {nextMonth}月振込予定総額（{currentMonth}月稼働分）
+            </div>
+            
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px', borderBottom: '2px dashed #E2E8F0', paddingBottom: '16px', marginBottom: '16px' }}>
+              <span style={{ fontSize: '18px', fontWeight: 'bold', color: '#4F46E5' }}>¥</span>
+              <span style={{ fontSize: '32px', fontWeight: 'bold', color: '#4F46E5' }}>430,500</span>
+              <span style={{ fontSize: '14px', color: '#64748B', marginLeft: 'auto', fontWeight: 'bold' }}>(総額 43.05万円)</span>
+            </div>
+
+            {/* Breakdown List */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+              {/* Company A */}
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', fontSize: '14px', color: '#0F172A' }}>
+                  <span>A社</span>
+                  <span>33.0万円</span>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '6px', paddingLeft: '12px', borderLeft: '2px solid #818CF8' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', color: '#475569' }}>
+                    <span>【現場名C】</span>
+                    <span>18.0万円</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', color: '#475569' }}>
+                    <span>【現場名D】</span>
+                    <span>15.0万円</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Company B */}
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', fontSize: '14px', color: '#0F172A' }}>
+                  <span>B社</span>
+                  <span>19.0万円</span>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '6px', paddingLeft: '12px', borderLeft: '2px solid #818CF8' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', color: '#475569' }}>
+                    <span>【現場名E】</span>
+                    <span>19.0万円</span>
+                  </div>
+                </div>
+              </div>
 
               {/* Divider */}
               <div style={{ height: '1px', background: '#E2E8F0', margin: '4px 0' }}></div>
 
-              {/* Early Withdrawal Fee */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', color: '#EF4444', fontWeight: '600' }}>
-                <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>percent</span>
-                  早期出金手数料 (7.5%)
-                </span>
-                <span>-3.75万円</span>
+              {/* Fees */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', color: '#EF4444', fontWeight: '600' }}>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>handshake</span>
+                    マッチング手数料 (10%)
+                  </span>
+                  <span>-5.2万円</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', color: '#EF4444', fontWeight: '600' }}>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>percent</span>
+                    早期出金手数料 (7.5%)
+                  </span>
+                  <span>-3.75万円</span>
+                </div>
               </div>
             </div>
           </div>
@@ -127,13 +227,13 @@ export function DashboardPage() {
               className="btn-primary" 
               onClick={handleWithdraw}
               style={{
-                background: 'linear-gradient(135deg, #1E3A8A 0%, #3B82F6 100%)',
+                background: 'linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%)',
                 color: '#FFFFFF',
                 border: 'none',
                 padding: '14px',
                 borderRadius: '10px',
                 fontWeight: 'bold',
-                boxShadow: '0 4px 12px rgba(37, 99, 235, 0.2)',
+                boxShadow: '0 4px 12px rgba(99, 102, 241, 0.2)',
                 ...(hasPendingReports ? { opacity: 0.6, cursor: 'not-allowed', backgroundColor: '#9CA3AF', backgroundImage: 'none' } : {})
               }}
             >
@@ -160,25 +260,28 @@ export function DashboardPage() {
       <header className="solid-header">
         <h1>ダッシュボード</h1>
       </header>
-      <main className="list-area p-16" style={{ background: '#F8FAFC' }}>
+      <main className="list-area p-16" style={{ background: '#F8FAFC', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        
+        {/* Card 1: Income Amount */}
         <div 
           className="wallet-card" 
-          onClick={() => setShowDetails(true)}
+          onClick={() => setDetailType('income')}
           style={{ 
             cursor: 'pointer', 
             position: 'relative', 
             overflow: 'hidden',
             transition: 'transform 0.2s, box-shadow 0.2s',
             backgroundImage: 'linear-gradient(135deg, #1E3A8A 0%, #3B82F6 100%)',
-            boxShadow: '0 10px 25px rgba(30, 58, 138, 0.3)'
+            boxShadow: '0 10px 25px rgba(30, 58, 138, 0.2)',
+            margin: 0
           }}
           onMouseEnter={(e) => {
             e.currentTarget.style.transform = 'translateY(-2px)';
-            e.currentTarget.style.boxShadow = '0 12px 30px rgba(30, 58, 138, 0.35)';
+            e.currentTarget.style.boxShadow = '0 12px 30px rgba(30, 58, 138, 0.25)';
           }}
           onMouseLeave={(e) => {
             e.currentTarget.style.transform = 'translateY(0)';
-            e.currentTarget.style.boxShadow = '0 10px 25px rgba(30, 58, 138, 0.3)';
+            e.currentTarget.style.boxShadow = '0 10px 25px rgba(30, 58, 138, 0.2)';
           }}
         >
           <div className="wallet-header">
@@ -195,7 +298,7 @@ export function DashboardPage() {
             <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px' }}>
               <span className="currency">¥</span>
               {showBalance ? (
-                <span className="amount">482,500</span>
+                <span className="amount">520,000</span>
               ) : (
                 <span className="amount hidden">***,***</span>
               )}
@@ -218,6 +321,68 @@ export function DashboardPage() {
           }}>
             <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>info</span>
             <span>タップして入金予定の内訳・詳細を表示</span>
+          </div>
+        </div>
+
+        {/* Card 2: Transfer/Payout Amount */}
+        <div 
+          className="wallet-card" 
+          onClick={() => setDetailType('transfer')}
+          style={{ 
+            cursor: 'pointer', 
+            position: 'relative', 
+            overflow: 'hidden',
+            transition: 'transform 0.2s, box-shadow 0.2s',
+            backgroundImage: 'linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%)',
+            boxShadow: '0 10px 25px rgba(79, 70, 229, 0.2)',
+            margin: 0
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = 'translateY(-2px)';
+            e.currentTarget.style.boxShadow = '0 12px 30px rgba(79, 70, 229, 0.25)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = 'translateY(0)';
+            e.currentTarget.style.boxShadow = '0 10px 25px rgba(79, 70, 229, 0.2)';
+          }}
+        >
+          <div className="wallet-header">
+            <span style={{ fontWeight: '600', letterSpacing: '0.05em' }}>
+              {nextMonth}月振込予定額（{currentMonth}月稼働分）
+            </span>
+            <button className="icon-btn" onClick={(e) => { e.stopPropagation(); setShowBalance(!showBalance); }}>
+              <span className="material-symbols-outlined">
+                {showBalance ? 'visibility' : 'visibility_off'}
+              </span>
+            </button>
+          </div>
+          <div className="wallet-balance" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px' }}>
+              <span className="currency">¥</span>
+              {showBalance ? (
+                <span className="amount">430,500</span>
+              ) : (
+                <span className="amount hidden">***,***</span>
+              )}
+            </div>
+            <span className="material-symbols-outlined" style={{ fontSize: '24px', opacity: 0.9 }}>chevron_right</span>
+          </div>
+
+          <div style={{ 
+            marginTop: '16px', 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center', 
+            gap: '6px', 
+            fontSize: '11px', 
+            background: 'rgba(255, 255, 255, 0.15)', 
+            padding: '8px', 
+            borderRadius: '8px', 
+            border: '1px solid rgba(255, 255, 255, 0.2)',
+            fontWeight: '500'
+          }}>
+            <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>info</span>
+            <span>タップして振込予定の内訳・詳細を表示</span>
           </div>
         </div>
 
