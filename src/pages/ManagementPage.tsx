@@ -248,6 +248,21 @@ export function ManagementPage() {
     return Array.from(staffNames);
   }, [tasks, myJobs, companyStaffs]);
 
+  const relatedTasks = useMemo(() => {
+    return tasks.filter(t => {
+      if (!currentUser) return false;
+      const isClient = myJobs.some(j => j.id === t.jobId) || t.clientName === currentUser.name;
+      const isWorkerOrAgency = companyStaffs.some(s => s.name === t.workerName) || t.companyName === currentUser.name;
+      
+      if (isUserAdmin) {
+        return isClient || isWorkerOrAgency;
+      } else {
+        const myName = myStaff?.name || currentUser.name;
+        return t.workerName === myName;
+      }
+    });
+  }, [tasks, currentUser, myJobs, companyStaffs, isUserAdmin, myStaff]);
+
   const getTasksForDate = (dateStr: string, calendarType: 'own_staff' | 'other_staff' = 'own_staff') => {
     return tasks.filter(t => {
       if (!['working', 'report_pending', 'completed'].includes(t.status)) return false;
@@ -1237,7 +1252,7 @@ export function ManagementPage() {
           <div>
             <h3 className="section-title" style={{ marginTop: 0 }}>業務完了報告・評価待ち</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '20px' }}>
-              {tasks.filter(t => t.status === 'report_pending' || t.status === 'disputed').map(task => (
+              {relatedTasks.filter(t => t.status === 'report_pending' || t.status === 'disputed').map(task => (
                 <div key={task.id} style={{ background: 'white', borderRadius: '12px', padding: '16px', border: task.status === 'disputed' ? '1px solid #FCA5A5' : '1px solid var(--border-color)' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
                     <span style={{ fontSize: '10px', padding: '2px 8px', borderRadius: '10px', background: task.status === 'disputed' ? '#FEE2E2' : '#FFF7ED', color: task.status === 'disputed' ? '#991B1B' : '#C2410C', fontWeight: 'bold' }}>
@@ -1264,7 +1279,7 @@ export function ManagementPage() {
                   )}
                 </div>
               ))}
-              {tasks.filter(t => t.status === 'report_pending' || t.status === 'disputed').length === 0 && (
+              {relatedTasks.filter(t => t.status === 'report_pending' || t.status === 'disputed').length === 0 && (
                 <div style={{ textAlign: 'center', padding: '16px', background: 'white', borderRadius: '12px', color: 'var(--text-sub)', fontSize: '12px' }}>
                   現在報告待ちのタスクはありません。
                 </div>
@@ -1273,7 +1288,7 @@ export function ManagementPage() {
 
             <h3 className="section-title">完了済みのタスク (評価開示)</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              {tasks.filter(t => t.status === 'completed').map(task => {
+              {relatedTasks.filter(t => t.status === 'completed').map(task => {
                 const evalClient = task.evaluations?.byClient;
                 const evalWorker = task.evaluations?.byWorker || task.evaluations?.byStaffToField;
                 const bothEvaluated = !!evalClient && !!evalWorker;
