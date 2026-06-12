@@ -1325,3 +1325,12 @@ h1 {
   height: 0 !important;
 }
 
+/* Custom dashboard styles for active/hover */
+.menu-item-hover:active {
+  background-color: #F8FAFC !important;
+}
+.calendar-day-hover:active {
+  background-color: #EFF6FF !important;
+}
+
+
