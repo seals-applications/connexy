@@ -462,6 +462,17 @@ export function MessagePage() {
     return messages.filter((m: any) => m.isReceipt && m.receiptDetails?.status === 'pending').length;
   }, [messages]);
 
+  // チャット閲覧・新規メッセージ受信時に既読（最後に閲覧したメッセージ）として登録する
+  useEffect(() => {
+    if (!activeChatId) return;
+    if (messages && messages.length > 0) {
+      const lastMsg = messages[messages.length - 1];
+      if (lastMsg && lastMsg.id) {
+        localStorage.setItem('connexy_last_read_msg_' + activeChatId, lastMsg.id);
+      }
+    }
+  }, [activeChatId, messages]);
+
   useEffect(() => {
     if (!chatTimelineRef.current) return;
     const container = chatTimelineRef.current;
