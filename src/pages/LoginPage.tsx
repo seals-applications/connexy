@@ -153,7 +153,8 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
 
   return (
     <div className="login-container" style={styles.container}>
-      <div style={{ width: '100%', maxWidth: '460px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+      <div style={styles.innerContainer}>
+        <div style={{ width: '100%', maxWidth: '460px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
         
         <div className="login-card" style={styles.card}>
           <div style={styles.logoSection}>
@@ -461,18 +462,28 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
         </div>
       </div>
     </div>
+  </div>
   );
 }
 
 const styles = {
   container: {
+    height: '100vh',
+    width: '100%',
+    overflowY: 'auto' as const,
+    background: 'linear-gradient(135deg, #1E3A8A 0%, #0F172A 100%)',
+    fontFamily: '"Outfit", "Inter", sans-serif',
+    boxSizing: 'border-box' as const,
+    WebkitOverflowScrolling: 'touch' as const,
+  },
+  innerContainer: {
     display: 'flex',
+    flexDirection: 'column' as const,
     justifyContent: 'center',
     alignItems: 'center',
-    minHeight: '100vh',
-    background: 'linear-gradient(135deg, #1E3A8A 0%, #0F172A 100%)',
-    padding: '20px',
-    fontFamily: '"Outfit", "Inter", sans-serif',
+    minHeight: '100%',
+    width: '100%',
+    padding: '40px 20px',
     boxSizing: 'border-box' as const,
   },
   card: {
