@@ -105,7 +105,7 @@ export function SettingsDrawer({ isOpen, onClose, onLogoutSuccess }: SettingsDra
           animation: 'slideInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1)'
         }}
       >
-        <header className="solid-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', borderBottom: '1px solid var(--border-color)', height: '60px' }}>
+        <header className="solid-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: 'calc(16px + env(safe-area-inset-top)) 16px 16px 16px', borderBottom: '1px solid var(--border-color)', height: 'calc(60px + env(safe-area-inset-top))' }}>
           <h2 style={{ fontSize: '18px', fontWeight: 'bold', margin: 0, color: 'var(--text-main)' }}>設定・メニュー</h2>
           <button className="icon-btn-dark" onClick={onClose} style={{ padding: '4px' }}>
             <span className="material-symbols-outlined">close</span>

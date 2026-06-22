@@ -966,7 +966,7 @@ export function MessagePage() {
     } else if (activeChat?.status === 'offered' && !isClient) {
       height = 160;
     }
-    return `${height}px`;
+    return `calc(${height}px + env(safe-area-inset-top))`;
   }, [activeChat, isClient]);
 
 
