@@ -145,10 +145,27 @@ export function MessagePage() {
       const savedActiveId = localStorage.getItem('connexy_active_chat_id');
       if (savedActiveId) {
         setActiveChatId(savedActiveId);
+        window.history.pushState({ activeChatId: savedActiveId }, '');
         localStorage.removeItem('connexy_active_chat_id');
       }
     };
     initData();
+  }, []);
+
+  useEffect(() => {
+    const handlePopState = (event: PopStateEvent) => {
+      const stateId = event.state?.activeChatId || null;
+      setActiveChatId(stateId);
+    };
+    window.addEventListener('popstate', handlePopState);
+
+    if (window.history.state?.activeChatId) {
+      setActiveChatId(window.history.state.activeChatId);
+    }
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
   }, []);
 
   useEffect(() => {
@@ -1696,7 +1713,10 @@ export function MessagePage() {
                           <div 
                             key={channel.id} 
                             className={`chat-item ${isSelected ? 'active' : ''}`} 
-                            onClick={() => setActiveChatId(channel.id)}
+                            onClick={() => {
+                              setActiveChatId(channel.id);
+                              window.history.pushState({ activeChatId: channel.id }, '');
+                            }}
                             style={{ paddingLeft: '24px', background: isSelected ? '#F0F9FF' : 'white' }}
                           >
                             <div style={{ position: 'relative', flexShrink: 0 }}>
@@ -1759,7 +1779,7 @@ export function MessagePage() {
       <div className={`overlay-view ${activeChat ? 'show' : ''}`} style={{ display: activeChat ? 'flex' : 'none', transform: activeChat ? 'translateX(0)' : 'translateX(100%)' }}>
         <header className="solid-header overlay-header chat-header-fixed" style={{ height: 'auto', paddingBottom: '12px' }}>
           <div className="chat-header-top" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <button className="icon-btn-dark" onClick={() => setActiveChatId(null)}>
+            <button className="icon-btn-dark" onClick={() => window.history.back()}>
               <span className="material-symbols-outlined">arrow_back_ios_new</span>
             </button>
             <div className="chat-header-title" style={{ textAlign: 'center', flex: 1, overflow: 'hidden', minWidth: 0, padding: '0 8px' }}>
@@ -1831,7 +1851,10 @@ export function MessagePage() {
                   <span style={{ whiteSpace: 'pre-wrap', textAlign: 'center', lineHeight: '1.5' }}>{msg.text}</span>
                   {msg.linkToChatId && (
                     <button
-                      onClick={() => setActiveChatId(msg.linkToChatId)}
+                      onClick={() => {
+                        setActiveChatId(msg.linkToChatId);
+                        window.history.pushState({ activeChatId: msg.linkToChatId }, '');
+                      }}
                       style={{
                         background: 'var(--primary-color)',
                         color: 'white',
