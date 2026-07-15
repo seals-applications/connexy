@@ -28,7 +28,8 @@ function App() {
 
   useEffect(() => {
     const init = async () => {
-      await api.seedStaffAttendanceLogs();
+      // Seeding runs in the background so it doesn't block the page loading
+      api.seedStaffAttendanceLogs().catch(err => console.error('Seeding error:', err));
       await checkUser();
     };
     init();
