@@ -30,11 +30,18 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
 
   // Debug settings
   const [companies, setCompanies] = useState<User[]>([]);
+  const [allStaffs, setAllStaffs] = useState<Staff[]>([]);
   const [showDebug, setShowDebug] = useState(false);
 
   const loadCompanies = async () => {
     const list = await api.getUsers();
     setCompanies(list);
+    try {
+      const staffsList = await api.getAllStaffs();
+      setAllStaffs(staffsList);
+    } catch (e) {
+      console.error('Failed to load staffs in login page:', e);
+    }
   };
 
   useEffect(() => {
@@ -456,6 +463,31 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
                     </div>
                   );
                 })}
+              </div>
+              <div style={{ fontSize: '11px', color: '#94A3B8', lineHeight: '1.4', marginTop: '14px', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '10px' }}>
+                登録されているスタッフ（一般・管理者メンバー）の一覧です。
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {allStaffs.length === 0 ? (
+                  <div style={{ fontSize: '11px', color: '#64748B', textAlign: 'center', padding: '10px' }}>
+                    スタッフが登録されていません。
+                  </div>
+                ) : (
+                  allStaffs.map(s => {
+                    const compName = companies.find(c => c.id === s.userId)?.name || `企業ID: ${s.userId}`;
+                    return (
+                      <div key={s.id} style={{ background: 'rgba(255,255,255,0.05)', padding: '10px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#FFF' }}>{s.name} ({s.role === 'admin' ? '管理者' : '一般'})</div>
+                          <span style={{ fontSize: '10px', color: '#94A3B8' }}>{compName}</span>
+                        </div>
+                        <div style={{ fontSize: '11px', color: '#E2E8F0' }}>
+                          ID: <span style={{ fontWeight: 'bold', color: '#60A5FA' }}>{s.loginId || '(未設定)'}</span> | PW: <span style={{ fontWeight: 'bold', color: '#60A5FA' }}>{s.password || 'pass'}</span>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
               </div>
             </div>
           )}

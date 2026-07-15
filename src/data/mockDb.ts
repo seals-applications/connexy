@@ -666,6 +666,9 @@ export const api = {
   getAllStaffs: async (): Promise<Staff[]> => {
     const { data, error } = await supabase.from('staffs').select('*');
     if (error) { console.error('getAllStaffs error:', error); return []; }
+    if (data) {
+      initializeDefaultStaffLogins(data);
+    }
     return data.map(mapStaff);
   },
 
