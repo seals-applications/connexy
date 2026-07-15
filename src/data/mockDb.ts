@@ -564,86 +564,252 @@ const initializeDefaultStaffLogins = (allStaffsData: any[]) => {
   }
 };
 
+// --- OFFLINE LOCAL DB FALLBACK SYSTEM ---
+let useOfflineMock = false;
+
+// Attempt to detect if running in an offline or sandboxed environment
+if (typeof window !== 'undefined') {
+  if (!navigator.onLine) {
+    useOfflineMock = true;
+  }
+}
+
+// Persisted localStorage helpers
+const getOfflineData = (table: string, defaultData: any[]): any[] => {
+  if (typeof window === 'undefined') return defaultData;
+  const data = localStorage.getItem('offline_db_' + table);
+  if (data) {
+    try {
+      return JSON.parse(data);
+    } catch (e) {
+      return defaultData;
+    }
+  }
+  localStorage.setItem('offline_db_' + table, JSON.stringify(defaultData));
+  return defaultData;
+};
+
+const saveOfflineData = (table: string, data: any[]) => {
+  if (typeof window !== 'undefined') {
+    localStorage.setItem('offline_db_' + table, JSON.stringify(data));
+  }
+};
+
+// Default seed data for offline mode
+const defaultOfflineCompanies = [
+  { id: 'sigma', name: '株式会社シグマ通信', role: 'contractor', login_id: 'sigma', password: 'pass', status: 'approved', representative_name: 'シグマ 太郎', email: 'contact@sigma-comm.co.jp', address: '東京都新宿区西新宿2-8-1', company_type: 'both' },
+  { id: 'alpha', name: '株式会社アルファ', role: 'contractor', login_id: 'alpha', password: 'pass', status: 'approved', representative_name: 'アルファ 健', email: 'info@alpha-agency.com', address: '東京都品川区大崎1-11-1', company_type: 'agency' },
+  { id: 'beta', name: 'ベータ株式会社', role: 'contractor', login_id: 'beta', password: 'pass', status: 'approved', representative_name: 'ベータ 拓也', email: 'support@beta-corp.jp', address: '東京都渋谷区渋谷3-21-3', company_type: 'agency' },
+  { id: 'gamma', name: '合同会社ガンマ', role: 'contractor', login_id: 'gamma', password: 'pass', status: 'approved', representative_name: 'ガンマ 翔', email: 'info@gamma-llc.net', address: '神奈川県横浜市中区港町1-1', company_type: 'both' },
+  { id: 'delta', name: 'デルタ合同会社', role: 'contractor', login_id: 'delta', password: 'pass', status: 'approved', representative_name: 'デルタ 大介', email: 'contact@delta-partners.jp', address: '埼玉県さいたま市吉敷町1-1', company_type: 'client' }
+];
+
+const defaultOfflineStaffs = [
+  { id: 's1', user_id: 'sigma', name: 'シグマ 太郎', role: 'admin', login_id: 'sigma_s1', password: 'pass', base_location: '東京都新宿区', nearest_station: '新宿駅', price: 15000, skills: ['イベント運営', 'キャンペーンMC'], completed_trainings: [] },
+  { id: 's2', user_id: 'sigma', name: 'シグマ 次郎', role: 'staff', login_id: 'sigma_s2', password: 'pass', base_location: '東京都渋谷区', nearest_station: '渋谷駅', price: 12000, skills: ['モバイル販売'], completed_trainings: [] },
+  { id: 's3', user_id: 'sigma', name: 'シグマ 三郎', role: 'staff', login_id: 'sigma_s3', password: 'pass', base_location: '神奈川県横浜市', nearest_station: '横浜駅', price: 13000, skills: ['イベント運営'], completed_trainings: [] },
+  { id: 's4', user_id: 'alpha', name: 'アルファ 一郎', role: 'staff', login_id: 'alpha_s1', password: 'pass', base_location: '東京都品川区', nearest_station: '大崎駅', price: 14000, skills: ['モバイル販売'], completed_trainings: [] },
+  { id: 's5', user_id: 'alpha', name: 'アルファ 二郎', role: 'staff', login_id: 'alpha_s2', password: 'pass', base_location: '千葉県船橋市', nearest_station: '船橋駅', price: 12000, skills: ['ブース獲得'], completed_trainings: [] },
+  { id: 's6', user_id: 'alpha', name: 'アルファ 三郎', role: 'staff', login_id: 'alpha_s3', password: 'pass', base_location: '埼玉県さいたま市', nearest_station: '大宮駅', price: 13000, skills: ['イベント運営'], completed_trainings: [] },
+  { id: 's7', user_id: 'beta', name: 'ベータ 一郎', role: 'staff', login_id: 'beta_s1', password: 'pass', base_location: '東京都渋谷区', nearest_station: '渋谷駅', price: 14000, skills: ['モバイル販売'], completed_trainings: [] },
+  { id: 's8', user_id: 'beta', name: 'ベータ 二郎', role: 'staff', login_id: 'beta_s2', password: 'pass', base_location: '神奈川県川崎市', nearest_station: '川崎駅', price: 12000, skills: ['ブース獲得'], completed_trainings: [] },
+  { id: 's9', user_id: 'beta', name: 'ベータ 三郎', role: 'staff', login_id: 'beta_s3', password: 'pass', base_location: '東京都豊島区', nearest_station: '池袋駅', price: 13000, skills: ['イベント運営'], completed_trainings: [] }
+];
+
+const defaultOfflineJobs = [
+  { id: 'j1', title: '【大崎駅】ドコモショップ出張ブース販売イベント要員', description: 'ドコモショップ出張イベントでのブース案内・獲得業務です。経験者優遇。', author_id: 'sigma', price: 15000, location_name: '東京都品川区大崎', work_hours: '10:00 - 19:00', requirements: ['__JOB_CODE__::JOB-100201'], role_type: 'キャンペーンクルー', sales_channel: 'ショップ', carrier: 'docomo', event_date: '2026-07-20', application_deadline: '2026-07-18', work_location: '外販（複合施設など）', is_urgent: true },
+  { id: 'j2', title: '【新宿駅】au・UQモバイルの乗り換え案内スタッフ募集', description: '量販店店頭でのau・UQモバイル乗り換え案内クロージング業務です。', author_id: 'alpha', price: 18000, location_name: '東京都新宿区新宿', work_hours: '10:00 - 19:00', requirements: ['__JOB_CODE__::JOB-100202'], role_type: 'クローザー', sales_channel: '量販店', carrier: 'au/UQmobile', event_date: '2026-07-22', application_deadline: '2026-07-20', work_location: '店内', is_urgent: false },
+  { id: 'j3', title: '【渋谷駅】ソフトバンク・ワイモバイルの臨時イベントMC/クルー', description: '店舗前ブースでのチラシ・ノベルティ配布、およびマイクMC進行。未経験歓迎！', author_id: 'beta', price: 14000, location_name: '東京都渋谷区渋谷', work_hours: '11:00 - 20:00', requirements: ['__JOB_CODE__::JOB-100203'], role_type: 'キャンペーンクルー', sales_channel: 'ショップ', carrier: 'SoftBank/Y!mobile', event_date: '2026-07-21', application_deadline: '2026-07-19', work_location: '外販（スーパーなど）', is_urgent: false }
+];
+
+const defaultOfflineTalents = [
+  { id: 't1', name: 'タレント A', description: '獲得特化クローザー。週末獲得実績多数。', lat: 35.6895, lng: 139.6917, user_id: 'alpha', price: 16000, skills: ['クローザー', 'モバイル販売'], experience: '5年以上', preferred_area: '東京都内', location_name: '東京都新宿区', company_name: '株式会社アルファ', masked_name: 'T**** A', completed_trainings: [] },
+  { id: 't2', name: 'タレント B', description: 'イベントディレクター・MC対応可能。', lat: 35.6580, lng: 139.7016, user_id: 'beta', price: 18000, skills: ['ディレクター', 'イベントMC'], experience: '3年以上', preferred_area: '渋谷・新宿', location_name: '東京都渋谷区', company_name: 'ベータ株式会社', masked_name: 'T**** B', completed_trainings: [] }
+];
+
+const defaultOfflineTasks = [
+  { id: 'task1', job_id: 'j1', job_title: '【大崎駅】ドコモショップ出張ブース販売イベント要員', worker_name: 'アルファ 一郎', company_name: '株式会社シグマ通信', client_name: '株式会社シグマ通信', price: 15000, date: '2026-07-20', status: 'working', evaluations: { messages: [] } },
+  { id: 'task2', job_id: 'j2', job_title: '【新宿駅】au・UQモバイルの乗り換え案内スタッフ募集', worker_name: 'シグマ 次郎', company_name: '株式会社アルファ', client_name: '株式会社アルファ', price: 18000, date: '2026-07-22', status: 'applying', evaluations: { messages: [] } }
+];
+
+// Error wrapper that automatically enables local fallback on failures
+async function callSupabase<T>(apiFn: () => Promise<T>, fallbackFn: () => T | Promise<T>): Promise<T> {
+  if (useOfflineMock) {
+    return await fallbackFn();
+  }
+  try {
+    return await apiFn();
+  } catch (err: any) {
+    console.warn('Supabase query failed. Switching to Local Offline Mock Mode:', err);
+    useOfflineMock = true;
+    return await fallbackFn();
+  }
+}
+
 export const api = {
   getJobs: async (): Promise<Job[]> => {
-    const { data, error } = await supabase.from('jobs').select('*');
-    if (error) { console.error('getJobs error:', error); return []; }
-    return data.map(mapJob);
+    return callSupabase(
+      async () => {
+        const { data, error } = await supabase.from('jobs').select('*');
+        if (error) throw error;
+        return data.map(mapJob);
+      },
+      () => {
+        const list = getOfflineData('jobs', defaultOfflineJobs);
+        return list.map(mapJob);
+      }
+    );
   },
 
   getTalents: async (): Promise<Talent[]> => {
-    const { data, error } = await supabase.from('talents').select('*');
-    if (error) { console.error('getTalents error:', error); return []; }
-    return data.map(mapTalent);
+    return callSupabase(
+      async () => {
+        const { data, error } = await supabase.from('talents').select('*');
+        if (error) throw error;
+        return data.map(mapTalent);
+      },
+      () => {
+        const list = getOfflineData('talents', defaultOfflineTalents);
+        return list.map(mapTalent);
+      }
+    );
   },
 
   getUserById: async (id: string): Promise<User | undefined> => {
-    const { data, error } = await supabase.from('companies').select('*').eq('id', id).single();
-    if (error || !data) return undefined;
-    return mapUser(data);
+    return callSupabase(
+      async () => {
+        const { data, error } = await supabase.from('companies').select('*').eq('id', id).single();
+        if (error || !data) return undefined;
+        return mapUser(data);
+      },
+      () => {
+        const list = getOfflineData('companies', defaultOfflineCompanies);
+        const found = list.find(c => c.id === id);
+        return found ? mapUser(found) : undefined;
+      }
+    );
   },
 
   getCurrentUser: async (): Promise<User | null> => {
     const userId = localStorage.getItem('connexy_current_user_id');
     if (!userId) return null;
-    const { data, error } = await supabase.from('companies').select('*').eq('id', userId).single();
-    if (error || !data) return null;
-    
-    const companyUser = mapUser(data);
-    const staffId = localStorage.getItem('connexy_current_staff_id');
-    if (staffId) {
-      const { data: staffData } = await supabase.from('staffs').select('*').eq('id', staffId).single();
-      if (staffData) {
-        const staff = mapStaff(staffData);
-        companyUser.staffId = staff.id;
-        companyUser.staffName = staff.name;
-        companyUser.staffRole = staff.role || 'staff';
+
+    return callSupabase(
+      async () => {
+        const { data, error } = await supabase.from('companies').select('*').eq('id', userId).single();
+        if (error || !data) return null;
+        
+        const companyUser = mapUser(data);
+        const staffId = localStorage.getItem('connexy_current_staff_id');
+        if (staffId) {
+          const { data: staffData } = await supabase.from('staffs').select('*').eq('id', staffId).single();
+          if (staffData) {
+            const staff = mapStaff(staffData);
+            companyUser.staffId = staff.id;
+            companyUser.staffName = staff.name;
+            companyUser.staffRole = staff.role || 'staff';
+          }
+        } else {
+          companyUser.staffName = companyUser.representativeName;
+          companyUser.staffRole = 'admin';
+        }
+        return companyUser;
+      },
+      () => {
+        const list = getOfflineData('companies', defaultOfflineCompanies);
+        const found = list.find(c => c.id === userId);
+        if (!found) return null;
+        const companyUser = mapUser(found);
+        
+        const staffId = localStorage.getItem('connexy_current_staff_id');
+        if (staffId) {
+          const staffs = getOfflineData('staffs', defaultOfflineStaffs);
+          const staffFound = staffs.find(s => s.id === staffId);
+          if (staffFound) {
+            const staff = mapStaff(staffFound);
+            companyUser.staffId = staff.id;
+            companyUser.staffName = staff.name;
+            companyUser.staffRole = staff.role || 'staff';
+          }
+        } else {
+          companyUser.staffName = companyUser.representativeName;
+          companyUser.staffRole = 'admin';
+        }
+        return companyUser;
       }
-    } else {
-      // Direct company login acts as the Representative (Admin)
-      companyUser.staffName = companyUser.representativeName;
-      companyUser.staffRole = 'admin';
-    }
-    return companyUser;
+    );
   },
 
   login: async (loginId: string, password: string): Promise<User | null> => {
-    // 1. Try to authenticate against companies table (legacy / company admin direct login)
-    const { data: companyData } = await supabase
-      .from('companies')
-      .select('*')
-      .eq('login_id', loginId)
-      .eq('password', password)
-      .single();
-      
-    if (companyData) {
-      localStorage.setItem('connexy_current_user_id', companyData.id);
-      localStorage.removeItem('connexy_current_staff_id');
-      return mapUser(companyData);
-    }
-    
-    // 2. Try to authenticate against staffs table
-    const { data: allStaffsData } = await supabase.from('staffs').select('*');
-    if (allStaffsData) {
-      initializeDefaultStaffLogins(allStaffsData);
-      for (const sRow of allStaffsData) {
-        const staff = mapStaff(sRow);
-        if (staff.loginId === loginId && staff.password === password) {
-          localStorage.setItem('connexy_current_user_id', staff.userId);
-          localStorage.setItem('connexy_current_staff_id', staff.id);
+    return callSupabase(
+      async () => {
+        // 1. Try to authenticate against companies table
+        const { data: companyData } = await supabase
+          .from('companies')
+          .select('*')
+          .eq('login_id', loginId)
+          .eq('password', password)
+          .single();
           
-          const { data: companyData2 } = await supabase.from('companies').select('*').eq('id', staff.userId).single();
-          if (companyData2) {
-            const user = mapUser(companyData2);
-            user.staffId = staff.id;
-            user.staffName = staff.name;
-            user.staffRole = staff.role || 'staff';
-            return user;
+        if (companyData) {
+          localStorage.setItem('connexy_current_user_id', companyData.id);
+          localStorage.removeItem('connexy_current_staff_id');
+          return mapUser(companyData);
+        }
+        
+        // 2. Try to authenticate against staffs table
+        const { data: allStaffsData } = await supabase.from('staffs').select('*');
+        if (allStaffsData) {
+          initializeDefaultStaffLogins(allStaffsData);
+          for (const sRow of allStaffsData) {
+            const staff = mapStaff(sRow);
+            if (staff.loginId === loginId && staff.password === password) {
+              localStorage.setItem('connexy_current_user_id', staff.userId);
+              localStorage.setItem('connexy_current_staff_id', staff.id);
+              
+              const { data: companyData2 } = await supabase.from('companies').select('*').eq('id', staff.userId).single();
+              if (companyData2) {
+                const user = mapUser(companyData2);
+                user.staffId = staff.id;
+                user.staffName = staff.name;
+                user.staffRole = staff.role || 'staff';
+                return user;
+              }
+            }
           }
         }
+        return null;
+      },
+      () => {
+        const companies = getOfflineData('companies', defaultOfflineCompanies);
+        const comp = companies.find(c => c.login_id === loginId && c.password === password);
+        if (comp) {
+          localStorage.setItem('connexy_current_user_id', comp.id);
+          localStorage.removeItem('connexy_current_staff_id');
+          return mapUser(comp);
+        }
+
+        const staffs = getOfflineData('staffs', defaultOfflineStaffs);
+        initializeDefaultStaffLogins(staffs);
+        for (const sRow of staffs) {
+          const staff = mapStaff(sRow);
+          if (staff.loginId === loginId && staff.password === password) {
+            localStorage.setItem('connexy_current_user_id', staff.userId);
+            localStorage.setItem('connexy_current_staff_id', staff.id);
+            
+            const comp2 = companies.find(c => c.id === staff.userId);
+            if (comp2) {
+              const user = mapUser(comp2);
+              user.staffId = staff.id;
+              user.staffName = staff.name;
+              user.staffRole = staff.role || 'staff';
+              return user;
+            }
+          }
+        }
+        return null;
       }
-    }
-    return null;
+    );
   },
 
   logout: async (): Promise<void> => {
@@ -652,50 +818,105 @@ export const api = {
   },
 
   getStaffsByUserId: async (userId: string): Promise<Staff[]> => {
-    const { data, error } = await supabase.from('staffs').select('*').eq('user_id', userId);
-    if (error) { console.error('getStaffs error:', error); return []; }
-    
-    const { data: allStaffsData } = await supabase.from('staffs').select('*');
-    if (allStaffsData) {
-      initializeDefaultStaffLogins(allStaffsData);
-    }
-    
-    return data.map(mapStaff);
+    return callSupabase(
+      async () => {
+        const { data, error } = await supabase.from('staffs').select('*').eq('user_id', userId);
+        if (error) throw error;
+        
+        const { data: allStaffsData } = await supabase.from('staffs').select('*');
+        if (allStaffsData) {
+          initializeDefaultStaffLogins(allStaffsData);
+        }
+        return data.map(mapStaff);
+      },
+      () => {
+        const list = getOfflineData('staffs', defaultOfflineStaffs);
+        initializeDefaultStaffLogins(list);
+        return list.filter(s => s.user_id === userId).map(mapStaff);
+      }
+    );
   },
 
   getAllStaffs: async (): Promise<Staff[]> => {
-    const { data, error } = await supabase.from('staffs').select('*');
-    if (error) { console.error('getAllStaffs error:', error); return []; }
-    if (data) {
-      initializeDefaultStaffLogins(data);
-    }
-    return data.map(mapStaff);
+    return callSupabase(
+      async () => {
+        const { data, error } = await supabase.from('staffs').select('*');
+        if (error) throw error;
+        if (data) {
+          initializeDefaultStaffLogins(data);
+        }
+        return data.map(mapStaff);
+      },
+      () => {
+        const list = getOfflineData('staffs', defaultOfflineStaffs);
+        initializeDefaultStaffLogins(list);
+        return list.map(mapStaff);
+      }
+    );
   },
 
   addJob: async (job: Omit<Job, 'id'>): Promise<Job> => {
     const id = 'j' + Date.now();
     const jobCode = 'JOB-' + Math.floor(100000 + Math.random() * 900000);
     const newJob = { ...job, id, jobCode };
-    const row = unmapJob(newJob);
-    const { error } = await supabase.from('jobs').insert([row]);
-    if (error) { console.error('addJob error:', error); throw error; }
-    return newJob;
+
+    return callSupabase(
+      async () => {
+        const row = unmapJob(newJob);
+        const { error } = await supabase.from('jobs').insert([row]);
+        if (error) throw error;
+        return newJob;
+      },
+      () => {
+        const list = getOfflineData('jobs', defaultOfflineJobs);
+        const row = unmapJob(newJob);
+        list.push(row);
+        saveOfflineData('jobs', list);
+        return newJob;
+      }
+    );
   },
 
   updateJob: async (jobId: string, updates: Partial<Job>): Promise<void> => {
-    const row = unmapJob(updates);
-    delete row.id;
-    const { error } = await supabase.from('jobs').update(row).eq('id', jobId);
-    if (error) { console.error('updateJob error:', error); throw error; }
+    return callSupabase(
+      async () => {
+        const row = unmapJob(updates);
+        delete row.id;
+        const { error } = await supabase.from('jobs').update(row).eq('id', jobId);
+        if (error) throw error;
+      },
+      () => {
+        const list = getOfflineData('jobs', defaultOfflineJobs);
+        const index = list.findIndex(j => j.id === jobId);
+        if (index !== -1) {
+          const rowUpdates = unmapJob(updates);
+          delete rowUpdates.id;
+          list[index] = { ...list[index], ...rowUpdates };
+          saveOfflineData('jobs', list);
+        }
+      }
+    );
   },
 
   addTalent: async (talent: Omit<Talent, 'id'>): Promise<Talent> => {
     const id = 't' + Date.now();
     const newTalent = { ...talent, id };
-    const row = unmapTalent(newTalent);
-    const { error } = await supabase.from('talents').insert([row]);
-    if (error) { console.error('addTalent error:', error); throw error; }
-    return newTalent;
+
+    return callSupabase(
+      async () => {
+        const row = unmapTalent(newTalent);
+        const { error } = await supabase.from('talents').insert([row]);
+        if (error) throw error;
+        return newTalent;
+      },
+      () => {
+        const list = getOfflineData('talents', defaultOfflineTalents);
+        const row = unmapTalent(newTalent);
+        list.push(row);
+        saveOfflineData('talents', list);
+        return newTalent;
+      }
+    );
   },
 
   addStaff: async (staff: Omit<Staff, 'id'>): Promise<Staff> => {
@@ -716,21 +937,30 @@ export const api = {
     if (newStaff.password) {
       localStorage.setItem('staff_password_' + id, newStaff.password);
     }
-    const row = unmapStaff(newStaff);
-    const { error } = await supabase.from('staffs').insert([row]);
-    if (error) {
-      console.warn('addStaff database insert failed, attempting fallback insertion without role/login_id/password columns:', error);
-      const fallbackRow = { ...row };
-      delete fallbackRow.role;
-      delete fallbackRow.login_id;
-      delete fallbackRow.password;
-      const { error: errorFallback } = await supabase.from('staffs').insert([fallbackRow]);
-      if (errorFallback) {
-        console.error('addStaff fallback insert also failed:', errorFallback);
-        throw errorFallback;
+
+    return callSupabase(
+      async () => {
+        const row = unmapStaff(newStaff);
+        const { error } = await supabase.from('staffs').insert([row]);
+        if (error) {
+          console.warn('addStaff database insert failed, attempting fallback insertion without role/login_id/password columns:', error);
+          const fallbackRow = { ...row };
+          delete fallbackRow.role;
+          delete fallbackRow.login_id;
+          delete fallbackRow.password;
+          const { error: errorFallback } = await supabase.from('staffs').insert([fallbackRow]);
+          if (errorFallback) throw errorFallback;
+        }
+        return newStaff;
+      },
+      () => {
+        const list = getOfflineData('staffs', defaultOfflineStaffs);
+        const row = unmapStaff(newStaff);
+        list.push(row);
+        saveOfflineData('staffs', list);
+        return newStaff;
       }
-    }
-    return newStaff;
+    );
   },
 
   getTrainings: async (): Promise<Training[]> => {
@@ -738,31 +968,59 @@ export const api = {
   },
 
   completeTraining: async (staffId: string, trainingId: string): Promise<void> => {
-    // get staff
-    const { data: staffData, error: staffError } = await supabase.from('staffs').select('*').eq('id', staffId).single();
-    if (staffError || !staffData) return;
-    const staff = mapStaff(staffData);
+    return callSupabase(
+      async () => {
+        const { data: staffData, error: staffError } = await supabase.from('staffs').select('*').eq('id', staffId).single();
+        if (staffError || !staffData) return;
+        const staff = mapStaff(staffData);
 
-    const updatedTrainings = Array.from(new Set([...(staff.completedTrainings || []), trainingId]));
-    
-    // update staff
-    await supabase.from('staffs').update({ completed_trainings: updatedTrainings }).eq('id', staffId);
+        const updatedTrainings = Array.from(new Set([...(staff.completedTrainings || []), trainingId]));
+        await supabase.from('staffs').update({ completed_trainings: updatedTrainings }).eq('id', staffId);
 
-    // also update matching talent
-    const { data: talentData } = await supabase.from('talents').select('*').or(`name.eq."${staff.name}",masked_name.eq."${staff.maskedName}"`);
-    if (talentData && talentData.length > 0) {
-      for (const t of talentData) {
-        const talent = mapTalent(t);
-        const newTalentTrainings = Array.from(new Set([...(talent.completedTrainings || []), trainingId]));
-        await supabase.from('talents').update({ completed_trainings: newTalentTrainings }).eq('id', talent.id);
+        const { data: talentData } = await supabase.from('talents').select('*').or(`name.eq."${staff.name}",masked_name.eq."${staff.maskedName}"`);
+        if (talentData && talentData.length > 0) {
+          for (const t of talentData) {
+            const talent = mapTalent(t);
+            const newTalentTrainings = Array.from(new Set([...(talent.completedTrainings || []), trainingId]));
+            await supabase.from('talents').update({ completed_trainings: newTalentTrainings }).eq('id', talent.id);
+          }
+        }
+      },
+      () => {
+        const staffs = getOfflineData('staffs', defaultOfflineStaffs);
+        const staffIndex = staffs.findIndex(s => s.id === staffId);
+        if (staffIndex === -1) return;
+        
+        const staff = mapStaff(staffs[staffIndex]);
+        const updatedTrainings = Array.from(new Set([...(staff.completedTrainings || []), trainingId]));
+        staffs[staffIndex].completed_trainings = updatedTrainings;
+        saveOfflineData('staffs', staffs);
+
+        const talents = getOfflineData('talents', defaultOfflineTalents);
+        for (let i = 0; i < talents.length; i++) {
+          const talent = mapTalent(talents[i]);
+          if (talent.name === staff.name || talent.maskedName === staff.maskedName) {
+            const newTalentTrainings = Array.from(new Set([...(talent.completedTrainings || []), trainingId]));
+            talents[i].completed_trainings = newTalentTrainings;
+          }
+        }
+        saveOfflineData('talents', talents);
       }
-    }
+    );
   },
 
   getContractTasks: async (): Promise<ContractTask[]> => {
-    const { data, error } = await supabase.from('contract_tasks').select('*');
-    if (error) { console.error('getContractTasks error:', error); return []; }
-    return data.map(mapContractTask);
+    return callSupabase(
+      async () => {
+        const { data, error } = await supabase.from('contract_tasks').select('*');
+        if (error) throw error;
+        return data.map(mapContractTask);
+      },
+      () => {
+        const list = getOfflineData('contract_tasks', defaultOfflineTasks);
+        return list.map(mapContractTask);
+      }
+    );
   },
 
   saveContractTaskChat: async (
@@ -774,62 +1032,133 @@ export const api = {
     appliedJobIds?: string[],
     appliedJobStaffIds?: { [jobId: string]: string }
   ): Promise<void> => {
-    const { data } = await supabase.from('contract_tasks').select('evaluations').eq('id', taskId);
-    const exists = data && data.length > 0;
-    
-    let evaluations: any = { messages };
-    if (exists) {
-      const existingEvals = data[0].evaluations || {};
-      const mergedAppliedJobIds = Array.from(new Set([
-        ...(existingEvals.appliedJobIds || []),
-        ...(appliedJobIds || [])
-      ]));
-      evaluations = {
-        ...existingEvals,
-        messages,
-        appliedJobIds: mergedAppliedJobIds,
-        appliedJobStaffIds: {
-          ...(existingEvals.appliedJobStaffIds || {}),
-          ...(appliedJobStaffIds || {})
+    return callSupabase(
+      async () => {
+        const { data } = await supabase.from('contract_tasks').select('evaluations').eq('id', taskId);
+        const exists = data && data.length > 0;
+        
+        let evaluations: any = { messages };
+        if (exists) {
+          const existingEvals = data[0].evaluations || {};
+          const mergedAppliedJobIds = Array.from(new Set([
+            ...(existingEvals.appliedJobIds || []),
+            ...(appliedJobIds || [])
+          ]));
+          evaluations = {
+            ...existingEvals,
+            messages,
+            appliedJobIds: mergedAppliedJobIds,
+            appliedJobStaffIds: {
+              ...(existingEvals.appliedJobStaffIds || {}),
+              ...(appliedJobStaffIds || {})
+            }
+          };
+          const { error } = await supabase.from('contract_tasks').update({ evaluations }).eq('id', taskId);
+          if (error) throw error;
+        } else {
+          evaluations.appliedJobIds = appliedJobIds || [];
+          evaluations.appliedJobStaffIds = appliedJobStaffIds || {};
+          const isApplication = appliedJobIds && appliedJobIds.length > 0;
+          const row = {
+            id: taskId,
+            job_id: 'chat',
+            job_title: jobTitle,
+            client_name: clientName,
+            worker_name: workerName,
+            price: 0,
+            date: new Date().toISOString().split('T')[0],
+            status: isApplication ? 'applying' : 'working',
+            evaluations
+          };
+          const { error } = await supabase.from('contract_tasks').insert([row]);
+          if (error) throw error;
         }
-      };
-      const { error } = await supabase.from('contract_tasks').update({ evaluations }).eq('id', taskId);
-      if (error) throw error;
-    } else {
-      evaluations.appliedJobIds = appliedJobIds || [];
-      evaluations.appliedJobStaffIds = appliedJobStaffIds || {};
-      const isApplication = appliedJobIds && appliedJobIds.length > 0;
-      const row = {
-        id: taskId,
-        job_id: 'chat',
-        job_title: jobTitle,
-        client_name: clientName,
-        worker_name: workerName,
-        price: 0,
-        date: new Date().toISOString().split('T')[0],
-        status: isApplication ? 'applying' : 'working',
-        evaluations
-      };
-      const { error } = await supabase.from('contract_tasks').insert([row]);
-      if (error) throw error;
-    }
+      },
+      () => {
+        const list = getOfflineData('contract_tasks', defaultOfflineTasks);
+        const index = list.findIndex(t => t.id === taskId);
+        let evaluations: any = { messages };
+        if (index !== -1) {
+          const existingEvals = list[index].evaluations || {};
+          const mergedAppliedJobIds = Array.from(new Set([
+            ...(existingEvals.appliedJobIds || []),
+            ...(appliedJobIds || [])
+          ]));
+          evaluations = {
+            ...existingEvals,
+            messages,
+            appliedJobIds: mergedAppliedJobIds,
+            appliedJobStaffIds: {
+              ...(existingEvals.appliedJobStaffIds || {}),
+              ...(appliedJobStaffIds || {})
+            }
+          };
+          list[index].evaluations = evaluations;
+        } else {
+          evaluations.appliedJobIds = appliedJobIds || [];
+          evaluations.appliedJobStaffIds = appliedJobStaffIds || {};
+          const isApplication = appliedJobIds && appliedJobIds.length > 0;
+          const row = {
+            id: taskId,
+            job_id: 'chat',
+            job_title: jobTitle,
+            client_name: clientName,
+            worker_name: workerName,
+            price: 0,
+            date: new Date().toISOString().split('T')[0],
+            status: isApplication ? 'applying' : 'working',
+            evaluations
+          };
+          list.push(row);
+        }
+        saveOfflineData('contract_tasks', list);
+      }
+    );
   },
 
   updateContractTaskStatus: async (taskId: string, status: 'applying' | 'offered' | 'working' | 'report_pending' | 'completed' | 'disputed' | 'rejected', additionalEvals?: any): Promise<void> => {
-    const { data: taskData } = await supabase.from('contract_tasks').select('evaluations').eq('id', taskId).single();
-    let evaluations = taskData?.evaluations || {};
-    if (additionalEvals) {
-      evaluations = { ...evaluations, ...additionalEvals };
-    }
-    const { error } = await supabase.from('contract_tasks').update({ status, evaluations }).eq('id', taskId);
-    if (error) throw error;
+    return callSupabase(
+      async () => {
+        const { data: taskData } = await supabase.from('contract_tasks').select('evaluations').eq('id', taskId).single();
+        let evaluations = taskData?.evaluations || {};
+        if (additionalEvals) {
+          evaluations = { ...evaluations, ...additionalEvals };
+        }
+        const { error } = await supabase.from('contract_tasks').update({ status, evaluations }).eq('id', taskId);
+        if (error) throw error;
+      },
+      () => {
+        const list = getOfflineData('contract_tasks', defaultOfflineTasks);
+        const index = list.findIndex(t => t.id === taskId);
+        if (index !== -1) {
+          let evaluations = list[index].evaluations || {};
+          if (additionalEvals) {
+            evaluations = { ...evaluations, ...additionalEvals };
+          }
+          list[index].status = status;
+          list[index].evaluations = evaluations;
+          saveOfflineData('contract_tasks', list);
+        }
+      }
+    );
   },
 
   createContractTask: async (task: ContractTask): Promise<void> => {
-    const row = unmapContractTask(task);
-    row.evaluations = task.evaluations;
-    const { error } = await supabase.from('contract_tasks').insert([row]);
-    if (error) { console.error('createContractTask error:', error); throw error; }
+    return callSupabase(
+      async () => {
+        const row = unmapContractTask(task);
+        row.evaluations = task.evaluations;
+        const { error } = await supabase.from('contract_tasks').insert([row]);
+        if (error) throw error;
+      },
+      () => {
+        const list = getOfflineData('contract_tasks', defaultOfflineTasks);
+        const row = unmapContractTask(task);
+        row.evaluations = task.evaluations;
+        list.push(row);
+        saveOfflineData('contract_tasks', list);
+      }
+    );
   },
 
   submitReport: async (
@@ -840,85 +1169,160 @@ export const api = {
     target: 'byClient' | 'byWorker' | 'byStaffToField',
     hasLateness?: boolean
   ): Promise<ContractTask> => {
-    const { data: taskData, error: taskError } = await supabase.from('contract_tasks').select('*').eq('id', taskId).single();
-    if (taskError || !taskData) throw new Error('Task not found');
-    const task = mapContractTask(taskData);
+    return callSupabase(
+      async () => {
+        const { data: taskData, error: taskError } = await supabase.from('contract_tasks').select('*').eq('id', taskId).single();
+        if (taskError || !taskData) throw new Error('Task not found');
+        const task = mapContractTask(taskData);
 
-    const newEval: Evaluation = {
-      id: `ev_${Date.now()}`,
-      rating,
-      comment,
-      evaluatorName,
-      createdAt: new Date().toISOString().replace('T', ' ').substring(0, 16),
-      hasLateness
-    };
+        const newEval: Evaluation = {
+          id: `ev_${Date.now()}`,
+          rating,
+          comment,
+          evaluatorName,
+          createdAt: new Date().toISOString().replace('T', ' ').substring(0, 16),
+          hasLateness
+        };
 
-    if (!task.evaluations) task.evaluations = {};
-    task.evaluations[target] = newEval;
+        if (!task.evaluations) task.evaluations = {};
+        task.evaluations[target] = newEval;
 
-    if (rating <= 2) {
-      task.status = 'disputed';
-    } else {
-      task.status = 'completed';
-    }
+        if (rating <= 2) {
+          task.status = 'disputed';
+        } else {
+          task.status = 'completed';
+        }
 
-    const { error: updateError } = await supabase
-      .from('contract_tasks')
-      .update(unmapContractTask({ status: task.status, evaluations: task.evaluations }))
-      .eq('id', taskId);
+        const { error: updateError } = await supabase
+          .from('contract_tasks')
+          .update(unmapContractTask({ status: task.status, evaluations: task.evaluations }))
+          .eq('id', taskId);
 
-    if (updateError) throw updateError;
+        if (updateError) throw updateError;
 
-    // Append to staff attendance logs if it's Client's report containing lateness status
-    if (target === 'byClient' && hasLateness !== undefined) {
-      try {
-        const { data: staffsData } = await supabase.from('staffs').select('*');
-        if (staffsData) {
-          const staffRow = staffsData.find(s => s.name === task.workerName);
-          if (staffRow) {
-            const staff = mapStaff(staffRow);
+        if (target === 'byClient' && hasLateness !== undefined) {
+          try {
+            const { data: staffsData } = await supabase.from('staffs').select('*');
+            if (staffsData) {
+              const staffRow = staffsData.find(s => s.name === task.workerName);
+              if (staffRow) {
+                const staff = mapStaff(staffRow);
+                const nowStr = new Date().toISOString().split('T')[0];
+                const timeStr = new Date().toTimeString().split(' ')[0].substring(0, 5);
+                const statusSuffix = hasLateness ? 'LATE' : 'OK';
+                const newLog = `ATTENDANCE_LOG_${nowStr}_${timeStr}_${statusSuffix}`;
+                const updatedTrainings = [...(staff.completedTrainings || []), newLog];
+                await supabase.from('staffs').update({ completed_trainings: updatedTrainings }).eq('id', staff.id);
+              }
+            }
+          } catch (e) {
+            console.error('Failed to append staff attendance log on report submit:', e);
+          }
+        }
+        return task;
+      },
+      async () => {
+        const list = getOfflineData('contract_tasks', defaultOfflineTasks);
+        const index = list.findIndex(t => t.id === taskId);
+        if (index === -1) throw new Error('Task not found');
+        const task = mapContractTask(list[index]);
+
+        const newEval: Evaluation = {
+          id: `ev_${Date.now()}`,
+          rating,
+          comment,
+          evaluatorName,
+          createdAt: new Date().toISOString().replace('T', ' ').substring(0, 16),
+          hasLateness
+        };
+
+        if (!task.evaluations) task.evaluations = {};
+        task.evaluations[target] = newEval;
+
+        if (rating <= 2) {
+          task.status = 'disputed';
+        } else {
+          task.status = 'completed';
+        }
+
+        list[index].status = task.status;
+        list[index].evaluations = task.evaluations;
+        saveOfflineData('contract_tasks', list);
+
+        if (target === 'byClient' && hasLateness !== undefined) {
+          const staffs = getOfflineData('staffs', defaultOfflineStaffs);
+          const staffIndex = staffs.findIndex(s => s.name === task.workerName);
+          if (staffIndex !== -1) {
+            const staff = mapStaff(staffs[staffIndex]);
             const nowStr = new Date().toISOString().split('T')[0];
             const timeStr = new Date().toTimeString().split(' ')[0].substring(0, 5);
             const statusSuffix = hasLateness ? 'LATE' : 'OK';
             const newLog = `ATTENDANCE_LOG_${nowStr}_${timeStr}_${statusSuffix}`;
             const updatedTrainings = [...(staff.completedTrainings || []), newLog];
-            await supabase.from('staffs').update({ completed_trainings: updatedTrainings }).eq('id', staff.id);
-            console.log(`Successfully appended attendance log "${newLog}" for staff "${staff.name}"`);
+            staffs[staffIndex].completed_trainings = updatedTrainings;
+            saveOfflineData('staffs', staffs);
           }
         }
-      } catch (e) {
-        console.error('Failed to append staff attendance log on report submit:', e);
+        return task;
       }
-    }
-
-    return task;
+    );
   },
 
   respondToDispute: async (taskId: string, action: 'approve' | 'reject', reason?: string): Promise<ContractTask> => {
-    const { data: taskData, error: taskError } = await supabase.from('contract_tasks').select('*').eq('id', taskId).single();
-    if (taskError || !taskData) throw new Error('Task not found');
-    const task = mapContractTask(taskData);
+    return callSupabase(
+      async () => {
+        const { data: taskData, error: taskError } = await supabase.from('contract_tasks').select('*').eq('id', taskId).single();
+        if (taskError || !taskData) throw new Error('Task not found');
+        const task = mapContractTask(taskData);
 
-    if (action === 'approve') {
-      task.status = 'completed';
-    } else {
-      task.status = 'disputed';
-      task.disputedReason = reason || '内容が事実と異なります。';
-    }
+        if (action === 'approve') {
+          task.status = 'completed';
+        } else {
+          task.status = 'disputed';
+          task.disputedReason = reason || '内容が事実と異なります。';
+        }
 
-    const { error: updateError } = await supabase
-      .from('contract_tasks')
-      .update(unmapContractTask({ status: task.status, disputedReason: task.disputedReason }))
-      .eq('id', taskId);
-      
-    if (updateError) throw updateError;
-    return task;
+        const { error: updateError } = await supabase
+          .from('contract_tasks')
+          .update(unmapContractTask({ status: task.status, disputedReason: task.disputedReason }))
+          .eq('id', taskId);
+          
+        if (updateError) throw updateError;
+        return task;
+      },
+      async () => {
+        const list = getOfflineData('contract_tasks', defaultOfflineTasks);
+        const index = list.findIndex(t => t.id === taskId);
+        if (index === -1) throw new Error('Task not found');
+        const task = mapContractTask(list[index]);
+
+        if (action === 'approve') {
+          task.status = 'completed';
+        } else {
+          task.status = 'disputed';
+          task.disputedReason = reason || '内容が事実と異なります。';
+        }
+
+        list[index].status = task.status;
+        list[index].disputed_reason = task.disputedReason;
+        saveOfflineData('contract_tasks', list);
+        return task;
+      }
+    );
   },
 
   getUsers: async (): Promise<User[]> => {
-    const { data, error } = await supabase.from('companies').select('*');
-    if (error) { console.error('getUsers error:', error); return []; }
-    return data.map(mapUser);
+    return callSupabase(
+      async () => {
+        const { data, error } = await supabase.from('companies').select('*');
+        if (error) throw error;
+        return data.map(mapUser);
+      },
+      () => {
+        const list = getOfflineData('companies', defaultOfflineCompanies);
+        return list.map(mapUser);
+      }
+    );
   },
 
   registerCompany: async (company: Omit<User, 'id'>): Promise<User> => {
@@ -928,41 +1332,65 @@ export const api = {
     if (newUser.invoiceNumber) {
       localStorage.setItem('company_invoice_' + id, newUser.invoiceNumber);
     }
-    const row = {
-      id: newUser.id,
-      name: newUser.name,
-      role: newUser.role,
-      login_id: newUser.loginId,
-      password: newUser.password,
-      status: newUser.status,
-      invoice_number: newUser.invoiceNumber
-    };
-    const { error } = await supabase.from('companies').insert([row]);
-    if (error) {
-      console.warn('registerCompany failed, trying fallback without status/invoice_number columns:', error);
-      const fallbackRow = {
-        id: row.id,
-        name: row.name,
-        role: row.role,
-        login_id: row.login_id,
-        password: row.password
-      };
-      const { error: errorFallback } = await supabase.from('companies').insert([fallbackRow]);
-      if (errorFallback) {
-        console.error('registerCompany fallback also failed:', errorFallback);
-        throw errorFallback;
+
+    return callSupabase(
+      async () => {
+        const row = {
+          id: newUser.id,
+          name: newUser.name,
+          role: newUser.role,
+          login_id: newUser.loginId,
+          password: newUser.password,
+          status: newUser.status,
+          invoice_number: newUser.invoiceNumber
+        };
+        const { error } = await supabase.from('companies').insert([row]);
+        if (error) {
+          const fallbackRow = {
+            id: row.id,
+            name: row.name,
+            role: row.role,
+            login_id: row.login_id,
+            password: row.password
+          };
+          const { error: errorFallback } = await supabase.from('companies').insert([fallbackRow]);
+          if (errorFallback) throw errorFallback;
+        }
+        return newUser;
+      },
+      () => {
+        const list = getOfflineData('companies', defaultOfflineCompanies);
+        const row = {
+          id: newUser.id,
+          name: newUser.name,
+          role: newUser.role,
+          login_id: newUser.loginId,
+          password: newUser.password,
+          status: newUser.status,
+          invoice_number: newUser.invoiceNumber
+        };
+        list.push(row);
+        saveOfflineData('companies', list);
+        return newUser;
       }
-    }
-    return newUser;
+    );
   },
 
   updateStaffRole: async (staffId: string, role: 'admin' | 'staff'): Promise<void> => {
     localStorage.setItem('staff_role_' + staffId, role);
-    try {
-      await supabase.from('staffs').update({ role }).eq('id', staffId);
-    } catch (e) {
-      console.warn('DB update failed, using localStorage fallback', e);
-    }
+    return callSupabase(
+      async () => {
+        await supabase.from('staffs').update({ role }).eq('id', staffId);
+      },
+      () => {
+        const list = getOfflineData('staffs', defaultOfflineStaffs);
+        const index = list.findIndex(s => s.id === staffId);
+        if (index !== -1) {
+          list[index].role = role;
+          saveOfflineData('staffs', list);
+        }
+      }
+    );
   },
 
   updateStaff: async (staffId: string, staff: Partial<Staff>): Promise<void> => {
@@ -976,99 +1404,153 @@ export const api = {
       localStorage.setItem('staff_password_' + staffId, staff.password);
     }
 
-    // Get current staff from DB to preserve existing completedTrainings
-    const { data: existingStaffData } = await supabase.from('staffs').select('completed_trainings').eq('id', staffId).single();
-    let completedTrainings: string[] = [];
-    if (existingStaffData && existingStaffData.completed_trainings) {
-      completedTrainings = [...existingStaffData.completed_trainings];
-    }
+    return callSupabase(
+      async () => {
+        const { data: existingStaffData } = await supabase.from('staffs').select('completed_trainings').eq('id', staffId).single();
+        let completedTrainings: string[] = [];
+        if (existingStaffData && existingStaffData.completed_trainings) {
+          completedTrainings = [...existingStaffData.completed_trainings];
+        }
 
-    // Filter out old tags if the new ones are being updated
-    if ('furigana' in staff) {
-      completedTrainings = completedTrainings.filter(t => !t.startsWith('STAFF_FURIGANA_'));
-      if (staff.furigana) completedTrainings.push('STAFF_FURIGANA_' + staff.furigana);
-    }
-    if ('commuteMethod' in staff) {
-      completedTrainings = completedTrainings.filter(t => !t.startsWith('STAFF_COMMUTE_'));
-      if (staff.commuteMethod) completedTrainings.push('STAFF_COMMUTE_' + staff.commuteMethod);
-    }
-    if ('gender' in staff) {
-      completedTrainings = completedTrainings.filter(t => !t.startsWith('STAFF_GENDER_'));
-      if (staff.gender) completedTrainings.push('STAFF_GENDER_' + staff.gender);
-    }
-    if ('birthday' in staff) {
-      completedTrainings = completedTrainings.filter(t => !t.startsWith('STAFF_BIRTHDAY_'));
-      if (staff.birthday) completedTrainings.push('STAFF_BIRTHDAY_' + staff.birthday);
-    }
+        if ('furigana' in staff) {
+          completedTrainings = completedTrainings.filter(t => !t.startsWith('STAFF_FURIGANA_'));
+          if (staff.furigana) completedTrainings.push('STAFF_FURIGANA_' + staff.furigana);
+        }
+        if ('commuteMethod' in staff) {
+          completedTrainings = completedTrainings.filter(t => !t.startsWith('STAFF_COMMUTE_'));
+          if (staff.commuteMethod) completedTrainings.push('STAFF_COMMUTE_' + staff.commuteMethod);
+        }
+        if ('gender' in staff) {
+          completedTrainings = completedTrainings.filter(t => !t.startsWith('STAFF_GENDER_'));
+          if (staff.gender) completedTrainings.push('STAFF_GENDER_' + staff.gender);
+        }
+        if ('birthday' in staff) {
+          completedTrainings = completedTrainings.filter(t => !t.startsWith('STAFF_BIRTHDAY_'));
+          if (staff.birthday) completedTrainings.push('STAFF_BIRTHDAY_' + staff.birthday);
+        }
 
-    const updatedStaff: Partial<Staff> = {
-      ...staff,
-      completedTrainings
-    };
+        const updatedStaff: Partial<Staff> = { ...staff, completedTrainings };
+        const row = unmapStaff(updatedStaff);
+        const { error } = await supabase.from('staffs').update(row).eq('id', staffId);
+        if (error) {
+          const fallbackRow = { ...row };
+          delete fallbackRow.role;
+          delete fallbackRow.login_id;
+          delete fallbackRow.password;
+          const { error: error2 } = await supabase.from('staffs').update(fallbackRow).eq('id', staffId);
+          if (error2) throw error2;
+        }
+      },
+      () => {
+        const list = getOfflineData('staffs', defaultOfflineStaffs);
+        const index = list.findIndex(s => s.id === staffId);
+        if (index === -1) return;
 
-    const row = unmapStaff(updatedStaff);
-    const { error } = await supabase.from('staffs').update(row).eq('id', staffId);
-    if (error) {
-      console.warn('updateStaff database update failed, attempting fallback update without role/login_id/password columns:', error);
-      const fallbackRow = { ...row };
-      delete fallbackRow.role;
-      delete fallbackRow.login_id;
-      delete fallbackRow.password;
-      const { error: error2 } = await supabase.from('staffs').update(fallbackRow).eq('id', staffId);
-      if (error2) {
-        console.error('updateStaff fallback also failed:', error2);
-        throw error2;
+        let completedTrainings: string[] = list[index].completed_trainings || [];
+        if ('furigana' in staff) {
+          completedTrainings = completedTrainings.filter(t => !t.startsWith('STAFF_FURIGANA_'));
+          if (staff.furigana) completedTrainings.push('STAFF_FURIGANA_' + staff.furigana);
+        }
+        if ('commuteMethod' in staff) {
+          completedTrainings = completedTrainings.filter(t => !t.startsWith('STAFF_COMMUTE_'));
+          if (staff.commuteMethod) completedTrainings.push('STAFF_COMMUTE_' + staff.commuteMethod);
+        }
+        if ('gender' in staff) {
+          completedTrainings = completedTrainings.filter(t => !t.startsWith('STAFF_GENDER_'));
+          if (staff.gender) completedTrainings.push('STAFF_GENDER_' + staff.gender);
+        }
+        if ('birthday' in staff) {
+          completedTrainings = completedTrainings.filter(t => !t.startsWith('STAFF_BIRTHDAY_'));
+          if (staff.birthday) completedTrainings.push('STAFF_BIRTHDAY_' + staff.birthday);
+        }
+
+        const updatedStaff: Partial<Staff> = { ...staff, completedTrainings };
+        const rowUpdates = unmapStaff(updatedStaff);
+        list[index] = { ...list[index], ...rowUpdates };
+        saveOfflineData('staffs', list);
       }
-    }
+    );
   },
 
   updateCompanyStatus: async (companyId: string, status: 'pending' | 'approved' | 'rejected'): Promise<void> => {
     localStorage.setItem('company_status_' + companyId, status);
-    try {
-      await supabase.from('companies').update({ status }).eq('id', companyId);
-    } catch (e) {
-      console.warn('DB update company status failed, using localStorage fallback', e);
-    }
+    return callSupabase(
+      async () => {
+        await supabase.from('companies').update({ status }).eq('id', companyId);
+      },
+      () => {
+        const list = getOfflineData('companies', defaultOfflineCompanies);
+        const index = list.findIndex(c => c.id === companyId);
+        if (index !== -1) {
+          list[index].status = status;
+          saveOfflineData('companies', list);
+        }
+      }
+    );
   },
 
   seedStaffAttendanceLogs: async (): Promise<void> => {
-    try {
-      const { data: staffs, error } = await supabase.from('staffs').select('*');
-      if (error || !staffs) return;
-      for (const sRow of staffs) {
-        const staff = mapStaff(sRow);
-        // If they already have a significant number of attendance logs (e.g. 8+), skip them to avoid duplicating.
-        const attendanceLogs = (staff.completedTrainings || []).filter(t => t.startsWith('ATTENDANCE_LOG_'));
-        if (attendanceLogs.length >= 8) continue;
+    return callSupabase(
+      async () => {
+        const { data: staffs, error } = await supabase.from('staffs').select('*');
+        if (error || !staffs) return;
+        for (const sRow of staffs) {
+          const staff = mapStaff(sRow);
+          const attendanceLogs = (staff.completedTrainings || []).filter(t => t.startsWith('ATTENDANCE_LOG_'));
+          if (attendanceLogs.length >= 8) continue;
 
-        // Generate 15 random logs for April, May, and June 2026
-        const newLogs: string[] = [];
-        const times = ['08:50', '08:53', '08:55', '08:57', '08:58', '08:59', '09:00', '09:01', '09:02', '09:03', '09:05', '09:08'];
-        const dates = [
-          '2026-06-05', '2026-06-04', '2026-06-03', '2026-06-02', '2026-06-01',
-          '2026-05-29', '2026-05-28', '2026-05-27', '2026-05-26', '2026-05-25',
-          '2026-05-22', '2026-05-21', '2026-05-20', '2026-05-19', '2026-05-18',
-          '2026-05-15', '2026-05-14', '2026-05-13', '2026-05-12', '2026-05-11'
-        ];
-        
-        // Randomly select 15 dates
-        const shuffled = [...dates].sort(() => 0.5 - Math.random());
-        const selectedDates = shuffled.slice(0, 15);
-        selectedDates.forEach(date => {
-          const randTime = times[Math.floor(Math.random() * times.length)];
-          const isLate = randTime > '09:00';
-          newLogs.push(`ATTENDANCE_LOG_${date}_${randTime}_${isLate ? 'LATE' : 'OK'}`);
-        });
+          const newLogs: string[] = [];
+          const times = ['08:50', '08:53', '08:55', '08:57', '08:58', '08:59', '09:00', '09:01', '09:02', '09:03', '09:05', '09:08'];
+          const dates = [
+            '2026-06-05', '2026-06-04', '2026-06-03', '2026-06-02', '2026-06-01',
+            '2026-05-29', '2026-05-28', '2026-05-27', '2026-05-26', '2026-05-25',
+            '2026-05-22', '2026-05-21', '2026-05-20', '2026-05-19', '2026-05-18',
+            '2026-05-15', '2026-05-14', '2026-05-13', '2026-05-12', '2026-05-11'
+          ];
+          
+          const shuffled = [...dates].sort(() => 0.5 - Math.random());
+          const selectedDates = shuffled.slice(0, 15);
+          selectedDates.forEach(date => {
+            const randTime = times[Math.floor(Math.random() * times.length)];
+            const isLate = randTime > '09:00';
+            newLogs.push(`ATTENDANCE_LOG_${date}_${randTime}_${isLate ? 'LATE' : 'OK'}`);
+          });
 
-        // Merge and update
-        const cleanTrainings = (staff.completedTrainings || []).filter(t => !t.startsWith('ATTENDANCE_LOG_'));
-        const updatedTrainings = [...cleanTrainings, ...newLogs];
-        
-        await supabase.from('staffs').update({ completed_trainings: updatedTrainings }).eq('id', staff.id);
-        console.log(`Seeded ${newLogs.length} attendance logs for staff ${staff.name}`);
+          const cleanTrainings = (staff.completedTrainings || []).filter(t => !t.startsWith('ATTENDANCE_LOG_'));
+          const updatedTrainings = [...cleanTrainings, ...newLogs];
+          
+          await supabase.from('staffs').update({ completed_trainings: updatedTrainings }).eq('id', staff.id);
+        }
+      },
+      () => {
+        const staffs = getOfflineData('staffs', defaultOfflineStaffs);
+        for (let i = 0; i < staffs.length; i++) {
+          const staff = mapStaff(staffs[i]);
+          const attendanceLogs = (staff.completedTrainings || []).filter(t => t.startsWith('ATTENDANCE_LOG_'));
+          if (attendanceLogs.length >= 8) continue;
+
+          const newLogs: string[] = [];
+          const times = ['08:50', '08:53', '08:55', '08:57', '08:58', '08:59', '09:00', '09:01', '09:02', '09:03', '09:05', '09:08'];
+          const dates = [
+            '2026-06-05', '2026-06-04', '2026-06-03', '2026-06-02', '2026-06-01',
+            '2026-05-29', '2026-05-28', '2026-05-27', '2026-05-26', '2026-05-25',
+            '2026-05-22', '2026-05-21', '2026-05-20', '2026-05-19', '2026-05-18',
+            '2026-05-15', '2026-05-14', '2026-05-13', '2026-05-12', '2026-05-11'
+          ];
+          
+          const shuffled = [...dates].sort(() => 0.5 - Math.random());
+          const selectedDates = shuffled.slice(0, 15);
+          selectedDates.forEach(date => {
+            const randTime = times[Math.floor(Math.random() * times.length)];
+            const isLate = randTime > '09:00';
+            newLogs.push(`ATTENDANCE_LOG_${date}_${randTime}_${isLate ? 'LATE' : 'OK'}`);
+          });
+
+          const cleanTrainings = (staff.completedTrainings || []).filter(t => !t.startsWith('ATTENDANCE_LOG_'));
+          staffs[i].completed_trainings = [...cleanTrainings, ...newLogs];
+        }
+        saveOfflineData('staffs', staffs);
       }
-    } catch (e) {
-      console.error('Error seeding staff attendance logs:', e);
-    }
+    );
   }
 };
