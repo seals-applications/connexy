@@ -493,7 +493,7 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
           )}
         </div>
         <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.4)', marginTop: '8px', textAlign: 'center' }}>
-          App Version: v1.0.4 (Build: 2026-07-16 01:28)
+          App Version: v1.0.5 (Build: 2026-07-16 01:31)
         </div>
       </div>
     </div>
