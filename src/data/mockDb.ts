@@ -569,7 +569,7 @@ let useOfflineMock = false;
 
 // Attempt to detect if running in an offline or sandboxed environment
 if (typeof window !== 'undefined') {
-  if (!navigator.onLine) {
+  if (localStorage.getItem('connexy_is_offline') === 'true' || !navigator.onLine) {
     useOfflineMock = true;
   }
 }
@@ -642,6 +642,9 @@ async function callSupabase<T>(apiFn: () => Promise<T>, fallbackFn: () => T | Pr
   } catch (err: any) {
     console.warn('Supabase query failed. Switching to Local Offline Mock Mode:', err);
     useOfflineMock = true;
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('connexy_is_offline', 'true');
+    }
     return await fallbackFn();
   }
 }
