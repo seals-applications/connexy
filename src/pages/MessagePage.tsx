@@ -435,7 +435,10 @@ export function MessagePage() {
       });
 
     // For staff users, also allow access to the mock group chat for demonstration if applicable
-    const allowedGroupChannels = [groupChannel, ...dynamicGroupChannels];
+    const showMockGroupChat = ['sigma', 'alpha', 'beta'].includes(currentUser.id);
+    const allowedGroupChannels = showMockGroupChat 
+      ? [groupChannel, ...dynamicGroupChannels] 
+      : dynamicGroupChannels;
 
     return [...allowedGroupChannels, ...directChannels];
   }, [currentUser, allCompanies, chatTasks, jobs, allStaffs, activeChatId]);
