@@ -155,7 +155,10 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
     { id: 'alpha', name: '株式会社アルファ' },
     { id: 'beta', name: 'ベータ株式会社' },
     { id: 'gamma', name: '合同会社ガンマ' },
-    { id: 'delta', name: 'デルタ合同会社' }
+    { id: 'delta', name: 'デルタ合同会社' },
+    { id: 'seals', name: '株式会社SEALs' },
+    { id: 'freer', name: '株式会社FreeR VisioN' },
+    { id: 'cocolabo', name: 'ココラボ・ソリューションズ' }
   ];
 
   return (
@@ -493,7 +496,7 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
           )}
         </div>
         <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.4)', marginTop: '8px', textAlign: 'center' }}>
-          App Version: v1.0.5 (Build: 2026-07-16 01:31)
+          App Version: v1.0.6 (Build: 2026-07-16 02:02)
         </div>
       </div>
     </div>

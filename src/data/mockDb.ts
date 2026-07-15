@@ -482,7 +482,10 @@ const mapUser = (row: any): User => {
     alpha: 'アルファ 健',
     beta: 'ベータ 拓也',
     gamma: 'ガンマ 翔',
-    delta: 'デルタ 大介'
+    delta: 'デルタ 大介',
+    seals: '佐藤 海人',
+    freer: '林 克樹',
+    cocolabo: '伊内 美伊'
   };
 
   const defaultEmails: { [key: string]: string } = {
@@ -490,7 +493,10 @@ const mapUser = (row: any): User => {
     alpha: 'info@alpha-agency.com',
     beta: 'support@beta-corp.jp',
     gamma: 'info@gamma-llc.net',
-    delta: 'contact@delta-partners.jp'
+    delta: 'contact@delta-partners.jp',
+    seals: 'info@seals-comm.co.jp',
+    freer: 'contact@freer-vision.net',
+    cocolabo: 'support@cocolabo-solutions.com'
   };
 
   const defaultWebsites: { [key: string]: string } = {
@@ -498,7 +504,10 @@ const mapUser = (row: any): User => {
     alpha: 'https://alpha-agency.com',
     beta: 'https://beta-corp.jp',
     gamma: 'https://gamma-llc.net',
-    delta: 'https://delta-partners.jp'
+    delta: 'https://delta-partners.jp',
+    seals: 'https://seals-comm.co.jp',
+    freer: 'https://freer-vision.net',
+    cocolabo: 'https://cocolabo-solutions.com'
   };
 
   const defaultAddresses: { [key: string]: string } = {
@@ -506,7 +515,10 @@ const mapUser = (row: any): User => {
     alpha: '東京都品川区大崎1-11-1',
     beta: '東京都渋谷区渋谷3-21-3',
     gamma: '神奈川県横浜市中区港町1-1',
-    delta: '埼玉県さいたま市大宮区吉敷町1-1'
+    delta: '埼玉県さいたま市大宮区吉敷町1-1',
+    seals: '東京都品川区西五反田1-5-1',
+    freer: '東京都港区南青山2-2-15',
+    cocolabo: '大阪府大阪市北区梅田2-2-2'
   };
 
   const defaultPrs: { [key: string]: string } = {
@@ -514,7 +526,10 @@ const mapUser = (row: any): User => {
     alpha: '光回線・モバイルの獲得に特化した営業支援代理店。経験豊富なクローザーが稼働中。',
     beta: 'ディレクターやキャンペーンクルーの手配から現場の運営までワンストップで受託します。',
     gamma: '地域密着型のブース販売と店舗支援が得意です。ドコモ・au等全キャリア対応。',
-    delta: '緊急案件の対応力に強み。週末のショップ応援や臨時イベント要員の供給に自信あり。'
+    delta: '緊急案件の対応力に強み。週末のショップ応援や臨時イベント要員の供給に自信あり。',
+    seals: '通信キャリアのイベント代行と人材手配。現場の課題にコミットするプロ集団です。',
+    freer: '未来のビジョンをフリーに共創する、モバイル営業代行およびコンサルティング企業。',
+    cocolabo: 'コラボレーションによるイノベーション。通信業界の各種ソリューションをご提案。'
   };
 
   const defaultTypes: { [key: string]: 'client' | 'agency' | 'both' } = {
@@ -522,7 +537,10 @@ const mapUser = (row: any): User => {
     alpha: 'agency',
     beta: 'agency',
     gamma: 'both',
-    delta: 'client'
+    delta: 'client',
+    seals: 'both',
+    freer: 'agency',
+    cocolabo: 'both'
   };
 
   return {
@@ -531,7 +549,7 @@ const mapUser = (row: any): User => {
     role: row.role,
     loginId: row.login_id,
     password: row.password,
-    status: ['sigma', 'alpha', 'beta', 'gamma', 'delta'].includes(row.id) ? 'approved' : (localStatus || row.status || 'approved'),
+    status: ['sigma', 'alpha', 'beta', 'gamma', 'delta', 'seals', 'freer', 'cocolabo'].includes(row.id) ? 'approved' : (localStatus || row.status || 'approved'),
     invoiceNumber: localInvoice || row.invoice_number,
     representativeName: localRep || row.representative_name || defaultReps[row.id] || '未登録',
     email: localEmail || row.email || defaultEmails[row.id] || '',
@@ -601,7 +619,10 @@ const defaultOfflineCompanies = [
   { id: 'alpha', name: '株式会社アルファ', role: 'contractor', login_id: 'alpha', password: 'pass', status: 'approved', representative_name: 'アルファ 健', email: 'info@alpha-agency.com', address: '東京都品川区大崎1-11-1', company_type: 'agency' },
   { id: 'beta', name: 'ベータ株式会社', role: 'contractor', login_id: 'beta', password: 'pass', status: 'approved', representative_name: 'ベータ 拓也', email: 'support@beta-corp.jp', address: '東京都渋谷区渋谷3-21-3', company_type: 'agency' },
   { id: 'gamma', name: '合同会社ガンマ', role: 'contractor', login_id: 'gamma', password: 'pass', status: 'approved', representative_name: 'ガンマ 翔', email: 'info@gamma-llc.net', address: '神奈川県横浜市中区港町1-1', company_type: 'both' },
-  { id: 'delta', name: 'デルタ合同会社', role: 'contractor', login_id: 'delta', password: 'pass', status: 'approved', representative_name: 'デルタ 大介', email: 'contact@delta-partners.jp', address: '埼玉県さいたま市吉敷町1-1', company_type: 'client' }
+  { id: 'delta', name: 'デルタ合同会社', role: 'contractor', login_id: 'delta', password: 'pass', status: 'approved', representative_name: 'デルタ 大介', email: 'contact@delta-partners.jp', address: '埼玉県さいたま市吉敷町1-1', company_type: 'client' },
+  { id: 'seals', name: '株式会社SEALs', role: 'contractor', login_id: 'seals', password: 'pass', status: 'approved', representative_name: '佐藤 海人', email: 'info@seals-comm.co.jp', address: '東京都品川区西五反田1-5-1', company_type: 'both' },
+  { id: 'freer', name: '株式会社FreeR VisioN', role: 'contractor', login_id: 'freer', password: 'pass', status: 'approved', representative_name: '林 克樹', email: 'contact@freer-vision.net', address: '東京都港区南青山2-2-15', company_type: 'agency' },
+  { id: 'cocolabo', name: 'ココラボ・ソリューションズ', role: 'contractor', login_id: 'cocolabo', password: 'pass', status: 'approved', representative_name: '伊内 美伊', email: 'support@cocolabo-solutions.com', address: '大阪府大阪市北区梅田2-2-2', company_type: 'both' }
 ];
 
 const defaultOfflineStaffs = [
@@ -613,7 +634,19 @@ const defaultOfflineStaffs = [
   { id: 's6', user_id: 'alpha', name: 'アルファ 三郎', role: 'staff', login_id: 'alpha_s3', password: 'pass', base_location: '埼玉県さいたま市', nearest_station: '大宮駅', price: 13000, skills: ['イベント運営'], completed_trainings: [] },
   { id: 's7', user_id: 'beta', name: 'ベータ 一郎', role: 'staff', login_id: 'beta_s1', password: 'pass', base_location: '東京都渋谷区', nearest_station: '渋谷駅', price: 14000, skills: ['モバイル販売'], completed_trainings: [] },
   { id: 's8', user_id: 'beta', name: 'ベータ 二郎', role: 'staff', login_id: 'beta_s2', password: 'pass', base_location: '神奈川県川崎市', nearest_station: '川崎駅', price: 12000, skills: ['ブース獲得'], completed_trainings: [] },
-  { id: 's9', user_id: 'beta', name: 'ベータ 三郎', role: 'staff', login_id: 'beta_s3', password: 'pass', base_location: '東京都豊島区', nearest_station: '池袋駅', price: 13000, skills: ['イベント運営'], completed_trainings: [] }
+  { id: 's9', user_id: 'beta', name: 'ベータ 三郎', role: 'staff', login_id: 'beta_s3', password: 'pass', base_location: '東京都豊島区', nearest_station: '池袋駅', price: 13000, skills: ['イベント運営'], completed_trainings: [] },
+  
+  { id: 's_seals_admin', user_id: 'seals', name: '岡田 哲弥', role: 'admin', login_id: 'seals_s1', password: 'pass', base_location: '東京都品川区', nearest_station: '五反田駅', price: 16000, skills: ['イベント運営', 'キャンペーンMC'], completed_trainings: [] },
+  { id: 's_seals_staff1', user_id: 'seals', name: '中嶋 晴希', role: 'staff', login_id: 'seals_s2', password: 'pass', base_location: '神奈川県川崎市', nearest_station: '川崎駅', price: 13000, skills: ['モバイル販売'], completed_trainings: [] },
+  { id: 's_seals_staff2', user_id: 'seals', name: '野田 悠斗', role: 'staff', login_id: 'seals_s3', password: 'pass', base_location: '東京都世田谷区', nearest_station: '下北沢駅', price: 13000, skills: ['イベント運営'], completed_trainings: [] },
+
+  { id: 's_freer_admin', user_id: 'freer', name: '林 一郎', role: 'admin', login_id: 'freer_s1', password: 'pass', base_location: '東京都港区', nearest_station: '表参道駅', price: 16000, skills: ['モバイル販売', 'クローザー'], completed_trainings: [] },
+  { id: 's_freer_staff1', user_id: 'freer', name: '林 二郎', role: 'staff', login_id: 'freer_s2', password: 'pass', base_location: '東京都目黒区', nearest_station: '中目黒駅', price: 13000, skills: ['モバイル販売'], completed_trainings: [] },
+  { id: 's_freer_staff2', user_id: 'freer', name: '林 三郎', role: 'staff', login_id: 'freer_s3', password: 'pass', base_location: '神奈川県横浜市', nearest_station: '横浜駅', price: 13000, skills: ['ブース獲得'], completed_trainings: [] },
+
+  { id: 's_cocolabo_admin', user_id: 'cocolabo', name: '二内 美伊', role: 'admin', login_id: 'cocolabo_s1', password: 'pass', base_location: '大阪府大阪市', nearest_station: '梅田駅', price: 16000, skills: ['ディレクター', 'イベントMC'], completed_trainings: [] },
+  { id: 's_cocolabo_staff1', user_id: 'cocolabo', name: '三内 美伊', role: 'staff', login_id: 'cocolabo_s2', password: 'pass', base_location: '兵庫県神戸市', nearest_station: '三ノ宮駅', price: 13000, skills: ['モバイル販売'], completed_trainings: [] },
+  { id: 's_cocolabo_staff2', user_id: 'cocolabo', name: '四内 美伊', role: 'staff', login_id: 'cocolabo_s3', password: 'pass', base_location: '京都府京都市', nearest_station: '京都駅', price: 13000, skills: ['イベント運営'], completed_trainings: [] }
 ];
 
 const defaultOfflineJobs = [
