@@ -598,7 +598,23 @@ const getOfflineData = (table: string, defaultData: any[]): any[] => {
   const data = localStorage.getItem('offline_db_' + table);
   if (data) {
     try {
-      return JSON.parse(data);
+      const parsed = JSON.parse(data);
+      if (Array.isArray(parsed)) {
+        let merged = [...parsed];
+        let updated = false;
+        defaultData.forEach(defItem => {
+          const exists = merged.some(item => item.id === defItem.id);
+          if (!exists) {
+            merged.push(defItem);
+            updated = true;
+          }
+        });
+        if (updated) {
+          localStorage.setItem('offline_db_' + table, JSON.stringify(merged));
+        }
+        return merged;
+      }
+      return parsed;
     } catch (e) {
       return defaultData;
     }
