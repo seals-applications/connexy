@@ -531,7 +531,7 @@ const mapUser = (row: any): User => {
     role: row.role,
     loginId: row.login_id,
     password: row.password,
-    status: localStatus || row.status || 'approved',
+    status: ['sigma', 'alpha', 'beta', 'gamma', 'delta'].includes(row.id) ? 'approved' : (localStatus || row.status || 'approved'),
     invoiceNumber: localInvoice || row.invoice_number,
     representativeName: localRep || row.representative_name || defaultReps[row.id] || '未登録',
     email: localEmail || row.email || defaultEmails[row.id] || '',
