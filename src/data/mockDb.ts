@@ -549,7 +549,11 @@ const initializeDefaultStaffLogins = (allStaffsData: any[]) => {
   });
   
   for (const companyId of Object.keys(companyGroups)) {
-    const sorted = [...companyGroups[companyId]].sort((a, b) => a.id.localeCompare(b.id));
+    const sorted = [...companyGroups[companyId]].sort((a, b) => {
+      const idA = a.id !== undefined && a.id !== null ? String(a.id) : '';
+      const idB = b.id !== undefined && b.id !== null ? String(b.id) : '';
+      return idA.localeCompare(idB);
+    });
     sorted.forEach((row, index) => {
       const existingLogin = localStorage.getItem('staff_login_' + row.id);
       if (!existingLogin) {
