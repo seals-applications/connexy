@@ -358,18 +358,8 @@ export function SettingsDrawer({ isOpen, onClose, onLogoutSuccess }: SettingsDra
                 </select>
               </div>
               <div className="form-group" style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                <label style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--text-sub)' }}>業務委託契約書テンプレート</label>
-                <textarea 
-                  className="form-control" 
-                  style={{ padding: '10px', borderRadius: '6px', border: '1px solid var(--border-color)', resize: 'vertical', fontFamily: 'monospace', fontSize: '11px' }}
-                  rows={8}
-                  value={contractTemplateInput} 
-                  onChange={e => setContractTemplateInput(e.target.value)} 
-                  placeholder="マッチング時に相手に提示する業務委託契約書の本文を記入してください" 
-                />
-                
-                <div style={{ marginTop: '8px', borderTop: '1px dashed var(--border-color)', paddingTop: '10px' }}>
-                  <label style={{ fontSize: '11px', fontWeight: 'bold', color: 'var(--text-sub)' }}>または 契約書PDFファイルをアップロード (推奨)</label>
+                <label style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--text-sub)' }}>業務委託契約書 (PDF形式)</label>
+                <div style={{ marginTop: '4px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '6px' }}>
                     <input 
                       type="file" 
@@ -378,8 +368,8 @@ export function SettingsDrawer({ isOpen, onClose, onLogoutSuccess }: SettingsDra
                       style={{ display: 'none' }}
                       id="pdf-upload-input"
                     />
-                    <label htmlFor="pdf-upload-input" style={{ padding: '6px 12px', background: '#F1F5F9', border: '1px solid #CBD5E1', borderRadius: '6px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                      <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>upload_file</span>
+                    <label htmlFor="pdf-upload-input" style={{ padding: '8px 14px', background: '#F1F5F9', border: '1px solid #CBD5E1', borderRadius: '6px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                      <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>upload_file</span>
                       PDFを選択
                     </label>
                     {pdfName && (
