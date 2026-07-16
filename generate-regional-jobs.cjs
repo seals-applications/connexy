@@ -37,7 +37,8 @@ function generateJobs(regionPrefix, stations, locations, coords, count, startId)
     const rChannel = salesChannels[i % salesChannels.length];
     const rCarrier = carriers[i % carriers.length];
     const rWorkLoc = workLocations[i % workLocations.length];
-    const price = 12000 + getRandomInt(0, 8) * 1000;
+    // Random price between 9,000 and 50,000 (in 1000s or 100s, let's use 1000s for round numbers)
+    const price = getRandomInt(9, 50) * 1000;
     
     let title = titleTemplates[i % titleTemplates.length]
       .replace('{station}', rStation)

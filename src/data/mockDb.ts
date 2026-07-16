@@ -527,10 +527,14 @@ const getOfflineData = (table: string, defaultData: any[]): any[] => {
             merged.push(defItem);
             updated = true;
           } else {
-            // Update lat/lng if the default item has them but cached item doesn't (or they differ)
+            // Update lat/lng and price if the default item has them but cached item doesn't (or they differ)
             if (defItem.lat !== undefined && merged[existingIndex].lat !== defItem.lat) {
               merged[existingIndex].lat = defItem.lat;
               merged[existingIndex].lng = defItem.lng;
+              updated = true;
+            }
+            if (defItem.price !== undefined && merged[existingIndex].price !== defItem.price) {
+              merged[existingIndex].price = defItem.price;
               updated = true;
             }
           }
