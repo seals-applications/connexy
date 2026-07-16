@@ -1082,11 +1082,11 @@ export function SearchPage() {
         let shadow = group.hasUrgent ? 'rgba(239, 68, 68, 0.4)' : 'rgba(59, 130, 246, 0.4)';
         
         if (isCluster) {
-          circleColor = '#1E3A8A';
+          circleColor = group.hasUrgent ? '#B91C1C' : '#1E3A8A';
           size = 40;
           fontSize = 15;
           border = '3px solid #FFFFFF';
-          shadow = 'rgba(30, 58, 138, 0.5)';
+          shadow = group.hasUrgent ? 'rgba(185, 28, 28, 0.5)' : 'rgba(30, 58, 138, 0.5)';
         }
         
         const pinElement = document.createElement('div');
