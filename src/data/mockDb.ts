@@ -1862,5 +1862,24 @@ export const api = {
         saveOfflineData('staffs', staffs);
       }
     );
+  },
+
+  getUserAverageRating: async (userId: string): Promise<{ average: number, count: number }> => {
+    const tasks = await api.getContractTasks();
+    let total = 0;
+    let count = 0;
+    tasks.forEach(t => {
+      // client_id -> evaluated byWorker
+      if (t.client_id === userId && t.evaluations?.byWorker) {
+        total += t.evaluations.byWorker.rating;
+        count++;
+      }
+      // agency_id -> evaluated byClient
+      if (t.agency_id === userId && t.evaluations?.byClient) {
+        total += t.evaluations.byClient.rating;
+        count++;
+      }
+    });
+    return { average: count > 0 ? Number((total / count).toFixed(1)) : 0, count };
   }
 };

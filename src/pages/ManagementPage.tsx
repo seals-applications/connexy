@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { jsPDF } from 'jspdf';
 import { api } from '../data/mockDb';
 import type { ContractTask, Training, Staff, Job, User } from '../data/mockDb';
 
@@ -942,6 +943,34 @@ export function ManagementPage() {
     }
   };
 
+  const handleDownloadInvoice = (task: ContractTask) => {
+    try {
+      const doc = new jsPDF();
+      doc.setFontSize(20);
+      doc.text('Invoice / Receipt', 105, 20, { align: 'center' });
+      doc.setFontSize(12);
+      
+      doc.text(`Date: ${new Date().toLocaleDateString()}`, 20, 40);
+      doc.text(`Task ID: ${task.id}`, 20, 50);
+      // We will output basic alphanumeric for job title due to font limitation
+      doc.text(`Job Title: Job_${task.id.slice(0,8)}`, 20, 60);
+      
+      doc.text(`Client ID: ${task.client_id || 'N/A'}`, 20, 80);
+      doc.text(`Agency ID: ${task.agency_id || 'N/A'}`, 20, 90);
+      
+      doc.setFontSize(14);
+      doc.text(`Total Amount: ${task.price.toLocaleString()} JPY`, 20, 110);
+      
+      doc.setFontSize(10);
+      doc.text('Thank you for your business.', 105, 130, { align: 'center' });
+      
+      doc.save(`Invoice_${task.id}.pdf`);
+    } catch (e) {
+      console.error(e);
+      alert('PDFの生成に失敗しました。');
+    }
+  };
+
 
 
   // Quizzes and Training methods
@@ -1385,9 +1414,14 @@ export function ManagementPage() {
                     <strong style={{ fontSize: '13px', display: 'block', color: 'var(--text-main)' }}>{task.jobTitle}</strong>
                     
                     {bothEvaluated ? (
-                      <div style={{ background: '#F8FAFC', padding: '8px 10px', borderRadius: '6px', marginTop: '8px', fontSize: '11px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      <div style={{ background: '#F8FAFC', padding: '8px 10px', borderRadius: '6px', marginTop: '8px', fontSize: '11px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                         <div><strong style={{ color: 'var(--primary)' }}>発注者評価:</strong> <span style={{ color: '#F59E0B' }}>{'★'.repeat(evalClient.rating)}</span> {evalClient.comment}</div>
                         <div><strong style={{ color: '#16A34A' }}>スタッフ評価:</strong> <span style={{ color: '#F59E0B' }}>{'★'.repeat(evalWorker.rating)}</span> {evalWorker.comment}</div>
+                        
+                        <button onClick={() => handleDownloadInvoice(task)} style={{ alignSelf: 'flex-start', background: '#3B82F6', color: 'white', border: 'none', padding: '6px 12px', borderRadius: '6px', display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', fontWeight: 'bold' }}>
+                          <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>download</span>
+                          請求書(PDF)をダウンロード
+                        </button>
                       </div>
                     ) : (
                       <div style={{ background: '#FFFBEB', padding: '8px', borderRadius: '6px', marginTop: '8px', fontSize: '11px', color: '#B45309' }}>

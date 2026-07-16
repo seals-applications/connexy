@@ -123,6 +123,7 @@ export function MessagePage() {
   const [showPhotoModal, setShowPhotoModal] = useState(false);
   const [photoCaption, setPhotoCaption] = useState('');
   const [selectedPhotoUrl, setSelectedPhotoUrl] = useState('');
+  const [selectedPhotoName, setSelectedPhotoName] = useState('');
 
   const handleSync = async () => {
     try {
@@ -3888,59 +3889,33 @@ export function MessagePage() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
 
-                <label style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--text-sub)' }}>写真を選択 *</label>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px' }}>
-                  {photoOptions.map(p => (
-                    <div 
-                      key={p.id}
-                      onClick={() => setSelectedPhotoUrl(p.url)}
-                      style={{
-                        position: 'relative',
-                        borderRadius: '8px',
-                        overflow: 'hidden',
-                        height: '70px',
-                        border: selectedPhotoUrl === p.url ? '3px solid #8B5CF6' : '1px solid #E2E8F0',
-                        cursor: 'pointer',
-                        transition: 'transform 0.15s ease'
-                      }}
-                    >
-                      <img src={p.url} alt={p.label} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                      <div style={{
-                        position: 'absolute',
-                        bottom: 0,
-                        left: 0,
-                        right: 0,
-                        background: 'rgba(0,0,0,0.6)',
-                        color: 'white',
-                        fontSize: '9px',
-                        padding: '2px 4px',
-                        textAlign: 'center',
-                        whiteSpace: 'nowrap',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis'
-                      }}>
-                        {p.label}
+                <label style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--text-sub)' }}>写真を選択（デバイスからアップロード） *</label>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <input 
+                    type="file" 
+                    accept="image/*"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        const reader = new FileReader();
+                        reader.onload = (event) => {
+                          setSelectedPhotoUrl(event.target?.result as string);
+                          setSelectedPhotoName(file.name);
+                        };
+                        reader.readAsDataURL(file);
+                      }
+                    }}
+                    style={{ fontSize: '14px', padding: '8px', border: '1px solid #E2E8F0', borderRadius: '6px' }}
+                  />
+                  {selectedPhotoUrl && (
+                    <div style={{ position: 'relative', borderRadius: '8px', overflow: 'hidden', height: '120px', border: '3px solid #8B5CF6' }}>
+                      <img src={selectedPhotoUrl} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: 'rgba(0,0,0,0.6)', color: 'white', fontSize: '9px', padding: '4px', textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {selectedPhotoName || 'Preview'}
                       </div>
-                      {selectedPhotoUrl === p.url && (
-                        <div style={{
-                          position: 'absolute',
-                          top: '4px',
-                          right: '4px',
-                          background: '#8B5CF6',
-                          color: 'white',
-                          borderRadius: '50%',
-                          width: '16px',
-                          height: '16px',
-                          display: 'flex',
-                          alignItems: 'center',
-                           justifyContent: 'center'
-                         }}>
-                           <span className="material-symbols-outlined" style={{ fontSize: '10px', fontWeight: 'bold' }}>check</span>
-                         </div>
-                       )}
-                     </div>
-                   ))}
-                 </div>
+                    </div>
+                  )}
+                </div>
                </div>
 
                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>

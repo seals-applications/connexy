@@ -38,6 +38,24 @@ export function SearchPage() {
 
   const [selectedTalent, setSelectedTalent] = useState<Talent | null>(null);
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
+  const [selectedJobRating, setSelectedJobRating] = useState<{average: number, count: number} | null>(null);
+  const [selectedTalentRating, setSelectedTalentRating] = useState<{average: number, count: number} | null>(null);
+
+  useEffect(() => {
+    if (selectedJob && selectedJob.authorId) {
+      api.getUserAverageRating(selectedJob.authorId).then(setSelectedJobRating);
+    } else {
+      setSelectedJobRating(null);
+    }
+  }, [selectedJob]);
+
+  useEffect(() => {
+    if (selectedTalent && selectedTalent.userId) {
+      api.getUserAverageRating(selectedTalent.userId).then(setSelectedTalentRating);
+    } else {
+      setSelectedTalentRating(null);
+    }
+  }, [selectedTalent]);
 
   // 新規作成フォーム用のState
   const [isCreateFormOpen, setIsCreateFormOpen] = useState(false);
@@ -2382,7 +2400,15 @@ export function SearchPage() {
                     <span className="material-symbols-outlined" style={{ color: '#10B981', fontSize: '20px', verticalAlign: 'middle' }} title="運営確認済">verified</span>
                   )}
                 </h2>
+                {selectedTalentRating && selectedTalentRating.count > 0 && (
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', marginBottom: '12px', fontSize: '14px' }}>
+                    <span style={{ color: '#F59E0B' }}>★</span>
+                    <strong style={{ color: '#111827' }}>{selectedTalentRating.average.toFixed(1)}</strong>
+                    <span style={{ color: 'var(--text-sub)' }}>({selectedTalentRating.count}件の評価)</span>
+                  </div>
+                )}
                 <span className="status-badge badge-contracted" style={{ display: 'inline-block', background: '#D1FAE5', color: '#065F46', marginBottom: '16px' }}>稼働可能</span>
+
                 
                 <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap' }}>
                   {selectedTalent.carriers?.map(carrier => (
@@ -2526,10 +2552,17 @@ export function SearchPage() {
                   </div>
                 )}
                 <h2 style={{ margin: '0 0 12px 0', fontSize: '20px', lineHeight: '1.4' }}>{selectedJob.title}</h2>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-sub)', fontSize: '14px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-sub)', fontSize: '14px', marginBottom: '8px' }}>
                   <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>corporate_fare</span>
                   {allUsers.find(u => u.id === selectedJob.authorId)?.name || '不明な会社'}
                 </div>
+                {selectedJobRating && selectedJobRating.count > 0 && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '14px' }}>
+                    <span style={{ color: '#F59E0B' }}>★</span>
+                    <strong style={{ color: '#111827' }}>{selectedJobRating.average.toFixed(1)}</strong>
+                    <span style={{ color: 'var(--text-sub)' }}>({selectedJobRating.count}件の評価)</span>
+                  </div>
+                )}
               </div>
 
               <div style={{ background: 'var(--surface-color)', padding: '16px', marginTop: '8px', borderTop: '1px solid var(--border-color)', borderBottom: '1px solid var(--border-color)' }}>
