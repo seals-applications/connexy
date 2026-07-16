@@ -25,6 +25,11 @@ export interface User {
   contractPdf?: string;
   favoriteJobIds?: string[];
   favoriteTalentIds?: string[];
+  favoriteFolders?: {
+    id: string;
+    name: string;
+    itemIds: string[];
+  }[];
 }
 
 // 評価(Evaluation)の型定義
@@ -593,9 +598,11 @@ const mapUser = (row: any): User => {
   
   let favoriteJobIds: string[] = [];
   let favoriteTalentIds: string[] = [];
+  try { favoriteTalentIds = JSON.parse(localStorage.getItem('company_favorite_talents_' + row.id) || '[]'); } catch(e) {}
+  let favoriteFolders: any[] = [];
+  try { favoriteFolders = JSON.parse(localStorage.getItem('company_favorite_folders_' + row.id) || '[]'); } catch(e) {}
   try {
     favoriteJobIds = JSON.parse(localStorage.getItem('company_favorite_jobs_' + row.id) || '[]');
-    favoriteTalentIds = JSON.parse(localStorage.getItem('company_favorite_talents_' + row.id) || '[]');
   } catch(e) {}
   
   const defaultReps: { [key: string]: string } = {
@@ -701,7 +708,8 @@ const mapUser = (row: any): User => {
     contractTemplate: localContractTemplate || defaultContractTemplate,
     contractPdf: localContractPdf || undefined,
     favoriteJobIds,
-    favoriteTalentIds
+    favoriteTalentIds,
+    favoriteFolders
   };
 };
 
@@ -1756,6 +1764,22 @@ export const api = {
     }
     localStorage.setItem('company_favorite_talents_' + userId, JSON.stringify(currentFavorites));
     return currentFavorites;
+  },
+
+  updateUser: async (user: User): Promise<void> => {
+    localStorage.setItem('company_favorite_jobs_' + user.id, JSON.stringify(user.favoriteJobIds || []));
+    localStorage.setItem('company_favorite_talents_' + user.id, JSON.stringify(user.favoriteTalentIds || []));
+    localStorage.setItem('company_favorite_folders_' + user.id, JSON.stringify(user.favoriteFolders || []));
+    
+    // In a real app we would update Supabase, but for now we rely on localStorage
+    // since other mock fields are largely based on local overrides.
+    // Let's also update the local offline list just in case.
+    const list = getOfflineData('companies', defaultOfflineCompanies);
+    const index = list.findIndex((c: any) => c.id === user.id);
+    if (index !== -1) {
+      list[index] = { ...list[index], ...user };
+      saveOfflineData('companies', list);
+    }
   },
 
   updateCompanyStatus: async (companyId: string, status: 'pending' | 'approved' | 'rejected'): Promise<void> => {

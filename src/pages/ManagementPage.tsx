@@ -90,6 +90,17 @@ export function ManagementPage() {
   const isUserAdmin = !currentUser?.staffId || currentUser.staffRole === 'admin';
   const [subPage, setSubPage] = useState<'none' | 'posts' | 'staffs' | 'reports' | 'logs' | 'training'>('none');
 
+  // プロフィール充実度
+  const profileCompletion = useMemo(() => {
+    if (!currentUser) return 0;
+    const fields = ['name', 'email', 'loginId', 'password', 'role', 'website', 'address', 'prText', 'companyType', 'gender', 'representativeName'];
+    let filled = 0;
+    fields.forEach(f => {
+      if (currentUser[f as keyof User]) filled++;
+    });
+    return Math.floor((filled / fields.length) * 100);
+  }, [currentUser]);
+
   // Calendar states
   const [calendarYear, setCalendarYear] = useState<number>(2026);
   const [calendarMonth, setCalendarMonth] = useState<number>(6);
@@ -1014,6 +1025,36 @@ export function ManagementPage() {
                 </div>
               </div>
             </div>
+          </div>
+
+          {/* Profile Completion Bar */}
+          <div style={{ background: 'var(--surface-color)', borderRadius: '16px', padding: '16px', marginBottom: '20px', border: '1px solid var(--border-color)', boxShadow: '0 2px 10px rgba(0,0,0,0.03)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+              <span style={{ fontSize: '14px', fontWeight: 'bold', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span className="material-symbols-outlined" style={{ fontSize: '18px', color: '#F59E0B' }}>emoji_events</span>
+                プロフィール充実度
+              </span>
+              <span style={{ fontSize: '16px', fontWeight: 'bold', color: '#3B82F6' }}>{profileCompletion}%</span>
+            </div>
+            
+            <div style={{ width: '100%', height: '8px', background: 'var(--bg-gray)', borderRadius: '4px', overflow: 'hidden', marginBottom: '12px' }}>
+              <div style={{ 
+                width: `${profileCompletion}%`, 
+                height: '100%', 
+                background: profileCompletion < 50 ? '#F59E0B' : profileCompletion < 80 ? '#3B82F6' : '#10B981',
+                transition: 'width 0.5s ease-in-out'
+              }}></div>
+            </div>
+            
+            {profileCompletion < 100 && (
+              <div style={{ fontSize: '12px', color: 'var(--text-sub)', background: '#F8FAFC', padding: '12px', borderRadius: '8px', display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
+                <span className="material-symbols-outlined" style={{ fontSize: '16px', color: '#3B82F6', marginTop: '2px' }}>lightbulb</span>
+                <div>
+                  <div style={{ fontWeight: 'bold', color: 'var(--text-main)', marginBottom: '4px' }}>あと少しで100%です！</div>
+                  自己PRやWebサイトなどを登録すると、マッチング率がさらにアップします。
+                </div>
+              </div>
+            )}
           </div>
 
           {/* iOS-Style Menu Card */}

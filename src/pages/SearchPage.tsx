@@ -66,6 +66,10 @@ export function SearchPage() {
   const [isNdaModalOpen, setIsNdaModalOpen] = useState(false);
   const [ndaAgreed, setNdaAgreed] = useState(false);
   const [isCsvModalOpen, setIsCsvModalOpen] = useState(false);
+  const [csvPreviewData, setCsvPreviewData] = useState<{ data: any[]; errors: { rowIndex: number; message: string }[] } | null>(null);
+  
+  const [folderModalState, setFolderModalState] = useState<{ id: string, type: 'job' | 'talent', isOpen: boolean } | null>(null);
+  const [newFolderName, setNewFolderName] = useState('');
 
   // ログインユーザーおよび限定公開先の動的管理用State
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -365,17 +369,54 @@ export function SearchPage() {
   const handleToggleFavoriteJob = async (jobId: string, e: React.MouseEvent) => {
     e.stopPropagation();
     if (!currentUser) return;
+    const isFav = currentUser.favoriteJobIds?.includes(jobId);
     const newFavorites = await api.toggleFavoriteJob(currentUser.id, jobId);
     setCurrentUser({ ...currentUser, favoriteJobIds: newFavorites });
+    
+    if (!isFav) {
+      setFolderModalState({ id: jobId, type: 'job', isOpen: true });
+    }
   };
 
   const handleToggleFavoriteTalent = async (talentId: string, e: React.MouseEvent) => {
     e.stopPropagation();
     if (!currentUser) return;
+    const isFav = currentUser.favoriteTalentIds?.includes(talentId);
     const newFavorites = await api.toggleFavoriteTalent(currentUser.id, talentId);
     setCurrentUser({ ...currentUser, favoriteTalentIds: newFavorites });
+
+    if (!isFav) {
+      setFolderModalState({ id: talentId, type: 'talent', isOpen: true });
+    }
   };
 
+
+  const handleAddFolder = async () => {
+    if (!newFolderName.trim() || !currentUser || !folderModalState) return;
+    const newFolder = { id: 'folder_' + Date.now(), name: newFolderName, itemIds: [folderModalState.id] };
+    const updatedFolders = [...(currentUser.favoriteFolders || []), newFolder];
+    const updatedUser = { ...currentUser, favoriteFolders: updatedFolders };
+    setCurrentUser(updatedUser);
+    await api.updateUser(updatedUser);
+    setNewFolderName('');
+    setFolderModalState(null);
+  };
+
+  const handleAddToFolder = async (folderId: string) => {
+    if (!currentUser || !folderModalState) return;
+    const updatedFolders = (currentUser.favoriteFolders || []).map(f => {
+      if (f.id === folderId) {
+        if (!f.itemIds.includes(folderModalState.id)) {
+          return { ...f, itemIds: [...f.itemIds, folderModalState.id] };
+        }
+      }
+      return f;
+    });
+    const updatedUser = { ...currentUser, favoriteFolders: updatedFolders };
+    setCurrentUser(updatedUser);
+    await api.updateUser(updatedUser);
+    setFolderModalState(null);
+  };
 
   // 一覧表示での単価・総額レンダリング
   const renderJobPrice = (job: Job) => {
@@ -485,13 +526,19 @@ export function SearchPage() {
         const currentUser = await api.getCurrentUser();
         if (!currentUser) throw new Error('未ログイン');
         
-        let successCount = 0;
+        let parsedData: any[] = [];
+        let errors: { rowIndex: number; message: string }[] = [];
+
         for (let i = 1; i < lines.length; i++) {
           const line = lines[i].trim();
           if (!line) continue;
           const cols = line.split(',');
           
           if (mode === 'job' && cols.length >= 5) {
+            // Validation
+            if (!cols[0]) errors.push({ rowIndex: i, message: 'タイトルが空です' });
+            if (!cols[3] || isNaN(parseInt(cols[3]))) errors.push({ rowIndex: i, message: '単価が不正です' });
+
             const newJob: Job = {
               id: 'job_' + Date.now() + '_' + i,
               authorId: currentUser.id,
@@ -503,9 +550,12 @@ export function SearchPage() {
               price: parseInt(cols[3]) || 0,
               eventDate: cols[4] || '未定'
             };
-            await api.addJob(newJob);
-            successCount++;
+            parsedData.push(newJob);
           } else if (mode === 'talent' && cols.length >= 5) {
+            // Validation
+            if (!cols[0]) errors.push({ rowIndex: i, message: '名前が空です' });
+            if (!cols[3] || isNaN(parseInt(cols[3]))) errors.push({ rowIndex: i, message: '単価が不正です' });
+
             const newTalent: Talent = {
               id: 'talent_' + Date.now() + '_' + i,
               userId: currentUser.id,
@@ -521,12 +571,11 @@ export function SearchPage() {
               price: parseInt(cols[3]) || 0,
               experience: cols[4] || '未経験'
             };
-            await api.addTalent(newTalent);
-            successCount++;
+            parsedData.push(newTalent);
           }
         }
-        alert(`${successCount}件のデータを一括登録しました`);
-        setIsCsvModalOpen(false);
+        
+        setCsvPreviewData({ data: parsedData, errors });
         await handleRefresh();
       } catch (err) {
         console.error(err);
@@ -537,6 +586,31 @@ export function SearchPage() {
       }
     };
     reader.readAsText(file);
+  };
+
+  const handleConfirmCsvRegistration = async () => {
+    if (!csvPreviewData || csvPreviewData.errors.length > 0) return;
+    try {
+      setIsRefreshing(true);
+      let successCount = 0;
+      for (const item of csvPreviewData.data) {
+        if (mode === 'job') {
+          await api.addJob(item as Job);
+        } else {
+          await api.addTalent(item as Talent);
+        }
+        successCount++;
+      }
+      alert(`${successCount}件のデータを一括登録しました`);
+      setIsCsvModalOpen(false);
+      setCsvPreviewData(null);
+      await handleRefresh();
+    } catch(err) {
+      console.error(err);
+      alert('CSVの登録に失敗しました');
+    } finally {
+      setIsRefreshing(false);
+    }
   };
 
   const geocodeAddress = async (address: string): Promise<{lat: number, lng: number}> => {
@@ -3363,6 +3437,12 @@ export function SearchPage() {
                   </div>
                 </div>
 
+                <details style={{ background: 'var(--surface-color)', borderRadius: '8px', border: '1px solid var(--border-color)', padding: '0 12px', marginBottom: '16px' }}>
+                  <summary style={{ fontWeight: 'bold', cursor: 'pointer', padding: '12px 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', listStyle: 'none' }}>
+                    <span>詳細条件を設定する</span>
+                    <span className="material-symbols-outlined">expand_more</span>
+                  </summary>
+                  <div style={{ paddingBottom: '12px', paddingTop: '8px', borderTop: '1px solid var(--border-color)' }}>
                 {/* スキル */}
                 <div className="filter-group">
                   <span className="filter-group-title">スキル</span>
@@ -3478,6 +3558,8 @@ export function SearchPage() {
                     <span style={{ fontSize: '14px', color: 'var(--text-main)' }}>日以内</span>
                   </div>
                 </div>
+                  </div>
+                </details>
               </>
             ) : (
               <>
@@ -3508,6 +3590,12 @@ export function SearchPage() {
                   </div>
                 </div>
 
+                <details style={{ background: 'var(--surface-color)', borderRadius: '8px', border: '1px solid var(--border-color)', padding: '0 12px', marginBottom: '16px' }}>
+                  <summary style={{ fontWeight: 'bold', cursor: 'pointer', padding: '12px 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', listStyle: 'none' }}>
+                    <span>詳細条件を設定する</span>
+                    <span className="material-symbols-outlined">expand_more</span>
+                  </summary>
+                  <div style={{ paddingBottom: '12px', paddingTop: '8px', borderTop: '1px solid var(--border-color)' }}>
                 {/* スキル */}
                 <div className="filter-group">
                   <span className="filter-group-title">対応スキル</span>
@@ -3579,6 +3667,8 @@ export function SearchPage() {
                     })}
                   </div>
                 </div>
+                  </div>
+                </details>
               </>
             )}
           </div>
@@ -3886,35 +3976,135 @@ export function SearchPage() {
 
       {isCsvModalOpen && (
         <div className="modal-overlay" onClick={() => setIsCsvModalOpen(false)}>
-          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ padding: '24px', maxWidth: '400px' }}>
+          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ padding: '24px', maxWidth: csvPreviewData ? '600px' : '400px' }}>
             <h2 style={{ fontSize: '18px', marginBottom: '16px' }}>CSV一括登録</h2>
-            <p style={{ fontSize: '13px', color: 'var(--text-sub)', marginBottom: '16px' }}>
-              テンプレートをダウンロードし、データを入力してからアップロードしてください。<br/>
-              ※座標はダミー値が自動入力されます。
-            </p>
-            <button 
-              onClick={downloadCsvTemplate}
-              className="btn-outline" 
-              style={{ width: '100%', marginBottom: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
-            >
-              <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>download</span>
-              テンプレートをダウンロード
-            </button>
-            <label 
-              className="btn-primary" 
-              style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', cursor: 'pointer' }}
-            >
-              <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>upload</span>
-              CSVファイルを選択
+            
+            {csvPreviewData ? (
+              <>
+                <p style={{ fontSize: '14px', marginBottom: '16px' }}>
+                  {csvPreviewData.data.length}件のデータを読み込みました。
+                  {csvPreviewData.errors.length > 0 && <span style={{ color: '#EF4444', fontWeight: 'bold', marginLeft: '8px' }}>{csvPreviewData.errors.length}件のエラーがあります。</span>}
+                </p>
+
+                <div style={{ maxHeight: '300px', overflowY: 'auto', marginBottom: '16px', border: '1px solid var(--border-color)', borderRadius: '8px' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+                    <thead style={{ background: 'var(--bg-gray)', position: 'sticky', top: 0 }}>
+                      <tr>
+                        <th style={{ padding: '8px', textAlign: 'left', borderBottom: '1px solid var(--border-color)' }}>行</th>
+                        <th style={{ padding: '8px', textAlign: 'left', borderBottom: '1px solid var(--border-color)' }}>{mode === 'job' ? '案件名' : '人材名'}</th>
+                        <th style={{ padding: '8px', textAlign: 'left', borderBottom: '1px solid var(--border-color)' }}>単価</th>
+                        <th style={{ padding: '8px', textAlign: 'left', borderBottom: '1px solid var(--border-color)' }}>エラー</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {csvPreviewData.data.map((item, idx) => {
+                        const rowIndex = idx + 1; // header is 0
+                        const rowError = csvPreviewData.errors.find(e => e.rowIndex === rowIndex);
+                        return (
+                          <tr key={idx} style={{ background: rowError ? '#FEE2E2' : 'transparent', borderBottom: '1px solid var(--border-color)' }}>
+                            <td style={{ padding: '8px' }}>{rowIndex}</td>
+                            <td style={{ padding: '8px' }}>{mode === 'job' ? (item as Job).title : (item as Talent).name}</td>
+                            <td style={{ padding: '8px' }}>{item.price}</td>
+                            <td style={{ padding: '8px', color: '#EF4444' }}>{rowError?.message}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+                  <button className="btn-outline" onClick={() => setCsvPreviewData(null)}>やり直す</button>
+                  <button 
+                    className="btn-primary" 
+                    onClick={handleConfirmCsvRegistration}
+                    disabled={csvPreviewData.errors.length > 0}
+                    style={{ opacity: csvPreviewData.errors.length > 0 ? 0.5 : 1, cursor: csvPreviewData.errors.length > 0 ? 'not-allowed' : 'pointer' }}
+                  >
+                    この内容で登録
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <p style={{ fontSize: '13px', color: 'var(--text-sub)', marginBottom: '16px' }}>
+                  テンプレートをダウンロードし、データを入力してからアップロードしてください。<br/>
+                  ※座標はダミー値が自動入力されます。
+                </p>
+                <button 
+                  onClick={downloadCsvTemplate}
+                  className="btn-outline" 
+                  style={{ width: '100%', marginBottom: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>download</span>
+                  テンプレートをダウンロード
+                </button>
+                <label 
+                  className="btn-primary" 
+                  style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', cursor: 'pointer' }}
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>upload</span>
+                  CSVファイルを選択
+                  <input 
+                    type="file" 
+                    accept=".csv" 
+                    style={{ display: 'none' }} 
+                    onChange={handleCsvFileUpload}
+                  />
+                </label>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '24px' }}>
+                  <button className="btn-outline" onClick={() => setIsCsvModalOpen(false)}>閉じる</button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+      {folderModalState && (
+        <div className="modal-overlay" onClick={() => setFolderModalState(null)}>
+          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ padding: '24px', maxWidth: '400px' }}>
+            <h2 style={{ fontSize: '18px', marginBottom: '16px' }}>お気に入りの保存先</h2>
+            
+            <div style={{ marginBottom: '16px' }}>
+              <button 
+                className="btn-outline" 
+                style={{ width: '100%', textAlign: 'left', padding: '12px', marginBottom: '8px' }}
+                onClick={() => setFolderModalState(null)}
+              >
+                📁 すべてのお気に入り (フォルダなし)
+              </button>
+              {currentUser?.favoriteFolders?.map(folder => (
+                <button 
+                  key={folder.id}
+                  className="btn-outline" 
+                  style={{ width: '100%', textAlign: 'left', padding: '12px', marginBottom: '8px', display: 'flex', justifyContent: 'space-between' }}
+                  onClick={() => handleAddToFolder(folder.id)}
+                >
+                  <span>📁 {folder.name}</span>
+                  <span style={{ color: 'var(--text-sub)' }}>{folder.itemIds.length}</span>
+                </button>
+              ))}
+            </div>
+
+            <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '16px', display: 'flex', gap: '8px' }}>
               <input 
-                type="file" 
-                accept=".csv" 
-                style={{ display: 'none' }} 
-                onChange={handleCsvFileUpload}
+                type="text" 
+                value={newFolderName}
+                onChange={e => setNewFolderName(e.target.value)}
+                placeholder="新しいフォルダを作成..."
+                style={{ flex: 1, padding: '8px', borderRadius: '4px', border: '1px solid var(--border-color)' }}
               />
-            </label>
+              <button 
+                className="btn-primary" 
+                onClick={handleAddFolder}
+                disabled={!newFolderName.trim()}
+              >
+                作成
+              </button>
+            </div>
+            
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '24px' }}>
-              <button className="btn-outline" onClick={() => setIsCsvModalOpen(false)}>閉じる</button>
+              <button className="btn-outline" onClick={() => setFolderModalState(null)}>閉じる</button>
             </div>
           </div>
         </div>
