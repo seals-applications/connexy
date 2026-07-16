@@ -479,7 +479,6 @@ export function SearchPage() {
       v: 'weekly'
     });
 
-    let resizeObserver: ResizeObserver | null = null;
     let initObserver: ResizeObserver | null = null;
     let isCleanedUp = false;
     let currentLocMarker: any = null;
@@ -488,6 +487,7 @@ export function SearchPage() {
       try {
         const { Map, InfoWindow } = await importLibrary('maps') as any;
         const { AdvancedMarkerElement } = await importLibrary('marker') as any;
+        await importLibrary('places');
 
         if (isCleanedUp || !mapContainer) return;
 
@@ -563,16 +563,6 @@ export function SearchPage() {
           );
         }
 
-        resizeObserver = new ResizeObserver(() => {
-          if (mapRef.current) {
-            const currentCenter = mapRef.current.getCenter();
-            (window as any).google?.maps?.event?.trigger(mapRef.current, 'resize');
-            if (currentCenter) {
-              mapRef.current.setCenter(currentCenter);
-            }
-          }
-        });
-        resizeObserver.observe(mapContainer);
       } catch (err: any) {
         console.error('Google Maps APIの読み込みに失敗しました:', err);
       }
@@ -629,9 +619,6 @@ export function SearchPage() {
 
     return () => {
       isCleanedUp = true;
-      if (resizeObserver) {
-        resizeObserver.disconnect();
-      }
       if (initObserver) {
         initObserver.disconnect();
       }
@@ -2530,7 +2517,6 @@ export function SearchPage() {
                       {import.meta.env.VITE_GOOGLE_MAPS_API_KEY ? (
                         <Autocomplete
                           key={`autocomplete_${mapSelectionKey}`}
-                          apiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY}
                           onPlaceSelected={(place: any) => {
                             if (place.geometry) {
                               const lat = place.geometry.location.lat();
