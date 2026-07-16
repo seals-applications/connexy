@@ -549,7 +549,7 @@ export function SearchPage() {
                 content: '<b>現在地</b>'
               });
 
-              marker.addListener('click', () => {
+              marker.addListener('gmp-click', () => {
                 infoWindow.open({
                   anchor: marker,
                   map: mapRef.current,
@@ -642,9 +642,6 @@ export function SearchPage() {
         currentLocMarker.map = null;
       }
       if (mapRef.current) {
-        if ((window as any).google?.maps?.event) {
-          (window as any).google.maps.event.clearInstanceListeners(mapRef.current);
-        }
         mapRef.current = null;
       }
     };
@@ -1173,7 +1170,7 @@ export function SearchPage() {
           title: isCluster ? `案件クラスター: ${group.jobs.length}件` : `案件: ${group.jobs.length}件`,
         });
 
-        marker.addListener('click', () => {
+        marker.addListener('gmp-click', () => {
           if (isCluster) {
             mapRef.current.setZoom(mapRef.current.getZoom() + 2);
             mapRef.current.panTo({ lat: group.lat, lng: group.lng });
@@ -1240,7 +1237,7 @@ export function SearchPage() {
           title: isCluster ? `人材クラスター: ${group.talents.length}名` : `人材: ${group.talents.length}名`,
         });
 
-        marker.addListener('click', () => {
+        marker.addListener('gmp-click', () => {
           if (isCluster) {
             mapRef.current.setZoom(mapRef.current.getZoom() + 2);
             mapRef.current.panTo({ lat: group.lat, lng: group.lng });
