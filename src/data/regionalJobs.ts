@@ -4,8 +4,10 @@ export const regionalJobs = [
     "title": "【名古屋】docomo 臨時イベントプロモーション・接客案内スタッフ",
     "description": "大手通信キャリアのイベントブースにて、お声がけやティッシュ配り、サービスのご案内を行うお仕事です。未経験の方も歓迎します！",
     "author_id": "sigma",
-    "price": 17000,
+    "price": 16000,
     "location_name": "愛知県名古屋市中村区",
+    "lat": 35.168404478403716,
+    "lng": 136.89001974337427,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-NGY-1000"
@@ -14,8 +16,8 @@ export const regionalJobs = [
     "role_type": "キャンペーンクルー",
     "sales_channel": "ショップ",
     "carrier": "docomo",
-    "event_date": "2026-08-18",
-    "application_deadline": "2026-08-12",
+    "event_date": "2026-12-24",
+    "application_deadline": "2026-12-18",
     "work_location": "店内",
     "is_urgent": true
   },
@@ -24,8 +26,10 @@ export const regionalJobs = [
     "title": "【栄駅前】クローザー募集！au/UQmobileショップ獲得イベント要員",
     "description": "モバイル端末の新規契約、MNP乗り換え相談に特化した業務です。獲得スキルやクロージングに自信のある方のご応募お待ちしております。",
     "author_id": "alpha",
-    "price": 12000,
+    "price": 20000,
     "location_name": "愛知県名古屋市中区栄",
+    "lat": 35.17274568689653,
+    "lng": 136.9076651371905,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-NGY-1001"
@@ -34,8 +38,8 @@ export const regionalJobs = [
     "role_type": "クローザー",
     "sales_channel": "量販店",
     "carrier": "au/UQmobile",
-    "event_date": "2026-12-02",
-    "application_deadline": "2026-12-01",
+    "event_date": "2026-10-21",
+    "application_deadline": "2026-10-17",
     "work_location": "外販（複合施設など）",
     "is_urgent": false
   },
@@ -46,6 +50,8 @@ export const regionalJobs = [
     "author_id": "beta",
     "price": 15000,
     "location_name": "愛知県名古屋市中区大須",
+    "lat": 35.160630028529525,
+    "lng": 136.90997612537305,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-NGY-1002"
@@ -54,8 +60,8 @@ export const regionalJobs = [
     "role_type": "ディレクター",
     "sales_channel": "商業施設",
     "carrier": "SoftBank/Y!mobile",
-    "event_date": "2026-09-16",
-    "application_deadline": "2026-09-14",
+    "event_date": "2026-10-15",
+    "application_deadline": "2026-10-12",
     "work_location": "外販（スーパーなど）",
     "is_urgent": false
   },
@@ -64,8 +70,10 @@ export const regionalJobs = [
     "title": "【金山量販店】Rakuten Mobileブース販売・クロージング特化クルー募集",
     "description": "週末の来店客数増加に伴う、店頭プロモーション応援業務です。活気のある現場で、チームワークを活かして獲得目標を目指します！",
     "author_id": "gamma",
-    "price": 12000,
+    "price": 17000,
     "location_name": "愛知県名古屋市熱田区金山",
+    "lat": 35.14336523653372,
+    "lng": 136.90376564976697,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-NGY-1003"
@@ -74,8 +82,8 @@ export const regionalJobs = [
     "role_type": "イベントMC",
     "sales_channel": "外販（スーパーなど）",
     "carrier": "Rakuten Mobile",
-    "event_date": "2026-08-01",
-    "application_deadline": "2026-08-01",
+    "event_date": "2026-09-03",
+    "application_deadline": "2026-09-01",
     "work_location": "店内",
     "is_urgent": false
   },
@@ -84,8 +92,10 @@ export const regionalJobs = [
     "title": "【千種】docomo 臨時イベントプロモーション・接客案内スタッフ",
     "description": "大手通信キャリアのイベントブースにて、お声がけやティッシュ配り、サービスのご案内を行うお仕事です。未経験の方も歓迎します！",
     "author_id": "delta",
-    "price": 14000,
+    "price": 13000,
     "location_name": "愛知県名古屋市千種区",
+    "lat": 35.17942874255956,
+    "lng": 136.93457551597677,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-NGY-1004"
@@ -94,8 +104,8 @@ export const regionalJobs = [
     "role_type": "キャンペーンクルー",
     "sales_channel": "ショップ",
     "carrier": "docomo",
-    "event_date": "2026-12-21",
-    "application_deadline": "2026-12-19",
+    "event_date": "2026-12-28",
+    "application_deadline": "2026-12-27",
     "work_location": "外販（複合施設など）",
     "is_urgent": false
   },
@@ -104,8 +114,10 @@ export const regionalJobs = [
     "title": "【名古屋駅前】クローザー募集！au/UQmobileショップ獲得イベント要員",
     "description": "モバイル端末の新規契約、MNP乗り換え相談に特化した業務です。獲得スキルやクロージングに自信のある方のご応募お待ちしております。",
     "author_id": "seals",
-    "price": 19000,
+    "price": 17000,
     "location_name": "愛知県名古屋市中村区",
+    "lat": 35.166991112307514,
+    "lng": 136.8886347615424,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-NGY-1005"
@@ -114,8 +126,8 @@ export const regionalJobs = [
     "role_type": "クローザー",
     "sales_channel": "量販店",
     "carrier": "au/UQmobile",
-    "event_date": "2026-10-12",
-    "application_deadline": "2026-10-08",
+    "event_date": "2026-10-17",
+    "application_deadline": "2026-10-13",
     "work_location": "外販（スーパーなど）",
     "is_urgent": false
   },
@@ -124,8 +136,10 @@ export const regionalJobs = [
     "title": "【栄近郊】高単価！SoftBank/Y!mobile・モバイル相談会ディレクション・運営",
     "description": "イベントスペースや店舗前のブース設営から運営、集客のマイクパフォーマンス（MC）まで幅広くお任せします。リーダーシップを発揮できる環境です。",
     "author_id": "freer",
-    "price": 19000,
+    "price": 13000,
     "location_name": "愛知県名古屋市中区栄",
+    "lat": 35.174529780705626,
+    "lng": 136.90691170554425,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-NGY-1006"
@@ -134,8 +148,8 @@ export const regionalJobs = [
     "role_type": "ディレクター",
     "sales_channel": "商業施設",
     "carrier": "SoftBank/Y!mobile",
-    "event_date": "2026-12-13",
-    "application_deadline": "2026-12-10",
+    "event_date": "2026-10-16",
+    "application_deadline": "2026-10-09",
     "work_location": "店内",
     "is_urgent": false
   },
@@ -144,8 +158,10 @@ export const regionalJobs = [
     "title": "【大須量販店】Rakuten Mobileブース販売・クロージング特化クルー募集",
     "description": "週末の来店客数増加に伴う、店頭プロモーション応援業務です。活気のある現場で、チームワークを活かして獲得目標を目指します！",
     "author_id": "cocolabo",
-    "price": 20000,
+    "price": 16000,
     "location_name": "愛知県名古屋市中区大須",
+    "lat": 35.15444171297473,
+    "lng": 136.89511202769043,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-NGY-1007"
@@ -154,8 +170,8 @@ export const regionalJobs = [
     "role_type": "イベントMC",
     "sales_channel": "外販（スーパーなど）",
     "carrier": "Rakuten Mobile",
-    "event_date": "2026-12-28",
-    "application_deadline": "2026-12-23",
+    "event_date": "2026-11-04",
+    "application_deadline": "2026-11-01",
     "work_location": "外販（複合施設など）",
     "is_urgent": true
   },
@@ -164,8 +180,10 @@ export const regionalJobs = [
     "title": "【金山】docomo 臨時イベントプロモーション・接客案内スタッフ",
     "description": "大手通信キャリアのイベントブースにて、お声がけやティッシュ配り、サービスのご案内を行うお仕事です。未経験の方も歓迎します！",
     "author_id": "sigma",
-    "price": 18000,
+    "price": 13000,
     "location_name": "愛知県名古屋市熱田区金山",
+    "lat": 35.14848289138893,
+    "lng": 136.90919377991406,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-NGY-1008"
@@ -174,8 +192,8 @@ export const regionalJobs = [
     "role_type": "キャンペーンクルー",
     "sales_channel": "ショップ",
     "carrier": "docomo",
-    "event_date": "2026-10-11",
-    "application_deadline": "2026-10-06",
+    "event_date": "2026-12-15",
+    "application_deadline": "2026-12-11",
     "work_location": "外販（スーパーなど）",
     "is_urgent": false
   },
@@ -184,8 +202,10 @@ export const regionalJobs = [
     "title": "【千種駅前】クローザー募集！au/UQmobileショップ獲得イベント要員",
     "description": "モバイル端末の新規契約、MNP乗り換え相談に特化した業務です。獲得スキルやクロージングに自信のある方のご応募お待ちしております。",
     "author_id": "alpha",
-    "price": 15000,
+    "price": 13000,
     "location_name": "愛知県名古屋市千種区",
+    "lat": 35.17066697009592,
+    "lng": 136.93482652879914,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-NGY-1009"
@@ -194,8 +214,8 @@ export const regionalJobs = [
     "role_type": "クローザー",
     "sales_channel": "量販店",
     "carrier": "au/UQmobile",
-    "event_date": "2026-10-21",
-    "application_deadline": "2026-10-15",
+    "event_date": "2026-09-10",
+    "application_deadline": "2026-09-06",
     "work_location": "店内",
     "is_urgent": false
   },
@@ -204,8 +224,10 @@ export const regionalJobs = [
     "title": "【名古屋近郊】高単価！SoftBank/Y!mobile・モバイル相談会ディレクション・運営",
     "description": "イベントスペースや店舗前のブース設営から運営、集客のマイクパフォーマンス（MC）まで幅広くお任せします。リーダーシップを発揮できる環境です。",
     "author_id": "beta",
-    "price": 18000,
+    "price": 13000,
     "location_name": "愛知県名古屋市中村区",
+    "lat": 35.18027314873434,
+    "lng": 136.88971326846905,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-NGY-1010"
@@ -214,8 +236,8 @@ export const regionalJobs = [
     "role_type": "ディレクター",
     "sales_channel": "商業施設",
     "carrier": "SoftBank/Y!mobile",
-    "event_date": "2026-10-03",
-    "application_deadline": "2026-10-01",
+    "event_date": "2026-09-10",
+    "application_deadline": "2026-09-09",
     "work_location": "外販（複合施設など）",
     "is_urgent": false
   },
@@ -224,8 +246,10 @@ export const regionalJobs = [
     "title": "【栄量販店】Rakuten Mobileブース販売・クロージング特化クルー募集",
     "description": "週末の来店客数増加に伴う、店頭プロモーション応援業務です。活気のある現場で、チームワークを活かして獲得目標を目指します！",
     "author_id": "gamma",
-    "price": 18000,
+    "price": 16000,
     "location_name": "愛知県名古屋市中区栄",
+    "lat": 35.17731611002269,
+    "lng": 136.9006438798488,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-NGY-1011"
@@ -234,8 +258,8 @@ export const regionalJobs = [
     "role_type": "イベントMC",
     "sales_channel": "外販（スーパーなど）",
     "carrier": "Rakuten Mobile",
-    "event_date": "2026-12-10",
-    "application_deadline": "2026-12-04",
+    "event_date": "2026-09-09",
+    "application_deadline": "2026-09-06",
     "work_location": "外販（スーパーなど）",
     "is_urgent": false
   },
@@ -244,8 +268,10 @@ export const regionalJobs = [
     "title": "【大須】docomo 臨時イベントプロモーション・接客案内スタッフ",
     "description": "大手通信キャリアのイベントブースにて、お声がけやティッシュ配り、サービスのご案内を行うお仕事です。未経験の方も歓迎します！",
     "author_id": "delta",
-    "price": 13000,
+    "price": 18000,
     "location_name": "愛知県名古屋市中区大須",
+    "lat": 35.16008678771808,
+    "lng": 136.91195702695197,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-NGY-1012"
@@ -254,7 +280,7 @@ export const regionalJobs = [
     "role_type": "キャンペーンクルー",
     "sales_channel": "ショップ",
     "carrier": "docomo",
-    "event_date": "2026-11-04",
+    "event_date": "2026-11-02",
     "application_deadline": "2026-11-01",
     "work_location": "店内",
     "is_urgent": false
@@ -264,8 +290,10 @@ export const regionalJobs = [
     "title": "【金山駅前】クローザー募集！au/UQmobileショップ獲得イベント要員",
     "description": "モバイル端末の新規契約、MNP乗り換え相談に特化した業務です。獲得スキルやクロージングに自信のある方のご応募お待ちしております。",
     "author_id": "seals",
-    "price": 17000,
+    "price": 12000,
     "location_name": "愛知県名古屋市熱田区金山",
+    "lat": 35.140589143515314,
+    "lng": 136.89552266643273,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-NGY-1013"
@@ -274,8 +302,8 @@ export const regionalJobs = [
     "role_type": "クローザー",
     "sales_channel": "量販店",
     "carrier": "au/UQmobile",
-    "event_date": "2026-08-16",
-    "application_deadline": "2026-08-15",
+    "event_date": "2026-11-17",
+    "application_deadline": "2026-11-12",
     "work_location": "外販（複合施設など）",
     "is_urgent": false
   },
@@ -284,8 +312,10 @@ export const regionalJobs = [
     "title": "【千種近郊】高単価！SoftBank/Y!mobile・モバイル相談会ディレクション・運営",
     "description": "イベントスペースや店舗前のブース設営から運営、集客のマイクパフォーマンス（MC）まで幅広くお任せします。リーダーシップを発揮できる環境です。",
     "author_id": "freer",
-    "price": 15000,
+    "price": 16000,
     "location_name": "愛知県名古屋市千種区",
+    "lat": 35.17912718942189,
+    "lng": 136.93453955745966,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-NGY-1014"
@@ -294,8 +324,8 @@ export const regionalJobs = [
     "role_type": "ディレクター",
     "sales_channel": "商業施設",
     "carrier": "SoftBank/Y!mobile",
-    "event_date": "2026-09-16",
-    "application_deadline": "2026-09-15",
+    "event_date": "2026-08-01",
+    "application_deadline": "2026-08-01",
     "work_location": "外販（スーパーなど）",
     "is_urgent": true
   },
@@ -304,8 +334,10 @@ export const regionalJobs = [
     "title": "【名古屋量販店】Rakuten Mobileブース販売・クロージング特化クルー募集",
     "description": "週末の来店客数増加に伴う、店頭プロモーション応援業務です。活気のある現場で、チームワークを活かして獲得目標を目指します！",
     "author_id": "cocolabo",
-    "price": 20000,
+    "price": 16000,
     "location_name": "愛知県名古屋市中村区",
+    "lat": 35.17714498681319,
+    "lng": 136.88432320133742,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-NGY-1015"
@@ -314,8 +346,8 @@ export const regionalJobs = [
     "role_type": "イベントMC",
     "sales_channel": "外販（スーパーなど）",
     "carrier": "Rakuten Mobile",
-    "event_date": "2026-11-18",
-    "application_deadline": "2026-11-17",
+    "event_date": "2026-08-15",
+    "application_deadline": "2026-08-14",
     "work_location": "店内",
     "is_urgent": false
   },
@@ -326,6 +358,8 @@ export const regionalJobs = [
     "author_id": "sigma",
     "price": 18000,
     "location_name": "愛知県名古屋市中区栄",
+    "lat": 35.17188478990036,
+    "lng": 136.9151735014048,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-NGY-1016"
@@ -334,8 +368,8 @@ export const regionalJobs = [
     "role_type": "キャンペーンクルー",
     "sales_channel": "ショップ",
     "carrier": "docomo",
-    "event_date": "2026-10-28",
-    "application_deadline": "2026-10-26",
+    "event_date": "2026-12-13",
+    "application_deadline": "2026-12-07",
     "work_location": "外販（複合施設など）",
     "is_urgent": false
   },
@@ -344,8 +378,10 @@ export const regionalJobs = [
     "title": "【大須駅前】クローザー募集！au/UQmobileショップ獲得イベント要員",
     "description": "モバイル端末の新規契約、MNP乗り換え相談に特化した業務です。獲得スキルやクロージングに自信のある方のご応募お待ちしております。",
     "author_id": "alpha",
-    "price": 20000,
+    "price": 17000,
     "location_name": "愛知県名古屋市中区大須",
+    "lat": 35.16745657405868,
+    "lng": 136.90602964869396,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-NGY-1017"
@@ -354,8 +390,8 @@ export const regionalJobs = [
     "role_type": "クローザー",
     "sales_channel": "量販店",
     "carrier": "au/UQmobile",
-    "event_date": "2026-08-14",
-    "application_deadline": "2026-08-13",
+    "event_date": "2026-10-13",
+    "application_deadline": "2026-10-09",
     "work_location": "外販（スーパーなど）",
     "is_urgent": false
   },
@@ -364,8 +400,10 @@ export const regionalJobs = [
     "title": "【金山近郊】高単価！SoftBank/Y!mobile・モバイル相談会ディレクション・運営",
     "description": "イベントスペースや店舗前のブース設営から運営、集客のマイクパフォーマンス（MC）まで幅広くお任せします。リーダーシップを発揮できる環境です。",
     "author_id": "beta",
-    "price": 18000,
+    "price": 13000,
     "location_name": "愛知県名古屋市熱田区金山",
+    "lat": 35.13399718727619,
+    "lng": 136.90986220417355,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-NGY-1018"
@@ -374,8 +412,8 @@ export const regionalJobs = [
     "role_type": "ディレクター",
     "sales_channel": "商業施設",
     "carrier": "SoftBank/Y!mobile",
-    "event_date": "2026-12-12",
-    "application_deadline": "2026-12-06",
+    "event_date": "2026-09-19",
+    "application_deadline": "2026-09-17",
     "work_location": "店内",
     "is_urgent": false
   },
@@ -384,8 +422,10 @@ export const regionalJobs = [
     "title": "【千種量販店】Rakuten Mobileブース販売・クロージング特化クルー募集",
     "description": "週末の来店客数増加に伴う、店頭プロモーション応援業務です。活気のある現場で、チームワークを活かして獲得目標を目指します！",
     "author_id": "gamma",
-    "price": 13000,
+    "price": 19000,
     "location_name": "愛知県名古屋市千種区",
+    "lat": 35.16525917484051,
+    "lng": 136.93737403440113,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-NGY-1019"
@@ -394,8 +434,8 @@ export const regionalJobs = [
     "role_type": "イベントMC",
     "sales_channel": "外販（スーパーなど）",
     "carrier": "Rakuten Mobile",
-    "event_date": "2026-08-22",
-    "application_deadline": "2026-08-15",
+    "event_date": "2026-08-13",
+    "application_deadline": "2026-08-06",
     "work_location": "外販（複合施設など）",
     "is_urgent": false
   },
@@ -404,8 +444,10 @@ export const regionalJobs = [
     "title": "【名古屋】docomo 臨時イベントプロモーション・接客案内スタッフ",
     "description": "大手通信キャリアのイベントブースにて、お声がけやティッシュ配り、サービスのご案内を行うお仕事です。未経験の方も歓迎します！",
     "author_id": "delta",
-    "price": 18000,
+    "price": 13000,
     "location_name": "愛知県名古屋市中村区",
+    "lat": 35.17654921821688,
+    "lng": 136.89139004913204,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-NGY-1020"
@@ -414,8 +456,8 @@ export const regionalJobs = [
     "role_type": "キャンペーンクルー",
     "sales_channel": "ショップ",
     "carrier": "docomo",
-    "event_date": "2026-12-02",
-    "application_deadline": "2026-12-01",
+    "event_date": "2026-08-12",
+    "application_deadline": "2026-08-08",
     "work_location": "外販（スーパーなど）",
     "is_urgent": false
   },
@@ -424,8 +466,10 @@ export const regionalJobs = [
     "title": "【栄駅前】クローザー募集！au/UQmobileショップ獲得イベント要員",
     "description": "モバイル端末の新規契約、MNP乗り換え相談に特化した業務です。獲得スキルやクロージングに自信のある方のご応募お待ちしております。",
     "author_id": "seals",
-    "price": 19000,
+    "price": 18000,
     "location_name": "愛知県名古屋市中区栄",
+    "lat": 35.17121019730721,
+    "lng": 136.90811681089585,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-NGY-1021"
@@ -434,8 +478,8 @@ export const regionalJobs = [
     "role_type": "クローザー",
     "sales_channel": "量販店",
     "carrier": "au/UQmobile",
-    "event_date": "2026-11-26",
-    "application_deadline": "2026-11-25",
+    "event_date": "2026-12-04",
+    "application_deadline": "2026-12-03",
     "work_location": "店内",
     "is_urgent": true
   },
@@ -444,8 +488,10 @@ export const regionalJobs = [
     "title": "【大須近郊】高単価！SoftBank/Y!mobile・モバイル相談会ディレクション・運営",
     "description": "イベントスペースや店舗前のブース設営から運営、集客のマイクパフォーマンス（MC）まで幅広くお任せします。リーダーシップを発揮できる環境です。",
     "author_id": "freer",
-    "price": 15000,
+    "price": 17000,
     "location_name": "愛知県名古屋市中区大須",
+    "lat": 35.16591698253963,
+    "lng": 136.91143515483114,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-NGY-1022"
@@ -454,8 +500,8 @@ export const regionalJobs = [
     "role_type": "ディレクター",
     "sales_channel": "商業施設",
     "carrier": "SoftBank/Y!mobile",
-    "event_date": "2026-12-22",
-    "application_deadline": "2026-12-19",
+    "event_date": "2026-11-07",
+    "application_deadline": "2026-11-04",
     "work_location": "外販（複合施設など）",
     "is_urgent": false
   },
@@ -464,8 +510,10 @@ export const regionalJobs = [
     "title": "【金山量販店】Rakuten Mobileブース販売・クロージング特化クルー募集",
     "description": "週末の来店客数増加に伴う、店頭プロモーション応援業務です。活気のある現場で、チームワークを活かして獲得目標を目指します！",
     "author_id": "cocolabo",
-    "price": 14000,
+    "price": 16000,
     "location_name": "愛知県名古屋市熱田区金山",
+    "lat": 35.14874863903701,
+    "lng": 136.90740902566822,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-NGY-1023"
@@ -474,8 +522,8 @@ export const regionalJobs = [
     "role_type": "イベントMC",
     "sales_channel": "外販（スーパーなど）",
     "carrier": "Rakuten Mobile",
-    "event_date": "2026-08-17",
-    "application_deadline": "2026-08-14",
+    "event_date": "2026-08-04",
+    "application_deadline": "2026-08-02",
     "work_location": "外販（スーパーなど）",
     "is_urgent": false
   },
@@ -484,8 +532,10 @@ export const regionalJobs = [
     "title": "【千種】docomo 臨時イベントプロモーション・接客案内スタッフ",
     "description": "大手通信キャリアのイベントブースにて、お声がけやティッシュ配り、サービスのご案内を行うお仕事です。未経験の方も歓迎します！",
     "author_id": "sigma",
-    "price": 18000,
+    "price": 19000,
     "location_name": "愛知県名古屋市千種区",
+    "lat": 35.1694712562594,
+    "lng": 136.92727273522715,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-NGY-1024"
@@ -494,8 +544,8 @@ export const regionalJobs = [
     "role_type": "キャンペーンクルー",
     "sales_channel": "ショップ",
     "carrier": "docomo",
-    "event_date": "2026-11-14",
-    "application_deadline": "2026-11-11",
+    "event_date": "2026-10-26",
+    "application_deadline": "2026-10-24",
     "work_location": "店内",
     "is_urgent": false
   },
@@ -504,8 +554,10 @@ export const regionalJobs = [
     "title": "【名古屋駅前】クローザー募集！au/UQmobileショップ獲得イベント要員",
     "description": "モバイル端末の新規契約、MNP乗り換え相談に特化した業務です。獲得スキルやクロージングに自信のある方のご応募お待ちしております。",
     "author_id": "alpha",
-    "price": 20000,
+    "price": 16000,
     "location_name": "愛知県名古屋市中村区",
+    "lat": 35.16848419797679,
+    "lng": 136.87790700432782,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-NGY-1025"
@@ -514,8 +566,8 @@ export const regionalJobs = [
     "role_type": "クローザー",
     "sales_channel": "量販店",
     "carrier": "au/UQmobile",
-    "event_date": "2026-12-15",
-    "application_deadline": "2026-12-13",
+    "event_date": "2026-11-01",
+    "application_deadline": "2026-11-01",
     "work_location": "外販（複合施設など）",
     "is_urgent": false
   },
@@ -524,8 +576,10 @@ export const regionalJobs = [
     "title": "【栄近郊】高単価！SoftBank/Y!mobile・モバイル相談会ディレクション・運営",
     "description": "イベントスペースや店舗前のブース設営から運営、集客のマイクパフォーマンス（MC）まで幅広くお任せします。リーダーシップを発揮できる環境です。",
     "author_id": "beta",
-    "price": 16000,
+    "price": 18000,
     "location_name": "愛知県名古屋市中区栄",
+    "lat": 35.164598800051486,
+    "lng": 136.9100324842138,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-NGY-1026"
@@ -534,8 +588,8 @@ export const regionalJobs = [
     "role_type": "ディレクター",
     "sales_channel": "商業施設",
     "carrier": "SoftBank/Y!mobile",
-    "event_date": "2026-09-23",
-    "application_deadline": "2026-09-18",
+    "event_date": "2026-10-19",
+    "application_deadline": "2026-10-18",
     "work_location": "外販（スーパーなど）",
     "is_urgent": false
   },
@@ -546,6 +600,8 @@ export const regionalJobs = [
     "author_id": "gamma",
     "price": 19000,
     "location_name": "愛知県名古屋市中区大須",
+    "lat": 35.153783201555754,
+    "lng": 136.89586945349106,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-NGY-1027"
@@ -554,8 +610,8 @@ export const regionalJobs = [
     "role_type": "イベントMC",
     "sales_channel": "外販（スーパーなど）",
     "carrier": "Rakuten Mobile",
-    "event_date": "2026-10-25",
-    "application_deadline": "2026-10-24",
+    "event_date": "2026-10-24",
+    "application_deadline": "2026-10-23",
     "work_location": "店内",
     "is_urgent": false
   },
@@ -564,8 +620,10 @@ export const regionalJobs = [
     "title": "【金山】docomo 臨時イベントプロモーション・接客案内スタッフ",
     "description": "大手通信キャリアのイベントブースにて、お声がけやティッシュ配り、サービスのご案内を行うお仕事です。未経験の方も歓迎します！",
     "author_id": "delta",
-    "price": 19000,
+    "price": 13000,
     "location_name": "愛知県名古屋市熱田区金山",
+    "lat": 35.14218747524594,
+    "lng": 136.90973326686594,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-NGY-1028"
@@ -574,8 +632,8 @@ export const regionalJobs = [
     "role_type": "キャンペーンクルー",
     "sales_channel": "ショップ",
     "carrier": "docomo",
-    "event_date": "2026-09-15",
-    "application_deadline": "2026-09-10",
+    "event_date": "2026-11-05",
+    "application_deadline": "2026-11-04",
     "work_location": "外販（複合施設など）",
     "is_urgent": true
   },
@@ -584,8 +642,10 @@ export const regionalJobs = [
     "title": "【千種駅前】クローザー募集！au/UQmobileショップ獲得イベント要員",
     "description": "モバイル端末の新規契約、MNP乗り換え相談に特化した業務です。獲得スキルやクロージングに自信のある方のご応募お待ちしております。",
     "author_id": "seals",
-    "price": 18000,
+    "price": 15000,
     "location_name": "愛知県名古屋市千種区",
+    "lat": 35.16871427369191,
+    "lng": 136.92894732310089,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-NGY-1029"
@@ -594,8 +654,8 @@ export const regionalJobs = [
     "role_type": "クローザー",
     "sales_channel": "量販店",
     "carrier": "au/UQmobile",
-    "event_date": "2026-11-20",
-    "application_deadline": "2026-11-18",
+    "event_date": "2026-08-12",
+    "application_deadline": "2026-08-11",
     "work_location": "外販（スーパーなど）",
     "is_urgent": false
   },
@@ -604,8 +664,10 @@ export const regionalJobs = [
     "title": "【名古屋近郊】高単価！SoftBank/Y!mobile・モバイル相談会ディレクション・運営",
     "description": "イベントスペースや店舗前のブース設営から運営、集客のマイクパフォーマンス（MC）まで幅広くお任せします。リーダーシップを発揮できる環境です。",
     "author_id": "freer",
-    "price": 19000,
+    "price": 12000,
     "location_name": "愛知県名古屋市中村区",
+    "lat": 35.178697848555174,
+    "lng": 136.87531325144292,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-NGY-1030"
@@ -614,8 +676,8 @@ export const regionalJobs = [
     "role_type": "ディレクター",
     "sales_channel": "商業施設",
     "carrier": "SoftBank/Y!mobile",
-    "event_date": "2026-10-15",
-    "application_deadline": "2026-10-14",
+    "event_date": "2026-08-04",
+    "application_deadline": "2026-08-02",
     "work_location": "店内",
     "is_urgent": false
   },
@@ -624,8 +686,10 @@ export const regionalJobs = [
     "title": "【栄量販店】Rakuten Mobileブース販売・クロージング特化クルー募集",
     "description": "週末の来店客数増加に伴う、店頭プロモーション応援業務です。活気のある現場で、チームワークを活かして獲得目標を目指します！",
     "author_id": "cocolabo",
-    "price": 15000,
+    "price": 20000,
     "location_name": "愛知県名古屋市中区栄",
+    "lat": 35.16164312572951,
+    "lng": 136.90584512553124,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-NGY-1031"
@@ -634,8 +698,8 @@ export const regionalJobs = [
     "role_type": "イベントMC",
     "sales_channel": "外販（スーパーなど）",
     "carrier": "Rakuten Mobile",
-    "event_date": "2026-09-18",
-    "application_deadline": "2026-09-17",
+    "event_date": "2026-11-19",
+    "application_deadline": "2026-11-16",
     "work_location": "外販（複合施設など）",
     "is_urgent": false
   },
@@ -644,8 +708,10 @@ export const regionalJobs = [
     "title": "【大須】docomo 臨時イベントプロモーション・接客案内スタッフ",
     "description": "大手通信キャリアのイベントブースにて、お声がけやティッシュ配り、サービスのご案内を行うお仕事です。未経験の方も歓迎します！",
     "author_id": "sigma",
-    "price": 14000,
+    "price": 17000,
     "location_name": "愛知県名古屋市中区大須",
+    "lat": 35.158498124243195,
+    "lng": 136.90928484641344,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-NGY-1032"
@@ -654,8 +720,8 @@ export const regionalJobs = [
     "role_type": "キャンペーンクルー",
     "sales_channel": "ショップ",
     "carrier": "docomo",
-    "event_date": "2026-12-05",
-    "application_deadline": "2026-12-01",
+    "event_date": "2026-08-19",
+    "application_deadline": "2026-08-18",
     "work_location": "外販（スーパーなど）",
     "is_urgent": false
   },
@@ -666,6 +732,8 @@ export const regionalJobs = [
     "author_id": "alpha",
     "price": 20000,
     "location_name": "愛知県名古屋市熱田区金山",
+    "lat": 35.14980095866102,
+    "lng": 136.90091564067978,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-NGY-1033"
@@ -674,8 +742,8 @@ export const regionalJobs = [
     "role_type": "クローザー",
     "sales_channel": "量販店",
     "carrier": "au/UQmobile",
-    "event_date": "2026-12-26",
-    "application_deadline": "2026-12-25",
+    "event_date": "2026-12-25",
+    "application_deadline": "2026-12-20",
     "work_location": "店内",
     "is_urgent": false
   },
@@ -684,8 +752,10 @@ export const regionalJobs = [
     "title": "【千種近郊】高単価！SoftBank/Y!mobile・モバイル相談会ディレクション・運営",
     "description": "イベントスペースや店舗前のブース設営から運営、集客のマイクパフォーマンス（MC）まで幅広くお任せします。リーダーシップを発揮できる環境です。",
     "author_id": "beta",
-    "price": 17000,
+    "price": 18000,
     "location_name": "愛知県名古屋市千種区",
+    "lat": 35.16097538797237,
+    "lng": 136.93676708473973,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-NGY-1034"
@@ -694,8 +764,8 @@ export const regionalJobs = [
     "role_type": "ディレクター",
     "sales_channel": "商業施設",
     "carrier": "SoftBank/Y!mobile",
-    "event_date": "2026-10-08",
-    "application_deadline": "2026-10-03",
+    "event_date": "2026-08-01",
+    "application_deadline": "2026-08-01",
     "work_location": "外販（複合施設など）",
     "is_urgent": false
   },
@@ -706,6 +776,8 @@ export const regionalJobs = [
     "author_id": "gamma",
     "price": 14000,
     "location_name": "愛知県名古屋市中村区",
+    "lat": 35.167722824226765,
+    "lng": 136.87664785344455,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-NGY-1035"
@@ -714,8 +786,8 @@ export const regionalJobs = [
     "role_type": "イベントMC",
     "sales_channel": "外販（スーパーなど）",
     "carrier": "Rakuten Mobile",
-    "event_date": "2026-08-28",
-    "application_deadline": "2026-08-27",
+    "event_date": "2026-12-18",
+    "application_deadline": "2026-12-16",
     "work_location": "外販（スーパーなど）",
     "is_urgent": true
   },
@@ -724,8 +796,10 @@ export const regionalJobs = [
     "title": "【栄】docomo 臨時イベントプロモーション・接客案内スタッフ",
     "description": "大手通信キャリアのイベントブースにて、お声がけやティッシュ配り、サービスのご案内を行うお仕事です。未経験の方も歓迎します！",
     "author_id": "delta",
-    "price": 15000,
+    "price": 12000,
     "location_name": "愛知県名古屋市中区栄",
+    "lat": 35.17623039288267,
+    "lng": 136.9037444610459,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-NGY-1036"
@@ -734,8 +808,8 @@ export const regionalJobs = [
     "role_type": "キャンペーンクルー",
     "sales_channel": "ショップ",
     "carrier": "docomo",
-    "event_date": "2026-09-04",
-    "application_deadline": "2026-09-01",
+    "event_date": "2026-11-26",
+    "application_deadline": "2026-11-25",
     "work_location": "店内",
     "is_urgent": false
   },
@@ -744,8 +818,10 @@ export const regionalJobs = [
     "title": "【大須駅前】クローザー募集！au/UQmobileショップ獲得イベント要員",
     "description": "モバイル端末の新規契約、MNP乗り換え相談に特化した業務です。獲得スキルやクロージングに自信のある方のご応募お待ちしております。",
     "author_id": "seals",
-    "price": 20000,
+    "price": 17000,
     "location_name": "愛知県名古屋市中区大須",
+    "lat": 35.16020735717445,
+    "lng": 136.9114830916709,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-NGY-1037"
@@ -754,8 +830,8 @@ export const regionalJobs = [
     "role_type": "クローザー",
     "sales_channel": "量販店",
     "carrier": "au/UQmobile",
-    "event_date": "2026-12-07",
-    "application_deadline": "2026-12-03",
+    "event_date": "2026-12-14",
+    "application_deadline": "2026-12-07",
     "work_location": "外販（複合施設など）",
     "is_urgent": false
   },
@@ -766,6 +842,8 @@ export const regionalJobs = [
     "author_id": "freer",
     "price": 19000,
     "location_name": "愛知県名古屋市熱田区金山",
+    "lat": 35.14407577236695,
+    "lng": 136.89317802069507,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-NGY-1038"
@@ -774,8 +852,8 @@ export const regionalJobs = [
     "role_type": "ディレクター",
     "sales_channel": "商業施設",
     "carrier": "SoftBank/Y!mobile",
-    "event_date": "2026-12-13",
-    "application_deadline": "2026-12-09",
+    "event_date": "2026-08-17",
+    "application_deadline": "2026-08-12",
     "work_location": "外販（スーパーなど）",
     "is_urgent": false
   },
@@ -784,8 +862,10 @@ export const regionalJobs = [
     "title": "【千種量販店】Rakuten Mobileブース販売・クロージング特化クルー募集",
     "description": "週末の来店客数増加に伴う、店頭プロモーション応援業務です。活気のある現場で、チームワークを活かして獲得目標を目指します！",
     "author_id": "cocolabo",
-    "price": 15000,
+    "price": 16000,
     "location_name": "愛知県名古屋市千種区",
+    "lat": 35.17546288450328,
+    "lng": 136.93039839966508,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-NGY-1039"
@@ -794,8 +874,8 @@ export const regionalJobs = [
     "role_type": "イベントMC",
     "sales_channel": "外販（スーパーなど）",
     "carrier": "Rakuten Mobile",
-    "event_date": "2026-09-24",
-    "application_deadline": "2026-09-21",
+    "event_date": "2026-11-03",
+    "application_deadline": "2026-11-01",
     "work_location": "店内",
     "is_urgent": false
   },
@@ -806,6 +886,8 @@ export const regionalJobs = [
     "author_id": "sigma",
     "price": 16000,
     "location_name": "愛知県名古屋市中村区",
+    "lat": 35.16313474018226,
+    "lng": 136.8845216134467,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-NGY-1040"
@@ -814,8 +896,8 @@ export const regionalJobs = [
     "role_type": "キャンペーンクルー",
     "sales_channel": "ショップ",
     "carrier": "docomo",
-    "event_date": "2026-11-23",
-    "application_deadline": "2026-11-19",
+    "event_date": "2026-11-24",
+    "application_deadline": "2026-11-22",
     "work_location": "外販（複合施設など）",
     "is_urgent": false
   },
@@ -824,8 +906,10 @@ export const regionalJobs = [
     "title": "【栄駅前】クローザー募集！au/UQmobileショップ獲得イベント要員",
     "description": "モバイル端末の新規契約、MNP乗り換え相談に特化した業務です。獲得スキルやクロージングに自信のある方のご応募お待ちしております。",
     "author_id": "alpha",
-    "price": 14000,
+    "price": 16000,
     "location_name": "愛知県名古屋市中区栄",
+    "lat": 35.17045203336324,
+    "lng": 136.89859635527824,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-NGY-1041"
@@ -834,8 +918,8 @@ export const regionalJobs = [
     "role_type": "クローザー",
     "sales_channel": "量販店",
     "carrier": "au/UQmobile",
-    "event_date": "2026-10-12",
-    "application_deadline": "2026-10-11",
+    "event_date": "2026-12-04",
+    "application_deadline": "2026-12-03",
     "work_location": "外販（スーパーなど）",
     "is_urgent": false
   },
@@ -844,8 +928,10 @@ export const regionalJobs = [
     "title": "【大須近郊】高単価！SoftBank/Y!mobile・モバイル相談会ディレクション・運営",
     "description": "イベントスペースや店舗前のブース設営から運営、集客のマイクパフォーマンス（MC）まで幅広くお任せします。リーダーシップを発揮できる環境です。",
     "author_id": "beta",
-    "price": 17000,
+    "price": 14000,
     "location_name": "愛知県名古屋市中区大須",
+    "lat": 35.1611799384167,
+    "lng": 136.89610416649228,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-NGY-1042"
@@ -854,8 +940,8 @@ export const regionalJobs = [
     "role_type": "ディレクター",
     "sales_channel": "商業施設",
     "carrier": "SoftBank/Y!mobile",
-    "event_date": "2026-08-07",
-    "application_deadline": "2026-08-01",
+    "event_date": "2026-11-24",
+    "application_deadline": "2026-11-23",
     "work_location": "店内",
     "is_urgent": true
   },
@@ -864,8 +950,10 @@ export const regionalJobs = [
     "title": "【金山量販店】Rakuten Mobileブース販売・クロージング特化クルー募集",
     "description": "週末の来店客数増加に伴う、店頭プロモーション応援業務です。活気のある現場で、チームワークを活かして獲得目標を目指します！",
     "author_id": "gamma",
-    "price": 15000,
+    "price": 13000,
     "location_name": "愛知県名古屋市熱田区金山",
+    "lat": 35.14689366565433,
+    "lng": 136.90440822400757,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-NGY-1043"
@@ -874,8 +962,8 @@ export const regionalJobs = [
     "role_type": "イベントMC",
     "sales_channel": "外販（スーパーなど）",
     "carrier": "Rakuten Mobile",
-    "event_date": "2026-11-14",
-    "application_deadline": "2026-11-10",
+    "event_date": "2026-12-21",
+    "application_deadline": "2026-12-15",
     "work_location": "外販（複合施設など）",
     "is_urgent": false
   },
@@ -884,8 +972,10 @@ export const regionalJobs = [
     "title": "【千種】docomo 臨時イベントプロモーション・接客案内スタッフ",
     "description": "大手通信キャリアのイベントブースにて、お声がけやティッシュ配り、サービスのご案内を行うお仕事です。未経験の方も歓迎します！",
     "author_id": "delta",
-    "price": 19000,
+    "price": 15000,
     "location_name": "愛知県名古屋市千種区",
+    "lat": 35.16130906130895,
+    "lng": 136.92935348565257,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-NGY-1044"
@@ -894,8 +984,8 @@ export const regionalJobs = [
     "role_type": "キャンペーンクルー",
     "sales_channel": "ショップ",
     "carrier": "docomo",
-    "event_date": "2026-10-28",
-    "application_deadline": "2026-10-23",
+    "event_date": "2026-10-16",
+    "application_deadline": "2026-10-13",
     "work_location": "外販（スーパーなど）",
     "is_urgent": false
   },
@@ -906,6 +996,8 @@ export const regionalJobs = [
     "author_id": "seals",
     "price": 15000,
     "location_name": "愛知県名古屋市中村区",
+    "lat": 35.16279074690875,
+    "lng": 136.88828317713984,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-NGY-1045"
@@ -914,8 +1006,8 @@ export const regionalJobs = [
     "role_type": "クローザー",
     "sales_channel": "量販店",
     "carrier": "au/UQmobile",
-    "event_date": "2026-10-11",
-    "application_deadline": "2026-10-08",
+    "event_date": "2026-08-25",
+    "application_deadline": "2026-08-21",
     "work_location": "店内",
     "is_urgent": false
   },
@@ -924,8 +1016,10 @@ export const regionalJobs = [
     "title": "【栄近郊】高単価！SoftBank/Y!mobile・モバイル相談会ディレクション・運営",
     "description": "イベントスペースや店舗前のブース設営から運営、集客のマイクパフォーマンス（MC）まで幅広くお任せします。リーダーシップを発揮できる環境です。",
     "author_id": "freer",
-    "price": 16000,
+    "price": 18000,
     "location_name": "愛知県名古屋市中区栄",
+    "lat": 35.16437056443618,
+    "lng": 136.89834183327815,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-NGY-1046"
@@ -934,8 +1028,8 @@ export const regionalJobs = [
     "role_type": "ディレクター",
     "sales_channel": "商業施設",
     "carrier": "SoftBank/Y!mobile",
-    "event_date": "2026-11-20",
-    "application_deadline": "2026-11-17",
+    "event_date": "2026-10-25",
+    "application_deadline": "2026-10-21",
     "work_location": "外販（複合施設など）",
     "is_urgent": false
   },
@@ -944,8 +1038,10 @@ export const regionalJobs = [
     "title": "【大須量販店】Rakuten Mobileブース販売・クロージング特化クルー募集",
     "description": "週末の来店客数増加に伴う、店頭プロモーション応援業務です。活気のある現場で、チームワークを活かして獲得目標を目指します！",
     "author_id": "cocolabo",
-    "price": 13000,
+    "price": 12000,
     "location_name": "愛知県名古屋市中区大須",
+    "lat": 35.167517337172534,
+    "lng": 136.89422408153825,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-NGY-1047"
@@ -954,8 +1050,8 @@ export const regionalJobs = [
     "role_type": "イベントMC",
     "sales_channel": "外販（スーパーなど）",
     "carrier": "Rakuten Mobile",
-    "event_date": "2026-10-09",
-    "application_deadline": "2026-10-05",
+    "event_date": "2026-10-25",
+    "application_deadline": "2026-10-18",
     "work_location": "外販（スーパーなど）",
     "is_urgent": false
   },
@@ -964,8 +1060,10 @@ export const regionalJobs = [
     "title": "【金山】docomo 臨時イベントプロモーション・接客案内スタッフ",
     "description": "大手通信キャリアのイベントブースにて、お声がけやティッシュ配り、サービスのご案内を行うお仕事です。未経験の方も歓迎します！",
     "author_id": "sigma",
-    "price": 12000,
+    "price": 15000,
     "location_name": "愛知県名古屋市熱田区金山",
+    "lat": 35.14847157725557,
+    "lng": 136.8964264166874,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-NGY-1048"
@@ -974,8 +1072,8 @@ export const regionalJobs = [
     "role_type": "キャンペーンクルー",
     "sales_channel": "ショップ",
     "carrier": "docomo",
-    "event_date": "2026-11-25",
-    "application_deadline": "2026-11-23",
+    "event_date": "2026-12-16",
+    "application_deadline": "2026-12-11",
     "work_location": "店内",
     "is_urgent": false
   },
@@ -984,8 +1082,10 @@ export const regionalJobs = [
     "title": "【千種駅前】クローザー募集！au/UQmobileショップ獲得イベント要員",
     "description": "モバイル端末の新規契約、MNP乗り換え相談に特化した業務です。獲得スキルやクロージングに自信のある方のご応募お待ちしております。",
     "author_id": "alpha",
-    "price": 13000,
+    "price": 16000,
     "location_name": "愛知県名古屋市千種区",
+    "lat": 35.17947606144359,
+    "lng": 136.92534913731276,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-NGY-1049"
@@ -994,8 +1094,8 @@ export const regionalJobs = [
     "role_type": "クローザー",
     "sales_channel": "量販店",
     "carrier": "au/UQmobile",
-    "event_date": "2026-11-26",
-    "application_deadline": "2026-11-24",
+    "event_date": "2026-11-16",
+    "application_deadline": "2026-11-12",
     "work_location": "外販（複合施設など）",
     "is_urgent": true
   },
@@ -1004,8 +1104,10 @@ export const regionalJobs = [
     "title": "【名古屋近郊】高単価！SoftBank/Y!mobile・モバイル相談会ディレクション・運営",
     "description": "イベントスペースや店舗前のブース設営から運営、集客のマイクパフォーマンス（MC）まで幅広くお任せします。リーダーシップを発揮できる環境です。",
     "author_id": "beta",
-    "price": 13000,
+    "price": 17000,
     "location_name": "愛知県名古屋市中村区",
+    "lat": 35.17757588906866,
+    "lng": 136.88247221692998,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-NGY-1050"
@@ -1014,8 +1116,8 @@ export const regionalJobs = [
     "role_type": "ディレクター",
     "sales_channel": "商業施設",
     "carrier": "SoftBank/Y!mobile",
-    "event_date": "2026-10-14",
-    "application_deadline": "2026-10-10",
+    "event_date": "2026-08-02",
+    "application_deadline": "2026-08-01",
     "work_location": "外販（スーパーなど）",
     "is_urgent": false
   },
@@ -1026,6 +1128,8 @@ export const regionalJobs = [
     "author_id": "gamma",
     "price": 15000,
     "location_name": "愛知県名古屋市中区栄",
+    "lat": 35.177904653721576,
+    "lng": 136.91182682325885,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-NGY-1051"
@@ -1034,8 +1138,8 @@ export const regionalJobs = [
     "role_type": "イベントMC",
     "sales_channel": "外販（スーパーなど）",
     "carrier": "Rakuten Mobile",
-    "event_date": "2026-12-06",
-    "application_deadline": "2026-12-01",
+    "event_date": "2026-10-20",
+    "application_deadline": "2026-10-17",
     "work_location": "店内",
     "is_urgent": false
   },
@@ -1044,8 +1148,10 @@ export const regionalJobs = [
     "title": "【大須】docomo 臨時イベントプロモーション・接客案内スタッフ",
     "description": "大手通信キャリアのイベントブースにて、お声がけやティッシュ配り、サービスのご案内を行うお仕事です。未経験の方も歓迎します！",
     "author_id": "delta",
-    "price": 17000,
+    "price": 16000,
     "location_name": "愛知県名古屋市中区大須",
+    "lat": 35.15468430700027,
+    "lng": 136.89554002430526,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-NGY-1052"
@@ -1054,8 +1160,8 @@ export const regionalJobs = [
     "role_type": "キャンペーンクルー",
     "sales_channel": "ショップ",
     "carrier": "docomo",
-    "event_date": "2026-11-21",
-    "application_deadline": "2026-11-17",
+    "event_date": "2026-08-21",
+    "application_deadline": "2026-08-20",
     "work_location": "外販（複合施設など）",
     "is_urgent": false
   },
@@ -1066,6 +1172,8 @@ export const regionalJobs = [
     "author_id": "seals",
     "price": 17000,
     "location_name": "愛知県名古屋市熱田区金山",
+    "lat": 35.13380647050762,
+    "lng": 136.90193413156396,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-NGY-1053"
@@ -1074,8 +1182,8 @@ export const regionalJobs = [
     "role_type": "クローザー",
     "sales_channel": "量販店",
     "carrier": "au/UQmobile",
-    "event_date": "2026-10-24",
-    "application_deadline": "2026-10-20",
+    "event_date": "2026-11-15",
+    "application_deadline": "2026-11-10",
     "work_location": "外販（スーパーなど）",
     "is_urgent": false
   },
@@ -1084,8 +1192,10 @@ export const regionalJobs = [
     "title": "【千種近郊】高単価！SoftBank/Y!mobile・モバイル相談会ディレクション・運営",
     "description": "イベントスペースや店舗前のブース設営から運営、集客のマイクパフォーマンス（MC）まで幅広くお任せします。リーダーシップを発揮できる環境です。",
     "author_id": "freer",
-    "price": 17000,
+    "price": 16000,
     "location_name": "愛知県名古屋市千種区",
+    "lat": 35.16543501946618,
+    "lng": 136.92054883152704,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-NGY-1054"
@@ -1094,8 +1204,8 @@ export const regionalJobs = [
     "role_type": "ディレクター",
     "sales_channel": "商業施設",
     "carrier": "SoftBank/Y!mobile",
-    "event_date": "2026-10-16",
-    "application_deadline": "2026-10-12",
+    "event_date": "2026-11-09",
+    "application_deadline": "2026-11-07",
     "work_location": "店内",
     "is_urgent": false
   },
@@ -1104,8 +1214,10 @@ export const regionalJobs = [
     "title": "【名古屋量販店】Rakuten Mobileブース販売・クロージング特化クルー募集",
     "description": "週末の来店客数増加に伴う、店頭プロモーション応援業務です。活気のある現場で、チームワークを活かして獲得目標を目指します！",
     "author_id": "cocolabo",
-    "price": 15000,
+    "price": 18000,
     "location_name": "愛知県名古屋市中村区",
+    "lat": 35.166829309428806,
+    "lng": 136.88964820966774,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-NGY-1055"
@@ -1114,8 +1226,8 @@ export const regionalJobs = [
     "role_type": "イベントMC",
     "sales_channel": "外販（スーパーなど）",
     "carrier": "Rakuten Mobile",
-    "event_date": "2026-08-13",
-    "application_deadline": "2026-08-11",
+    "event_date": "2026-08-18",
+    "application_deadline": "2026-08-14",
     "work_location": "外販（複合施設など）",
     "is_urgent": false
   },
@@ -1124,8 +1236,10 @@ export const regionalJobs = [
     "title": "【栄】docomo 臨時イベントプロモーション・接客案内スタッフ",
     "description": "大手通信キャリアのイベントブースにて、お声がけやティッシュ配り、サービスのご案内を行うお仕事です。未経験の方も歓迎します！",
     "author_id": "sigma",
-    "price": 19000,
+    "price": 13000,
     "location_name": "愛知県名古屋市中区栄",
+    "lat": 35.16264093321119,
+    "lng": 136.89893306588337,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-NGY-1056"
@@ -1134,8 +1248,8 @@ export const regionalJobs = [
     "role_type": "キャンペーンクルー",
     "sales_channel": "ショップ",
     "carrier": "docomo",
-    "event_date": "2026-08-05",
-    "application_deadline": "2026-08-02",
+    "event_date": "2026-10-16",
+    "application_deadline": "2026-10-15",
     "work_location": "外販（スーパーなど）",
     "is_urgent": true
   },
@@ -1144,8 +1258,10 @@ export const regionalJobs = [
     "title": "【大須駅前】クローザー募集！au/UQmobileショップ獲得イベント要員",
     "description": "モバイル端末の新規契約、MNP乗り換え相談に特化した業務です。獲得スキルやクロージングに自信のある方のご応募お待ちしております。",
     "author_id": "alpha",
-    "price": 20000,
+    "price": 19000,
     "location_name": "愛知県名古屋市中区大須",
+    "lat": 35.15305451211098,
+    "lng": 136.9019867064471,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-NGY-1057"
@@ -1154,8 +1270,8 @@ export const regionalJobs = [
     "role_type": "クローザー",
     "sales_channel": "量販店",
     "carrier": "au/UQmobile",
-    "event_date": "2026-11-25",
-    "application_deadline": "2026-11-19",
+    "event_date": "2026-10-28",
+    "application_deadline": "2026-10-22",
     "work_location": "店内",
     "is_urgent": false
   },
@@ -1164,8 +1280,10 @@ export const regionalJobs = [
     "title": "【金山近郊】高単価！SoftBank/Y!mobile・モバイル相談会ディレクション・運営",
     "description": "イベントスペースや店舗前のブース設営から運営、集客のマイクパフォーマンス（MC）まで幅広くお任せします。リーダーシップを発揮できる環境です。",
     "author_id": "beta",
-    "price": 16000,
+    "price": 17000,
     "location_name": "愛知県名古屋市熱田区金山",
+    "lat": 35.150712913421394,
+    "lng": 136.8969684389049,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-NGY-1058"
@@ -1174,8 +1292,8 @@ export const regionalJobs = [
     "role_type": "ディレクター",
     "sales_channel": "商業施設",
     "carrier": "SoftBank/Y!mobile",
-    "event_date": "2026-11-07",
-    "application_deadline": "2026-11-05",
+    "event_date": "2026-11-20",
+    "application_deadline": "2026-11-19",
     "work_location": "外販（複合施設など）",
     "is_urgent": false
   },
@@ -1184,8 +1302,10 @@ export const regionalJobs = [
     "title": "【千種量販店】Rakuten Mobileブース販売・クロージング特化クルー募集",
     "description": "週末の来店客数増加に伴う、店頭プロモーション応援業務です。活気のある現場で、チームワークを活かして獲得目標を目指します！",
     "author_id": "gamma",
-    "price": 19000,
+    "price": 14000,
     "location_name": "愛知県名古屋市千種区",
+    "lat": 35.170661742176485,
+    "lng": 136.93235024185296,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-NGY-1059"
@@ -1194,8 +1314,8 @@ export const regionalJobs = [
     "role_type": "イベントMC",
     "sales_channel": "外販（スーパーなど）",
     "carrier": "Rakuten Mobile",
-    "event_date": "2026-11-04",
-    "application_deadline": "2026-11-01",
+    "event_date": "2026-12-15",
+    "application_deadline": "2026-12-10",
     "work_location": "外販（スーパーなど）",
     "is_urgent": false
   },
@@ -1204,8 +1324,10 @@ export const regionalJobs = [
     "title": "【名古屋】docomo 臨時イベントプロモーション・接客案内スタッフ",
     "description": "大手通信キャリアのイベントブースにて、お声がけやティッシュ配り、サービスのご案内を行うお仕事です。未経験の方も歓迎します！",
     "author_id": "delta",
-    "price": 17000,
+    "price": 14000,
     "location_name": "愛知県名古屋市中村区",
+    "lat": 35.177394914644346,
+    "lng": 136.888203838557,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-NGY-1060"
@@ -1214,8 +1336,8 @@ export const regionalJobs = [
     "role_type": "キャンペーンクルー",
     "sales_channel": "ショップ",
     "carrier": "docomo",
-    "event_date": "2026-09-09",
-    "application_deadline": "2026-09-02",
+    "event_date": "2026-11-25",
+    "application_deadline": "2026-11-20",
     "work_location": "店内",
     "is_urgent": false
   },
@@ -1224,8 +1346,10 @@ export const regionalJobs = [
     "title": "【栄駅前】クローザー募集！au/UQmobileショップ獲得イベント要員",
     "description": "モバイル端末の新規契約、MNP乗り換え相談に特化した業務です。獲得スキルやクロージングに自信のある方のご応募お待ちしております。",
     "author_id": "seals",
-    "price": 16000,
+    "price": 19000,
     "location_name": "愛知県名古屋市中区栄",
+    "lat": 35.162735547715606,
+    "lng": 136.89882766846827,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-NGY-1061"
@@ -1234,8 +1358,8 @@ export const regionalJobs = [
     "role_type": "クローザー",
     "sales_channel": "量販店",
     "carrier": "au/UQmobile",
-    "event_date": "2026-11-11",
-    "application_deadline": "2026-11-04",
+    "event_date": "2026-08-20",
+    "application_deadline": "2026-08-16",
     "work_location": "外販（複合施設など）",
     "is_urgent": false
   },
@@ -1244,8 +1368,10 @@ export const regionalJobs = [
     "title": "【大須近郊】高単価！SoftBank/Y!mobile・モバイル相談会ディレクション・運営",
     "description": "イベントスペースや店舗前のブース設営から運営、集客のマイクパフォーマンス（MC）まで幅広くお任せします。リーダーシップを発揮できる環境です。",
     "author_id": "freer",
-    "price": 13000,
+    "price": 14000,
     "location_name": "愛知県名古屋市中区大須",
+    "lat": 35.1608257377707,
+    "lng": 136.909440256385,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-NGY-1062"
@@ -1254,8 +1380,8 @@ export const regionalJobs = [
     "role_type": "ディレクター",
     "sales_channel": "商業施設",
     "carrier": "SoftBank/Y!mobile",
-    "event_date": "2026-08-05",
-    "application_deadline": "2026-08-02",
+    "event_date": "2026-11-05",
+    "application_deadline": "2026-11-04",
     "work_location": "外販（スーパーなど）",
     "is_urgent": false
   },
@@ -1264,8 +1390,10 @@ export const regionalJobs = [
     "title": "【金山量販店】Rakuten Mobileブース販売・クロージング特化クルー募集",
     "description": "週末の来店客数増加に伴う、店頭プロモーション応援業務です。活気のある現場で、チームワークを活かして獲得目標を目指します！",
     "author_id": "cocolabo",
-    "price": 15000,
+    "price": 13000,
     "location_name": "愛知県名古屋市熱田区金山",
+    "lat": 35.149559457357725,
+    "lng": 136.9005628886113,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-NGY-1063"
@@ -1274,8 +1402,8 @@ export const regionalJobs = [
     "role_type": "イベントMC",
     "sales_channel": "外販（スーパーなど）",
     "carrier": "Rakuten Mobile",
-    "event_date": "2026-12-05",
-    "application_deadline": "2026-12-01",
+    "event_date": "2026-12-25",
+    "application_deadline": "2026-12-21",
     "work_location": "店内",
     "is_urgent": true
   },
@@ -1284,8 +1412,10 @@ export const regionalJobs = [
     "title": "【千種】docomo 臨時イベントプロモーション・接客案内スタッフ",
     "description": "大手通信キャリアのイベントブースにて、お声がけやティッシュ配り、サービスのご案内を行うお仕事です。未経験の方も歓迎します！",
     "author_id": "sigma",
-    "price": 18000,
+    "price": 14000,
     "location_name": "愛知県名古屋市千種区",
+    "lat": 35.161042735179116,
+    "lng": 136.92849164919753,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-NGY-1064"
@@ -1294,8 +1424,8 @@ export const regionalJobs = [
     "role_type": "キャンペーンクルー",
     "sales_channel": "ショップ",
     "carrier": "docomo",
-    "event_date": "2026-10-21",
-    "application_deadline": "2026-10-20",
+    "event_date": "2026-09-11",
+    "application_deadline": "2026-09-05",
     "work_location": "外販（複合施設など）",
     "is_urgent": false
   },
@@ -1304,8 +1434,10 @@ export const regionalJobs = [
     "title": "【名古屋駅前】クローザー募集！au/UQmobileショップ獲得イベント要員",
     "description": "モバイル端末の新規契約、MNP乗り換え相談に特化した業務です。獲得スキルやクロージングに自信のある方のご応募お待ちしております。",
     "author_id": "alpha",
-    "price": 13000,
+    "price": 16000,
     "location_name": "愛知県名古屋市中村区",
+    "lat": 35.176097071817125,
+    "lng": 136.88047802966653,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-NGY-1065"
@@ -1314,8 +1446,8 @@ export const regionalJobs = [
     "role_type": "クローザー",
     "sales_channel": "量販店",
     "carrier": "au/UQmobile",
-    "event_date": "2026-11-15",
-    "application_deadline": "2026-11-08",
+    "event_date": "2026-11-01",
+    "application_deadline": "2026-11-01",
     "work_location": "外販（スーパーなど）",
     "is_urgent": false
   },
@@ -1324,8 +1456,10 @@ export const regionalJobs = [
     "title": "【栄近郊】高単価！SoftBank/Y!mobile・モバイル相談会ディレクション・運営",
     "description": "イベントスペースや店舗前のブース設営から運営、集客のマイクパフォーマンス（MC）まで幅広くお任せします。リーダーシップを発揮できる環境です。",
     "author_id": "beta",
-    "price": 14000,
+    "price": 19000,
     "location_name": "愛知県名古屋市中区栄",
+    "lat": 35.16627613219718,
+    "lng": 136.9146967979586,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-NGY-1066"
@@ -1334,8 +1468,8 @@ export const regionalJobs = [
     "role_type": "ディレクター",
     "sales_channel": "商業施設",
     "carrier": "SoftBank/Y!mobile",
-    "event_date": "2026-10-26",
-    "application_deadline": "2026-10-20",
+    "event_date": "2026-10-25",
+    "application_deadline": "2026-10-24",
     "work_location": "店内",
     "is_urgent": false
   },
@@ -1344,8 +1478,10 @@ export const regionalJobs = [
     "title": "【大須量販店】Rakuten Mobileブース販売・クロージング特化クルー募集",
     "description": "週末の来店客数増加に伴う、店頭プロモーション応援業務です。活気のある現場で、チームワークを活かして獲得目標を目指します！",
     "author_id": "gamma",
-    "price": 13000,
+    "price": 14000,
     "location_name": "愛知県名古屋市中区大須",
+    "lat": 35.152944538594014,
+    "lng": 136.91195888915482,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-NGY-1067"
@@ -1354,8 +1490,8 @@ export const regionalJobs = [
     "role_type": "イベントMC",
     "sales_channel": "外販（スーパーなど）",
     "carrier": "Rakuten Mobile",
-    "event_date": "2026-09-07",
-    "application_deadline": "2026-09-01",
+    "event_date": "2026-09-21",
+    "application_deadline": "2026-09-16",
     "work_location": "外販（複合施設など）",
     "is_urgent": false
   },
@@ -1366,6 +1502,8 @@ export const regionalJobs = [
     "author_id": "delta",
     "price": 18000,
     "location_name": "愛知県名古屋市熱田区金山",
+    "lat": 35.150430682024194,
+    "lng": 136.899390442655,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-NGY-1068"
@@ -1374,8 +1512,8 @@ export const regionalJobs = [
     "role_type": "キャンペーンクルー",
     "sales_channel": "ショップ",
     "carrier": "docomo",
-    "event_date": "2026-11-26",
-    "application_deadline": "2026-11-25",
+    "event_date": "2026-12-04",
+    "application_deadline": "2026-12-03",
     "work_location": "外販（スーパーなど）",
     "is_urgent": false
   },
@@ -1384,8 +1522,10 @@ export const regionalJobs = [
     "title": "【千種駅前】クローザー募集！au/UQmobileショップ獲得イベント要員",
     "description": "モバイル端末の新規契約、MNP乗り換え相談に特化した業務です。獲得スキルやクロージングに自信のある方のご応募お待ちしております。",
     "author_id": "seals",
-    "price": 20000,
+    "price": 17000,
     "location_name": "愛知県名古屋市千種区",
+    "lat": 35.174505399387236,
+    "lng": 136.93426344586155,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-NGY-1069"
@@ -1394,8 +1534,8 @@ export const regionalJobs = [
     "role_type": "クローザー",
     "sales_channel": "量販店",
     "carrier": "au/UQmobile",
-    "event_date": "2026-09-13",
-    "application_deadline": "2026-09-06",
+    "event_date": "2026-10-11",
+    "application_deadline": "2026-10-06",
     "work_location": "店内",
     "is_urgent": false
   },
@@ -1406,6 +1546,8 @@ export const regionalJobs = [
     "author_id": "freer",
     "price": 18000,
     "location_name": "愛知県名古屋市中村区",
+    "lat": 35.17163835325212,
+    "lng": 136.87635420244206,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-NGY-1070"
@@ -1414,8 +1556,8 @@ export const regionalJobs = [
     "role_type": "ディレクター",
     "sales_channel": "商業施設",
     "carrier": "SoftBank/Y!mobile",
-    "event_date": "2026-09-07",
-    "application_deadline": "2026-09-01",
+    "event_date": "2026-09-25",
+    "application_deadline": "2026-09-20",
     "work_location": "外販（複合施設など）",
     "is_urgent": true
   },
@@ -1424,8 +1566,10 @@ export const regionalJobs = [
     "title": "【栄量販店】Rakuten Mobileブース販売・クロージング特化クルー募集",
     "description": "週末の来店客数増加に伴う、店頭プロモーション応援業務です。活気のある現場で、チームワークを活かして獲得目標を目指します！",
     "author_id": "cocolabo",
-    "price": 17000,
+    "price": 20000,
     "location_name": "愛知県名古屋市中区栄",
+    "lat": 35.17381289976703,
+    "lng": 136.90355085507383,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-NGY-1071"
@@ -1434,8 +1578,8 @@ export const regionalJobs = [
     "role_type": "イベントMC",
     "sales_channel": "外販（スーパーなど）",
     "carrier": "Rakuten Mobile",
-    "event_date": "2026-09-05",
-    "application_deadline": "2026-09-01",
+    "event_date": "2026-12-01",
+    "application_deadline": "2026-12-01",
     "work_location": "外販（スーパーなど）",
     "is_urgent": false
   },
@@ -1444,8 +1588,10 @@ export const regionalJobs = [
     "title": "【大須】docomo 臨時イベントプロモーション・接客案内スタッフ",
     "description": "大手通信キャリアのイベントブースにて、お声がけやティッシュ配り、サービスのご案内を行うお仕事です。未経験の方も歓迎します！",
     "author_id": "sigma",
-    "price": 19000,
+    "price": 18000,
     "location_name": "愛知県名古屋市中区大須",
+    "lat": 35.159250572423154,
+    "lng": 136.90247960713216,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-NGY-1072"
@@ -1455,7 +1601,7 @@ export const regionalJobs = [
     "sales_channel": "ショップ",
     "carrier": "docomo",
     "event_date": "2026-11-13",
-    "application_deadline": "2026-11-12",
+    "application_deadline": "2026-11-10",
     "work_location": "店内",
     "is_urgent": false
   },
@@ -1464,8 +1610,10 @@ export const regionalJobs = [
     "title": "【金山駅前】クローザー募集！au/UQmobileショップ獲得イベント要員",
     "description": "モバイル端末の新規契約、MNP乗り換え相談に特化した業務です。獲得スキルやクロージングに自信のある方のご応募お待ちしております。",
     "author_id": "alpha",
-    "price": 15000,
+    "price": 14000,
     "location_name": "愛知県名古屋市熱田区金山",
+    "lat": 35.14797667346736,
+    "lng": 136.90593685047287,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-NGY-1073"
@@ -1474,8 +1622,8 @@ export const regionalJobs = [
     "role_type": "クローザー",
     "sales_channel": "量販店",
     "carrier": "au/UQmobile",
-    "event_date": "2026-09-26",
-    "application_deadline": "2026-09-22",
+    "event_date": "2026-12-16",
+    "application_deadline": "2026-12-15",
     "work_location": "外販（複合施設など）",
     "is_urgent": false
   },
@@ -1486,6 +1634,8 @@ export const regionalJobs = [
     "author_id": "beta",
     "price": 14000,
     "location_name": "愛知県名古屋市千種区",
+    "lat": 35.17183127226514,
+    "lng": 136.92510182120907,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-NGY-1074"
@@ -1494,8 +1644,8 @@ export const regionalJobs = [
     "role_type": "ディレクター",
     "sales_channel": "商業施設",
     "carrier": "SoftBank/Y!mobile",
-    "event_date": "2026-08-03",
-    "application_deadline": "2026-08-01",
+    "event_date": "2026-10-27",
+    "application_deadline": "2026-10-22",
     "work_location": "外販（スーパーなど）",
     "is_urgent": false
   },
@@ -1504,8 +1654,10 @@ export const regionalJobs = [
     "title": "【名古屋量販店】Rakuten Mobileブース販売・クロージング特化クルー募集",
     "description": "週末の来店客数増加に伴う、店頭プロモーション応援業務です。活気のある現場で、チームワークを活かして獲得目標を目指します！",
     "author_id": "gamma",
-    "price": 17000,
+    "price": 15000,
     "location_name": "愛知県名古屋市中村区",
+    "lat": 35.1707669930781,
+    "lng": 136.87579731676462,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-NGY-1075"
@@ -1514,8 +1666,8 @@ export const regionalJobs = [
     "role_type": "イベントMC",
     "sales_channel": "外販（スーパーなど）",
     "carrier": "Rakuten Mobile",
-    "event_date": "2026-09-22",
-    "application_deadline": "2026-09-18",
+    "event_date": "2026-11-19",
+    "application_deadline": "2026-11-18",
     "work_location": "店内",
     "is_urgent": false
   },
@@ -1524,8 +1676,10 @@ export const regionalJobs = [
     "title": "【栄】docomo 臨時イベントプロモーション・接客案内スタッフ",
     "description": "大手通信キャリアのイベントブースにて、お声がけやティッシュ配り、サービスのご案内を行うお仕事です。未経験の方も歓迎します！",
     "author_id": "delta",
-    "price": 16000,
+    "price": 17000,
     "location_name": "愛知県名古屋市中区栄",
+    "lat": 35.16934684460018,
+    "lng": 136.90714546352683,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-NGY-1076"
@@ -1534,8 +1688,8 @@ export const regionalJobs = [
     "role_type": "キャンペーンクルー",
     "sales_channel": "ショップ",
     "carrier": "docomo",
-    "event_date": "2026-09-04",
-    "application_deadline": "2026-09-03",
+    "event_date": "2026-09-24",
+    "application_deadline": "2026-09-21",
     "work_location": "外販（複合施設など）",
     "is_urgent": false
   },
@@ -1546,6 +1700,8 @@ export const regionalJobs = [
     "author_id": "seals",
     "price": 18000,
     "location_name": "愛知県名古屋市中区大須",
+    "lat": 35.15674404222185,
+    "lng": 136.91035659099114,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-NGY-1077"
@@ -1554,8 +1710,8 @@ export const regionalJobs = [
     "role_type": "クローザー",
     "sales_channel": "量販店",
     "carrier": "au/UQmobile",
-    "event_date": "2026-08-13",
-    "application_deadline": "2026-08-11",
+    "event_date": "2026-10-21",
+    "application_deadline": "2026-10-18",
     "work_location": "外販（スーパーなど）",
     "is_urgent": true
   },
@@ -1564,8 +1720,10 @@ export const regionalJobs = [
     "title": "【金山近郊】高単価！SoftBank/Y!mobile・モバイル相談会ディレクション・運営",
     "description": "イベントスペースや店舗前のブース設営から運営、集客のマイクパフォーマンス（MC）まで幅広くお任せします。リーダーシップを発揮できる環境です。",
     "author_id": "freer",
-    "price": 13000,
+    "price": 17000,
     "location_name": "愛知県名古屋市熱田区金山",
+    "lat": 35.14528062015734,
+    "lng": 136.90909624658335,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-NGY-1078"
@@ -1574,8 +1732,8 @@ export const regionalJobs = [
     "role_type": "ディレクター",
     "sales_channel": "商業施設",
     "carrier": "SoftBank/Y!mobile",
-    "event_date": "2026-09-13",
-    "application_deadline": "2026-09-06",
+    "event_date": "2026-10-10",
+    "application_deadline": "2026-10-05",
     "work_location": "店内",
     "is_urgent": false
   },
@@ -1584,8 +1742,10 @@ export const regionalJobs = [
     "title": "【千種量販店】Rakuten Mobileブース販売・クロージング特化クルー募集",
     "description": "週末の来店客数増加に伴う、店頭プロモーション応援業務です。活気のある現場で、チームワークを活かして獲得目標を目指します！",
     "author_id": "cocolabo",
-    "price": 14000,
+    "price": 16000,
     "location_name": "愛知県名古屋市千種区",
+    "lat": 35.17486836619708,
+    "lng": 136.9317478931343,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-NGY-1079"
@@ -1594,8 +1754,8 @@ export const regionalJobs = [
     "role_type": "イベントMC",
     "sales_channel": "外販（スーパーなど）",
     "carrier": "Rakuten Mobile",
-    "event_date": "2026-08-01",
-    "application_deadline": "2026-08-01",
+    "event_date": "2026-09-10",
+    "application_deadline": "2026-09-06",
     "work_location": "外販（複合施設など）",
     "is_urgent": false
   },
@@ -1606,6 +1766,8 @@ export const regionalJobs = [
     "author_id": "sigma",
     "price": 13000,
     "location_name": "愛知県名古屋市中村区",
+    "lat": 35.18048063580702,
+    "lng": 136.88343352254253,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-NGY-1080"
@@ -1614,8 +1776,8 @@ export const regionalJobs = [
     "role_type": "キャンペーンクルー",
     "sales_channel": "ショップ",
     "carrier": "docomo",
-    "event_date": "2026-08-27",
-    "application_deadline": "2026-08-26",
+    "event_date": "2026-08-09",
+    "application_deadline": "2026-08-07",
     "work_location": "外販（スーパーなど）",
     "is_urgent": false
   },
@@ -1624,8 +1786,10 @@ export const regionalJobs = [
     "title": "【栄駅前】クローザー募集！au/UQmobileショップ獲得イベント要員",
     "description": "モバイル端末の新規契約、MNP乗り換え相談に特化した業務です。獲得スキルやクロージングに自信のある方のご応募お待ちしております。",
     "author_id": "alpha",
-    "price": 15000,
+    "price": 17000,
     "location_name": "愛知県名古屋市中区栄",
+    "lat": 35.171639416398776,
+    "lng": 136.91218787344386,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-NGY-1081"
@@ -1634,8 +1798,8 @@ export const regionalJobs = [
     "role_type": "クローザー",
     "sales_channel": "量販店",
     "carrier": "au/UQmobile",
-    "event_date": "2026-11-17",
-    "application_deadline": "2026-11-15",
+    "event_date": "2026-11-22",
+    "application_deadline": "2026-11-19",
     "work_location": "店内",
     "is_urgent": false
   },
@@ -1644,8 +1808,10 @@ export const regionalJobs = [
     "title": "【大須近郊】高単価！SoftBank/Y!mobile・モバイル相談会ディレクション・運営",
     "description": "イベントスペースや店舗前のブース設営から運営、集客のマイクパフォーマンス（MC）まで幅広くお任せします。リーダーシップを発揮できる環境です。",
     "author_id": "beta",
-    "price": 13000,
+    "price": 19000,
     "location_name": "愛知県名古屋市中区大須",
+    "lat": 35.15691391786118,
+    "lng": 136.893901687572,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-NGY-1082"
@@ -1654,8 +1820,8 @@ export const regionalJobs = [
     "role_type": "ディレクター",
     "sales_channel": "商業施設",
     "carrier": "SoftBank/Y!mobile",
-    "event_date": "2026-08-14",
-    "application_deadline": "2026-08-11",
+    "event_date": "2026-08-20",
+    "application_deadline": "2026-08-16",
     "work_location": "外販（複合施設など）",
     "is_urgent": false
   },
@@ -1664,8 +1830,10 @@ export const regionalJobs = [
     "title": "【金山量販店】Rakuten Mobileブース販売・クロージング特化クルー募集",
     "description": "週末の来店客数増加に伴う、店頭プロモーション応援業務です。活気のある現場で、チームワークを活かして獲得目標を目指します！",
     "author_id": "gamma",
-    "price": 19000,
+    "price": 15000,
     "location_name": "愛知県名古屋市熱田区金山",
+    "lat": 35.15232392822853,
+    "lng": 136.89632582710644,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-NGY-1083"
@@ -1674,8 +1842,8 @@ export const regionalJobs = [
     "role_type": "イベントMC",
     "sales_channel": "外販（スーパーなど）",
     "carrier": "Rakuten Mobile",
-    "event_date": "2026-11-08",
-    "application_deadline": "2026-11-04",
+    "event_date": "2026-09-11",
+    "application_deadline": "2026-09-07",
     "work_location": "外販（スーパーなど）",
     "is_urgent": false
   },
@@ -1686,6 +1854,8 @@ export const regionalJobs = [
     "author_id": "delta",
     "price": 13000,
     "location_name": "愛知県名古屋市千種区",
+    "lat": 35.17424038959601,
+    "lng": 136.9209220815612,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-NGY-1084"
@@ -1694,8 +1864,8 @@ export const regionalJobs = [
     "role_type": "キャンペーンクルー",
     "sales_channel": "ショップ",
     "carrier": "docomo",
-    "event_date": "2026-10-22",
-    "application_deadline": "2026-10-19",
+    "event_date": "2026-11-22",
+    "application_deadline": "2026-11-19",
     "work_location": "店内",
     "is_urgent": true
   },
@@ -1704,8 +1874,10 @@ export const regionalJobs = [
     "title": "【名古屋駅前】クローザー募集！au/UQmobileショップ獲得イベント要員",
     "description": "モバイル端末の新規契約、MNP乗り換え相談に特化した業務です。獲得スキルやクロージングに自信のある方のご応募お待ちしております。",
     "author_id": "seals",
-    "price": 15000,
+    "price": 16000,
     "location_name": "愛知県名古屋市中村区",
+    "lat": 35.176517778465325,
+    "lng": 136.8848266276891,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-NGY-1085"
@@ -1714,8 +1886,8 @@ export const regionalJobs = [
     "role_type": "クローザー",
     "sales_channel": "量販店",
     "carrier": "au/UQmobile",
-    "event_date": "2026-09-14",
-    "application_deadline": "2026-09-07",
+    "event_date": "2026-09-13",
+    "application_deadline": "2026-09-08",
     "work_location": "外販（複合施設など）",
     "is_urgent": false
   },
@@ -1724,8 +1896,10 @@ export const regionalJobs = [
     "title": "【栄近郊】高単価！SoftBank/Y!mobile・モバイル相談会ディレクション・運営",
     "description": "イベントスペースや店舗前のブース設営から運営、集客のマイクパフォーマンス（MC）まで幅広くお任せします。リーダーシップを発揮できる環境です。",
     "author_id": "freer",
-    "price": 20000,
+    "price": 15000,
     "location_name": "愛知県名古屋市中区栄",
+    "lat": 35.16269081996251,
+    "lng": 136.9075977059986,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-NGY-1086"
@@ -1734,8 +1908,8 @@ export const regionalJobs = [
     "role_type": "ディレクター",
     "sales_channel": "商業施設",
     "carrier": "SoftBank/Y!mobile",
-    "event_date": "2026-08-09",
-    "application_deadline": "2026-08-02",
+    "event_date": "2026-11-12",
+    "application_deadline": "2026-11-05",
     "work_location": "外販（スーパーなど）",
     "is_urgent": false
   },
@@ -1744,8 +1918,10 @@ export const regionalJobs = [
     "title": "【大須量販店】Rakuten Mobileブース販売・クロージング特化クルー募集",
     "description": "週末の来店客数増加に伴う、店頭プロモーション応援業務です。活気のある現場で、チームワークを活かして獲得目標を目指します！",
     "author_id": "cocolabo",
-    "price": 17000,
+    "price": 18000,
     "location_name": "愛知県名古屋市中区大須",
+    "lat": 35.15089797964691,
+    "lng": 136.8950229098752,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-NGY-1087"
@@ -1754,8 +1930,8 @@ export const regionalJobs = [
     "role_type": "イベントMC",
     "sales_channel": "外販（スーパーなど）",
     "carrier": "Rakuten Mobile",
-    "event_date": "2026-10-09",
-    "application_deadline": "2026-10-06",
+    "event_date": "2026-08-24",
+    "application_deadline": "2026-08-17",
     "work_location": "店内",
     "is_urgent": false
   },
@@ -1764,8 +1940,10 @@ export const regionalJobs = [
     "title": "【金山】docomo 臨時イベントプロモーション・接客案内スタッフ",
     "description": "大手通信キャリアのイベントブースにて、お声がけやティッシュ配り、サービスのご案内を行うお仕事です。未経験の方も歓迎します！",
     "author_id": "sigma",
-    "price": 13000,
+    "price": 14000,
     "location_name": "愛知県名古屋市熱田区金山",
+    "lat": 35.14901712098297,
+    "lng": 136.89215628922992,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-NGY-1088"
@@ -1774,8 +1952,8 @@ export const regionalJobs = [
     "role_type": "キャンペーンクルー",
     "sales_channel": "ショップ",
     "carrier": "docomo",
-    "event_date": "2026-08-08",
-    "application_deadline": "2026-08-05",
+    "event_date": "2026-11-21",
+    "application_deadline": "2026-11-20",
     "work_location": "外販（複合施設など）",
     "is_urgent": false
   },
@@ -1784,8 +1962,10 @@ export const regionalJobs = [
     "title": "【千種駅前】クローザー募集！au/UQmobileショップ獲得イベント要員",
     "description": "モバイル端末の新規契約、MNP乗り換え相談に特化した業務です。獲得スキルやクロージングに自信のある方のご応募お待ちしております。",
     "author_id": "alpha",
-    "price": 16000,
+    "price": 12000,
     "location_name": "愛知県名古屋市千種区",
+    "lat": 35.175716797202945,
+    "lng": 136.93984534280818,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-NGY-1089"
@@ -1794,8 +1974,8 @@ export const regionalJobs = [
     "role_type": "クローザー",
     "sales_channel": "量販店",
     "carrier": "au/UQmobile",
-    "event_date": "2026-09-14",
-    "application_deadline": "2026-09-12",
+    "event_date": "2026-10-13",
+    "application_deadline": "2026-10-07",
     "work_location": "外販（スーパーなど）",
     "is_urgent": false
   },
@@ -1804,8 +1984,10 @@ export const regionalJobs = [
     "title": "【名古屋近郊】高単価！SoftBank/Y!mobile・モバイル相談会ディレクション・運営",
     "description": "イベントスペースや店舗前のブース設営から運営、集客のマイクパフォーマンス（MC）まで幅広くお任せします。リーダーシップを発揮できる環境です。",
     "author_id": "beta",
-    "price": 18000,
+    "price": 20000,
     "location_name": "愛知県名古屋市中村区",
+    "lat": 35.17382745303941,
+    "lng": 136.87649718318022,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-NGY-1090"
@@ -1814,8 +1996,8 @@ export const regionalJobs = [
     "role_type": "ディレクター",
     "sales_channel": "商業施設",
     "carrier": "SoftBank/Y!mobile",
-    "event_date": "2026-12-08",
-    "application_deadline": "2026-12-05",
+    "event_date": "2026-12-14",
+    "application_deadline": "2026-12-13",
     "work_location": "店内",
     "is_urgent": false
   },
@@ -1826,6 +2008,8 @@ export const regionalJobs = [
     "author_id": "gamma",
     "price": 15000,
     "location_name": "愛知県名古屋市中区栄",
+    "lat": 35.160032651559405,
+    "lng": 136.90542655387037,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-NGY-1091"
@@ -1834,8 +2018,8 @@ export const regionalJobs = [
     "role_type": "イベントMC",
     "sales_channel": "外販（スーパーなど）",
     "carrier": "Rakuten Mobile",
-    "event_date": "2026-10-15",
-    "application_deadline": "2026-10-10",
+    "event_date": "2026-08-06",
+    "application_deadline": "2026-08-04",
     "work_location": "外販（複合施設など）",
     "is_urgent": true
   },
@@ -1844,8 +2028,10 @@ export const regionalJobs = [
     "title": "【大須】docomo 臨時イベントプロモーション・接客案内スタッフ",
     "description": "大手通信キャリアのイベントブースにて、お声がけやティッシュ配り、サービスのご案内を行うお仕事です。未経験の方も歓迎します！",
     "author_id": "delta",
-    "price": 12000,
+    "price": 14000,
     "location_name": "愛知県名古屋市中区大須",
+    "lat": 35.155697816311395,
+    "lng": 136.89567341458843,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-NGY-1092"
@@ -1854,8 +2040,8 @@ export const regionalJobs = [
     "role_type": "キャンペーンクルー",
     "sales_channel": "ショップ",
     "carrier": "docomo",
-    "event_date": "2026-12-12",
-    "application_deadline": "2026-12-08",
+    "event_date": "2026-11-26",
+    "application_deadline": "2026-11-24",
     "work_location": "外販（スーパーなど）",
     "is_urgent": false
   },
@@ -1864,8 +2050,10 @@ export const regionalJobs = [
     "title": "【金山駅前】クローザー募集！au/UQmobileショップ獲得イベント要員",
     "description": "モバイル端末の新規契約、MNP乗り換え相談に特化した業務です。獲得スキルやクロージングに自信のある方のご応募お待ちしております。",
     "author_id": "seals",
-    "price": 13000,
+    "price": 18000,
     "location_name": "愛知県名古屋市熱田区金山",
+    "lat": 35.14734059676311,
+    "lng": 136.90493460734794,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-NGY-1093"
@@ -1874,8 +2062,8 @@ export const regionalJobs = [
     "role_type": "クローザー",
     "sales_channel": "量販店",
     "carrier": "au/UQmobile",
-    "event_date": "2026-10-27",
-    "application_deadline": "2026-10-21",
+    "event_date": "2026-10-14",
+    "application_deadline": "2026-10-07",
     "work_location": "店内",
     "is_urgent": false
   },
@@ -1884,8 +2072,10 @@ export const regionalJobs = [
     "title": "【千種近郊】高単価！SoftBank/Y!mobile・モバイル相談会ディレクション・運営",
     "description": "イベントスペースや店舗前のブース設営から運営、集客のマイクパフォーマンス（MC）まで幅広くお任せします。リーダーシップを発揮できる環境です。",
     "author_id": "freer",
-    "price": 16000,
+    "price": 20000,
     "location_name": "愛知県名古屋市千種区",
+    "lat": 35.177917299215835,
+    "lng": 136.94002218613213,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-NGY-1094"
@@ -1894,8 +2084,8 @@ export const regionalJobs = [
     "role_type": "ディレクター",
     "sales_channel": "商業施設",
     "carrier": "SoftBank/Y!mobile",
-    "event_date": "2026-12-14",
-    "application_deadline": "2026-12-08",
+    "event_date": "2026-10-09",
+    "application_deadline": "2026-10-05",
     "work_location": "外販（複合施設など）",
     "is_urgent": false
   },
@@ -1904,8 +2094,10 @@ export const regionalJobs = [
     "title": "【名古屋量販店】Rakuten Mobileブース販売・クロージング特化クルー募集",
     "description": "週末の来店客数増加に伴う、店頭プロモーション応援業務です。活気のある現場で、チームワークを活かして獲得目標を目指します！",
     "author_id": "cocolabo",
-    "price": 17000,
+    "price": 16000,
     "location_name": "愛知県名古屋市中村区",
+    "lat": 35.17882527683397,
+    "lng": 136.8801238139222,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-NGY-1095"
@@ -1914,8 +2106,8 @@ export const regionalJobs = [
     "role_type": "イベントMC",
     "sales_channel": "外販（スーパーなど）",
     "carrier": "Rakuten Mobile",
-    "event_date": "2026-10-23",
-    "application_deadline": "2026-10-19",
+    "event_date": "2026-12-25",
+    "application_deadline": "2026-12-23",
     "work_location": "外販（スーパーなど）",
     "is_urgent": false
   },
@@ -1926,6 +2118,8 @@ export const regionalJobs = [
     "author_id": "sigma",
     "price": 12000,
     "location_name": "愛知県名古屋市中区栄",
+    "lat": 35.16010297700883,
+    "lng": 136.9128018693386,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-NGY-1096"
@@ -1934,8 +2128,8 @@ export const regionalJobs = [
     "role_type": "キャンペーンクルー",
     "sales_channel": "ショップ",
     "carrier": "docomo",
-    "event_date": "2026-10-21",
-    "application_deadline": "2026-10-17",
+    "event_date": "2026-09-28",
+    "application_deadline": "2026-09-26",
     "work_location": "店内",
     "is_urgent": false
   },
@@ -1944,8 +2138,10 @@ export const regionalJobs = [
     "title": "【大須駅前】クローザー募集！au/UQmobileショップ獲得イベント要員",
     "description": "モバイル端末の新規契約、MNP乗り換え相談に特化した業務です。獲得スキルやクロージングに自信のある方のご応募お待ちしております。",
     "author_id": "alpha",
-    "price": 14000,
+    "price": 17000,
     "location_name": "愛知県名古屋市中区大須",
+    "lat": 35.15049486432062,
+    "lng": 136.91237086619822,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-NGY-1097"
@@ -1954,8 +2150,8 @@ export const regionalJobs = [
     "role_type": "クローザー",
     "sales_channel": "量販店",
     "carrier": "au/UQmobile",
-    "event_date": "2026-10-19",
-    "application_deadline": "2026-10-12",
+    "event_date": "2026-08-15",
+    "application_deadline": "2026-08-09",
     "work_location": "外販（複合施設など）",
     "is_urgent": false
   },
@@ -1964,8 +2160,10 @@ export const regionalJobs = [
     "title": "【金山近郊】高単価！SoftBank/Y!mobile・モバイル相談会ディレクション・運営",
     "description": "イベントスペースや店舗前のブース設営から運営、集客のマイクパフォーマンス（MC）まで幅広くお任せします。リーダーシップを発揮できる環境です。",
     "author_id": "beta",
-    "price": 16000,
+    "price": 20000,
     "location_name": "愛知県名古屋市熱田区金山",
+    "lat": 35.14073045211888,
+    "lng": 136.9075147602247,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-NGY-1098"
@@ -1974,8 +2172,8 @@ export const regionalJobs = [
     "role_type": "ディレクター",
     "sales_channel": "商業施設",
     "carrier": "SoftBank/Y!mobile",
-    "event_date": "2026-11-10",
-    "application_deadline": "2026-11-03",
+    "event_date": "2026-12-05",
+    "application_deadline": "2026-12-01",
     "work_location": "外販（スーパーなど）",
     "is_urgent": true
   },
@@ -1984,8 +2182,10 @@ export const regionalJobs = [
     "title": "【千種量販店】Rakuten Mobileブース販売・クロージング特化クルー募集",
     "description": "週末の来店客数増加に伴う、店頭プロモーション応援業務です。活気のある現場で、チームワークを活かして獲得目標を目指します！",
     "author_id": "gamma",
-    "price": 20000,
+    "price": 14000,
     "location_name": "愛知県名古屋市千種区",
+    "lat": 35.1774481956294,
+    "lng": 136.92775192299277,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-NGY-1099"
@@ -1994,8 +2194,8 @@ export const regionalJobs = [
     "role_type": "イベントMC",
     "sales_channel": "外販（スーパーなど）",
     "carrier": "Rakuten Mobile",
-    "event_date": "2026-08-24",
-    "application_deadline": "2026-08-17",
+    "event_date": "2026-12-25",
+    "application_deadline": "2026-12-21",
     "work_location": "店内",
     "is_urgent": false
   },
@@ -2006,6 +2206,8 @@ export const regionalJobs = [
     "author_id": "sigma",
     "price": 18000,
     "location_name": "大阪府大阪市北区梅田",
+    "lat": 34.70785549803264,
+    "lng": 135.48718385353035,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-OSK-1000"
@@ -2014,8 +2216,8 @@ export const regionalJobs = [
     "role_type": "キャンペーンクルー",
     "sales_channel": "ショップ",
     "carrier": "docomo",
-    "event_date": "2026-12-03",
-    "application_deadline": "2026-12-01",
+    "event_date": "2026-09-18",
+    "application_deadline": "2026-09-11",
     "work_location": "店内",
     "is_urgent": true
   },
@@ -2024,8 +2226,10 @@ export const regionalJobs = [
     "title": "【難波駅前】クローザー募集！au/UQmobileショップ獲得イベント要員",
     "description": "モバイル端末の新規契約、MNP乗り換え相談に特化した業務です。獲得スキルやクロージングに自信のある方のご応募お待ちしております。",
     "author_id": "alpha",
-    "price": 12000,
+    "price": 19000,
     "location_name": "大阪府大阪市中央区難波",
+    "lat": 34.666204802522095,
+    "lng": 135.49231743229262,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-OSK-1001"
@@ -2034,8 +2238,8 @@ export const regionalJobs = [
     "role_type": "クローザー",
     "sales_channel": "量販店",
     "carrier": "au/UQmobile",
-    "event_date": "2026-09-14",
-    "application_deadline": "2026-09-10",
+    "event_date": "2026-08-16",
+    "application_deadline": "2026-08-09",
     "work_location": "外販（複合施設など）",
     "is_urgent": false
   },
@@ -2044,8 +2248,10 @@ export const regionalJobs = [
     "title": "【天王寺近郊】高単価！SoftBank/Y!mobile・モバイル相談会ディレクション・運営",
     "description": "イベントスペースや店舗前のブース設営から運営、集客のマイクパフォーマンス（MC）まで幅広くお任せします。リーダーシップを発揮できる環境です。",
     "author_id": "beta",
-    "price": 15000,
+    "price": 20000,
     "location_name": "大阪府大阪市天王寺区",
+    "lat": 34.64560186932807,
+    "lng": 135.5182618011883,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-OSK-1002"
@@ -2054,8 +2260,8 @@ export const regionalJobs = [
     "role_type": "ディレクター",
     "sales_channel": "商業施設",
     "carrier": "SoftBank/Y!mobile",
-    "event_date": "2026-08-19",
-    "application_deadline": "2026-08-18",
+    "event_date": "2026-08-28",
+    "application_deadline": "2026-08-22",
     "work_location": "外販（スーパーなど）",
     "is_urgent": false
   },
@@ -2064,8 +2270,10 @@ export const regionalJobs = [
     "title": "【京橋量販店】Rakuten Mobileブース販売・クロージング特化クルー募集",
     "description": "週末の来店客数増加に伴う、店頭プロモーション応援業務です。活気のある現場で、チームワークを活かして獲得目標を目指します！",
     "author_id": "gamma",
-    "price": 17000,
+    "price": 20000,
     "location_name": "大阪府大阪市都島区",
+    "lat": 34.69299616831104,
+    "lng": 135.53272088849135,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-OSK-1003"
@@ -2074,8 +2282,8 @@ export const regionalJobs = [
     "role_type": "イベントMC",
     "sales_channel": "外販（スーパーなど）",
     "carrier": "Rakuten Mobile",
-    "event_date": "2026-12-23",
-    "application_deadline": "2026-12-20",
+    "event_date": "2026-12-13",
+    "application_deadline": "2026-12-11",
     "work_location": "店内",
     "is_urgent": false
   },
@@ -2084,8 +2292,10 @@ export const regionalJobs = [
     "title": "【心斎橋】docomo 臨時イベントプロモーション・接客案内スタッフ",
     "description": "大手通信キャリアのイベントブースにて、お声がけやティッシュ配り、サービスのご案内を行うお仕事です。未経験の方も歓迎します！",
     "author_id": "delta",
-    "price": 12000,
+    "price": 16000,
     "location_name": "大阪府大阪市中央区心斎橋",
+    "lat": 34.68000630118557,
+    "lng": 135.49033744057684,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-OSK-1004"
@@ -2094,8 +2304,8 @@ export const regionalJobs = [
     "role_type": "キャンペーンクルー",
     "sales_channel": "ショップ",
     "carrier": "docomo",
-    "event_date": "2026-09-14",
-    "application_deadline": "2026-09-08",
+    "event_date": "2026-11-06",
+    "application_deadline": "2026-11-05",
     "work_location": "外販（複合施設など）",
     "is_urgent": false
   },
@@ -2104,8 +2314,10 @@ export const regionalJobs = [
     "title": "【梅田駅前】クローザー募集！au/UQmobileショップ獲得イベント要員",
     "description": "モバイル端末の新規契約、MNP乗り換え相談に特化した業務です。獲得スキルやクロージングに自信のある方のご応募お待ちしております。",
     "author_id": "seals",
-    "price": 13000,
+    "price": 12000,
     "location_name": "大阪府大阪市北区梅田",
+    "lat": 34.70679572414222,
+    "lng": 135.50226778044401,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-OSK-1005"
@@ -2114,8 +2326,8 @@ export const regionalJobs = [
     "role_type": "クローザー",
     "sales_channel": "量販店",
     "carrier": "au/UQmobile",
-    "event_date": "2026-12-09",
-    "application_deadline": "2026-12-03",
+    "event_date": "2026-12-06",
+    "application_deadline": "2026-12-01",
     "work_location": "外販（スーパーなど）",
     "is_urgent": false
   },
@@ -2124,8 +2336,10 @@ export const regionalJobs = [
     "title": "【難波近郊】高単価！SoftBank/Y!mobile・モバイル相談会ディレクション・運営",
     "description": "イベントスペースや店舗前のブース設営から運営、集客のマイクパフォーマンス（MC）まで幅広くお任せします。リーダーシップを発揮できる環境です。",
     "author_id": "freer",
-    "price": 13000,
+    "price": 14000,
     "location_name": "大阪府大阪市中央区難波",
+    "lat": 34.65722772995971,
+    "lng": 135.5099937033342,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-OSK-1006"
@@ -2134,8 +2348,8 @@ export const regionalJobs = [
     "role_type": "ディレクター",
     "sales_channel": "商業施設",
     "carrier": "SoftBank/Y!mobile",
-    "event_date": "2026-11-06",
-    "application_deadline": "2026-11-02",
+    "event_date": "2026-08-12",
+    "application_deadline": "2026-08-07",
     "work_location": "店内",
     "is_urgent": false
   },
@@ -2144,8 +2358,10 @@ export const regionalJobs = [
     "title": "【天王寺量販店】Rakuten Mobileブース販売・クロージング特化クルー募集",
     "description": "週末の来店客数増加に伴う、店頭プロモーション応援業務です。活気のある現場で、チームワークを活かして獲得目標を目指します！",
     "author_id": "cocolabo",
-    "price": 15000,
+    "price": 18000,
     "location_name": "大阪府大阪市天王寺区",
+    "lat": 34.65599295277238,
+    "lng": 135.51361310345345,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-OSK-1007"
@@ -2154,8 +2370,8 @@ export const regionalJobs = [
     "role_type": "イベントMC",
     "sales_channel": "外販（スーパーなど）",
     "carrier": "Rakuten Mobile",
-    "event_date": "2026-12-11",
-    "application_deadline": "2026-12-10",
+    "event_date": "2026-09-04",
+    "application_deadline": "2026-09-01",
     "work_location": "外販（複合施設など）",
     "is_urgent": true
   },
@@ -2164,8 +2380,10 @@ export const regionalJobs = [
     "title": "【京橋】docomo 臨時イベントプロモーション・接客案内スタッフ",
     "description": "大手通信キャリアのイベントブースにて、お声がけやティッシュ配り、サービスのご案内を行うお仕事です。未経験の方も歓迎します！",
     "author_id": "sigma",
-    "price": 20000,
+    "price": 12000,
     "location_name": "大阪府大阪市都島区",
+    "lat": 34.69107816296271,
+    "lng": 135.53646368510866,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-OSK-1008"
@@ -2174,8 +2392,8 @@ export const regionalJobs = [
     "role_type": "キャンペーンクルー",
     "sales_channel": "ショップ",
     "carrier": "docomo",
-    "event_date": "2026-08-26",
-    "application_deadline": "2026-08-19",
+    "event_date": "2026-10-06",
+    "application_deadline": "2026-10-04",
     "work_location": "外販（スーパーなど）",
     "is_urgent": false
   },
@@ -2184,8 +2402,10 @@ export const regionalJobs = [
     "title": "【心斎橋駅前】クローザー募集！au/UQmobileショップ獲得イベント要員",
     "description": "モバイル端末の新規契約、MNP乗り換え相談に特化した業務です。獲得スキルやクロージングに自信のある方のご応募お待ちしております。",
     "author_id": "alpha",
-    "price": 16000,
+    "price": 12000,
     "location_name": "大阪府大阪市中央区心斎橋",
+    "lat": 34.66882423309683,
+    "lng": 135.49284788525515,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-OSK-1009"
@@ -2194,8 +2414,8 @@ export const regionalJobs = [
     "role_type": "クローザー",
     "sales_channel": "量販店",
     "carrier": "au/UQmobile",
-    "event_date": "2026-11-25",
-    "application_deadline": "2026-11-18",
+    "event_date": "2026-10-04",
+    "application_deadline": "2026-10-01",
     "work_location": "店内",
     "is_urgent": false
   },
@@ -2206,6 +2426,8 @@ export const regionalJobs = [
     "author_id": "beta",
     "price": 17000,
     "location_name": "大阪府大阪市北区梅田",
+    "lat": 34.695665296546025,
+    "lng": 135.4860626213354,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-OSK-1010"
@@ -2214,8 +2436,8 @@ export const regionalJobs = [
     "role_type": "ディレクター",
     "sales_channel": "商業施設",
     "carrier": "SoftBank/Y!mobile",
-    "event_date": "2026-12-06",
-    "application_deadline": "2026-12-02",
+    "event_date": "2026-11-27",
+    "application_deadline": "2026-11-23",
     "work_location": "外販（複合施設など）",
     "is_urgent": false
   },
@@ -2226,6 +2448,8 @@ export const regionalJobs = [
     "author_id": "gamma",
     "price": 20000,
     "location_name": "大阪府大阪市中央区難波",
+    "lat": 34.666467415779564,
+    "lng": 135.50455984305154,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-OSK-1011"
@@ -2234,8 +2458,8 @@ export const regionalJobs = [
     "role_type": "イベントMC",
     "sales_channel": "外販（スーパーなど）",
     "carrier": "Rakuten Mobile",
-    "event_date": "2026-08-08",
-    "application_deadline": "2026-08-04",
+    "event_date": "2026-11-12",
+    "application_deadline": "2026-11-11",
     "work_location": "外販（スーパーなど）",
     "is_urgent": false
   },
@@ -2244,8 +2468,10 @@ export const regionalJobs = [
     "title": "【天王寺】docomo 臨時イベントプロモーション・接客案内スタッフ",
     "description": "大手通信キャリアのイベントブースにて、お声がけやティッシュ配り、サービスのご案内を行うお仕事です。未経験の方も歓迎します！",
     "author_id": "delta",
-    "price": 18000,
+    "price": 16000,
     "location_name": "大阪府大阪市天王寺区",
+    "lat": 34.65069861811467,
+    "lng": 135.5147825362547,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-OSK-1012"
@@ -2254,8 +2480,8 @@ export const regionalJobs = [
     "role_type": "キャンペーンクルー",
     "sales_channel": "ショップ",
     "carrier": "docomo",
-    "event_date": "2026-09-15",
-    "application_deadline": "2026-09-09",
+    "event_date": "2026-10-23",
+    "application_deadline": "2026-10-17",
     "work_location": "店内",
     "is_urgent": false
   },
@@ -2266,6 +2492,8 @@ export const regionalJobs = [
     "author_id": "seals",
     "price": 19000,
     "location_name": "大阪府大阪市都島区",
+    "lat": 34.693480062609844,
+    "lng": 135.53866882905362,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-OSK-1013"
@@ -2274,8 +2502,8 @@ export const regionalJobs = [
     "role_type": "クローザー",
     "sales_channel": "量販店",
     "carrier": "au/UQmobile",
-    "event_date": "2026-12-25",
-    "application_deadline": "2026-12-19",
+    "event_date": "2026-09-28",
+    "application_deadline": "2026-09-23",
     "work_location": "外販（複合施設など）",
     "is_urgent": false
   },
@@ -2284,8 +2512,10 @@ export const regionalJobs = [
     "title": "【心斎橋近郊】高単価！SoftBank/Y!mobile・モバイル相談会ディレクション・運営",
     "description": "イベントスペースや店舗前のブース設営から運営、集客のマイクパフォーマンス（MC）まで幅広くお任せします。リーダーシップを発揮できる環境です。",
     "author_id": "freer",
-    "price": 18000,
+    "price": 19000,
     "location_name": "大阪府大阪市中央区心斎橋",
+    "lat": 34.683045534299,
+    "lng": 135.4921954332001,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-OSK-1014"
@@ -2294,8 +2524,8 @@ export const regionalJobs = [
     "role_type": "ディレクター",
     "sales_channel": "商業施設",
     "carrier": "SoftBank/Y!mobile",
-    "event_date": "2026-10-03",
-    "application_deadline": "2026-10-02",
+    "event_date": "2026-11-27",
+    "application_deadline": "2026-11-22",
     "work_location": "外販（スーパーなど）",
     "is_urgent": true
   },
@@ -2306,6 +2536,8 @@ export const regionalJobs = [
     "author_id": "cocolabo",
     "price": 17000,
     "location_name": "大阪府大阪市北区梅田",
+    "lat": 34.70580340279771,
+    "lng": 135.4998692798128,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-OSK-1015"
@@ -2314,8 +2546,8 @@ export const regionalJobs = [
     "role_type": "イベントMC",
     "sales_channel": "外販（スーパーなど）",
     "carrier": "Rakuten Mobile",
-    "event_date": "2026-08-11",
-    "application_deadline": "2026-08-07",
+    "event_date": "2026-11-20",
+    "application_deadline": "2026-11-16",
     "work_location": "店内",
     "is_urgent": false
   },
@@ -2324,8 +2556,10 @@ export const regionalJobs = [
     "title": "【難波】docomo 臨時イベントプロモーション・接客案内スタッフ",
     "description": "大手通信キャリアのイベントブースにて、お声がけやティッシュ配り、サービスのご案内を行うお仕事です。未経験の方も歓迎します！",
     "author_id": "sigma",
-    "price": 19000,
+    "price": 17000,
     "location_name": "大阪府大阪市中央区難波",
+    "lat": 34.6592001988843,
+    "lng": 135.49690968823117,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-OSK-1016"
@@ -2334,8 +2568,8 @@ export const regionalJobs = [
     "role_type": "キャンペーンクルー",
     "sales_channel": "ショップ",
     "carrier": "docomo",
-    "event_date": "2026-11-12",
-    "application_deadline": "2026-11-11",
+    "event_date": "2026-11-14",
+    "application_deadline": "2026-11-12",
     "work_location": "外販（複合施設など）",
     "is_urgent": false
   },
@@ -2344,8 +2578,10 @@ export const regionalJobs = [
     "title": "【天王寺駅前】クローザー募集！au/UQmobileショップ獲得イベント要員",
     "description": "モバイル端末の新規契約、MNP乗り換え相談に特化した業務です。獲得スキルやクロージングに自信のある方のご応募お待ちしております。",
     "author_id": "alpha",
-    "price": 12000,
+    "price": 14000,
     "location_name": "大阪府大阪市天王寺区",
+    "lat": 34.655366086243156,
+    "lng": 135.50824811394546,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-OSK-1017"
@@ -2354,8 +2590,8 @@ export const regionalJobs = [
     "role_type": "クローザー",
     "sales_channel": "量販店",
     "carrier": "au/UQmobile",
-    "event_date": "2026-10-08",
-    "application_deadline": "2026-10-02",
+    "event_date": "2026-09-21",
+    "application_deadline": "2026-09-16",
     "work_location": "外販（スーパーなど）",
     "is_urgent": false
   },
@@ -2364,8 +2600,10 @@ export const regionalJobs = [
     "title": "【京橋近郊】高単価！SoftBank/Y!mobile・モバイル相談会ディレクション・運営",
     "description": "イベントスペースや店舗前のブース設営から運営、集客のマイクパフォーマンス（MC）まで幅広くお任せします。リーダーシップを発揮できる環境です。",
     "author_id": "beta",
-    "price": 16000,
+    "price": 19000,
     "location_name": "大阪府大阪市都島区",
+    "lat": 34.68755530831756,
+    "lng": 135.524072199824,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-OSK-1018"
@@ -2374,8 +2612,8 @@ export const regionalJobs = [
     "role_type": "ディレクター",
     "sales_channel": "商業施設",
     "carrier": "SoftBank/Y!mobile",
-    "event_date": "2026-09-07",
-    "application_deadline": "2026-09-03",
+    "event_date": "2026-08-03",
+    "application_deadline": "2026-08-02",
     "work_location": "店内",
     "is_urgent": false
   },
@@ -2384,8 +2622,10 @@ export const regionalJobs = [
     "title": "【心斎橋量販店】Rakuten Mobileブース販売・クロージング特化クルー募集",
     "description": "週末の来店客数増加に伴う、店頭プロモーション応援業務です。活気のある現場で、チームワークを活かして獲得目標を目指します！",
     "author_id": "gamma",
-    "price": 20000,
+    "price": 17000,
     "location_name": "大阪府大阪市中央区心斎橋",
+    "lat": 34.66964666660494,
+    "lng": 135.50229267645187,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-OSK-1019"
@@ -2394,8 +2634,8 @@ export const regionalJobs = [
     "role_type": "イベントMC",
     "sales_channel": "外販（スーパーなど）",
     "carrier": "Rakuten Mobile",
-    "event_date": "2026-09-28",
-    "application_deadline": "2026-09-27",
+    "event_date": "2026-10-22",
+    "application_deadline": "2026-10-16",
     "work_location": "外販（複合施設など）",
     "is_urgent": false
   },
@@ -2404,8 +2644,10 @@ export const regionalJobs = [
     "title": "【梅田】docomo 臨時イベントプロモーション・接客案内スタッフ",
     "description": "大手通信キャリアのイベントブースにて、お声がけやティッシュ配り、サービスのご案内を行うお仕事です。未経験の方も歓迎します！",
     "author_id": "delta",
-    "price": 12000,
+    "price": 19000,
     "location_name": "大阪府大阪市北区梅田",
+    "lat": 34.706729631136284,
+    "lng": 135.49090287898696,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-OSK-1020"
@@ -2414,8 +2656,8 @@ export const regionalJobs = [
     "role_type": "キャンペーンクルー",
     "sales_channel": "ショップ",
     "carrier": "docomo",
-    "event_date": "2026-10-27",
-    "application_deadline": "2026-10-22",
+    "event_date": "2026-08-04",
+    "application_deadline": "2026-08-01",
     "work_location": "外販（スーパーなど）",
     "is_urgent": false
   },
@@ -2424,8 +2666,10 @@ export const regionalJobs = [
     "title": "【難波駅前】クローザー募集！au/UQmobileショップ獲得イベント要員",
     "description": "モバイル端末の新規契約、MNP乗り換え相談に特化した業務です。獲得スキルやクロージングに自信のある方のご応募お待ちしております。",
     "author_id": "seals",
-    "price": 18000,
+    "price": 13000,
     "location_name": "大阪府大阪市中央区難波",
+    "lat": 34.65704483281512,
+    "lng": 135.49999064265228,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-OSK-1021"
@@ -2434,8 +2678,8 @@ export const regionalJobs = [
     "role_type": "クローザー",
     "sales_channel": "量販店",
     "carrier": "au/UQmobile",
-    "event_date": "2026-08-16",
-    "application_deadline": "2026-08-11",
+    "event_date": "2026-09-04",
+    "application_deadline": "2026-09-02",
     "work_location": "店内",
     "is_urgent": true
   },
@@ -2444,8 +2688,10 @@ export const regionalJobs = [
     "title": "【天王寺近郊】高単価！SoftBank/Y!mobile・モバイル相談会ディレクション・運営",
     "description": "イベントスペースや店舗前のブース設営から運営、集客のマイクパフォーマンス（MC）まで幅広くお任せします。リーダーシップを発揮できる環境です。",
     "author_id": "freer",
-    "price": 13000,
+    "price": 15000,
     "location_name": "大阪府大阪市天王寺区",
+    "lat": 34.65295342212943,
+    "lng": 135.51051676769168,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-OSK-1022"
@@ -2454,8 +2700,8 @@ export const regionalJobs = [
     "role_type": "ディレクター",
     "sales_channel": "商業施設",
     "carrier": "SoftBank/Y!mobile",
-    "event_date": "2026-09-24",
-    "application_deadline": "2026-09-19",
+    "event_date": "2026-12-24",
+    "application_deadline": "2026-12-23",
     "work_location": "外販（複合施設など）",
     "is_urgent": false
   },
@@ -2464,8 +2710,10 @@ export const regionalJobs = [
     "title": "【京橋量販店】Rakuten Mobileブース販売・クロージング特化クルー募集",
     "description": "週末の来店客数増加に伴う、店頭プロモーション応援業務です。活気のある現場で、チームワークを活かして獲得目標を目指します！",
     "author_id": "cocolabo",
-    "price": 20000,
+    "price": 15000,
     "location_name": "大阪府大阪市都島区",
+    "lat": 34.69120119335274,
+    "lng": 135.53770018491332,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-OSK-1023"
@@ -2474,8 +2722,8 @@ export const regionalJobs = [
     "role_type": "イベントMC",
     "sales_channel": "外販（スーパーなど）",
     "carrier": "Rakuten Mobile",
-    "event_date": "2026-11-23",
-    "application_deadline": "2026-11-21",
+    "event_date": "2026-12-27",
+    "application_deadline": "2026-12-21",
     "work_location": "外販（スーパーなど）",
     "is_urgent": false
   },
@@ -2486,6 +2734,8 @@ export const regionalJobs = [
     "author_id": "sigma",
     "price": 17000,
     "location_name": "大阪府大阪市中央区心斎橋",
+    "lat": 34.681098112644925,
+    "lng": 135.4932958926518,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-OSK-1024"
@@ -2494,8 +2744,8 @@ export const regionalJobs = [
     "role_type": "キャンペーンクルー",
     "sales_channel": "ショップ",
     "carrier": "docomo",
-    "event_date": "2026-12-07",
-    "application_deadline": "2026-12-03",
+    "event_date": "2026-09-15",
+    "application_deadline": "2026-09-10",
     "work_location": "店内",
     "is_urgent": false
   },
@@ -2504,8 +2754,10 @@ export const regionalJobs = [
     "title": "【梅田駅前】クローザー募集！au/UQmobileショップ獲得イベント要員",
     "description": "モバイル端末の新規契約、MNP乗り換え相談に特化した業務です。獲得スキルやクロージングに自信のある方のご応募お待ちしております。",
     "author_id": "alpha",
-    "price": 12000,
+    "price": 17000,
     "location_name": "大阪府大阪市北区梅田",
+    "lat": 34.70567933443059,
+    "lng": 135.4934496379641,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-OSK-1025"
@@ -2514,8 +2766,8 @@ export const regionalJobs = [
     "role_type": "クローザー",
     "sales_channel": "量販店",
     "carrier": "au/UQmobile",
-    "event_date": "2026-08-10",
-    "application_deadline": "2026-08-03",
+    "event_date": "2026-09-08",
+    "application_deadline": "2026-09-05",
     "work_location": "外販（複合施設など）",
     "is_urgent": false
   },
@@ -2526,6 +2778,8 @@ export const regionalJobs = [
     "author_id": "beta",
     "price": 14000,
     "location_name": "大阪府大阪市中央区難波",
+    "lat": 34.67669592448945,
+    "lng": 135.50075152147556,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-OSK-1026"
@@ -2534,8 +2788,8 @@ export const regionalJobs = [
     "role_type": "ディレクター",
     "sales_channel": "商業施設",
     "carrier": "SoftBank/Y!mobile",
-    "event_date": "2026-12-04",
-    "application_deadline": "2026-12-01",
+    "event_date": "2026-08-25",
+    "application_deadline": "2026-08-21",
     "work_location": "外販（スーパーなど）",
     "is_urgent": false
   },
@@ -2544,8 +2798,10 @@ export const regionalJobs = [
     "title": "【天王寺量販店】Rakuten Mobileブース販売・クロージング特化クルー募集",
     "description": "週末の来店客数増加に伴う、店頭プロモーション応援業務です。活気のある現場で、チームワークを活かして獲得目標を目指します！",
     "author_id": "gamma",
-    "price": 18000,
+    "price": 17000,
     "location_name": "大阪府大阪市天王寺区",
+    "lat": 34.65727570839583,
+    "lng": 135.50413053119556,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-OSK-1027"
@@ -2554,8 +2810,8 @@ export const regionalJobs = [
     "role_type": "イベントMC",
     "sales_channel": "外販（スーパーなど）",
     "carrier": "Rakuten Mobile",
-    "event_date": "2026-09-21",
-    "application_deadline": "2026-09-16",
+    "event_date": "2026-11-15",
+    "application_deadline": "2026-11-13",
     "work_location": "店内",
     "is_urgent": false
   },
@@ -2564,8 +2820,10 @@ export const regionalJobs = [
     "title": "【京橋】docomo 臨時イベントプロモーション・接客案内スタッフ",
     "description": "大手通信キャリアのイベントブースにて、お声がけやティッシュ配り、サービスのご案内を行うお仕事です。未経験の方も歓迎します！",
     "author_id": "delta",
-    "price": 13000,
+    "price": 15000,
     "location_name": "大阪府大阪市都島区",
+    "lat": 34.690209956360206,
+    "lng": 135.5273136203281,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-OSK-1028"
@@ -2574,8 +2832,8 @@ export const regionalJobs = [
     "role_type": "キャンペーンクルー",
     "sales_channel": "ショップ",
     "carrier": "docomo",
-    "event_date": "2026-08-23",
-    "application_deadline": "2026-08-20",
+    "event_date": "2026-09-08",
+    "application_deadline": "2026-09-04",
     "work_location": "外販（複合施設など）",
     "is_urgent": true
   },
@@ -2586,6 +2844,8 @@ export const regionalJobs = [
     "author_id": "seals",
     "price": 19000,
     "location_name": "大阪府大阪市中央区心斎橋",
+    "lat": 34.66958006871619,
+    "lng": 135.49716624080415,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-OSK-1029"
@@ -2594,8 +2854,8 @@ export const regionalJobs = [
     "role_type": "クローザー",
     "sales_channel": "量販店",
     "carrier": "au/UQmobile",
-    "event_date": "2026-08-13",
-    "application_deadline": "2026-08-07",
+    "event_date": "2026-11-11",
+    "application_deadline": "2026-11-09",
     "work_location": "外販（スーパーなど）",
     "is_urgent": false
   },
@@ -2604,8 +2864,10 @@ export const regionalJobs = [
     "title": "【梅田近郊】高単価！SoftBank/Y!mobile・モバイル相談会ディレクション・運営",
     "description": "イベントスペースや店舗前のブース設営から運営、集客のマイクパフォーマンス（MC）まで幅広くお任せします。リーダーシップを発揮できる環境です。",
     "author_id": "freer",
-    "price": 17000,
+    "price": 18000,
     "location_name": "大阪府大阪市北区梅田",
+    "lat": 34.69751627520102,
+    "lng": 135.49306498262615,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-OSK-1030"
@@ -2614,8 +2876,8 @@ export const regionalJobs = [
     "role_type": "ディレクター",
     "sales_channel": "商業施設",
     "carrier": "SoftBank/Y!mobile",
-    "event_date": "2026-10-11",
-    "application_deadline": "2026-10-10",
+    "event_date": "2026-08-15",
+    "application_deadline": "2026-08-10",
     "work_location": "店内",
     "is_urgent": false
   },
@@ -2624,8 +2886,10 @@ export const regionalJobs = [
     "title": "【難波量販店】Rakuten Mobileブース販売・クロージング特化クルー募集",
     "description": "週末の来店客数増加に伴う、店頭プロモーション応援業務です。活気のある現場で、チームワークを活かして獲得目標を目指します！",
     "author_id": "cocolabo",
-    "price": 18000,
+    "price": 12000,
     "location_name": "大阪府大阪市中央区難波",
+    "lat": 34.672895169528374,
+    "lng": 135.5028132700978,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-OSK-1031"
@@ -2634,8 +2898,8 @@ export const regionalJobs = [
     "role_type": "イベントMC",
     "sales_channel": "外販（スーパーなど）",
     "carrier": "Rakuten Mobile",
-    "event_date": "2026-11-23",
-    "application_deadline": "2026-11-21",
+    "event_date": "2026-08-23",
+    "application_deadline": "2026-08-20",
     "work_location": "外販（複合施設など）",
     "is_urgent": false
   },
@@ -2644,8 +2908,10 @@ export const regionalJobs = [
     "title": "【天王寺】docomo 臨時イベントプロモーション・接客案内スタッフ",
     "description": "大手通信キャリアのイベントブースにて、お声がけやティッシュ配り、サービスのご案内を行うお仕事です。未経験の方も歓迎します！",
     "author_id": "sigma",
-    "price": 15000,
+    "price": 14000,
     "location_name": "大阪府大阪市天王寺区",
+    "lat": 34.640102562812714,
+    "lng": 135.50533539056826,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-OSK-1032"
@@ -2654,8 +2920,8 @@ export const regionalJobs = [
     "role_type": "キャンペーンクルー",
     "sales_channel": "ショップ",
     "carrier": "docomo",
-    "event_date": "2026-11-25",
-    "application_deadline": "2026-11-23",
+    "event_date": "2026-10-17",
+    "application_deadline": "2026-10-12",
     "work_location": "外販（スーパーなど）",
     "is_urgent": false
   },
@@ -2664,8 +2930,10 @@ export const regionalJobs = [
     "title": "【京橋駅前】クローザー募集！au/UQmobileショップ獲得イベント要員",
     "description": "モバイル端末の新規契約、MNP乗り換え相談に特化した業務です。獲得スキルやクロージングに自信のある方のご応募お待ちしております。",
     "author_id": "alpha",
-    "price": 16000,
+    "price": 15000,
     "location_name": "大阪府大阪市都島区",
+    "lat": 34.69741551514918,
+    "lng": 135.53806816497303,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-OSK-1033"
@@ -2674,8 +2942,8 @@ export const regionalJobs = [
     "role_type": "クローザー",
     "sales_channel": "量販店",
     "carrier": "au/UQmobile",
-    "event_date": "2026-12-09",
-    "application_deadline": "2026-12-02",
+    "event_date": "2026-10-10",
+    "application_deadline": "2026-10-07",
     "work_location": "店内",
     "is_urgent": false
   },
@@ -2684,8 +2952,10 @@ export const regionalJobs = [
     "title": "【心斎橋近郊】高単価！SoftBank/Y!mobile・モバイル相談会ディレクション・運営",
     "description": "イベントスペースや店舗前のブース設営から運営、集客のマイクパフォーマンス（MC）まで幅広くお任せします。リーダーシップを発揮できる環境です。",
     "author_id": "beta",
-    "price": 18000,
+    "price": 12000,
     "location_name": "大阪府大阪市中央区心斎橋",
+    "lat": 34.67455592222658,
+    "lng": 135.50700447608787,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-OSK-1034"
@@ -2694,8 +2964,8 @@ export const regionalJobs = [
     "role_type": "ディレクター",
     "sales_channel": "商業施設",
     "carrier": "SoftBank/Y!mobile",
-    "event_date": "2026-12-23",
-    "application_deadline": "2026-12-17",
+    "event_date": "2026-09-19",
+    "application_deadline": "2026-09-15",
     "work_location": "外販（複合施設など）",
     "is_urgent": false
   },
@@ -2704,8 +2974,10 @@ export const regionalJobs = [
     "title": "【梅田量販店】Rakuten Mobileブース販売・クロージング特化クルー募集",
     "description": "週末の来店客数増加に伴う、店頭プロモーション応援業務です。活気のある現場で、チームワークを活かして獲得目標を目指します！",
     "author_id": "gamma",
-    "price": 18000,
+    "price": 15000,
     "location_name": "大阪府大阪市北区梅田",
+    "lat": 34.71004991250226,
+    "lng": 135.49701546183587,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-OSK-1035"
@@ -2714,8 +2986,8 @@ export const regionalJobs = [
     "role_type": "イベントMC",
     "sales_channel": "外販（スーパーなど）",
     "carrier": "Rakuten Mobile",
-    "event_date": "2026-12-20",
-    "application_deadline": "2026-12-13",
+    "event_date": "2026-10-22",
+    "application_deadline": "2026-10-15",
     "work_location": "外販（スーパーなど）",
     "is_urgent": true
   },
@@ -2724,8 +2996,10 @@ export const regionalJobs = [
     "title": "【難波】docomo 臨時イベントプロモーション・接客案内スタッフ",
     "description": "大手通信キャリアのイベントブースにて、お声がけやティッシュ配り、サービスのご案内を行うお仕事です。未経験の方も歓迎します！",
     "author_id": "delta",
-    "price": 20000,
+    "price": 18000,
     "location_name": "大阪府大阪市中央区難波",
+    "lat": 34.66761752968332,
+    "lng": 135.49673119182884,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-OSK-1036"
@@ -2734,8 +3008,8 @@ export const regionalJobs = [
     "role_type": "キャンペーンクルー",
     "sales_channel": "ショップ",
     "carrier": "docomo",
-    "event_date": "2026-09-08",
-    "application_deadline": "2026-09-04",
+    "event_date": "2026-08-28",
+    "application_deadline": "2026-08-23",
     "work_location": "店内",
     "is_urgent": false
   },
@@ -2744,8 +3018,10 @@ export const regionalJobs = [
     "title": "【天王寺駅前】クローザー募集！au/UQmobileショップ獲得イベント要員",
     "description": "モバイル端末の新規契約、MNP乗り換え相談に特化した業務です。獲得スキルやクロージングに自信のある方のご応募お待ちしております。",
     "author_id": "seals",
-    "price": 17000,
+    "price": 18000,
     "location_name": "大阪府大阪市天王寺区",
+    "lat": 34.64317863945185,
+    "lng": 135.52143903036256,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-OSK-1037"
@@ -2754,8 +3030,8 @@ export const regionalJobs = [
     "role_type": "クローザー",
     "sales_channel": "量販店",
     "carrier": "au/UQmobile",
-    "event_date": "2026-11-16",
-    "application_deadline": "2026-11-14",
+    "event_date": "2026-09-11",
+    "application_deadline": "2026-09-09",
     "work_location": "外販（複合施設など）",
     "is_urgent": false
   },
@@ -2764,8 +3040,10 @@ export const regionalJobs = [
     "title": "【京橋近郊】高単価！SoftBank/Y!mobile・モバイル相談会ディレクション・運営",
     "description": "イベントスペースや店舗前のブース設営から運営、集客のマイクパフォーマンス（MC）まで幅広くお任せします。リーダーシップを発揮できる環境です。",
     "author_id": "freer",
-    "price": 18000,
+    "price": 13000,
     "location_name": "大阪府大阪市都島区",
+    "lat": 34.70739535646356,
+    "lng": 135.5392307164351,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-OSK-1038"
@@ -2774,8 +3052,8 @@ export const regionalJobs = [
     "role_type": "ディレクター",
     "sales_channel": "商業施設",
     "carrier": "SoftBank/Y!mobile",
-    "event_date": "2026-08-03",
-    "application_deadline": "2026-08-01",
+    "event_date": "2026-09-27",
+    "application_deadline": "2026-09-20",
     "work_location": "外販（スーパーなど）",
     "is_urgent": false
   },
@@ -2784,8 +3062,10 @@ export const regionalJobs = [
     "title": "【心斎橋量販店】Rakuten Mobileブース販売・クロージング特化クルー募集",
     "description": "週末の来店客数増加に伴う、店頭プロモーション応援業務です。活気のある現場で、チームワークを活かして獲得目標を目指します！",
     "author_id": "cocolabo",
-    "price": 18000,
+    "price": 17000,
     "location_name": "大阪府大阪市中央区心斎橋",
+    "lat": 34.67382326001289,
+    "lng": 135.50235007742594,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-OSK-1039"
@@ -2794,8 +3074,8 @@ export const regionalJobs = [
     "role_type": "イベントMC",
     "sales_channel": "外販（スーパーなど）",
     "carrier": "Rakuten Mobile",
-    "event_date": "2026-08-05",
-    "application_deadline": "2026-08-01",
+    "event_date": "2026-11-23",
+    "application_deadline": "2026-11-21",
     "work_location": "店内",
     "is_urgent": false
   },
@@ -2804,8 +3084,10 @@ export const regionalJobs = [
     "title": "【梅田】docomo 臨時イベントプロモーション・接客案内スタッフ",
     "description": "大手通信キャリアのイベントブースにて、お声がけやティッシュ配り、サービスのご案内を行うお仕事です。未経験の方も歓迎します！",
     "author_id": "sigma",
-    "price": 13000,
+    "price": 17000,
     "location_name": "大阪府大阪市北区梅田",
+    "lat": 34.69974024490868,
+    "lng": 135.4865327412982,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-OSK-1040"
@@ -2814,8 +3096,8 @@ export const regionalJobs = [
     "role_type": "キャンペーンクルー",
     "sales_channel": "ショップ",
     "carrier": "docomo",
-    "event_date": "2026-10-23",
-    "application_deadline": "2026-10-19",
+    "event_date": "2026-12-07",
+    "application_deadline": "2026-12-01",
     "work_location": "外販（複合施設など）",
     "is_urgent": false
   },
@@ -2826,6 +3108,8 @@ export const regionalJobs = [
     "author_id": "alpha",
     "price": 16000,
     "location_name": "大阪府大阪市中央区難波",
+    "lat": 34.67479187971836,
+    "lng": 135.49787469832802,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-OSK-1041"
@@ -2834,8 +3118,8 @@ export const regionalJobs = [
     "role_type": "クローザー",
     "sales_channel": "量販店",
     "carrier": "au/UQmobile",
-    "event_date": "2026-10-16",
-    "application_deadline": "2026-10-14",
+    "event_date": "2026-08-25",
+    "application_deadline": "2026-08-22",
     "work_location": "外販（スーパーなど）",
     "is_urgent": false
   },
@@ -2844,8 +3128,10 @@ export const regionalJobs = [
     "title": "【天王寺近郊】高単価！SoftBank/Y!mobile・モバイル相談会ディレクション・運営",
     "description": "イベントスペースや店舗前のブース設営から運営、集客のマイクパフォーマンス（MC）まで幅広くお任せします。リーダーシップを発揮できる環境です。",
     "author_id": "beta",
-    "price": 12000,
+    "price": 20000,
     "location_name": "大阪府大阪市天王寺区",
+    "lat": 34.64182407958365,
+    "lng": 135.51737105913227,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-OSK-1042"
@@ -2854,8 +3140,8 @@ export const regionalJobs = [
     "role_type": "ディレクター",
     "sales_channel": "商業施設",
     "carrier": "SoftBank/Y!mobile",
-    "event_date": "2026-11-15",
-    "application_deadline": "2026-11-13",
+    "event_date": "2026-12-25",
+    "application_deadline": "2026-12-22",
     "work_location": "店内",
     "is_urgent": true
   },
@@ -2864,8 +3150,10 @@ export const regionalJobs = [
     "title": "【京橋量販店】Rakuten Mobileブース販売・クロージング特化クルー募集",
     "description": "週末の来店客数増加に伴う、店頭プロモーション応援業務です。活気のある現場で、チームワークを活かして獲得目標を目指します！",
     "author_id": "gamma",
-    "price": 16000,
+    "price": 19000,
     "location_name": "大阪府大阪市都島区",
+    "lat": 34.68835260921284,
+    "lng": 135.53564072231904,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-OSK-1043"
@@ -2874,8 +3162,8 @@ export const regionalJobs = [
     "role_type": "イベントMC",
     "sales_channel": "外販（スーパーなど）",
     "carrier": "Rakuten Mobile",
-    "event_date": "2026-08-27",
-    "application_deadline": "2026-08-26",
+    "event_date": "2026-12-28",
+    "application_deadline": "2026-12-23",
     "work_location": "外販（複合施設など）",
     "is_urgent": false
   },
@@ -2884,8 +3172,10 @@ export const regionalJobs = [
     "title": "【心斎橋】docomo 臨時イベントプロモーション・接客案内スタッフ",
     "description": "大手通信キャリアのイベントブースにて、お声がけやティッシュ配り、サービスのご案内を行うお仕事です。未経験の方も歓迎します！",
     "author_id": "delta",
-    "price": 14000,
+    "price": 12000,
     "location_name": "大阪府大阪市中央区心斎橋",
+    "lat": 34.66561994319318,
+    "lng": 135.498363031876,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-OSK-1044"
@@ -2894,8 +3184,8 @@ export const regionalJobs = [
     "role_type": "キャンペーンクルー",
     "sales_channel": "ショップ",
     "carrier": "docomo",
-    "event_date": "2026-08-18",
-    "application_deadline": "2026-08-14",
+    "event_date": "2026-11-25",
+    "application_deadline": "2026-11-19",
     "work_location": "外販（スーパーなど）",
     "is_urgent": false
   },
@@ -2904,8 +3194,10 @@ export const regionalJobs = [
     "title": "【梅田駅前】クローザー募集！au/UQmobileショップ獲得イベント要員",
     "description": "モバイル端末の新規契約、MNP乗り換え相談に特化した業務です。獲得スキルやクロージングに自信のある方のご応募お待ちしております。",
     "author_id": "seals",
-    "price": 16000,
+    "price": 15000,
     "location_name": "大阪府大阪市北区梅田",
+    "lat": 34.70023261202538,
+    "lng": 135.49426980016332,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-OSK-1045"
@@ -2914,8 +3206,8 @@ export const regionalJobs = [
     "role_type": "クローザー",
     "sales_channel": "量販店",
     "carrier": "au/UQmobile",
-    "event_date": "2026-12-04",
-    "application_deadline": "2026-12-01",
+    "event_date": "2026-12-09",
+    "application_deadline": "2026-12-04",
     "work_location": "店内",
     "is_urgent": false
   },
@@ -2924,8 +3216,10 @@ export const regionalJobs = [
     "title": "【難波近郊】高単価！SoftBank/Y!mobile・モバイル相談会ディレクション・運営",
     "description": "イベントスペースや店舗前のブース設営から運営、集客のマイクパフォーマンス（MC）まで幅広くお任せします。リーダーシップを発揮できる環境です。",
     "author_id": "freer",
-    "price": 20000,
+    "price": 18000,
     "location_name": "大阪府大阪市中央区難波",
+    "lat": 34.66378422695143,
+    "lng": 135.49096023132063,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-OSK-1046"
@@ -2934,8 +3228,8 @@ export const regionalJobs = [
     "role_type": "ディレクター",
     "sales_channel": "商業施設",
     "carrier": "SoftBank/Y!mobile",
-    "event_date": "2026-10-04",
-    "application_deadline": "2026-10-01",
+    "event_date": "2026-09-04",
+    "application_deadline": "2026-09-01",
     "work_location": "外販（複合施設など）",
     "is_urgent": false
   },
@@ -2944,8 +3238,10 @@ export const regionalJobs = [
     "title": "【天王寺量販店】Rakuten Mobileブース販売・クロージング特化クルー募集",
     "description": "週末の来店客数増加に伴う、店頭プロモーション応援業務です。活気のある現場で、チームワークを活かして獲得目標を目指します！",
     "author_id": "cocolabo",
-    "price": 17000,
+    "price": 13000,
     "location_name": "大阪府大阪市天王寺区",
+    "lat": 34.65104932277405,
+    "lng": 135.52242421243358,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-OSK-1047"
@@ -2954,8 +3250,8 @@ export const regionalJobs = [
     "role_type": "イベントMC",
     "sales_channel": "外販（スーパーなど）",
     "carrier": "Rakuten Mobile",
-    "event_date": "2026-12-11",
-    "application_deadline": "2026-12-06",
+    "event_date": "2026-12-27",
+    "application_deadline": "2026-12-22",
     "work_location": "外販（スーパーなど）",
     "is_urgent": false
   },
@@ -2964,8 +3260,10 @@ export const regionalJobs = [
     "title": "【京橋】docomo 臨時イベントプロモーション・接客案内スタッフ",
     "description": "大手通信キャリアのイベントブースにて、お声がけやティッシュ配り、サービスのご案内を行うお仕事です。未経験の方も歓迎します！",
     "author_id": "sigma",
-    "price": 13000,
+    "price": 16000,
     "location_name": "大阪府大阪市都島区",
+    "lat": 34.69060107861471,
+    "lng": 135.52547130112262,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-OSK-1048"
@@ -2974,8 +3272,8 @@ export const regionalJobs = [
     "role_type": "キャンペーンクルー",
     "sales_channel": "ショップ",
     "carrier": "docomo",
-    "event_date": "2026-09-09",
-    "application_deadline": "2026-09-04",
+    "event_date": "2026-11-02",
+    "application_deadline": "2026-11-01",
     "work_location": "店内",
     "is_urgent": false
   },
@@ -2986,6 +3284,8 @@ export const regionalJobs = [
     "author_id": "alpha",
     "price": 20000,
     "location_name": "大阪府大阪市中央区心斎橋",
+    "lat": 34.673252489973464,
+    "lng": 135.49120615564837,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-OSK-1049"
@@ -2994,8 +3294,8 @@ export const regionalJobs = [
     "role_type": "クローザー",
     "sales_channel": "量販店",
     "carrier": "au/UQmobile",
-    "event_date": "2026-12-12",
-    "application_deadline": "2026-12-09",
+    "event_date": "2026-08-14",
+    "application_deadline": "2026-08-13",
     "work_location": "外販（複合施設など）",
     "is_urgent": true
   },
@@ -3004,8 +3304,10 @@ export const regionalJobs = [
     "title": "【梅田近郊】高単価！SoftBank/Y!mobile・モバイル相談会ディレクション・運営",
     "description": "イベントスペースや店舗前のブース設営から運営、集客のマイクパフォーマンス（MC）まで幅広くお任せします。リーダーシップを発揮できる環境です。",
     "author_id": "beta",
-    "price": 20000,
+    "price": 17000,
     "location_name": "大阪府大阪市北区梅田",
+    "lat": 34.69645685833035,
+    "lng": 135.49345593488584,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-OSK-1050"
@@ -3014,8 +3316,8 @@ export const regionalJobs = [
     "role_type": "ディレクター",
     "sales_channel": "商業施設",
     "carrier": "SoftBank/Y!mobile",
-    "event_date": "2026-11-10",
-    "application_deadline": "2026-11-09",
+    "event_date": "2026-11-04",
+    "application_deadline": "2026-11-01",
     "work_location": "外販（スーパーなど）",
     "is_urgent": false
   },
@@ -3024,8 +3326,10 @@ export const regionalJobs = [
     "title": "【難波量販店】Rakuten Mobileブース販売・クロージング特化クルー募集",
     "description": "週末の来店客数増加に伴う、店頭プロモーション応援業務です。活気のある現場で、チームワークを活かして獲得目標を目指します！",
     "author_id": "gamma",
-    "price": 12000,
+    "price": 19000,
     "location_name": "大阪府大阪市中央区難波",
+    "lat": 34.67073520358947,
+    "lng": 135.49550223867496,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-OSK-1051"
@@ -3034,8 +3338,8 @@ export const regionalJobs = [
     "role_type": "イベントMC",
     "sales_channel": "外販（スーパーなど）",
     "carrier": "Rakuten Mobile",
-    "event_date": "2026-11-06",
-    "application_deadline": "2026-11-03",
+    "event_date": "2026-12-11",
+    "application_deadline": "2026-12-04",
     "work_location": "店内",
     "is_urgent": false
   },
@@ -3044,8 +3348,10 @@ export const regionalJobs = [
     "title": "【天王寺】docomo 臨時イベントプロモーション・接客案内スタッフ",
     "description": "大手通信キャリアのイベントブースにて、お声がけやティッシュ配り、サービスのご案内を行うお仕事です。未経験の方も歓迎します！",
     "author_id": "delta",
-    "price": 17000,
+    "price": 19000,
     "location_name": "大阪府大阪市天王寺区",
+    "lat": 34.64845073693351,
+    "lng": 135.50801666417436,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-OSK-1052"
@@ -3054,8 +3360,8 @@ export const regionalJobs = [
     "role_type": "キャンペーンクルー",
     "sales_channel": "ショップ",
     "carrier": "docomo",
-    "event_date": "2026-08-17",
-    "application_deadline": "2026-08-16",
+    "event_date": "2026-10-03",
+    "application_deadline": "2026-10-01",
     "work_location": "外販（複合施設など）",
     "is_urgent": false
   },
@@ -3064,8 +3370,10 @@ export const regionalJobs = [
     "title": "【京橋駅前】クローザー募集！au/UQmobileショップ獲得イベント要員",
     "description": "モバイル端末の新規契約、MNP乗り換え相談に特化した業務です。獲得スキルやクロージングに自信のある方のご応募お待ちしております。",
     "author_id": "seals",
-    "price": 15000,
+    "price": 14000,
     "location_name": "大阪府大阪市都島区",
+    "lat": 34.69222452686815,
+    "lng": 135.52804341423226,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-OSK-1053"
@@ -3074,8 +3382,8 @@ export const regionalJobs = [
     "role_type": "クローザー",
     "sales_channel": "量販店",
     "carrier": "au/UQmobile",
-    "event_date": "2026-12-08",
-    "application_deadline": "2026-12-03",
+    "event_date": "2026-09-05",
+    "application_deadline": "2026-09-03",
     "work_location": "外販（スーパーなど）",
     "is_urgent": false
   },
@@ -3084,8 +3392,10 @@ export const regionalJobs = [
     "title": "【心斎橋近郊】高単価！SoftBank/Y!mobile・モバイル相談会ディレクション・運営",
     "description": "イベントスペースや店舗前のブース設営から運営、集客のマイクパフォーマンス（MC）まで幅広くお任せします。リーダーシップを発揮できる環境です。",
     "author_id": "freer",
-    "price": 12000,
+    "price": 13000,
     "location_name": "大阪府大阪市中央区心斎橋",
+    "lat": 34.67677365987216,
+    "lng": 135.49162932172868,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-OSK-1054"
@@ -3094,8 +3404,8 @@ export const regionalJobs = [
     "role_type": "ディレクター",
     "sales_channel": "商業施設",
     "carrier": "SoftBank/Y!mobile",
-    "event_date": "2026-09-25",
-    "application_deadline": "2026-09-18",
+    "event_date": "2026-11-01",
+    "application_deadline": "2026-11-01",
     "work_location": "店内",
     "is_urgent": false
   },
@@ -3104,8 +3414,10 @@ export const regionalJobs = [
     "title": "【梅田量販店】Rakuten Mobileブース販売・クロージング特化クルー募集",
     "description": "週末の来店客数増加に伴う、店頭プロモーション応援業務です。活気のある現場で、チームワークを活かして獲得目標を目指します！",
     "author_id": "cocolabo",
-    "price": 18000,
+    "price": 19000,
     "location_name": "大阪府大阪市北区梅田",
+    "lat": 34.711795659954014,
+    "lng": 135.50183616435234,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-OSK-1055"
@@ -3114,8 +3426,8 @@ export const regionalJobs = [
     "role_type": "イベントMC",
     "sales_channel": "外販（スーパーなど）",
     "carrier": "Rakuten Mobile",
-    "event_date": "2026-09-14",
-    "application_deadline": "2026-09-08",
+    "event_date": "2026-09-12",
+    "application_deadline": "2026-09-05",
     "work_location": "外販（複合施設など）",
     "is_urgent": false
   },
@@ -3124,8 +3436,10 @@ export const regionalJobs = [
     "title": "【難波】docomo 臨時イベントプロモーション・接客案内スタッフ",
     "description": "大手通信キャリアのイベントブースにて、お声がけやティッシュ配り、サービスのご案内を行うお仕事です。未経験の方も歓迎します！",
     "author_id": "sigma",
-    "price": 16000,
+    "price": 20000,
     "location_name": "大阪府大阪市中央区難波",
+    "lat": 34.67550016362819,
+    "lng": 135.49202808915004,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-OSK-1056"
@@ -3134,8 +3448,8 @@ export const regionalJobs = [
     "role_type": "キャンペーンクルー",
     "sales_channel": "ショップ",
     "carrier": "docomo",
-    "event_date": "2026-11-21",
-    "application_deadline": "2026-11-15",
+    "event_date": "2026-08-01",
+    "application_deadline": "2026-08-01",
     "work_location": "外販（スーパーなど）",
     "is_urgent": true
   },
@@ -3144,8 +3458,10 @@ export const regionalJobs = [
     "title": "【天王寺駅前】クローザー募集！au/UQmobileショップ獲得イベント要員",
     "description": "モバイル端末の新規契約、MNP乗り換え相談に特化した業務です。獲得スキルやクロージングに自信のある方のご応募お待ちしております。",
     "author_id": "alpha",
-    "price": 14000,
+    "price": 17000,
     "location_name": "大阪府大阪市天王寺区",
+    "lat": 34.63986034960431,
+    "lng": 135.52119625628123,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-OSK-1057"
@@ -3154,8 +3470,8 @@ export const regionalJobs = [
     "role_type": "クローザー",
     "sales_channel": "量販店",
     "carrier": "au/UQmobile",
-    "event_date": "2026-10-12",
-    "application_deadline": "2026-10-08",
+    "event_date": "2026-08-13",
+    "application_deadline": "2026-08-11",
     "work_location": "店内",
     "is_urgent": false
   },
@@ -3164,8 +3480,10 @@ export const regionalJobs = [
     "title": "【京橋近郊】高単価！SoftBank/Y!mobile・モバイル相談会ディレクション・運営",
     "description": "イベントスペースや店舗前のブース設営から運営、集客のマイクパフォーマンス（MC）まで幅広くお任せします。リーダーシップを発揮できる環境です。",
     "author_id": "beta",
-    "price": 20000,
+    "price": 15000,
     "location_name": "大阪府大阪市都島区",
+    "lat": 34.70296874626816,
+    "lng": 135.54240933944897,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-OSK-1058"
@@ -3174,8 +3492,8 @@ export const regionalJobs = [
     "role_type": "ディレクター",
     "sales_channel": "商業施設",
     "carrier": "SoftBank/Y!mobile",
-    "event_date": "2026-11-23",
-    "application_deadline": "2026-11-22",
+    "event_date": "2026-08-11",
+    "application_deadline": "2026-08-04",
     "work_location": "外販（複合施設など）",
     "is_urgent": false
   },
@@ -3184,8 +3502,10 @@ export const regionalJobs = [
     "title": "【心斎橋量販店】Rakuten Mobileブース販売・クロージング特化クルー募集",
     "description": "週末の来店客数増加に伴う、店頭プロモーション応援業務です。活気のある現場で、チームワークを活かして獲得目標を目指します！",
     "author_id": "gamma",
-    "price": 16000,
+    "price": 13000,
     "location_name": "大阪府大阪市中央区心斎橋",
+    "lat": 34.672371510434395,
+    "lng": 135.50990709100057,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-OSK-1059"
@@ -3194,8 +3514,8 @@ export const regionalJobs = [
     "role_type": "イベントMC",
     "sales_channel": "外販（スーパーなど）",
     "carrier": "Rakuten Mobile",
-    "event_date": "2026-11-07",
-    "application_deadline": "2026-11-05",
+    "event_date": "2026-10-13",
+    "application_deadline": "2026-10-08",
     "work_location": "外販（スーパーなど）",
     "is_urgent": false
   },
@@ -3204,8 +3524,10 @@ export const regionalJobs = [
     "title": "【梅田】docomo 臨時イベントプロモーション・接客案内スタッフ",
     "description": "大手通信キャリアのイベントブースにて、お声がけやティッシュ配り、サービスのご案内を行うお仕事です。未経験の方も歓迎します！",
     "author_id": "delta",
-    "price": 13000,
+    "price": 17000,
     "location_name": "大阪府大阪市北区梅田",
+    "lat": 34.69426607385393,
+    "lng": 135.50115878908818,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-OSK-1060"
@@ -3214,8 +3536,8 @@ export const regionalJobs = [
     "role_type": "キャンペーンクルー",
     "sales_channel": "ショップ",
     "carrier": "docomo",
-    "event_date": "2026-11-18",
-    "application_deadline": "2026-11-11",
+    "event_date": "2026-11-25",
+    "application_deadline": "2026-11-19",
     "work_location": "店内",
     "is_urgent": false
   },
@@ -3224,8 +3546,10 @@ export const regionalJobs = [
     "title": "【難波駅前】クローザー募集！au/UQmobileショップ獲得イベント要員",
     "description": "モバイル端末の新規契約、MNP乗り換え相談に特化した業務です。獲得スキルやクロージングに自信のある方のご応募お待ちしております。",
     "author_id": "seals",
-    "price": 12000,
+    "price": 13000,
     "location_name": "大阪府大阪市中央区難波",
+    "lat": 34.67119891296618,
+    "lng": 135.49516307477901,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-OSK-1061"
@@ -3234,8 +3558,8 @@ export const regionalJobs = [
     "role_type": "クローザー",
     "sales_channel": "量販店",
     "carrier": "au/UQmobile",
-    "event_date": "2026-09-23",
-    "application_deadline": "2026-09-16",
+    "event_date": "2026-10-03",
+    "application_deadline": "2026-10-01",
     "work_location": "外販（複合施設など）",
     "is_urgent": false
   },
@@ -3244,8 +3568,10 @@ export const regionalJobs = [
     "title": "【天王寺近郊】高単価！SoftBank/Y!mobile・モバイル相談会ディレクション・運営",
     "description": "イベントスペースや店舗前のブース設営から運営、集客のマイクパフォーマンス（MC）まで幅広くお任せします。リーダーシップを発揮できる環境です。",
     "author_id": "freer",
-    "price": 16000,
+    "price": 17000,
     "location_name": "大阪府大阪市天王寺区",
+    "lat": 34.64920980934802,
+    "lng": 135.50444006715185,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-OSK-1062"
@@ -3254,8 +3580,8 @@ export const regionalJobs = [
     "role_type": "ディレクター",
     "sales_channel": "商業施設",
     "carrier": "SoftBank/Y!mobile",
-    "event_date": "2026-11-05",
-    "application_deadline": "2026-11-01",
+    "event_date": "2026-11-21",
+    "application_deadline": "2026-11-19",
     "work_location": "外販（スーパーなど）",
     "is_urgent": false
   },
@@ -3264,8 +3590,10 @@ export const regionalJobs = [
     "title": "【京橋量販店】Rakuten Mobileブース販売・クロージング特化クルー募集",
     "description": "週末の来店客数増加に伴う、店頭プロモーション応援業務です。活気のある現場で、チームワークを活かして獲得目標を目指します！",
     "author_id": "cocolabo",
-    "price": 15000,
+    "price": 13000,
     "location_name": "大阪府大阪市都島区",
+    "lat": 34.69029133488372,
+    "lng": 135.53033854977136,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-OSK-1063"
@@ -3274,8 +3602,8 @@ export const regionalJobs = [
     "role_type": "イベントMC",
     "sales_channel": "外販（スーパーなど）",
     "carrier": "Rakuten Mobile",
-    "event_date": "2026-08-27",
-    "application_deadline": "2026-08-24",
+    "event_date": "2026-08-05",
+    "application_deadline": "2026-08-01",
     "work_location": "店内",
     "is_urgent": true
   },
@@ -3284,8 +3612,10 @@ export const regionalJobs = [
     "title": "【心斎橋】docomo 臨時イベントプロモーション・接客案内スタッフ",
     "description": "大手通信キャリアのイベントブースにて、お声がけやティッシュ配り、サービスのご案内を行うお仕事です。未経験の方も歓迎します！",
     "author_id": "sigma",
-    "price": 19000,
+    "price": 16000,
     "location_name": "大阪府大阪市中央区心斎橋",
+    "lat": 34.66507444574385,
+    "lng": 135.50765645463156,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-OSK-1064"
@@ -3294,8 +3624,8 @@ export const regionalJobs = [
     "role_type": "キャンペーンクルー",
     "sales_channel": "ショップ",
     "carrier": "docomo",
-    "event_date": "2026-10-16",
-    "application_deadline": "2026-10-13",
+    "event_date": "2026-12-21",
+    "application_deadline": "2026-12-18",
     "work_location": "外販（複合施設など）",
     "is_urgent": false
   },
@@ -3304,8 +3634,10 @@ export const regionalJobs = [
     "title": "【梅田駅前】クローザー募集！au/UQmobileショップ獲得イベント要員",
     "description": "モバイル端末の新規契約、MNP乗り換え相談に特化した業務です。獲得スキルやクロージングに自信のある方のご応募お待ちしております。",
     "author_id": "alpha",
-    "price": 15000,
+    "price": 17000,
     "location_name": "大阪府大阪市北区梅田",
+    "lat": 34.70963167379174,
+    "lng": 135.48700071724593,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-OSK-1065"
@@ -3314,8 +3646,8 @@ export const regionalJobs = [
     "role_type": "クローザー",
     "sales_channel": "量販店",
     "carrier": "au/UQmobile",
-    "event_date": "2026-10-27",
-    "application_deadline": "2026-10-23",
+    "event_date": "2026-12-18",
+    "application_deadline": "2026-12-13",
     "work_location": "外販（スーパーなど）",
     "is_urgent": false
   },
@@ -3324,8 +3656,10 @@ export const regionalJobs = [
     "title": "【難波近郊】高単価！SoftBank/Y!mobile・モバイル相談会ディレクション・運営",
     "description": "イベントスペースや店舗前のブース設営から運営、集客のマイクパフォーマンス（MC）まで幅広くお任せします。リーダーシップを発揮できる環境です。",
     "author_id": "beta",
-    "price": 13000,
+    "price": 17000,
     "location_name": "大阪府大阪市中央区難波",
+    "lat": 34.65937842558979,
+    "lng": 135.49816904239455,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-OSK-1066"
@@ -3334,8 +3668,8 @@ export const regionalJobs = [
     "role_type": "ディレクター",
     "sales_channel": "商業施設",
     "carrier": "SoftBank/Y!mobile",
-    "event_date": "2026-12-14",
-    "application_deadline": "2026-12-08",
+    "event_date": "2026-10-23",
+    "application_deadline": "2026-10-16",
     "work_location": "店内",
     "is_urgent": false
   },
@@ -3344,8 +3678,10 @@ export const regionalJobs = [
     "title": "【天王寺量販店】Rakuten Mobileブース販売・クロージング特化クルー募集",
     "description": "週末の来店客数増加に伴う、店頭プロモーション応援業務です。活気のある現場で、チームワークを活かして獲得目標を目指します！",
     "author_id": "gamma",
-    "price": 19000,
+    "price": 18000,
     "location_name": "大阪府大阪市天王寺区",
+    "lat": 34.648512184636225,
+    "lng": 135.5089561778313,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-OSK-1067"
@@ -3354,8 +3690,8 @@ export const regionalJobs = [
     "role_type": "イベントMC",
     "sales_channel": "外販（スーパーなど）",
     "carrier": "Rakuten Mobile",
-    "event_date": "2026-12-24",
-    "application_deadline": "2026-12-22",
+    "event_date": "2026-09-16",
+    "application_deadline": "2026-09-15",
     "work_location": "外販（複合施設など）",
     "is_urgent": false
   },
@@ -3364,8 +3700,10 @@ export const regionalJobs = [
     "title": "【京橋】docomo 臨時イベントプロモーション・接客案内スタッフ",
     "description": "大手通信キャリアのイベントブースにて、お声がけやティッシュ配り、サービスのご案内を行うお仕事です。未経験の方も歓迎します！",
     "author_id": "delta",
-    "price": 18000,
+    "price": 17000,
     "location_name": "大阪府大阪市都島区",
+    "lat": 34.70587240998379,
+    "lng": 135.53577627698894,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-OSK-1068"
@@ -3374,8 +3712,8 @@ export const regionalJobs = [
     "role_type": "キャンペーンクルー",
     "sales_channel": "ショップ",
     "carrier": "docomo",
-    "event_date": "2026-10-05",
-    "application_deadline": "2026-10-03",
+    "event_date": "2026-12-02",
+    "application_deadline": "2026-12-01",
     "work_location": "外販（スーパーなど）",
     "is_urgent": false
   },
@@ -3384,8 +3722,10 @@ export const regionalJobs = [
     "title": "【心斎橋駅前】クローザー募集！au/UQmobileショップ獲得イベント要員",
     "description": "モバイル端末の新規契約、MNP乗り換え相談に特化した業務です。獲得スキルやクロージングに自信のある方のご応募お待ちしております。",
     "author_id": "seals",
-    "price": 12000,
+    "price": 18000,
     "location_name": "大阪府大阪市中央区心斎橋",
+    "lat": 34.68414603803674,
+    "lng": 135.510160668763,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-OSK-1069"
@@ -3394,8 +3734,8 @@ export const regionalJobs = [
     "role_type": "クローザー",
     "sales_channel": "量販店",
     "carrier": "au/UQmobile",
-    "event_date": "2026-10-10",
-    "application_deadline": "2026-10-09",
+    "event_date": "2026-09-24",
+    "application_deadline": "2026-09-22",
     "work_location": "店内",
     "is_urgent": false
   },
@@ -3404,8 +3744,10 @@ export const regionalJobs = [
     "title": "【梅田近郊】高単価！SoftBank/Y!mobile・モバイル相談会ディレクション・運営",
     "description": "イベントスペースや店舗前のブース設営から運営、集客のマイクパフォーマンス（MC）まで幅広くお任せします。リーダーシップを発揮できる環境です。",
     "author_id": "freer",
-    "price": 14000,
+    "price": 15000,
     "location_name": "大阪府大阪市北区梅田",
+    "lat": 34.70969449953511,
+    "lng": 135.48640299282482,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-OSK-1070"
@@ -3414,8 +3756,8 @@ export const regionalJobs = [
     "role_type": "ディレクター",
     "sales_channel": "商業施設",
     "carrier": "SoftBank/Y!mobile",
-    "event_date": "2026-12-20",
-    "application_deadline": "2026-12-18",
+    "event_date": "2026-09-24",
+    "application_deadline": "2026-09-22",
     "work_location": "外販（複合施設など）",
     "is_urgent": true
   },
@@ -3424,8 +3766,10 @@ export const regionalJobs = [
     "title": "【難波量販店】Rakuten Mobileブース販売・クロージング特化クルー募集",
     "description": "週末の来店客数増加に伴う、店頭プロモーション応援業務です。活気のある現場で、チームワークを活かして獲得目標を目指します！",
     "author_id": "cocolabo",
-    "price": 18000,
+    "price": 16000,
     "location_name": "大阪府大阪市中央区難波",
+    "lat": 34.65975503244024,
+    "lng": 135.49133238310378,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-OSK-1071"
@@ -3434,8 +3778,8 @@ export const regionalJobs = [
     "role_type": "イベントMC",
     "sales_channel": "外販（スーパーなど）",
     "carrier": "Rakuten Mobile",
-    "event_date": "2026-08-23",
-    "application_deadline": "2026-08-18",
+    "event_date": "2026-08-16",
+    "application_deadline": "2026-08-10",
     "work_location": "外販（スーパーなど）",
     "is_urgent": false
   },
@@ -3444,8 +3788,10 @@ export const regionalJobs = [
     "title": "【天王寺】docomo 臨時イベントプロモーション・接客案内スタッフ",
     "description": "大手通信キャリアのイベントブースにて、お声がけやティッシュ配り、サービスのご案内を行うお仕事です。未経験の方も歓迎します！",
     "author_id": "sigma",
-    "price": 16000,
+    "price": 14000,
     "location_name": "大阪府大阪市天王寺区",
+    "lat": 34.64025800699049,
+    "lng": 135.52102668712462,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-OSK-1072"
@@ -3454,8 +3800,8 @@ export const regionalJobs = [
     "role_type": "キャンペーンクルー",
     "sales_channel": "ショップ",
     "carrier": "docomo",
-    "event_date": "2026-10-24",
-    "application_deadline": "2026-10-19",
+    "event_date": "2026-11-18",
+    "application_deadline": "2026-11-12",
     "work_location": "店内",
     "is_urgent": false
   },
@@ -3464,8 +3810,10 @@ export const regionalJobs = [
     "title": "【京橋駅前】クローザー募集！au/UQmobileショップ獲得イベント要員",
     "description": "モバイル端末の新規契約、MNP乗り換え相談に特化した業務です。獲得スキルやクロージングに自信のある方のご応募お待ちしております。",
     "author_id": "alpha",
-    "price": 16000,
+    "price": 14000,
     "location_name": "大阪府大阪市都島区",
+    "lat": 34.70679841448127,
+    "lng": 135.54212121517634,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-OSK-1073"
@@ -3474,8 +3822,8 @@ export const regionalJobs = [
     "role_type": "クローザー",
     "sales_channel": "量販店",
     "carrier": "au/UQmobile",
-    "event_date": "2026-11-05",
-    "application_deadline": "2026-11-03",
+    "event_date": "2026-10-17",
+    "application_deadline": "2026-10-11",
     "work_location": "外販（複合施設など）",
     "is_urgent": false
   },
@@ -3484,8 +3832,10 @@ export const regionalJobs = [
     "title": "【心斎橋近郊】高単価！SoftBank/Y!mobile・モバイル相談会ディレクション・運営",
     "description": "イベントスペースや店舗前のブース設営から運営、集客のマイクパフォーマンス（MC）まで幅広くお任せします。リーダーシップを発揮できる環境です。",
     "author_id": "beta",
-    "price": 20000,
+    "price": 14000,
     "location_name": "大阪府大阪市中央区心斎橋",
+    "lat": 34.66838020383539,
+    "lng": 135.4963693951033,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-OSK-1074"
@@ -3494,8 +3844,8 @@ export const regionalJobs = [
     "role_type": "ディレクター",
     "sales_channel": "商業施設",
     "carrier": "SoftBank/Y!mobile",
-    "event_date": "2026-10-16",
-    "application_deadline": "2026-10-15",
+    "event_date": "2026-08-25",
+    "application_deadline": "2026-08-19",
     "work_location": "外販（スーパーなど）",
     "is_urgent": false
   },
@@ -3504,8 +3854,10 @@ export const regionalJobs = [
     "title": "【梅田量販店】Rakuten Mobileブース販売・クロージング特化クルー募集",
     "description": "週末の来店客数増加に伴う、店頭プロモーション応援業務です。活気のある現場で、チームワークを活かして獲得目標を目指します！",
     "author_id": "gamma",
-    "price": 15000,
+    "price": 20000,
     "location_name": "大阪府大阪市北区梅田",
+    "lat": 34.705230419480245,
+    "lng": 135.50490068893237,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-OSK-1075"
@@ -3514,8 +3866,8 @@ export const regionalJobs = [
     "role_type": "イベントMC",
     "sales_channel": "外販（スーパーなど）",
     "carrier": "Rakuten Mobile",
-    "event_date": "2026-09-21",
-    "application_deadline": "2026-09-20",
+    "event_date": "2026-12-15",
+    "application_deadline": "2026-12-09",
     "work_location": "店内",
     "is_urgent": false
   },
@@ -3524,8 +3876,10 @@ export const regionalJobs = [
     "title": "【難波】docomo 臨時イベントプロモーション・接客案内スタッフ",
     "description": "大手通信キャリアのイベントブースにて、お声がけやティッシュ配り、サービスのご案内を行うお仕事です。未経験の方も歓迎します！",
     "author_id": "delta",
-    "price": 16000,
+    "price": 13000,
     "location_name": "大阪府大阪市中央区難波",
+    "lat": 34.66438031463611,
+    "lng": 135.5078781550911,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-OSK-1076"
@@ -3534,8 +3888,8 @@ export const regionalJobs = [
     "role_type": "キャンペーンクルー",
     "sales_channel": "ショップ",
     "carrier": "docomo",
-    "event_date": "2026-12-05",
-    "application_deadline": "2026-12-01",
+    "event_date": "2026-09-05",
+    "application_deadline": "2026-09-03",
     "work_location": "外販（複合施設など）",
     "is_urgent": false
   },
@@ -3544,8 +3898,10 @@ export const regionalJobs = [
     "title": "【天王寺駅前】クローザー募集！au/UQmobileショップ獲得イベント要員",
     "description": "モバイル端末の新規契約、MNP乗り換え相談に特化した業務です。獲得スキルやクロージングに自信のある方のご応募お待ちしております。",
     "author_id": "seals",
-    "price": 12000,
+    "price": 14000,
     "location_name": "大阪府大阪市天王寺区",
+    "lat": 34.647595999523375,
+    "lng": 135.5092086278521,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-OSK-1077"
@@ -3554,8 +3910,8 @@ export const regionalJobs = [
     "role_type": "クローザー",
     "sales_channel": "量販店",
     "carrier": "au/UQmobile",
-    "event_date": "2026-12-02",
-    "application_deadline": "2026-12-01",
+    "event_date": "2026-10-16",
+    "application_deadline": "2026-10-14",
     "work_location": "外販（スーパーなど）",
     "is_urgent": true
   },
@@ -3564,8 +3920,10 @@ export const regionalJobs = [
     "title": "【京橋近郊】高単価！SoftBank/Y!mobile・モバイル相談会ディレクション・運営",
     "description": "イベントスペースや店舗前のブース設営から運営、集客のマイクパフォーマンス（MC）まで幅広くお任せします。リーダーシップを発揮できる環境です。",
     "author_id": "freer",
-    "price": 16000,
+    "price": 15000,
     "location_name": "大阪府大阪市都島区",
+    "lat": 34.688151094118375,
+    "lng": 135.5291440841176,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-OSK-1078"
@@ -3574,8 +3932,8 @@ export const regionalJobs = [
     "role_type": "ディレクター",
     "sales_channel": "商業施設",
     "carrier": "SoftBank/Y!mobile",
-    "event_date": "2026-09-28",
-    "application_deadline": "2026-09-23",
+    "event_date": "2026-11-12",
+    "application_deadline": "2026-11-06",
     "work_location": "店内",
     "is_urgent": false
   },
@@ -3584,8 +3942,10 @@ export const regionalJobs = [
     "title": "【心斎橋量販店】Rakuten Mobileブース販売・クロージング特化クルー募集",
     "description": "週末の来店客数増加に伴う、店頭プロモーション応援業務です。活気のある現場で、チームワークを活かして獲得目標を目指します！",
     "author_id": "cocolabo",
-    "price": 19000,
+    "price": 16000,
     "location_name": "大阪府大阪市中央区心斎橋",
+    "lat": 34.67037720435005,
+    "lng": 135.50027491040981,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-OSK-1079"
@@ -3594,8 +3954,8 @@ export const regionalJobs = [
     "role_type": "イベントMC",
     "sales_channel": "外販（スーパーなど）",
     "carrier": "Rakuten Mobile",
-    "event_date": "2026-09-06",
-    "application_deadline": "2026-09-03",
+    "event_date": "2026-11-06",
+    "application_deadline": "2026-11-02",
     "work_location": "外販（複合施設など）",
     "is_urgent": false
   },
@@ -3604,8 +3964,10 @@ export const regionalJobs = [
     "title": "【梅田】docomo 臨時イベントプロモーション・接客案内スタッフ",
     "description": "大手通信キャリアのイベントブースにて、お声がけやティッシュ配り、サービスのご案内を行うお仕事です。未経験の方も歓迎します！",
     "author_id": "sigma",
-    "price": 15000,
+    "price": 14000,
     "location_name": "大阪府大阪市北区梅田",
+    "lat": 34.7037082698173,
+    "lng": 135.49604777756522,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-OSK-1080"
@@ -3614,8 +3976,8 @@ export const regionalJobs = [
     "role_type": "キャンペーンクルー",
     "sales_channel": "ショップ",
     "carrier": "docomo",
-    "event_date": "2026-08-22",
-    "application_deadline": "2026-08-16",
+    "event_date": "2026-11-22",
+    "application_deadline": "2026-11-18",
     "work_location": "外販（スーパーなど）",
     "is_urgent": false
   },
@@ -3624,8 +3986,10 @@ export const regionalJobs = [
     "title": "【難波駅前】クローザー募集！au/UQmobileショップ獲得イベント要員",
     "description": "モバイル端末の新規契約、MNP乗り換え相談に特化した業務です。獲得スキルやクロージングに自信のある方のご応募お待ちしております。",
     "author_id": "alpha",
-    "price": 17000,
+    "price": 13000,
     "location_name": "大阪府大阪市中央区難波",
+    "lat": 34.67503685963685,
+    "lng": 135.50692104312375,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-OSK-1081"
@@ -3634,8 +3998,8 @@ export const regionalJobs = [
     "role_type": "クローザー",
     "sales_channel": "量販店",
     "carrier": "au/UQmobile",
-    "event_date": "2026-09-11",
-    "application_deadline": "2026-09-07",
+    "event_date": "2026-09-12",
+    "application_deadline": "2026-09-06",
     "work_location": "店内",
     "is_urgent": false
   },
@@ -3644,8 +4008,10 @@ export const regionalJobs = [
     "title": "【天王寺近郊】高単価！SoftBank/Y!mobile・モバイル相談会ディレクション・運営",
     "description": "イベントスペースや店舗前のブース設営から運営、集客のマイクパフォーマンス（MC）まで幅広くお任せします。リーダーシップを発揮できる環境です。",
     "author_id": "beta",
-    "price": 17000,
+    "price": 16000,
     "location_name": "大阪府大阪市天王寺区",
+    "lat": 34.64959994867132,
+    "lng": 135.5158752951861,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-OSK-1082"
@@ -3654,8 +4020,8 @@ export const regionalJobs = [
     "role_type": "ディレクター",
     "sales_channel": "商業施設",
     "carrier": "SoftBank/Y!mobile",
-    "event_date": "2026-09-06",
-    "application_deadline": "2026-09-02",
+    "event_date": "2026-09-02",
+    "application_deadline": "2026-09-01",
     "work_location": "外販（複合施設など）",
     "is_urgent": false
   },
@@ -3664,8 +4030,10 @@ export const regionalJobs = [
     "title": "【京橋量販店】Rakuten Mobileブース販売・クロージング特化クルー募集",
     "description": "週末の来店客数増加に伴う、店頭プロモーション応援業務です。活気のある現場で、チームワークを活かして獲得目標を目指します！",
     "author_id": "gamma",
-    "price": 17000,
+    "price": 15000,
     "location_name": "大阪府大阪市都島区",
+    "lat": 34.69212231799711,
+    "lng": 135.53447098445034,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-OSK-1083"
@@ -3674,8 +4042,8 @@ export const regionalJobs = [
     "role_type": "イベントMC",
     "sales_channel": "外販（スーパーなど）",
     "carrier": "Rakuten Mobile",
-    "event_date": "2026-08-16",
-    "application_deadline": "2026-08-11",
+    "event_date": "2026-11-19",
+    "application_deadline": "2026-11-17",
     "work_location": "外販（スーパーなど）",
     "is_urgent": false
   },
@@ -3684,8 +4052,10 @@ export const regionalJobs = [
     "title": "【心斎橋】docomo 臨時イベントプロモーション・接客案内スタッフ",
     "description": "大手通信キャリアのイベントブースにて、お声がけやティッシュ配り、サービスのご案内を行うお仕事です。未経験の方も歓迎します！",
     "author_id": "delta",
-    "price": 17000,
+    "price": 16000,
     "location_name": "大阪府大阪市中央区心斎橋",
+    "lat": 34.68239583984018,
+    "lng": 135.50027198243512,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-OSK-1084"
@@ -3694,8 +4064,8 @@ export const regionalJobs = [
     "role_type": "キャンペーンクルー",
     "sales_channel": "ショップ",
     "carrier": "docomo",
-    "event_date": "2026-12-09",
-    "application_deadline": "2026-12-05",
+    "event_date": "2026-11-01",
+    "application_deadline": "2026-11-01",
     "work_location": "店内",
     "is_urgent": true
   },
@@ -3704,8 +4074,10 @@ export const regionalJobs = [
     "title": "【梅田駅前】クローザー募集！au/UQmobileショップ獲得イベント要員",
     "description": "モバイル端末の新規契約、MNP乗り換え相談に特化した業務です。獲得スキルやクロージングに自信のある方のご応募お待ちしております。",
     "author_id": "seals",
-    "price": 15000,
+    "price": 12000,
     "location_name": "大阪府大阪市北区梅田",
+    "lat": 34.699518107777216,
+    "lng": 135.50201012745384,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-OSK-1085"
@@ -3714,8 +4086,8 @@ export const regionalJobs = [
     "role_type": "クローザー",
     "sales_channel": "量販店",
     "carrier": "au/UQmobile",
-    "event_date": "2026-09-02",
-    "application_deadline": "2026-09-01",
+    "event_date": "2026-09-07",
+    "application_deadline": "2026-09-02",
     "work_location": "外販（複合施設など）",
     "is_urgent": false
   },
@@ -3724,8 +4096,10 @@ export const regionalJobs = [
     "title": "【難波近郊】高単価！SoftBank/Y!mobile・モバイル相談会ディレクション・運営",
     "description": "イベントスペースや店舗前のブース設営から運営、集客のマイクパフォーマンス（MC）まで幅広くお任せします。リーダーシップを発揮できる環境です。",
     "author_id": "freer",
-    "price": 16000,
+    "price": 15000,
     "location_name": "大阪府大阪市中央区難波",
+    "lat": 34.66650502980122,
+    "lng": 135.50551291832744,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-OSK-1086"
@@ -3734,8 +4108,8 @@ export const regionalJobs = [
     "role_type": "ディレクター",
     "sales_channel": "商業施設",
     "carrier": "SoftBank/Y!mobile",
-    "event_date": "2026-11-09",
-    "application_deadline": "2026-11-03",
+    "event_date": "2026-08-25",
+    "application_deadline": "2026-08-23",
     "work_location": "外販（スーパーなど）",
     "is_urgent": false
   },
@@ -3744,8 +4118,10 @@ export const regionalJobs = [
     "title": "【天王寺量販店】Rakuten Mobileブース販売・クロージング特化クルー募集",
     "description": "週末の来店客数増加に伴う、店頭プロモーション応援業務です。活気のある現場で、チームワークを活かして獲得目標を目指します！",
     "author_id": "cocolabo",
-    "price": 16000,
+    "price": 12000,
     "location_name": "大阪府大阪市天王寺区",
+    "lat": 34.64254971910468,
+    "lng": 135.52099854544232,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-OSK-1087"
@@ -3754,8 +4130,8 @@ export const regionalJobs = [
     "role_type": "イベントMC",
     "sales_channel": "外販（スーパーなど）",
     "carrier": "Rakuten Mobile",
-    "event_date": "2026-08-25",
-    "application_deadline": "2026-08-24",
+    "event_date": "2026-10-22",
+    "application_deadline": "2026-10-19",
     "work_location": "店内",
     "is_urgent": false
   },
@@ -3764,8 +4140,10 @@ export const regionalJobs = [
     "title": "【京橋】docomo 臨時イベントプロモーション・接客案内スタッフ",
     "description": "大手通信キャリアのイベントブースにて、お声がけやティッシュ配り、サービスのご案内を行うお仕事です。未経験の方も歓迎します！",
     "author_id": "sigma",
-    "price": 14000,
+    "price": 15000,
     "location_name": "大阪府大阪市都島区",
+    "lat": 34.701037447703385,
+    "lng": 135.54202930534566,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-OSK-1088"
@@ -3774,8 +4152,8 @@ export const regionalJobs = [
     "role_type": "キャンペーンクルー",
     "sales_channel": "ショップ",
     "carrier": "docomo",
-    "event_date": "2026-12-20",
-    "application_deadline": "2026-12-19",
+    "event_date": "2026-10-22",
+    "application_deadline": "2026-10-19",
     "work_location": "外販（複合施設など）",
     "is_urgent": false
   },
@@ -3784,8 +4162,10 @@ export const regionalJobs = [
     "title": "【心斎橋駅前】クローザー募集！au/UQmobileショップ獲得イベント要員",
     "description": "モバイル端末の新規契約、MNP乗り換え相談に特化した業務です。獲得スキルやクロージングに自信のある方のご応募お待ちしております。",
     "author_id": "alpha",
-    "price": 17000,
+    "price": 12000,
     "location_name": "大阪府大阪市中央区心斎橋",
+    "lat": 34.66704617290515,
+    "lng": 135.49228279465538,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-OSK-1089"
@@ -3794,8 +4174,8 @@ export const regionalJobs = [
     "role_type": "クローザー",
     "sales_channel": "量販店",
     "carrier": "au/UQmobile",
-    "event_date": "2026-09-27",
-    "application_deadline": "2026-09-24",
+    "event_date": "2026-08-10",
+    "application_deadline": "2026-08-07",
     "work_location": "外販（スーパーなど）",
     "is_urgent": false
   },
@@ -3804,8 +4184,10 @@ export const regionalJobs = [
     "title": "【梅田近郊】高単価！SoftBank/Y!mobile・モバイル相談会ディレクション・運営",
     "description": "イベントスペースや店舗前のブース設営から運営、集客のマイクパフォーマンス（MC）まで幅広くお任せします。リーダーシップを発揮できる環境です。",
     "author_id": "beta",
-    "price": 15000,
+    "price": 19000,
     "location_name": "大阪府大阪市北区梅田",
+    "lat": 34.7068666922492,
+    "lng": 135.50235010360984,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-OSK-1090"
@@ -3814,8 +4196,8 @@ export const regionalJobs = [
     "role_type": "ディレクター",
     "sales_channel": "商業施設",
     "carrier": "SoftBank/Y!mobile",
-    "event_date": "2026-09-03",
-    "application_deadline": "2026-09-02",
+    "event_date": "2026-12-25",
+    "application_deadline": "2026-12-18",
     "work_location": "店内",
     "is_urgent": false
   },
@@ -3824,8 +4206,10 @@ export const regionalJobs = [
     "title": "【難波量販店】Rakuten Mobileブース販売・クロージング特化クルー募集",
     "description": "週末の来店客数増加に伴う、店頭プロモーション応援業務です。活気のある現場で、チームワークを活かして獲得目標を目指します！",
     "author_id": "gamma",
-    "price": 14000,
+    "price": 16000,
     "location_name": "大阪府大阪市中央区難波",
+    "lat": 34.66972495459479,
+    "lng": 135.50253882482656,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-OSK-1091"
@@ -3834,8 +4218,8 @@ export const regionalJobs = [
     "role_type": "イベントMC",
     "sales_channel": "外販（スーパーなど）",
     "carrier": "Rakuten Mobile",
-    "event_date": "2026-10-02",
-    "application_deadline": "2026-10-01",
+    "event_date": "2026-09-03",
+    "application_deadline": "2026-09-01",
     "work_location": "外販（複合施設など）",
     "is_urgent": true
   },
@@ -3844,8 +4228,10 @@ export const regionalJobs = [
     "title": "【天王寺】docomo 臨時イベントプロモーション・接客案内スタッフ",
     "description": "大手通信キャリアのイベントブースにて、お声がけやティッシュ配り、サービスのご案内を行うお仕事です。未経験の方も歓迎します！",
     "author_id": "delta",
-    "price": 20000,
+    "price": 13000,
     "location_name": "大阪府大阪市天王寺区",
+    "lat": 34.644453653664684,
+    "lng": 135.50591203639317,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-OSK-1092"
@@ -3854,8 +4240,8 @@ export const regionalJobs = [
     "role_type": "キャンペーンクルー",
     "sales_channel": "ショップ",
     "carrier": "docomo",
-    "event_date": "2026-10-07",
-    "application_deadline": "2026-10-01",
+    "event_date": "2026-08-15",
+    "application_deadline": "2026-08-14",
     "work_location": "外販（スーパーなど）",
     "is_urgent": false
   },
@@ -3864,8 +4250,10 @@ export const regionalJobs = [
     "title": "【京橋駅前】クローザー募集！au/UQmobileショップ獲得イベント要員",
     "description": "モバイル端末の新規契約、MNP乗り換え相談に特化した業務です。獲得スキルやクロージングに自信のある方のご応募お待ちしております。",
     "author_id": "seals",
-    "price": 19000,
+    "price": 18000,
     "location_name": "大阪府大阪市都島区",
+    "lat": 34.69254220918999,
+    "lng": 135.53545533865946,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-OSK-1093"
@@ -3874,8 +4262,8 @@ export const regionalJobs = [
     "role_type": "クローザー",
     "sales_channel": "量販店",
     "carrier": "au/UQmobile",
-    "event_date": "2026-08-20",
-    "application_deadline": "2026-08-18",
+    "event_date": "2026-08-25",
+    "application_deadline": "2026-08-23",
     "work_location": "店内",
     "is_urgent": false
   },
@@ -3884,8 +4272,10 @@ export const regionalJobs = [
     "title": "【心斎橋近郊】高単価！SoftBank/Y!mobile・モバイル相談会ディレクション・運営",
     "description": "イベントスペースや店舗前のブース設営から運営、集客のマイクパフォーマンス（MC）まで幅広くお任せします。リーダーシップを発揮できる環境です。",
     "author_id": "freer",
-    "price": 12000,
+    "price": 19000,
     "location_name": "大阪府大阪市中央区心斎橋",
+    "lat": 34.68048773884068,
+    "lng": 135.4958506499657,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-OSK-1094"
@@ -3894,8 +4284,8 @@ export const regionalJobs = [
     "role_type": "ディレクター",
     "sales_channel": "商業施設",
     "carrier": "SoftBank/Y!mobile",
-    "event_date": "2026-12-08",
-    "application_deadline": "2026-12-02",
+    "event_date": "2026-12-18",
+    "application_deadline": "2026-12-11",
     "work_location": "外販（複合施設など）",
     "is_urgent": false
   },
@@ -3904,8 +4294,10 @@ export const regionalJobs = [
     "title": "【梅田量販店】Rakuten Mobileブース販売・クロージング特化クルー募集",
     "description": "週末の来店客数増加に伴う、店頭プロモーション応援業務です。活気のある現場で、チームワークを活かして獲得目標を目指します！",
     "author_id": "cocolabo",
-    "price": 19000,
+    "price": 12000,
     "location_name": "大阪府大阪市北区梅田",
+    "lat": 34.69693390288905,
+    "lng": 135.4948277104995,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-OSK-1095"
@@ -3914,8 +4306,8 @@ export const regionalJobs = [
     "role_type": "イベントMC",
     "sales_channel": "外販（スーパーなど）",
     "carrier": "Rakuten Mobile",
-    "event_date": "2026-09-18",
-    "application_deadline": "2026-09-16",
+    "event_date": "2026-12-27",
+    "application_deadline": "2026-12-24",
     "work_location": "外販（スーパーなど）",
     "is_urgent": false
   },
@@ -3924,8 +4316,10 @@ export const regionalJobs = [
     "title": "【難波】docomo 臨時イベントプロモーション・接客案内スタッフ",
     "description": "大手通信キャリアのイベントブースにて、お声がけやティッシュ配り、サービスのご案内を行うお仕事です。未経験の方も歓迎します！",
     "author_id": "sigma",
-    "price": 15000,
+    "price": 17000,
     "location_name": "大阪府大阪市中央区難波",
+    "lat": 34.67148900300732,
+    "lng": 135.4935634161041,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-OSK-1096"
@@ -3934,8 +4328,8 @@ export const regionalJobs = [
     "role_type": "キャンペーンクルー",
     "sales_channel": "ショップ",
     "carrier": "docomo",
-    "event_date": "2026-08-18",
-    "application_deadline": "2026-08-16",
+    "event_date": "2026-10-10",
+    "application_deadline": "2026-10-05",
     "work_location": "店内",
     "is_urgent": false
   },
@@ -3944,8 +4338,10 @@ export const regionalJobs = [
     "title": "【天王寺駅前】クローザー募集！au/UQmobileショップ獲得イベント要員",
     "description": "モバイル端末の新規契約、MNP乗り換え相談に特化した業務です。獲得スキルやクロージングに自信のある方のご応募お待ちしております。",
     "author_id": "alpha",
-    "price": 15000,
+    "price": 16000,
     "location_name": "大阪府大阪市天王寺区",
+    "lat": 34.64712962353638,
+    "lng": 135.50927911049718,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-OSK-1097"
@@ -3954,8 +4350,8 @@ export const regionalJobs = [
     "role_type": "クローザー",
     "sales_channel": "量販店",
     "carrier": "au/UQmobile",
-    "event_date": "2026-08-20",
-    "application_deadline": "2026-08-13",
+    "event_date": "2026-12-05",
+    "application_deadline": "2026-12-01",
     "work_location": "外販（複合施設など）",
     "is_urgent": false
   },
@@ -3966,6 +4362,8 @@ export const regionalJobs = [
     "author_id": "beta",
     "price": 20000,
     "location_name": "大阪府大阪市都島区",
+    "lat": 34.6993621701623,
+    "lng": 135.53604867706397,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-OSK-1098"
@@ -3974,8 +4372,8 @@ export const regionalJobs = [
     "role_type": "ディレクター",
     "sales_channel": "商業施設",
     "carrier": "SoftBank/Y!mobile",
-    "event_date": "2026-12-09",
-    "application_deadline": "2026-12-04",
+    "event_date": "2026-11-20",
+    "application_deadline": "2026-11-13",
     "work_location": "外販（スーパーなど）",
     "is_urgent": true
   },
@@ -3984,8 +4382,10 @@ export const regionalJobs = [
     "title": "【心斎橋量販店】Rakuten Mobileブース販売・クロージング特化クルー募集",
     "description": "週末の来店客数増加に伴う、店頭プロモーション応援業務です。活気のある現場で、チームワークを活かして獲得目標を目指します！",
     "author_id": "gamma",
-    "price": 16000,
+    "price": 13000,
     "location_name": "大阪府大阪市中央区心斎橋",
+    "lat": 34.66681699713113,
+    "lng": 135.49416085079426,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-OSK-1099"
@@ -3994,8 +4394,8 @@ export const regionalJobs = [
     "role_type": "イベントMC",
     "sales_channel": "外販（スーパーなど）",
     "carrier": "Rakuten Mobile",
-    "event_date": "2026-08-13",
-    "application_deadline": "2026-08-10",
+    "event_date": "2026-08-24",
+    "application_deadline": "2026-08-23",
     "work_location": "店内",
     "is_urgent": false
   },
@@ -4004,8 +4404,10 @@ export const regionalJobs = [
     "title": "【高松】docomo 臨時イベントプロモーション・接客案内スタッフ",
     "description": "大手通信キャリアのイベントブースにて、お声がけやティッシュ配り、サービスのご案内を行うお仕事です。未経験の方も歓迎します！",
     "author_id": "sigma",
-    "price": 13000,
+    "price": 18000,
     "location_name": "香川県高松市",
+    "lat": 34.34789586981084,
+    "lng": 134.04971745747838,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-SHK-1000"
@@ -4014,8 +4416,8 @@ export const regionalJobs = [
     "role_type": "キャンペーンクルー",
     "sales_channel": "ショップ",
     "carrier": "docomo",
-    "event_date": "2026-09-09",
-    "application_deadline": "2026-09-04",
+    "event_date": "2026-09-17",
+    "application_deadline": "2026-09-12",
     "work_location": "店内",
     "is_urgent": true
   },
@@ -4024,8 +4426,10 @@ export const regionalJobs = [
     "title": "【松山駅前】クローザー募集！au/UQmobileショップ獲得イベント要員",
     "description": "モバイル端末の新規契約、MNP乗り換え相談に特化した業務です。獲得スキルやクロージングに自信のある方のご応募お待ちしております。",
     "author_id": "alpha",
-    "price": 14000,
+    "price": 13000,
     "location_name": "愛媛県松山市",
+    "lat": 33.84082823749889,
+    "lng": 132.77494970146012,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-SHK-1001"
@@ -4034,8 +4438,8 @@ export const regionalJobs = [
     "role_type": "クローザー",
     "sales_channel": "量販店",
     "carrier": "au/UQmobile",
-    "event_date": "2026-09-28",
-    "application_deadline": "2026-09-23",
+    "event_date": "2026-11-14",
+    "application_deadline": "2026-11-11",
     "work_location": "外販（複合施設など）",
     "is_urgent": false
   },
@@ -4044,8 +4448,10 @@ export const regionalJobs = [
     "title": "【徳島近郊】高単価！SoftBank/Y!mobile・モバイル相談会ディレクション・運営",
     "description": "イベントスペースや店舗前のブース設営から運営、集客のマイクパフォーマンス（MC）まで幅広くお任せします。リーダーシップを発揮できる環境です。",
     "author_id": "beta",
-    "price": 16000,
+    "price": 13000,
     "location_name": "徳島県徳島市",
+    "lat": 34.075375373370704,
+    "lng": 134.5448864046919,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-SHK-1002"
@@ -4054,8 +4460,8 @@ export const regionalJobs = [
     "role_type": "ディレクター",
     "sales_channel": "商業施設",
     "carrier": "SoftBank/Y!mobile",
-    "event_date": "2026-12-11",
-    "application_deadline": "2026-12-09",
+    "event_date": "2026-11-04",
+    "application_deadline": "2026-11-02",
     "work_location": "外販（スーパーなど）",
     "is_urgent": false
   },
@@ -4064,8 +4470,10 @@ export const regionalJobs = [
     "title": "【高知量販店】Rakuten Mobileブース販売・クロージング特化クルー募集",
     "description": "週末の来店客数増加に伴う、店頭プロモーション応援業務です。活気のある現場で、チームワークを活かして獲得目標を目指します！",
     "author_id": "gamma",
-    "price": 17000,
+    "price": 20000,
     "location_name": "高知県高知市",
+    "lat": 33.557096338935125,
+    "lng": 133.52791742545529,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-SHK-1003"
@@ -4074,8 +4482,8 @@ export const regionalJobs = [
     "role_type": "イベントMC",
     "sales_channel": "外販（スーパーなど）",
     "carrier": "Rakuten Mobile",
-    "event_date": "2026-11-19",
-    "application_deadline": "2026-11-18",
+    "event_date": "2026-09-09",
+    "application_deadline": "2026-09-05",
     "work_location": "店内",
     "is_urgent": false
   },
@@ -4084,8 +4492,10 @@ export const regionalJobs = [
     "title": "【高松】docomo 臨時イベントプロモーション・接客案内スタッフ",
     "description": "大手通信キャリアのイベントブースにて、お声がけやティッシュ配り、サービスのご案内を行うお仕事です。未経験の方も歓迎します！",
     "author_id": "delta",
-    "price": 19000,
+    "price": 17000,
     "location_name": "香川県高松市",
+    "lat": 34.33844244958558,
+    "lng": 134.05515288546533,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-SHK-1004"
@@ -4094,8 +4504,8 @@ export const regionalJobs = [
     "role_type": "キャンペーンクルー",
     "sales_channel": "ショップ",
     "carrier": "docomo",
-    "event_date": "2026-09-10",
-    "application_deadline": "2026-09-03",
+    "event_date": "2026-09-16",
+    "application_deadline": "2026-09-15",
     "work_location": "外販（複合施設など）",
     "is_urgent": false
   },
@@ -4104,8 +4514,10 @@ export const regionalJobs = [
     "title": "【松山駅前】クローザー募集！au/UQmobileショップ獲得イベント要員",
     "description": "モバイル端末の新規契約、MNP乗り換え相談に特化した業務です。獲得スキルやクロージングに自信のある方のご応募お待ちしております。",
     "author_id": "seals",
-    "price": 15000,
+    "price": 17000,
     "location_name": "愛媛県松山市",
+    "lat": 33.85057518911274,
+    "lng": 132.75623511127412,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-SHK-1005"
@@ -4114,8 +4526,8 @@ export const regionalJobs = [
     "role_type": "クローザー",
     "sales_channel": "量販店",
     "carrier": "au/UQmobile",
-    "event_date": "2026-08-19",
-    "application_deadline": "2026-08-12",
+    "event_date": "2026-10-27",
+    "application_deadline": "2026-10-25",
     "work_location": "外販（スーパーなど）",
     "is_urgent": false
   },
@@ -4124,8 +4536,10 @@ export const regionalJobs = [
     "title": "【徳島近郊】高単価！SoftBank/Y!mobile・モバイル相談会ディレクション・運営",
     "description": "イベントスペースや店舗前のブース設営から運営、集客のマイクパフォーマンス（MC）まで幅広くお任せします。リーダーシップを発揮できる環境です。",
     "author_id": "freer",
-    "price": 14000,
+    "price": 13000,
     "location_name": "徳島県徳島市",
+    "lat": 34.062649891870834,
+    "lng": 134.55557966273065,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-SHK-1006"
@@ -4134,8 +4548,8 @@ export const regionalJobs = [
     "role_type": "ディレクター",
     "sales_channel": "商業施設",
     "carrier": "SoftBank/Y!mobile",
-    "event_date": "2026-09-08",
-    "application_deadline": "2026-09-01",
+    "event_date": "2026-10-22",
+    "application_deadline": "2026-10-16",
     "work_location": "店内",
     "is_urgent": false
   },
@@ -4144,8 +4558,10 @@ export const regionalJobs = [
     "title": "【高知量販店】Rakuten Mobileブース販売・クロージング特化クルー募集",
     "description": "週末の来店客数増加に伴う、店頭プロモーション応援業務です。活気のある現場で、チームワークを活かして獲得目標を目指します！",
     "author_id": "cocolabo",
-    "price": 17000,
+    "price": 13000,
     "location_name": "高知県高知市",
+    "lat": 33.5507908688955,
+    "lng": 133.52332333916746,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-SHK-1007"
@@ -4154,8 +4570,8 @@ export const regionalJobs = [
     "role_type": "イベントMC",
     "sales_channel": "外販（スーパーなど）",
     "carrier": "Rakuten Mobile",
-    "event_date": "2026-11-12",
-    "application_deadline": "2026-11-08",
+    "event_date": "2026-10-15",
+    "application_deadline": "2026-10-14",
     "work_location": "外販（複合施設など）",
     "is_urgent": true
   },
@@ -4164,8 +4580,10 @@ export const regionalJobs = [
     "title": "【高松】docomo 臨時イベントプロモーション・接客案内スタッフ",
     "description": "大手通信キャリアのイベントブースにて、お声がけやティッシュ配り、サービスのご案内を行うお仕事です。未経験の方も歓迎します！",
     "author_id": "sigma",
-    "price": 15000,
+    "price": 14000,
     "location_name": "香川県高松市",
+    "lat": 34.34423158257373,
+    "lng": 134.06250463715827,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-SHK-1008"
@@ -4174,8 +4592,8 @@ export const regionalJobs = [
     "role_type": "キャンペーンクルー",
     "sales_channel": "ショップ",
     "carrier": "docomo",
-    "event_date": "2026-11-25",
-    "application_deadline": "2026-11-18",
+    "event_date": "2026-11-08",
+    "application_deadline": "2026-11-03",
     "work_location": "外販（スーパーなど）",
     "is_urgent": false
   },
@@ -4184,8 +4602,10 @@ export const regionalJobs = [
     "title": "【松山駅前】クローザー募集！au/UQmobileショップ獲得イベント要員",
     "description": "モバイル端末の新規契約、MNP乗り換え相談に特化した業務です。獲得スキルやクロージングに自信のある方のご応募お待ちしております。",
     "author_id": "alpha",
-    "price": 17000,
+    "price": 14000,
     "location_name": "愛媛県松山市",
+    "lat": 33.83689143386266,
+    "lng": 132.76894824324873,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-SHK-1009"
@@ -4194,8 +4614,8 @@ export const regionalJobs = [
     "role_type": "クローザー",
     "sales_channel": "量販店",
     "carrier": "au/UQmobile",
-    "event_date": "2026-08-23",
-    "application_deadline": "2026-08-21",
+    "event_date": "2026-09-10",
+    "application_deadline": "2026-09-08",
     "work_location": "店内",
     "is_urgent": false
   },
@@ -4204,8 +4624,10 @@ export const regionalJobs = [
     "title": "【徳島近郊】高単価！SoftBank/Y!mobile・モバイル相談会ディレクション・運営",
     "description": "イベントスペースや店舗前のブース設営から運営、集客のマイクパフォーマンス（MC）まで幅広くお任せします。リーダーシップを発揮できる環境です。",
     "author_id": "beta",
-    "price": 13000,
+    "price": 19000,
     "location_name": "徳島県徳島市",
+    "lat": 34.077788057701945,
+    "lng": 134.5480336980264,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-SHK-1010"
@@ -4214,8 +4636,8 @@ export const regionalJobs = [
     "role_type": "ディレクター",
     "sales_channel": "商業施設",
     "carrier": "SoftBank/Y!mobile",
-    "event_date": "2026-12-08",
-    "application_deadline": "2026-12-03",
+    "event_date": "2026-11-17",
+    "application_deadline": "2026-11-12",
     "work_location": "外販（複合施設など）",
     "is_urgent": false
   },
@@ -4224,8 +4646,10 @@ export const regionalJobs = [
     "title": "【高知量販店】Rakuten Mobileブース販売・クロージング特化クルー募集",
     "description": "週末の来店客数増加に伴う、店頭プロモーション応援業務です。活気のある現場で、チームワークを活かして獲得目標を目指します！",
     "author_id": "gamma",
-    "price": 12000,
+    "price": 13000,
     "location_name": "高知県高知市",
+    "lat": 33.560376887062276,
+    "lng": 133.52810218529376,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-SHK-1011"
@@ -4234,8 +4658,8 @@ export const regionalJobs = [
     "role_type": "イベントMC",
     "sales_channel": "外販（スーパーなど）",
     "carrier": "Rakuten Mobile",
-    "event_date": "2026-08-12",
-    "application_deadline": "2026-08-08",
+    "event_date": "2026-12-07",
+    "application_deadline": "2026-12-02",
     "work_location": "外販（スーパーなど）",
     "is_urgent": false
   },
@@ -4244,8 +4668,10 @@ export const regionalJobs = [
     "title": "【高松】docomo 臨時イベントプロモーション・接客案内スタッフ",
     "description": "大手通信キャリアのイベントブースにて、お声がけやティッシュ配り、サービスのご案内を行うお仕事です。未経験の方も歓迎します！",
     "author_id": "delta",
-    "price": 13000,
+    "price": 15000,
     "location_name": "香川県高松市",
+    "lat": 34.34383795758229,
+    "lng": 134.04884479467987,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-SHK-1012"
@@ -4255,7 +4681,7 @@ export const regionalJobs = [
     "sales_channel": "ショップ",
     "carrier": "docomo",
     "event_date": "2026-10-28",
-    "application_deadline": "2026-10-26",
+    "application_deadline": "2026-10-25",
     "work_location": "店内",
     "is_urgent": false
   },
@@ -4264,8 +4690,10 @@ export const regionalJobs = [
     "title": "【松山駅前】クローザー募集！au/UQmobileショップ獲得イベント要員",
     "description": "モバイル端末の新規契約、MNP乗り換え相談に特化した業務です。獲得スキルやクロージングに自信のある方のご応募お待ちしております。",
     "author_id": "seals",
-    "price": 15000,
+    "price": 20000,
     "location_name": "愛媛県松山市",
+    "lat": 33.84081955554429,
+    "lng": 132.77136524021302,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-SHK-1013"
@@ -4274,8 +4702,8 @@ export const regionalJobs = [
     "role_type": "クローザー",
     "sales_channel": "量販店",
     "carrier": "au/UQmobile",
-    "event_date": "2026-10-21",
-    "application_deadline": "2026-10-16",
+    "event_date": "2026-12-24",
+    "application_deadline": "2026-12-20",
     "work_location": "外販（複合施設など）",
     "is_urgent": false
   },
@@ -4286,6 +4714,8 @@ export const regionalJobs = [
     "author_id": "freer",
     "price": 13000,
     "location_name": "徳島県徳島市",
+    "lat": 34.06486595560656,
+    "lng": 134.56250259280384,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-SHK-1014"
@@ -4294,8 +4724,8 @@ export const regionalJobs = [
     "role_type": "ディレクター",
     "sales_channel": "商業施設",
     "carrier": "SoftBank/Y!mobile",
-    "event_date": "2026-10-19",
-    "application_deadline": "2026-10-14",
+    "event_date": "2026-08-28",
+    "application_deadline": "2026-08-25",
     "work_location": "外販（スーパーなど）",
     "is_urgent": true
   },
@@ -4304,8 +4734,10 @@ export const regionalJobs = [
     "title": "【高知量販店】Rakuten Mobileブース販売・クロージング特化クルー募集",
     "description": "週末の来店客数増加に伴う、店頭プロモーション応援業務です。活気のある現場で、チームワークを活かして獲得目標を目指します！",
     "author_id": "cocolabo",
-    "price": 19000,
+    "price": 20000,
     "location_name": "高知県高知市",
+    "lat": 33.55761512083612,
+    "lng": 133.5404295049714,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-SHK-1015"
@@ -4314,8 +4746,8 @@ export const regionalJobs = [
     "role_type": "イベントMC",
     "sales_channel": "外販（スーパーなど）",
     "carrier": "Rakuten Mobile",
-    "event_date": "2026-08-02",
-    "application_deadline": "2026-08-01",
+    "event_date": "2026-12-21",
+    "application_deadline": "2026-12-17",
     "work_location": "店内",
     "is_urgent": false
   },
@@ -4324,8 +4756,10 @@ export const regionalJobs = [
     "title": "【高松】docomo 臨時イベントプロモーション・接客案内スタッフ",
     "description": "大手通信キャリアのイベントブースにて、お声がけやティッシュ配り、サービスのご案内を行うお仕事です。未経験の方も歓迎します！",
     "author_id": "sigma",
-    "price": 18000,
+    "price": 17000,
     "location_name": "香川県高松市",
+    "lat": 34.34834755914862,
+    "lng": 134.0475407277104,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-SHK-1016"
@@ -4334,8 +4768,8 @@ export const regionalJobs = [
     "role_type": "キャンペーンクルー",
     "sales_channel": "ショップ",
     "carrier": "docomo",
-    "event_date": "2026-10-06",
-    "application_deadline": "2026-10-03",
+    "event_date": "2026-09-09",
+    "application_deadline": "2026-09-04",
     "work_location": "外販（複合施設など）",
     "is_urgent": false
   },
@@ -4344,8 +4778,10 @@ export const regionalJobs = [
     "title": "【松山駅前】クローザー募集！au/UQmobileショップ獲得イベント要員",
     "description": "モバイル端末の新規契約、MNP乗り換え相談に特化した業務です。獲得スキルやクロージングに自信のある方のご応募お待ちしております。",
     "author_id": "alpha",
-    "price": 16000,
+    "price": 13000,
     "location_name": "愛媛県松山市",
+    "lat": 33.8441539067765,
+    "lng": 132.76969145877922,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-SHK-1017"
@@ -4354,8 +4790,8 @@ export const regionalJobs = [
     "role_type": "クローザー",
     "sales_channel": "量販店",
     "carrier": "au/UQmobile",
-    "event_date": "2026-09-16",
-    "application_deadline": "2026-09-12",
+    "event_date": "2026-11-14",
+    "application_deadline": "2026-11-07",
     "work_location": "外販（スーパーなど）",
     "is_urgent": false
   },
@@ -4366,6 +4802,8 @@ export const regionalJobs = [
     "author_id": "beta",
     "price": 20000,
     "location_name": "徳島県徳島市",
+    "lat": 34.077918394396235,
+    "lng": 134.5586010826143,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-SHK-1018"
@@ -4374,8 +4812,8 @@ export const regionalJobs = [
     "role_type": "ディレクター",
     "sales_channel": "商業施設",
     "carrier": "SoftBank/Y!mobile",
-    "event_date": "2026-09-10",
-    "application_deadline": "2026-09-09",
+    "event_date": "2026-11-01",
+    "application_deadline": "2026-11-01",
     "work_location": "店内",
     "is_urgent": false
   },
@@ -4384,8 +4822,10 @@ export const regionalJobs = [
     "title": "【高知量販店】Rakuten Mobileブース販売・クロージング特化クルー募集",
     "description": "週末の来店客数増加に伴う、店頭プロモーション応援業務です。活気のある現場で、チームワークを活かして獲得目標を目指します！",
     "author_id": "gamma",
-    "price": 16000,
+    "price": 13000,
     "location_name": "高知県高知市",
+    "lat": 33.559932961750064,
+    "lng": 133.53082497956154,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-SHK-1019"
@@ -4394,8 +4834,8 @@ export const regionalJobs = [
     "role_type": "イベントMC",
     "sales_channel": "外販（スーパーなど）",
     "carrier": "Rakuten Mobile",
-    "event_date": "2026-11-11",
-    "application_deadline": "2026-11-07",
+    "event_date": "2026-11-09",
+    "application_deadline": "2026-11-02",
     "work_location": "外販（複合施設など）",
     "is_urgent": false
   },
@@ -4404,8 +4844,10 @@ export const regionalJobs = [
     "title": "【高松】docomo 臨時イベントプロモーション・接客案内スタッフ",
     "description": "大手通信キャリアのイベントブースにて、お声がけやティッシュ配り、サービスのご案内を行うお仕事です。未経験の方も歓迎します！",
     "author_id": "delta",
-    "price": 14000,
+    "price": 20000,
     "location_name": "香川県高松市",
+    "lat": 34.34531840877731,
+    "lng": 134.05380400910934,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-SHK-1020"
@@ -4414,8 +4856,8 @@ export const regionalJobs = [
     "role_type": "キャンペーンクルー",
     "sales_channel": "ショップ",
     "carrier": "docomo",
-    "event_date": "2026-12-23",
-    "application_deadline": "2026-12-21",
+    "event_date": "2026-11-23",
+    "application_deadline": "2026-11-21",
     "work_location": "外販（スーパーなど）",
     "is_urgent": false
   },
@@ -4424,8 +4866,10 @@ export const regionalJobs = [
     "title": "【松山駅前】クローザー募集！au/UQmobileショップ獲得イベント要員",
     "description": "モバイル端末の新規契約、MNP乗り換え相談に特化した業務です。獲得スキルやクロージングに自信のある方のご応募お待ちしております。",
     "author_id": "seals",
-    "price": 19000,
+    "price": 16000,
     "location_name": "愛媛県松山市",
+    "lat": 33.835907632767835,
+    "lng": 132.77063513400253,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-SHK-1021"
@@ -4434,8 +4878,8 @@ export const regionalJobs = [
     "role_type": "クローザー",
     "sales_channel": "量販店",
     "carrier": "au/UQmobile",
-    "event_date": "2026-09-05",
-    "application_deadline": "2026-09-01",
+    "event_date": "2026-12-15",
+    "application_deadline": "2026-12-10",
     "work_location": "店内",
     "is_urgent": true
   },
@@ -4444,8 +4888,10 @@ export const regionalJobs = [
     "title": "【徳島近郊】高単価！SoftBank/Y!mobile・モバイル相談会ディレクション・運営",
     "description": "イベントスペースや店舗前のブース設営から運営、集客のマイクパフォーマンス（MC）まで幅広くお任せします。リーダーシップを発揮できる環境です。",
     "author_id": "freer",
-    "price": 19000,
+    "price": 13000,
     "location_name": "徳島県徳島市",
+    "lat": 34.07706752307628,
+    "lng": 134.5477540196936,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-SHK-1022"
@@ -4454,8 +4900,8 @@ export const regionalJobs = [
     "role_type": "ディレクター",
     "sales_channel": "商業施設",
     "carrier": "SoftBank/Y!mobile",
-    "event_date": "2026-08-20",
-    "application_deadline": "2026-08-17",
+    "event_date": "2026-09-10",
+    "application_deadline": "2026-09-07",
     "work_location": "外販（複合施設など）",
     "is_urgent": false
   },
@@ -4466,6 +4912,8 @@ export const regionalJobs = [
     "author_id": "cocolabo",
     "price": 19000,
     "location_name": "高知県高知市",
+    "lat": 33.551569306159756,
+    "lng": 133.5310665760279,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-SHK-1023"
@@ -4474,8 +4922,8 @@ export const regionalJobs = [
     "role_type": "イベントMC",
     "sales_channel": "外販（スーパーなど）",
     "carrier": "Rakuten Mobile",
-    "event_date": "2026-11-06",
-    "application_deadline": "2026-11-01",
+    "event_date": "2026-08-10",
+    "application_deadline": "2026-08-06",
     "work_location": "外販（スーパーなど）",
     "is_urgent": false
   },
@@ -4484,8 +4932,10 @@ export const regionalJobs = [
     "title": "【高松】docomo 臨時イベントプロモーション・接客案内スタッフ",
     "description": "大手通信キャリアのイベントブースにて、お声がけやティッシュ配り、サービスのご案内を行うお仕事です。未経験の方も歓迎します！",
     "author_id": "sigma",
-    "price": 19000,
+    "price": 14000,
     "location_name": "香川県高松市",
+    "lat": 34.34720090425064,
+    "lng": 134.04512623078256,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-SHK-1024"
@@ -4494,8 +4944,8 @@ export const regionalJobs = [
     "role_type": "キャンペーンクルー",
     "sales_channel": "ショップ",
     "carrier": "docomo",
-    "event_date": "2026-10-10",
-    "application_deadline": "2026-10-08",
+    "event_date": "2026-09-22",
+    "application_deadline": "2026-09-21",
     "work_location": "店内",
     "is_urgent": false
   },
@@ -4504,8 +4954,10 @@ export const regionalJobs = [
     "title": "【松山駅前】クローザー募集！au/UQmobileショップ獲得イベント要員",
     "description": "モバイル端末の新規契約、MNP乗り換え相談に特化した業務です。獲得スキルやクロージングに自信のある方のご応募お待ちしております。",
     "author_id": "alpha",
-    "price": 16000,
+    "price": 14000,
     "location_name": "愛媛県松山市",
+    "lat": 33.846016254302384,
+    "lng": 132.76507969986827,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-SHK-1025"
@@ -4514,8 +4966,8 @@ export const regionalJobs = [
     "role_type": "クローザー",
     "sales_channel": "量販店",
     "carrier": "au/UQmobile",
-    "event_date": "2026-12-07",
-    "application_deadline": "2026-12-01",
+    "event_date": "2026-11-05",
+    "application_deadline": "2026-11-01",
     "work_location": "外販（複合施設など）",
     "is_urgent": false
   },
@@ -4524,8 +4976,10 @@ export const regionalJobs = [
     "title": "【徳島近郊】高単価！SoftBank/Y!mobile・モバイル相談会ディレクション・運営",
     "description": "イベントスペースや店舗前のブース設営から運営、集客のマイクパフォーマンス（MC）まで幅広くお任せします。リーダーシップを発揮できる環境です。",
     "author_id": "beta",
-    "price": 15000,
+    "price": 12000,
     "location_name": "徳島県徳島市",
+    "lat": 34.074764358985554,
+    "lng": 134.54757739294186,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-SHK-1026"
@@ -4534,8 +4988,8 @@ export const regionalJobs = [
     "role_type": "ディレクター",
     "sales_channel": "商業施設",
     "carrier": "SoftBank/Y!mobile",
-    "event_date": "2026-10-17",
-    "application_deadline": "2026-10-16",
+    "event_date": "2026-08-28",
+    "application_deadline": "2026-08-23",
     "work_location": "外販（スーパーなど）",
     "is_urgent": false
   },
@@ -4544,8 +4998,10 @@ export const regionalJobs = [
     "title": "【高知量販店】Rakuten Mobileブース販売・クロージング特化クルー募集",
     "description": "週末の来店客数増加に伴う、店頭プロモーション応援業務です。活気のある現場で、チームワークを活かして獲得目標を目指します！",
     "author_id": "gamma",
-    "price": 13000,
+    "price": 18000,
     "location_name": "高知県高知市",
+    "lat": 33.56640783552815,
+    "lng": 133.5231076014633,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-SHK-1027"
@@ -4554,8 +5010,8 @@ export const regionalJobs = [
     "role_type": "イベントMC",
     "sales_channel": "外販（スーパーなど）",
     "carrier": "Rakuten Mobile",
-    "event_date": "2026-09-03",
-    "application_deadline": "2026-09-01",
+    "event_date": "2026-12-06",
+    "application_deadline": "2026-12-01",
     "work_location": "店内",
     "is_urgent": false
   },
@@ -4564,8 +5020,10 @@ export const regionalJobs = [
     "title": "【高松】docomo 臨時イベントプロモーション・接客案内スタッフ",
     "description": "大手通信キャリアのイベントブースにて、お声がけやティッシュ配り、サービスのご案内を行うお仕事です。未経験の方も歓迎します！",
     "author_id": "delta",
-    "price": 15000,
+    "price": 20000,
     "location_name": "香川県高松市",
+    "lat": 34.33999508936505,
+    "lng": 134.0608696954548,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-SHK-1028"
@@ -4574,8 +5032,8 @@ export const regionalJobs = [
     "role_type": "キャンペーンクルー",
     "sales_channel": "ショップ",
     "carrier": "docomo",
-    "event_date": "2026-11-25",
-    "application_deadline": "2026-11-23",
+    "event_date": "2026-10-02",
+    "application_deadline": "2026-10-01",
     "work_location": "外販（複合施設など）",
     "is_urgent": true
   },
@@ -4584,8 +5042,10 @@ export const regionalJobs = [
     "title": "【松山駅前】クローザー募集！au/UQmobileショップ獲得イベント要員",
     "description": "モバイル端末の新規契約、MNP乗り換え相談に特化した業務です。獲得スキルやクロージングに自信のある方のご応募お待ちしております。",
     "author_id": "seals",
-    "price": 14000,
+    "price": 12000,
     "location_name": "愛媛県松山市",
+    "lat": 33.837998861360305,
+    "lng": 132.76377944828465,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-SHK-1029"
@@ -4594,8 +5054,8 @@ export const regionalJobs = [
     "role_type": "クローザー",
     "sales_channel": "量販店",
     "carrier": "au/UQmobile",
-    "event_date": "2026-08-08",
-    "application_deadline": "2026-08-02",
+    "event_date": "2026-10-15",
+    "application_deadline": "2026-10-14",
     "work_location": "外販（スーパーなど）",
     "is_urgent": false
   },
@@ -4604,8 +5064,10 @@ export const regionalJobs = [
     "title": "【徳島近郊】高単価！SoftBank/Y!mobile・モバイル相談会ディレクション・運営",
     "description": "イベントスペースや店舗前のブース設営から運営、集客のマイクパフォーマンス（MC）まで幅広くお任せします。リーダーシップを発揮できる環境です。",
     "author_id": "freer",
-    "price": 12000,
+    "price": 19000,
     "location_name": "徳島県徳島市",
+    "lat": 34.07528729577327,
+    "lng": 134.5472460814425,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-SHK-1030"
@@ -4614,8 +5076,8 @@ export const regionalJobs = [
     "role_type": "ディレクター",
     "sales_channel": "商業施設",
     "carrier": "SoftBank/Y!mobile",
-    "event_date": "2026-08-02",
-    "application_deadline": "2026-08-01",
+    "event_date": "2026-11-18",
+    "application_deadline": "2026-11-15",
     "work_location": "店内",
     "is_urgent": false
   },
@@ -4624,8 +5086,10 @@ export const regionalJobs = [
     "title": "【高知量販店】Rakuten Mobileブース販売・クロージング特化クルー募集",
     "description": "週末の来店客数増加に伴う、店頭プロモーション応援業務です。活気のある現場で、チームワークを活かして獲得目標を目指します！",
     "author_id": "cocolabo",
-    "price": 14000,
+    "price": 18000,
     "location_name": "高知県高知市",
+    "lat": 33.553182605754834,
+    "lng": 133.53117287611397,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-SHK-1031"
@@ -4634,8 +5098,8 @@ export const regionalJobs = [
     "role_type": "イベントMC",
     "sales_channel": "外販（スーパーなど）",
     "carrier": "Rakuten Mobile",
-    "event_date": "2026-09-26",
-    "application_deadline": "2026-09-20",
+    "event_date": "2026-12-09",
+    "application_deadline": "2026-12-03",
     "work_location": "外販（複合施設など）",
     "is_urgent": false
   },
@@ -4644,8 +5108,10 @@ export const regionalJobs = [
     "title": "【高松】docomo 臨時イベントプロモーション・接客案内スタッフ",
     "description": "大手通信キャリアのイベントブースにて、お声がけやティッシュ配り、サービスのご案内を行うお仕事です。未経験の方も歓迎します！",
     "author_id": "sigma",
-    "price": 12000,
+    "price": 15000,
     "location_name": "香川県高松市",
+    "lat": 34.34410636887961,
+    "lng": 134.04378453060485,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-SHK-1032"
@@ -4654,8 +5120,8 @@ export const regionalJobs = [
     "role_type": "キャンペーンクルー",
     "sales_channel": "ショップ",
     "carrier": "docomo",
-    "event_date": "2026-12-20",
-    "application_deadline": "2026-12-14",
+    "event_date": "2026-09-23",
+    "application_deadline": "2026-09-18",
     "work_location": "外販（スーパーなど）",
     "is_urgent": false
   },
@@ -4664,8 +5130,10 @@ export const regionalJobs = [
     "title": "【松山駅前】クローザー募集！au/UQmobileショップ獲得イベント要員",
     "description": "モバイル端末の新規契約、MNP乗り換え相談に特化した業務です。獲得スキルやクロージングに自信のある方のご応募お待ちしております。",
     "author_id": "alpha",
-    "price": 12000,
+    "price": 13000,
     "location_name": "愛媛県松山市",
+    "lat": 33.849289521931716,
+    "lng": 132.7614701116617,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-SHK-1033"
@@ -4674,8 +5142,8 @@ export const regionalJobs = [
     "role_type": "クローザー",
     "sales_channel": "量販店",
     "carrier": "au/UQmobile",
-    "event_date": "2026-09-19",
-    "application_deadline": "2026-09-14",
+    "event_date": "2026-12-03",
+    "application_deadline": "2026-12-01",
     "work_location": "店内",
     "is_urgent": false
   },
@@ -4684,8 +5152,10 @@ export const regionalJobs = [
     "title": "【徳島近郊】高単価！SoftBank/Y!mobile・モバイル相談会ディレクション・運営",
     "description": "イベントスペースや店舗前のブース設営から運営、集客のマイクパフォーマンス（MC）まで幅広くお任せします。リーダーシップを発揮できる環境です。",
     "author_id": "beta",
-    "price": 15000,
+    "price": 16000,
     "location_name": "徳島県徳島市",
+    "lat": 34.06866714589558,
+    "lng": 134.5503648748441,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-SHK-1034"
@@ -4694,8 +5164,8 @@ export const regionalJobs = [
     "role_type": "ディレクター",
     "sales_channel": "商業施設",
     "carrier": "SoftBank/Y!mobile",
-    "event_date": "2026-12-20",
-    "application_deadline": "2026-12-16",
+    "event_date": "2026-09-28",
+    "application_deadline": "2026-09-26",
     "work_location": "外販（複合施設など）",
     "is_urgent": false
   },
@@ -4704,8 +5174,10 @@ export const regionalJobs = [
     "title": "【高知量販店】Rakuten Mobileブース販売・クロージング特化クルー募集",
     "description": "週末の来店客数増加に伴う、店頭プロモーション応援業務です。活気のある現場で、チームワークを活かして獲得目標を目指します！",
     "author_id": "gamma",
-    "price": 13000,
+    "price": 12000,
     "location_name": "高知県高知市",
+    "lat": 33.561459374685555,
+    "lng": 133.52630173929717,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-SHK-1035"
@@ -4714,8 +5186,8 @@ export const regionalJobs = [
     "role_type": "イベントMC",
     "sales_channel": "外販（スーパーなど）",
     "carrier": "Rakuten Mobile",
-    "event_date": "2026-08-10",
-    "application_deadline": "2026-08-05",
+    "event_date": "2026-10-25",
+    "application_deadline": "2026-10-22",
     "work_location": "外販（スーパーなど）",
     "is_urgent": true
   },
@@ -4724,8 +5196,10 @@ export const regionalJobs = [
     "title": "【高松】docomo 臨時イベントプロモーション・接客案内スタッフ",
     "description": "大手通信キャリアのイベントブースにて、お声がけやティッシュ配り、サービスのご案内を行うお仕事です。未経験の方も歓迎します！",
     "author_id": "delta",
-    "price": 17000,
+    "price": 16000,
     "location_name": "香川県高松市",
+    "lat": 34.34427592743089,
+    "lng": 134.0483386523596,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-SHK-1036"
@@ -4734,8 +5208,8 @@ export const regionalJobs = [
     "role_type": "キャンペーンクルー",
     "sales_channel": "ショップ",
     "carrier": "docomo",
-    "event_date": "2026-10-18",
-    "application_deadline": "2026-10-13",
+    "event_date": "2026-08-25",
+    "application_deadline": "2026-08-19",
     "work_location": "店内",
     "is_urgent": false
   },
@@ -4746,6 +5220,8 @@ export const regionalJobs = [
     "author_id": "seals",
     "price": 12000,
     "location_name": "愛媛県松山市",
+    "lat": 33.83423562961984,
+    "lng": 132.77073837099647,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-SHK-1037"
@@ -4754,8 +5230,8 @@ export const regionalJobs = [
     "role_type": "クローザー",
     "sales_channel": "量販店",
     "carrier": "au/UQmobile",
-    "event_date": "2026-08-10",
-    "application_deadline": "2026-08-08",
+    "event_date": "2026-12-10",
+    "application_deadline": "2026-12-07",
     "work_location": "外販（複合施設など）",
     "is_urgent": false
   },
@@ -4764,8 +5240,10 @@ export const regionalJobs = [
     "title": "【徳島近郊】高単価！SoftBank/Y!mobile・モバイル相談会ディレクション・運営",
     "description": "イベントスペースや店舗前のブース設営から運営、集客のマイクパフォーマンス（MC）まで幅広くお任せします。リーダーシップを発揮できる環境です。",
     "author_id": "freer",
-    "price": 13000,
+    "price": 19000,
     "location_name": "徳島県徳島市",
+    "lat": 34.074246488561556,
+    "lng": 134.55427507846937,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-SHK-1038"
@@ -4774,8 +5252,8 @@ export const regionalJobs = [
     "role_type": "ディレクター",
     "sales_channel": "商業施設",
     "carrier": "SoftBank/Y!mobile",
-    "event_date": "2026-08-13",
-    "application_deadline": "2026-08-08",
+    "event_date": "2026-10-21",
+    "application_deadline": "2026-10-19",
     "work_location": "外販（スーパーなど）",
     "is_urgent": false
   },
@@ -4784,8 +5262,10 @@ export const regionalJobs = [
     "title": "【高知量販店】Rakuten Mobileブース販売・クロージング特化クルー募集",
     "description": "週末の来店客数増加に伴う、店頭プロモーション応援業務です。活気のある現場で、チームワークを活かして獲得目標を目指します！",
     "author_id": "cocolabo",
-    "price": 18000,
+    "price": 15000,
     "location_name": "高知県高知市",
+    "lat": 33.55229751913147,
+    "lng": 133.52871270101454,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-SHK-1039"
@@ -4794,8 +5274,8 @@ export const regionalJobs = [
     "role_type": "イベントMC",
     "sales_channel": "外販（スーパーなど）",
     "carrier": "Rakuten Mobile",
-    "event_date": "2026-09-24",
-    "application_deadline": "2026-09-23",
+    "event_date": "2026-12-05",
+    "application_deadline": "2026-12-01",
     "work_location": "店内",
     "is_urgent": false
   },
@@ -4804,8 +5284,10 @@ export const regionalJobs = [
     "title": "【高松】docomo 臨時イベントプロモーション・接客案内スタッフ",
     "description": "大手通信キャリアのイベントブースにて、お声がけやティッシュ配り、サービスのご案内を行うお仕事です。未経験の方も歓迎します！",
     "author_id": "sigma",
-    "price": 19000,
+    "price": 17000,
     "location_name": "香川県高松市",
+    "lat": 34.338222640239614,
+    "lng": 134.0562053012872,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-SHK-1040"
@@ -4814,8 +5296,8 @@ export const regionalJobs = [
     "role_type": "キャンペーンクルー",
     "sales_channel": "ショップ",
     "carrier": "docomo",
-    "event_date": "2026-10-13",
-    "application_deadline": "2026-10-06",
+    "event_date": "2026-12-12",
+    "application_deadline": "2026-12-10",
     "work_location": "外販（複合施設など）",
     "is_urgent": false
   },
@@ -4824,8 +5306,10 @@ export const regionalJobs = [
     "title": "【松山駅前】クローザー募集！au/UQmobileショップ獲得イベント要員",
     "description": "モバイル端末の新規契約、MNP乗り換え相談に特化した業務です。獲得スキルやクロージングに自信のある方のご応募お待ちしております。",
     "author_id": "alpha",
-    "price": 19000,
+    "price": 20000,
     "location_name": "愛媛県松山市",
+    "lat": 33.848624302652155,
+    "lng": 132.76798353295138,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-SHK-1041"
@@ -4834,8 +5318,8 @@ export const regionalJobs = [
     "role_type": "クローザー",
     "sales_channel": "量販店",
     "carrier": "au/UQmobile",
-    "event_date": "2026-11-12",
-    "application_deadline": "2026-11-05",
+    "event_date": "2026-09-13",
+    "application_deadline": "2026-09-07",
     "work_location": "外販（スーパーなど）",
     "is_urgent": false
   },
@@ -4844,8 +5328,10 @@ export const regionalJobs = [
     "title": "【徳島近郊】高単価！SoftBank/Y!mobile・モバイル相談会ディレクション・運営",
     "description": "イベントスペースや店舗前のブース設営から運営、集客のマイクパフォーマンス（MC）まで幅広くお任せします。リーダーシップを発揮できる環境です。",
     "author_id": "beta",
-    "price": 16000,
+    "price": 14000,
     "location_name": "徳島県徳島市",
+    "lat": 34.06957222593413,
+    "lng": 134.55263386028642,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-SHK-1042"
@@ -4854,8 +5340,8 @@ export const regionalJobs = [
     "role_type": "ディレクター",
     "sales_channel": "商業施設",
     "carrier": "SoftBank/Y!mobile",
-    "event_date": "2026-08-09",
-    "application_deadline": "2026-08-07",
+    "event_date": "2026-10-05",
+    "application_deadline": "2026-10-03",
     "work_location": "店内",
     "is_urgent": true
   },
@@ -4864,8 +5350,10 @@ export const regionalJobs = [
     "title": "【高知量販店】Rakuten Mobileブース販売・クロージング特化クルー募集",
     "description": "週末の来店客数増加に伴う、店頭プロモーション応援業務です。活気のある現場で、チームワークを活かして獲得目標を目指します！",
     "author_id": "gamma",
-    "price": 16000,
+    "price": 20000,
     "location_name": "高知県高知市",
+    "lat": 33.5604238861878,
+    "lng": 133.53133748638942,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-SHK-1043"
@@ -4874,8 +5362,8 @@ export const regionalJobs = [
     "role_type": "イベントMC",
     "sales_channel": "外販（スーパーなど）",
     "carrier": "Rakuten Mobile",
-    "event_date": "2026-10-13",
-    "application_deadline": "2026-10-06",
+    "event_date": "2026-08-11",
+    "application_deadline": "2026-08-10",
     "work_location": "外販（複合施設など）",
     "is_urgent": false
   },
@@ -4884,8 +5372,10 @@ export const regionalJobs = [
     "title": "【高松】docomo 臨時イベントプロモーション・接客案内スタッフ",
     "description": "大手通信キャリアのイベントブースにて、お声がけやティッシュ配り、サービスのご案内を行うお仕事です。未経験の方も歓迎します！",
     "author_id": "delta",
-    "price": 17000,
+    "price": 18000,
     "location_name": "香川県高松市",
+    "lat": 34.34010286251827,
+    "lng": 134.05150991309466,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-SHK-1044"
@@ -4894,8 +5384,8 @@ export const regionalJobs = [
     "role_type": "キャンペーンクルー",
     "sales_channel": "ショップ",
     "carrier": "docomo",
-    "event_date": "2026-12-10",
-    "application_deadline": "2026-12-05",
+    "event_date": "2026-11-21",
+    "application_deadline": "2026-11-16",
     "work_location": "外販（スーパーなど）",
     "is_urgent": false
   },
@@ -4906,6 +5396,8 @@ export const regionalJobs = [
     "author_id": "seals",
     "price": 15000,
     "location_name": "愛媛県松山市",
+    "lat": 33.843565019642895,
+    "lng": 132.7635216224907,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-SHK-1045"
@@ -4914,8 +5406,8 @@ export const regionalJobs = [
     "role_type": "クローザー",
     "sales_channel": "量販店",
     "carrier": "au/UQmobile",
-    "event_date": "2026-12-16",
-    "application_deadline": "2026-12-14",
+    "event_date": "2026-09-20",
+    "application_deadline": "2026-09-14",
     "work_location": "店内",
     "is_urgent": false
   },
@@ -4924,8 +5416,10 @@ export const regionalJobs = [
     "title": "【徳島近郊】高単価！SoftBank/Y!mobile・モバイル相談会ディレクション・運営",
     "description": "イベントスペースや店舗前のブース設営から運営、集客のマイクパフォーマンス（MC）まで幅広くお任せします。リーダーシップを発揮できる環境です。",
     "author_id": "freer",
-    "price": 19000,
+    "price": 15000,
     "location_name": "徳島県徳島市",
+    "lat": 34.06538932032231,
+    "lng": 134.55615183844694,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-SHK-1046"
@@ -4934,8 +5428,8 @@ export const regionalJobs = [
     "role_type": "ディレクター",
     "sales_channel": "商業施設",
     "carrier": "SoftBank/Y!mobile",
-    "event_date": "2026-12-07",
-    "application_deadline": "2026-12-05",
+    "event_date": "2026-09-05",
+    "application_deadline": "2026-09-01",
     "work_location": "外販（複合施設など）",
     "is_urgent": false
   },
@@ -4944,8 +5438,10 @@ export const regionalJobs = [
     "title": "【高知量販店】Rakuten Mobileブース販売・クロージング特化クルー募集",
     "description": "週末の来店客数増加に伴う、店頭プロモーション応援業務です。活気のある現場で、チームワークを活かして獲得目標を目指します！",
     "author_id": "cocolabo",
-    "price": 14000,
+    "price": 20000,
     "location_name": "高知県高知市",
+    "lat": 33.55026237771352,
+    "lng": 133.53725625998445,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-SHK-1047"
@@ -4954,8 +5450,8 @@ export const regionalJobs = [
     "role_type": "イベントMC",
     "sales_channel": "外販（スーパーなど）",
     "carrier": "Rakuten Mobile",
-    "event_date": "2026-11-20",
-    "application_deadline": "2026-11-13",
+    "event_date": "2026-12-03",
+    "application_deadline": "2026-12-01",
     "work_location": "外販（スーパーなど）",
     "is_urgent": false
   },
@@ -4964,8 +5460,10 @@ export const regionalJobs = [
     "title": "【高松】docomo 臨時イベントプロモーション・接客案内スタッフ",
     "description": "大手通信キャリアのイベントブースにて、お声がけやティッシュ配り、サービスのご案内を行うお仕事です。未経験の方も歓迎します！",
     "author_id": "sigma",
-    "price": 18000,
+    "price": 15000,
     "location_name": "香川県高松市",
+    "lat": 34.33734953296682,
+    "lng": 134.0551321172368,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-SHK-1048"
@@ -4974,8 +5472,8 @@ export const regionalJobs = [
     "role_type": "キャンペーンクルー",
     "sales_channel": "ショップ",
     "carrier": "docomo",
-    "event_date": "2026-10-02",
-    "application_deadline": "2026-10-01",
+    "event_date": "2026-08-23",
+    "application_deadline": "2026-08-22",
     "work_location": "店内",
     "is_urgent": false
   },
@@ -4986,6 +5484,8 @@ export const regionalJobs = [
     "author_id": "alpha",
     "price": 13000,
     "location_name": "愛媛県松山市",
+    "lat": 33.844633548237724,
+    "lng": 132.76335254749804,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-SHK-1049"
@@ -4994,8 +5494,8 @@ export const regionalJobs = [
     "role_type": "クローザー",
     "sales_channel": "量販店",
     "carrier": "au/UQmobile",
-    "event_date": "2026-08-17",
-    "application_deadline": "2026-08-15",
+    "event_date": "2026-08-25",
+    "application_deadline": "2026-08-24",
     "work_location": "外販（複合施設など）",
     "is_urgent": true
   },
@@ -5004,8 +5504,10 @@ export const regionalJobs = [
     "title": "【徳島近郊】高単価！SoftBank/Y!mobile・モバイル相談会ディレクション・運営",
     "description": "イベントスペースや店舗前のブース設営から運営、集客のマイクパフォーマンス（MC）まで幅広くお任せします。リーダーシップを発揮できる環境です。",
     "author_id": "beta",
-    "price": 18000,
+    "price": 19000,
     "location_name": "徳島県徳島市",
+    "lat": 34.068448565113385,
+    "lng": 134.55903679054234,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-SHK-1050"
@@ -5014,8 +5516,8 @@ export const regionalJobs = [
     "role_type": "ディレクター",
     "sales_channel": "商業施設",
     "carrier": "SoftBank/Y!mobile",
-    "event_date": "2026-09-18",
-    "application_deadline": "2026-09-14",
+    "event_date": "2026-09-17",
+    "application_deadline": "2026-09-16",
     "work_location": "外販（スーパーなど）",
     "is_urgent": false
   },
@@ -5024,8 +5526,10 @@ export const regionalJobs = [
     "title": "【高知量販店】Rakuten Mobileブース販売・クロージング特化クルー募集",
     "description": "週末の来店客数増加に伴う、店頭プロモーション応援業務です。活気のある現場で、チームワークを活かして獲得目標を目指します！",
     "author_id": "gamma",
-    "price": 12000,
+    "price": 18000,
     "location_name": "高知県高知市",
+    "lat": 33.552021212290356,
+    "lng": 133.5223066621756,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-SHK-1051"
@@ -5034,8 +5538,8 @@ export const regionalJobs = [
     "role_type": "イベントMC",
     "sales_channel": "外販（スーパーなど）",
     "carrier": "Rakuten Mobile",
-    "event_date": "2026-09-04",
-    "application_deadline": "2026-09-01",
+    "event_date": "2026-11-07",
+    "application_deadline": "2026-11-01",
     "work_location": "店内",
     "is_urgent": false
   },
@@ -5044,8 +5548,10 @@ export const regionalJobs = [
     "title": "【高松】docomo 臨時イベントプロモーション・接客案内スタッフ",
     "description": "大手通信キャリアのイベントブースにて、お声がけやティッシュ配り、サービスのご案内を行うお仕事です。未経験の方も歓迎します！",
     "author_id": "delta",
-    "price": 20000,
+    "price": 15000,
     "location_name": "香川県高松市",
+    "lat": 34.33802691171861,
+    "lng": 134.04445230236223,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-SHK-1052"
@@ -5054,8 +5560,8 @@ export const regionalJobs = [
     "role_type": "キャンペーンクルー",
     "sales_channel": "ショップ",
     "carrier": "docomo",
-    "event_date": "2026-12-20",
-    "application_deadline": "2026-12-16",
+    "event_date": "2026-10-07",
+    "application_deadline": "2026-10-02",
     "work_location": "外販（複合施設など）",
     "is_urgent": false
   },
@@ -5064,8 +5570,10 @@ export const regionalJobs = [
     "title": "【松山駅前】クローザー募集！au/UQmobileショップ獲得イベント要員",
     "description": "モバイル端末の新規契約、MNP乗り換え相談に特化した業務です。獲得スキルやクロージングに自信のある方のご応募お待ちしております。",
     "author_id": "seals",
-    "price": 15000,
+    "price": 20000,
     "location_name": "愛媛県松山市",
+    "lat": 33.84519447321787,
+    "lng": 132.77496623302588,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-SHK-1053"
@@ -5074,8 +5582,8 @@ export const regionalJobs = [
     "role_type": "クローザー",
     "sales_channel": "量販店",
     "carrier": "au/UQmobile",
-    "event_date": "2026-08-26",
-    "application_deadline": "2026-08-20",
+    "event_date": "2026-08-02",
+    "application_deadline": "2026-08-01",
     "work_location": "外販（スーパーなど）",
     "is_urgent": false
   },
@@ -5084,8 +5592,10 @@ export const regionalJobs = [
     "title": "【徳島近郊】高単価！SoftBank/Y!mobile・モバイル相談会ディレクション・運営",
     "description": "イベントスペースや店舗前のブース設営から運営、集客のマイクパフォーマンス（MC）まで幅広くお任せします。リーダーシップを発揮できる環境です。",
     "author_id": "freer",
-    "price": 13000,
+    "price": 16000,
     "location_name": "徳島県徳島市",
+    "lat": 34.06855422200325,
+    "lng": 134.5572741323821,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-SHK-1054"
@@ -5094,8 +5604,8 @@ export const regionalJobs = [
     "role_type": "ディレクター",
     "sales_channel": "商業施設",
     "carrier": "SoftBank/Y!mobile",
-    "event_date": "2026-09-02",
-    "application_deadline": "2026-09-01",
+    "event_date": "2026-10-10",
+    "application_deadline": "2026-10-05",
     "work_location": "店内",
     "is_urgent": false
   },
@@ -5104,8 +5614,10 @@ export const regionalJobs = [
     "title": "【高知量販店】Rakuten Mobileブース販売・クロージング特化クルー募集",
     "description": "週末の来店客数増加に伴う、店頭プロモーション応援業務です。活気のある現場で、チームワークを活かして獲得目標を目指します！",
     "author_id": "cocolabo",
-    "price": 16000,
+    "price": 18000,
     "location_name": "高知県高知市",
+    "lat": 33.562737715739765,
+    "lng": 133.5311298874648,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-SHK-1055"
@@ -5114,8 +5626,8 @@ export const regionalJobs = [
     "role_type": "イベントMC",
     "sales_channel": "外販（スーパーなど）",
     "carrier": "Rakuten Mobile",
-    "event_date": "2026-08-21",
-    "application_deadline": "2026-08-18",
+    "event_date": "2026-08-12",
+    "application_deadline": "2026-08-08",
     "work_location": "外販（複合施設など）",
     "is_urgent": false
   },
@@ -5124,8 +5636,10 @@ export const regionalJobs = [
     "title": "【高松】docomo 臨時イベントプロモーション・接客案内スタッフ",
     "description": "大手通信キャリアのイベントブースにて、お声がけやティッシュ配り、サービスのご案内を行うお仕事です。未経験の方も歓迎します！",
     "author_id": "sigma",
-    "price": 16000,
+    "price": 17000,
     "location_name": "香川県高松市",
+    "lat": 34.33643426107956,
+    "lng": 134.04766532879117,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-SHK-1056"
@@ -5134,8 +5648,8 @@ export const regionalJobs = [
     "role_type": "キャンペーンクルー",
     "sales_channel": "ショップ",
     "carrier": "docomo",
-    "event_date": "2026-09-26",
-    "application_deadline": "2026-09-22",
+    "event_date": "2026-08-02",
+    "application_deadline": "2026-08-01",
     "work_location": "外販（スーパーなど）",
     "is_urgent": true
   },
@@ -5144,8 +5658,10 @@ export const regionalJobs = [
     "title": "【松山駅前】クローザー募集！au/UQmobileショップ獲得イベント要員",
     "description": "モバイル端末の新規契約、MNP乗り換え相談に特化した業務です。獲得スキルやクロージングに自信のある方のご応募お待ちしております。",
     "author_id": "alpha",
-    "price": 16000,
+    "price": 13000,
     "location_name": "愛媛県松山市",
+    "lat": 33.83521391875087,
+    "lng": 132.7604368308995,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-SHK-1057"
@@ -5154,8 +5670,8 @@ export const regionalJobs = [
     "role_type": "クローザー",
     "sales_channel": "量販店",
     "carrier": "au/UQmobile",
-    "event_date": "2026-12-02",
-    "application_deadline": "2026-12-01",
+    "event_date": "2026-08-26",
+    "application_deadline": "2026-08-21",
     "work_location": "店内",
     "is_urgent": false
   },
@@ -5164,8 +5680,10 @@ export const regionalJobs = [
     "title": "【徳島近郊】高単価！SoftBank/Y!mobile・モバイル相談会ディレクション・運営",
     "description": "イベントスペースや店舗前のブース設営から運営、集客のマイクパフォーマンス（MC）まで幅広くお任せします。リーダーシップを発揮できる環境です。",
     "author_id": "beta",
-    "price": 15000,
+    "price": 19000,
     "location_name": "徳島県徳島市",
+    "lat": 34.069618531839865,
+    "lng": 134.5491329562935,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-SHK-1058"
@@ -5174,8 +5692,8 @@ export const regionalJobs = [
     "role_type": "ディレクター",
     "sales_channel": "商業施設",
     "carrier": "SoftBank/Y!mobile",
-    "event_date": "2026-11-07",
-    "application_deadline": "2026-11-04",
+    "event_date": "2026-09-25",
+    "application_deadline": "2026-09-19",
     "work_location": "外販（複合施設など）",
     "is_urgent": false
   },
@@ -5184,8 +5702,10 @@ export const regionalJobs = [
     "title": "【高知量販店】Rakuten Mobileブース販売・クロージング特化クルー募集",
     "description": "週末の来店客数増加に伴う、店頭プロモーション応援業務です。活気のある現場で、チームワークを活かして獲得目標を目指します！",
     "author_id": "gamma",
-    "price": 13000,
+    "price": 16000,
     "location_name": "高知県高知市",
+    "lat": 33.552956112307186,
+    "lng": 133.5319132249684,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-SHK-1059"
@@ -5194,8 +5714,8 @@ export const regionalJobs = [
     "role_type": "イベントMC",
     "sales_channel": "外販（スーパーなど）",
     "carrier": "Rakuten Mobile",
-    "event_date": "2026-11-05",
-    "application_deadline": "2026-11-04",
+    "event_date": "2026-10-20",
+    "application_deadline": "2026-10-13",
     "work_location": "外販（スーパーなど）",
     "is_urgent": false
   },
@@ -5204,8 +5724,10 @@ export const regionalJobs = [
     "title": "【高松】docomo 臨時イベントプロモーション・接客案内スタッフ",
     "description": "大手通信キャリアのイベントブースにて、お声がけやティッシュ配り、サービスのご案内を行うお仕事です。未経験の方も歓迎します！",
     "author_id": "delta",
-    "price": 16000,
+    "price": 20000,
     "location_name": "香川県高松市",
+    "lat": 34.347727301061795,
+    "lng": 134.05875753691558,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-SHK-1060"
@@ -5214,8 +5736,8 @@ export const regionalJobs = [
     "role_type": "キャンペーンクルー",
     "sales_channel": "ショップ",
     "carrier": "docomo",
-    "event_date": "2026-10-19",
-    "application_deadline": "2026-10-18",
+    "event_date": "2026-10-02",
+    "application_deadline": "2026-10-01",
     "work_location": "店内",
     "is_urgent": false
   },
@@ -5224,8 +5746,10 @@ export const regionalJobs = [
     "title": "【松山駅前】クローザー募集！au/UQmobileショップ獲得イベント要員",
     "description": "モバイル端末の新規契約、MNP乗り換え相談に特化した業務です。獲得スキルやクロージングに自信のある方のご応募お待ちしております。",
     "author_id": "seals",
-    "price": 19000,
+    "price": 16000,
     "location_name": "愛媛県松山市",
+    "lat": 33.85033803106372,
+    "lng": 132.7726992171517,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-SHK-1061"
@@ -5234,8 +5758,8 @@ export const regionalJobs = [
     "role_type": "クローザー",
     "sales_channel": "量販店",
     "carrier": "au/UQmobile",
-    "event_date": "2026-12-18",
-    "application_deadline": "2026-12-12",
+    "event_date": "2026-11-08",
+    "application_deadline": "2026-11-04",
     "work_location": "外販（複合施設など）",
     "is_urgent": false
   },
@@ -5244,8 +5768,10 @@ export const regionalJobs = [
     "title": "【徳島近郊】高単価！SoftBank/Y!mobile・モバイル相談会ディレクション・運営",
     "description": "イベントスペースや店舗前のブース設営から運営、集客のマイクパフォーマンス（MC）まで幅広くお任せします。リーダーシップを発揮できる環境です。",
     "author_id": "freer",
-    "price": 18000,
+    "price": 19000,
     "location_name": "徳島県徳島市",
+    "lat": 34.07242723260884,
+    "lng": 134.5606015852712,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-SHK-1062"
@@ -5254,8 +5780,8 @@ export const regionalJobs = [
     "role_type": "ディレクター",
     "sales_channel": "商業施設",
     "carrier": "SoftBank/Y!mobile",
-    "event_date": "2026-12-24",
-    "application_deadline": "2026-12-20",
+    "event_date": "2026-09-02",
+    "application_deadline": "2026-09-01",
     "work_location": "外販（スーパーなど）",
     "is_urgent": false
   },
@@ -5264,8 +5790,10 @@ export const regionalJobs = [
     "title": "【高知量販店】Rakuten Mobileブース販売・クロージング特化クルー募集",
     "description": "週末の来店客数増加に伴う、店頭プロモーション応援業務です。活気のある現場で、チームワークを活かして獲得目標を目指します！",
     "author_id": "cocolabo",
-    "price": 13000,
+    "price": 15000,
     "location_name": "高知県高知市",
+    "lat": 33.55463228231739,
+    "lng": 133.5211040124991,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-SHK-1063"
@@ -5274,8 +5802,8 @@ export const regionalJobs = [
     "role_type": "イベントMC",
     "sales_channel": "外販（スーパーなど）",
     "carrier": "Rakuten Mobile",
-    "event_date": "2026-12-09",
-    "application_deadline": "2026-12-03",
+    "event_date": "2026-11-24",
+    "application_deadline": "2026-11-18",
     "work_location": "店内",
     "is_urgent": true
   },
@@ -5284,8 +5812,10 @@ export const regionalJobs = [
     "title": "【高松】docomo 臨時イベントプロモーション・接客案内スタッフ",
     "description": "大手通信キャリアのイベントブースにて、お声がけやティッシュ配り、サービスのご案内を行うお仕事です。未経験の方も歓迎します！",
     "author_id": "sigma",
-    "price": 14000,
+    "price": 16000,
     "location_name": "香川県高松市",
+    "lat": 34.347571372906785,
+    "lng": 134.05961761217185,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-SHK-1064"
@@ -5294,8 +5824,8 @@ export const regionalJobs = [
     "role_type": "キャンペーンクルー",
     "sales_channel": "ショップ",
     "carrier": "docomo",
-    "event_date": "2026-12-15",
-    "application_deadline": "2026-12-08",
+    "event_date": "2026-11-24",
+    "application_deadline": "2026-11-17",
     "work_location": "外販（複合施設など）",
     "is_urgent": false
   },
@@ -5304,8 +5834,10 @@ export const regionalJobs = [
     "title": "【松山駅前】クローザー募集！au/UQmobileショップ獲得イベント要員",
     "description": "モバイル端末の新規契約、MNP乗り換え相談に特化した業務です。獲得スキルやクロージングに自信のある方のご応募お待ちしております。",
     "author_id": "alpha",
-    "price": 18000,
+    "price": 14000,
     "location_name": "愛媛県松山市",
+    "lat": 33.83562690651564,
+    "lng": 132.77357076347388,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-SHK-1065"
@@ -5314,8 +5846,8 @@ export const regionalJobs = [
     "role_type": "クローザー",
     "sales_channel": "量販店",
     "carrier": "au/UQmobile",
-    "event_date": "2026-12-25",
-    "application_deadline": "2026-12-23",
+    "event_date": "2026-08-17",
+    "application_deadline": "2026-08-12",
     "work_location": "外販（スーパーなど）",
     "is_urgent": false
   },
@@ -5324,8 +5856,10 @@ export const regionalJobs = [
     "title": "【徳島近郊】高単価！SoftBank/Y!mobile・モバイル相談会ディレクション・運営",
     "description": "イベントスペースや店舗前のブース設営から運営、集客のマイクパフォーマンス（MC）まで幅広くお任せします。リーダーシップを発揮できる環境です。",
     "author_id": "beta",
-    "price": 20000,
+    "price": 16000,
     "location_name": "徳島県徳島市",
+    "lat": 34.07585749567314,
+    "lng": 134.54956001697911,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-SHK-1066"
@@ -5334,8 +5868,8 @@ export const regionalJobs = [
     "role_type": "ディレクター",
     "sales_channel": "商業施設",
     "carrier": "SoftBank/Y!mobile",
-    "event_date": "2026-11-21",
-    "application_deadline": "2026-11-18",
+    "event_date": "2026-11-10",
+    "application_deadline": "2026-11-09",
     "work_location": "店内",
     "is_urgent": false
   },
@@ -5344,8 +5878,10 @@ export const regionalJobs = [
     "title": "【高知量販店】Rakuten Mobileブース販売・クロージング特化クルー募集",
     "description": "週末の来店客数増加に伴う、店頭プロモーション応援業務です。活気のある現場で、チームワークを活かして獲得目標を目指します！",
     "author_id": "gamma",
-    "price": 13000,
+    "price": 17000,
     "location_name": "高知県高知市",
+    "lat": 33.561705138346966,
+    "lng": 133.52891575971302,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-SHK-1067"
@@ -5354,8 +5890,8 @@ export const regionalJobs = [
     "role_type": "イベントMC",
     "sales_channel": "外販（スーパーなど）",
     "carrier": "Rakuten Mobile",
-    "event_date": "2026-12-18",
-    "application_deadline": "2026-12-13",
+    "event_date": "2026-08-19",
+    "application_deadline": "2026-08-13",
     "work_location": "外販（複合施設など）",
     "is_urgent": false
   },
@@ -5364,8 +5900,10 @@ export const regionalJobs = [
     "title": "【高松】docomo 臨時イベントプロモーション・接客案内スタッフ",
     "description": "大手通信キャリアのイベントブースにて、お声がけやティッシュ配り、サービスのご案内を行うお仕事です。未経験の方も歓迎します！",
     "author_id": "delta",
-    "price": 12000,
+    "price": 19000,
     "location_name": "香川県高松市",
+    "lat": 34.332419258102384,
+    "lng": 134.04778286782073,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-SHK-1068"
@@ -5374,8 +5912,8 @@ export const regionalJobs = [
     "role_type": "キャンペーンクルー",
     "sales_channel": "ショップ",
     "carrier": "docomo",
-    "event_date": "2026-09-21",
-    "application_deadline": "2026-09-17",
+    "event_date": "2026-10-09",
+    "application_deadline": "2026-10-08",
     "work_location": "外販（スーパーなど）",
     "is_urgent": false
   },
@@ -5384,8 +5922,10 @@ export const regionalJobs = [
     "title": "【松山駅前】クローザー募集！au/UQmobileショップ獲得イベント要員",
     "description": "モバイル端末の新規契約、MNP乗り換え相談に特化した業務です。獲得スキルやクロージングに自信のある方のご応募お待ちしております。",
     "author_id": "seals",
-    "price": 13000,
+    "price": 20000,
     "location_name": "愛媛県松山市",
+    "lat": 33.83315698968693,
+    "lng": 132.75685086590534,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-SHK-1069"
@@ -5394,8 +5934,8 @@ export const regionalJobs = [
     "role_type": "クローザー",
     "sales_channel": "量販店",
     "carrier": "au/UQmobile",
-    "event_date": "2026-08-06",
-    "application_deadline": "2026-08-02",
+    "event_date": "2026-12-07",
+    "application_deadline": "2026-12-01",
     "work_location": "店内",
     "is_urgent": false
   },
@@ -5404,8 +5944,10 @@ export const regionalJobs = [
     "title": "【徳島近郊】高単価！SoftBank/Y!mobile・モバイル相談会ディレクション・運営",
     "description": "イベントスペースや店舗前のブース設営から運営、集客のマイクパフォーマンス（MC）まで幅広くお任せします。リーダーシップを発揮できる環境です。",
     "author_id": "freer",
-    "price": 15000,
+    "price": 14000,
     "location_name": "徳島県徳島市",
+    "lat": 34.06851826015813,
+    "lng": 134.54760563335276,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-SHK-1070"
@@ -5414,8 +5956,8 @@ export const regionalJobs = [
     "role_type": "ディレクター",
     "sales_channel": "商業施設",
     "carrier": "SoftBank/Y!mobile",
-    "event_date": "2026-11-13",
-    "application_deadline": "2026-11-09",
+    "event_date": "2026-10-24",
+    "application_deadline": "2026-10-19",
     "work_location": "外販（複合施設など）",
     "is_urgent": true
   },
@@ -5424,8 +5966,10 @@ export const regionalJobs = [
     "title": "【高知量販店】Rakuten Mobileブース販売・クロージング特化クルー募集",
     "description": "週末の来店客数増加に伴う、店頭プロモーション応援業務です。活気のある現場で、チームワークを活かして獲得目標を目指します！",
     "author_id": "cocolabo",
-    "price": 20000,
+    "price": 18000,
     "location_name": "高知県高知市",
+    "lat": 33.556514322748015,
+    "lng": 133.52987979756435,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-SHK-1071"
@@ -5434,8 +5978,8 @@ export const regionalJobs = [
     "role_type": "イベントMC",
     "sales_channel": "外販（スーパーなど）",
     "carrier": "Rakuten Mobile",
-    "event_date": "2026-11-12",
-    "application_deadline": "2026-11-09",
+    "event_date": "2026-08-12",
+    "application_deadline": "2026-08-10",
     "work_location": "外販（スーパーなど）",
     "is_urgent": false
   },
@@ -5444,8 +5988,10 @@ export const regionalJobs = [
     "title": "【高松】docomo 臨時イベントプロモーション・接客案内スタッフ",
     "description": "大手通信キャリアのイベントブースにて、お声がけやティッシュ配り、サービスのご案内を行うお仕事です。未経験の方も歓迎します！",
     "author_id": "sigma",
-    "price": 19000,
+    "price": 16000,
     "location_name": "香川県高松市",
+    "lat": 34.333827247844035,
+    "lng": 134.0613874702813,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-SHK-1072"
@@ -5454,8 +6000,8 @@ export const regionalJobs = [
     "role_type": "キャンペーンクルー",
     "sales_channel": "ショップ",
     "carrier": "docomo",
-    "event_date": "2026-08-11",
-    "application_deadline": "2026-08-08",
+    "event_date": "2026-11-23",
+    "application_deadline": "2026-11-16",
     "work_location": "店内",
     "is_urgent": false
   },
@@ -5466,6 +6012,8 @@ export const regionalJobs = [
     "author_id": "alpha",
     "price": 18000,
     "location_name": "愛媛県松山市",
+    "lat": 33.84565400094552,
+    "lng": 132.7739807145549,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-SHK-1073"
@@ -5474,8 +6022,8 @@ export const regionalJobs = [
     "role_type": "クローザー",
     "sales_channel": "量販店",
     "carrier": "au/UQmobile",
-    "event_date": "2026-11-28",
-    "application_deadline": "2026-11-25",
+    "event_date": "2026-08-17",
+    "application_deadline": "2026-08-16",
     "work_location": "外販（複合施設など）",
     "is_urgent": false
   },
@@ -5484,8 +6032,10 @@ export const regionalJobs = [
     "title": "【徳島近郊】高単価！SoftBank/Y!mobile・モバイル相談会ディレクション・運営",
     "description": "イベントスペースや店舗前のブース設営から運営、集客のマイクパフォーマンス（MC）まで幅広くお任せします。リーダーシップを発揮できる環境です。",
     "author_id": "beta",
-    "price": 19000,
+    "price": 20000,
     "location_name": "徳島県徳島市",
+    "lat": 34.06844610174126,
+    "lng": 134.55629573965254,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-SHK-1074"
@@ -5494,8 +6044,8 @@ export const regionalJobs = [
     "role_type": "ディレクター",
     "sales_channel": "商業施設",
     "carrier": "SoftBank/Y!mobile",
-    "event_date": "2026-12-02",
-    "application_deadline": "2026-12-01",
+    "event_date": "2026-09-17",
+    "application_deadline": "2026-09-14",
     "work_location": "外販（スーパーなど）",
     "is_urgent": false
   },
@@ -5504,8 +6054,10 @@ export const regionalJobs = [
     "title": "【高知量販店】Rakuten Mobileブース販売・クロージング特化クルー募集",
     "description": "週末の来店客数増加に伴う、店頭プロモーション応援業務です。活気のある現場で、チームワークを活かして獲得目標を目指します！",
     "author_id": "gamma",
-    "price": 15000,
+    "price": 17000,
     "location_name": "高知県高知市",
+    "lat": 33.56528155846394,
+    "lng": 133.5409034943761,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-SHK-1075"
@@ -5514,8 +6066,8 @@ export const regionalJobs = [
     "role_type": "イベントMC",
     "sales_channel": "外販（スーパーなど）",
     "carrier": "Rakuten Mobile",
-    "event_date": "2026-10-27",
-    "application_deadline": "2026-10-20",
+    "event_date": "2026-08-04",
+    "application_deadline": "2026-08-01",
     "work_location": "店内",
     "is_urgent": false
   },
@@ -5524,8 +6076,10 @@ export const regionalJobs = [
     "title": "【高松】docomo 臨時イベントプロモーション・接客案内スタッフ",
     "description": "大手通信キャリアのイベントブースにて、お声がけやティッシュ配り、サービスのご案内を行うお仕事です。未経験の方も歓迎します！",
     "author_id": "delta",
-    "price": 15000,
+    "price": 16000,
     "location_name": "香川県高松市",
+    "lat": 34.337118506645275,
+    "lng": 134.06176362407865,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-SHK-1076"
@@ -5534,8 +6088,8 @@ export const regionalJobs = [
     "role_type": "キャンペーンクルー",
     "sales_channel": "ショップ",
     "carrier": "docomo",
-    "event_date": "2026-10-26",
-    "application_deadline": "2026-10-19",
+    "event_date": "2026-10-14",
+    "application_deadline": "2026-10-12",
     "work_location": "外販（複合施設など）",
     "is_urgent": false
   },
@@ -5544,8 +6098,10 @@ export const regionalJobs = [
     "title": "【松山駅前】クローザー募集！au/UQmobileショップ獲得イベント要員",
     "description": "モバイル端末の新規契約、MNP乗り換え相談に特化した業務です。獲得スキルやクロージングに自信のある方のご応募お待ちしております。",
     "author_id": "seals",
-    "price": 20000,
+    "price": 17000,
     "location_name": "愛媛県松山市",
+    "lat": 33.83210778998594,
+    "lng": 132.75812091320645,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-SHK-1077"
@@ -5554,8 +6110,8 @@ export const regionalJobs = [
     "role_type": "クローザー",
     "sales_channel": "量販店",
     "carrier": "au/UQmobile",
-    "event_date": "2026-09-07",
-    "application_deadline": "2026-09-04",
+    "event_date": "2026-09-28",
+    "application_deadline": "2026-09-24",
     "work_location": "外販（スーパーなど）",
     "is_urgent": true
   },
@@ -5564,8 +6120,10 @@ export const regionalJobs = [
     "title": "【徳島近郊】高単価！SoftBank/Y!mobile・モバイル相談会ディレクション・運営",
     "description": "イベントスペースや店舗前のブース設営から運営、集客のマイクパフォーマンス（MC）まで幅広くお任せします。リーダーシップを発揮できる環境です。",
     "author_id": "freer",
-    "price": 19000,
+    "price": 15000,
     "location_name": "徳島県徳島市",
+    "lat": 34.07843086769782,
+    "lng": 134.55834998907486,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-SHK-1078"
@@ -5574,8 +6132,8 @@ export const regionalJobs = [
     "role_type": "ディレクター",
     "sales_channel": "商業施設",
     "carrier": "SoftBank/Y!mobile",
-    "event_date": "2026-10-26",
-    "application_deadline": "2026-10-21",
+    "event_date": "2026-09-27",
+    "application_deadline": "2026-09-26",
     "work_location": "店内",
     "is_urgent": false
   },
@@ -5584,8 +6142,10 @@ export const regionalJobs = [
     "title": "【高知量販店】Rakuten Mobileブース販売・クロージング特化クルー募集",
     "description": "週末の来店客数増加に伴う、店頭プロモーション応援業務です。活気のある現場で、チームワークを活かして獲得目標を目指します！",
     "author_id": "cocolabo",
-    "price": 14000,
+    "price": 18000,
     "location_name": "高知県高知市",
+    "lat": 33.55642863419591,
+    "lng": 133.53435197376825,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-SHK-1079"
@@ -5594,8 +6154,8 @@ export const regionalJobs = [
     "role_type": "イベントMC",
     "sales_channel": "外販（スーパーなど）",
     "carrier": "Rakuten Mobile",
-    "event_date": "2026-09-23",
-    "application_deadline": "2026-09-21",
+    "event_date": "2026-12-21",
+    "application_deadline": "2026-12-18",
     "work_location": "外販（複合施設など）",
     "is_urgent": false
   },
@@ -5604,8 +6164,10 @@ export const regionalJobs = [
     "title": "【高松】docomo 臨時イベントプロモーション・接客案内スタッフ",
     "description": "大手通信キャリアのイベントブースにて、お声がけやティッシュ配り、サービスのご案内を行うお仕事です。未経験の方も歓迎します！",
     "author_id": "sigma",
-    "price": 19000,
+    "price": 20000,
     "location_name": "香川県高松市",
+    "lat": 34.34178677952892,
+    "lng": 134.04734388625283,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-SHK-1080"
@@ -5614,8 +6176,8 @@ export const regionalJobs = [
     "role_type": "キャンペーンクルー",
     "sales_channel": "ショップ",
     "carrier": "docomo",
-    "event_date": "2026-11-13",
-    "application_deadline": "2026-11-06",
+    "event_date": "2026-09-21",
+    "application_deadline": "2026-09-16",
     "work_location": "外販（スーパーなど）",
     "is_urgent": false
   },
@@ -5624,8 +6186,10 @@ export const regionalJobs = [
     "title": "【松山駅前】クローザー募集！au/UQmobileショップ獲得イベント要員",
     "description": "モバイル端末の新規契約、MNP乗り換え相談に特化した業務です。獲得スキルやクロージングに自信のある方のご応募お待ちしております。",
     "author_id": "alpha",
-    "price": 17000,
+    "price": 15000,
     "location_name": "愛媛県松山市",
+    "lat": 33.84261098352427,
+    "lng": 132.77133742742765,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-SHK-1081"
@@ -5634,8 +6198,8 @@ export const regionalJobs = [
     "role_type": "クローザー",
     "sales_channel": "量販店",
     "carrier": "au/UQmobile",
-    "event_date": "2026-11-01",
-    "application_deadline": "2026-11-01",
+    "event_date": "2026-12-21",
+    "application_deadline": "2026-12-20",
     "work_location": "店内",
     "is_urgent": false
   },
@@ -5644,8 +6208,10 @@ export const regionalJobs = [
     "title": "【徳島近郊】高単価！SoftBank/Y!mobile・モバイル相談会ディレクション・運営",
     "description": "イベントスペースや店舗前のブース設営から運営、集客のマイクパフォーマンス（MC）まで幅広くお任せします。リーダーシップを発揮できる環境です。",
     "author_id": "beta",
-    "price": 17000,
+    "price": 20000,
     "location_name": "徳島県徳島市",
+    "lat": 34.06751542083297,
+    "lng": 134.5538356372821,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-SHK-1082"
@@ -5654,8 +6220,8 @@ export const regionalJobs = [
     "role_type": "ディレクター",
     "sales_channel": "商業施設",
     "carrier": "SoftBank/Y!mobile",
-    "event_date": "2026-11-26",
-    "application_deadline": "2026-11-20",
+    "event_date": "2026-08-08",
+    "application_deadline": "2026-08-01",
     "work_location": "外販（複合施設など）",
     "is_urgent": false
   },
@@ -5664,8 +6230,10 @@ export const regionalJobs = [
     "title": "【高知量販店】Rakuten Mobileブース販売・クロージング特化クルー募集",
     "description": "週末の来店客数増加に伴う、店頭プロモーション応援業務です。活気のある現場で、チームワークを活かして獲得目標を目指します！",
     "author_id": "gamma",
-    "price": 19000,
+    "price": 13000,
     "location_name": "高知県高知市",
+    "lat": 33.55423828671848,
+    "lng": 133.53379758060169,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-SHK-1083"
@@ -5674,8 +6242,8 @@ export const regionalJobs = [
     "role_type": "イベントMC",
     "sales_channel": "外販（スーパーなど）",
     "carrier": "Rakuten Mobile",
-    "event_date": "2026-08-25",
-    "application_deadline": "2026-08-21",
+    "event_date": "2026-11-15",
+    "application_deadline": "2026-11-09",
     "work_location": "外販（スーパーなど）",
     "is_urgent": false
   },
@@ -5684,8 +6252,10 @@ export const regionalJobs = [
     "title": "【高松】docomo 臨時イベントプロモーション・接客案内スタッフ",
     "description": "大手通信キャリアのイベントブースにて、お声がけやティッシュ配り、サービスのご案内を行うお仕事です。未経験の方も歓迎します！",
     "author_id": "delta",
-    "price": 16000,
+    "price": 15000,
     "location_name": "香川県高松市",
+    "lat": 34.331325662374965,
+    "lng": 134.0539584645959,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-SHK-1084"
@@ -5694,8 +6264,8 @@ export const regionalJobs = [
     "role_type": "キャンペーンクルー",
     "sales_channel": "ショップ",
     "carrier": "docomo",
-    "event_date": "2026-10-06",
-    "application_deadline": "2026-10-03",
+    "event_date": "2026-11-22",
+    "application_deadline": "2026-11-16",
     "work_location": "店内",
     "is_urgent": true
   },
@@ -5704,8 +6274,10 @@ export const regionalJobs = [
     "title": "【松山駅前】クローザー募集！au/UQmobileショップ獲得イベント要員",
     "description": "モバイル端末の新規契約、MNP乗り換え相談に特化した業務です。獲得スキルやクロージングに自信のある方のご応募お待ちしております。",
     "author_id": "seals",
-    "price": 16000,
+    "price": 20000,
     "location_name": "愛媛県松山市",
+    "lat": 33.83247391217807,
+    "lng": 132.76626352657703,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-SHK-1085"
@@ -5714,8 +6286,8 @@ export const regionalJobs = [
     "role_type": "クローザー",
     "sales_channel": "量販店",
     "carrier": "au/UQmobile",
-    "event_date": "2026-11-09",
-    "application_deadline": "2026-11-08",
+    "event_date": "2026-10-24",
+    "application_deadline": "2026-10-20",
     "work_location": "外販（複合施設など）",
     "is_urgent": false
   },
@@ -5724,8 +6296,10 @@ export const regionalJobs = [
     "title": "【徳島近郊】高単価！SoftBank/Y!mobile・モバイル相談会ディレクション・運営",
     "description": "イベントスペースや店舗前のブース設営から運営、集客のマイクパフォーマンス（MC）まで幅広くお任せします。リーダーシップを発揮できる環境です。",
     "author_id": "freer",
-    "price": 20000,
+    "price": 16000,
     "location_name": "徳島県徳島市",
+    "lat": 34.08005726498239,
+    "lng": 134.5450697632536,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-SHK-1086"
@@ -5734,8 +6308,8 @@ export const regionalJobs = [
     "role_type": "ディレクター",
     "sales_channel": "商業施設",
     "carrier": "SoftBank/Y!mobile",
-    "event_date": "2026-11-20",
-    "application_deadline": "2026-11-19",
+    "event_date": "2026-10-12",
+    "application_deadline": "2026-10-11",
     "work_location": "外販（スーパーなど）",
     "is_urgent": false
   },
@@ -5744,8 +6318,10 @@ export const regionalJobs = [
     "title": "【高知量販店】Rakuten Mobileブース販売・クロージング特化クルー募集",
     "description": "週末の来店客数増加に伴う、店頭プロモーション応援業務です。活気のある現場で、チームワークを活かして獲得目標を目指します！",
     "author_id": "cocolabo",
-    "price": 13000,
+    "price": 15000,
     "location_name": "高知県高知市",
+    "lat": 33.559104567892476,
+    "lng": 133.52441090688097,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-SHK-1087"
@@ -5754,8 +6330,8 @@ export const regionalJobs = [
     "role_type": "イベントMC",
     "sales_channel": "外販（スーパーなど）",
     "carrier": "Rakuten Mobile",
-    "event_date": "2026-08-16",
-    "application_deadline": "2026-08-11",
+    "event_date": "2026-10-14",
+    "application_deadline": "2026-10-09",
     "work_location": "店内",
     "is_urgent": false
   },
@@ -5764,8 +6340,10 @@ export const regionalJobs = [
     "title": "【高松】docomo 臨時イベントプロモーション・接客案内スタッフ",
     "description": "大手通信キャリアのイベントブースにて、お声がけやティッシュ配り、サービスのご案内を行うお仕事です。未経験の方も歓迎します！",
     "author_id": "sigma",
-    "price": 18000,
+    "price": 16000,
     "location_name": "香川県高松市",
+    "lat": 34.34204860393264,
+    "lng": 134.04290808645422,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-SHK-1088"
@@ -5774,8 +6352,8 @@ export const regionalJobs = [
     "role_type": "キャンペーンクルー",
     "sales_channel": "ショップ",
     "carrier": "docomo",
-    "event_date": "2026-11-06",
-    "application_deadline": "2026-11-01",
+    "event_date": "2026-12-12",
+    "application_deadline": "2026-12-10",
     "work_location": "外販（複合施設など）",
     "is_urgent": false
   },
@@ -5784,8 +6362,10 @@ export const regionalJobs = [
     "title": "【松山駅前】クローザー募集！au/UQmobileショップ獲得イベント要員",
     "description": "モバイル端末の新規契約、MNP乗り換え相談に特化した業務です。獲得スキルやクロージングに自信のある方のご応募お待ちしております。",
     "author_id": "alpha",
-    "price": 18000,
+    "price": 16000,
     "location_name": "愛媛県松山市",
+    "lat": 33.849362370111834,
+    "lng": 132.75926937170777,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-SHK-1089"
@@ -5794,8 +6374,8 @@ export const regionalJobs = [
     "role_type": "クローザー",
     "sales_channel": "量販店",
     "carrier": "au/UQmobile",
-    "event_date": "2026-10-27",
-    "application_deadline": "2026-10-25",
+    "event_date": "2026-10-28",
+    "application_deadline": "2026-10-27",
     "work_location": "外販（スーパーなど）",
     "is_urgent": false
   },
@@ -5804,8 +6384,10 @@ export const regionalJobs = [
     "title": "【徳島近郊】高単価！SoftBank/Y!mobile・モバイル相談会ディレクション・運営",
     "description": "イベントスペースや店舗前のブース設営から運営、集客のマイクパフォーマンス（MC）まで幅広くお任せします。リーダーシップを発揮できる環境です。",
     "author_id": "beta",
-    "price": 18000,
+    "price": 16000,
     "location_name": "徳島県徳島市",
+    "lat": 34.07778186850485,
+    "lng": 134.56029354346109,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-SHK-1090"
@@ -5814,8 +6396,8 @@ export const regionalJobs = [
     "role_type": "ディレクター",
     "sales_channel": "商業施設",
     "carrier": "SoftBank/Y!mobile",
-    "event_date": "2026-09-20",
-    "application_deadline": "2026-09-19",
+    "event_date": "2026-12-26",
+    "application_deadline": "2026-12-24",
     "work_location": "店内",
     "is_urgent": false
   },
@@ -5824,8 +6406,10 @@ export const regionalJobs = [
     "title": "【高知量販店】Rakuten Mobileブース販売・クロージング特化クルー募集",
     "description": "週末の来店客数増加に伴う、店頭プロモーション応援業務です。活気のある現場で、チームワークを活かして獲得目標を目指します！",
     "author_id": "gamma",
-    "price": 17000,
+    "price": 15000,
     "location_name": "高知県高知市",
+    "lat": 33.552208309820735,
+    "lng": 133.5244642418205,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-SHK-1091"
@@ -5834,8 +6418,8 @@ export const regionalJobs = [
     "role_type": "イベントMC",
     "sales_channel": "外販（スーパーなど）",
     "carrier": "Rakuten Mobile",
-    "event_date": "2026-10-03",
-    "application_deadline": "2026-10-02",
+    "event_date": "2026-12-01",
+    "application_deadline": "2026-12-01",
     "work_location": "外販（複合施設など）",
     "is_urgent": true
   },
@@ -5844,8 +6428,10 @@ export const regionalJobs = [
     "title": "【高松】docomo 臨時イベントプロモーション・接客案内スタッフ",
     "description": "大手通信キャリアのイベントブースにて、お声がけやティッシュ配り、サービスのご案内を行うお仕事です。未経験の方も歓迎します！",
     "author_id": "delta",
-    "price": 15000,
+    "price": 19000,
     "location_name": "香川県高松市",
+    "lat": 34.33087029763474,
+    "lng": 134.0439916481559,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-SHK-1092"
@@ -5854,8 +6440,8 @@ export const regionalJobs = [
     "role_type": "キャンペーンクルー",
     "sales_channel": "ショップ",
     "carrier": "docomo",
-    "event_date": "2026-12-17",
-    "application_deadline": "2026-12-16",
+    "event_date": "2026-08-19",
+    "application_deadline": "2026-08-14",
     "work_location": "外販（スーパーなど）",
     "is_urgent": false
   },
@@ -5864,8 +6450,10 @@ export const regionalJobs = [
     "title": "【松山駅前】クローザー募集！au/UQmobileショップ獲得イベント要員",
     "description": "モバイル端末の新規契約、MNP乗り換え相談に特化した業務です。獲得スキルやクロージングに自信のある方のご応募お待ちしております。",
     "author_id": "seals",
-    "price": 16000,
+    "price": 15000,
     "location_name": "愛媛県松山市",
+    "lat": 33.84795632371626,
+    "lng": 132.77128087963123,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-SHK-1093"
@@ -5874,8 +6462,8 @@ export const regionalJobs = [
     "role_type": "クローザー",
     "sales_channel": "量販店",
     "carrier": "au/UQmobile",
-    "event_date": "2026-09-23",
-    "application_deadline": "2026-09-19",
+    "event_date": "2026-08-23",
+    "application_deadline": "2026-08-19",
     "work_location": "店内",
     "is_urgent": false
   },
@@ -5884,8 +6472,10 @@ export const regionalJobs = [
     "title": "【徳島近郊】高単価！SoftBank/Y!mobile・モバイル相談会ディレクション・運営",
     "description": "イベントスペースや店舗前のブース設営から運営、集客のマイクパフォーマンス（MC）まで幅広くお任せします。リーダーシップを発揮できる環境です。",
     "author_id": "freer",
-    "price": 18000,
+    "price": 15000,
     "location_name": "徳島県徳島市",
+    "lat": 34.067556650688395,
+    "lng": 134.55095584867303,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-SHK-1094"
@@ -5894,8 +6484,8 @@ export const regionalJobs = [
     "role_type": "ディレクター",
     "sales_channel": "商業施設",
     "carrier": "SoftBank/Y!mobile",
-    "event_date": "2026-09-28",
-    "application_deadline": "2026-09-22",
+    "event_date": "2026-09-15",
+    "application_deadline": "2026-09-14",
     "work_location": "外販（複合施設など）",
     "is_urgent": false
   },
@@ -5906,6 +6496,8 @@ export const regionalJobs = [
     "author_id": "cocolabo",
     "price": 19000,
     "location_name": "高知県高知市",
+    "lat": 33.55120337490426,
+    "lng": 133.53200726199594,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-SHK-1095"
@@ -5914,8 +6506,8 @@ export const regionalJobs = [
     "role_type": "イベントMC",
     "sales_channel": "外販（スーパーなど）",
     "carrier": "Rakuten Mobile",
-    "event_date": "2026-08-17",
-    "application_deadline": "2026-08-13",
+    "event_date": "2026-12-26",
+    "application_deadline": "2026-12-19",
     "work_location": "外販（スーパーなど）",
     "is_urgent": false
   },
@@ -5924,8 +6516,10 @@ export const regionalJobs = [
     "title": "【高松】docomo 臨時イベントプロモーション・接客案内スタッフ",
     "description": "大手通信キャリアのイベントブースにて、お声がけやティッシュ配り、サービスのご案内を行うお仕事です。未経験の方も歓迎します！",
     "author_id": "sigma",
-    "price": 20000,
+    "price": 16000,
     "location_name": "香川県高松市",
+    "lat": 34.3425656945145,
+    "lng": 134.04716235544754,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-SHK-1096"
@@ -5934,8 +6528,8 @@ export const regionalJobs = [
     "role_type": "キャンペーンクルー",
     "sales_channel": "ショップ",
     "carrier": "docomo",
-    "event_date": "2026-09-15",
-    "application_deadline": "2026-09-13",
+    "event_date": "2026-10-17",
+    "application_deadline": "2026-10-15",
     "work_location": "店内",
     "is_urgent": false
   },
@@ -5944,8 +6538,10 @@ export const regionalJobs = [
     "title": "【松山駅前】クローザー募集！au/UQmobileショップ獲得イベント要員",
     "description": "モバイル端末の新規契約、MNP乗り換え相談に特化した業務です。獲得スキルやクロージングに自信のある方のご応募お待ちしております。",
     "author_id": "alpha",
-    "price": 16000,
+    "price": 18000,
     "location_name": "愛媛県松山市",
+    "lat": 33.843678057615094,
+    "lng": 132.77371203523276,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-SHK-1097"
@@ -5954,8 +6550,8 @@ export const regionalJobs = [
     "role_type": "クローザー",
     "sales_channel": "量販店",
     "carrier": "au/UQmobile",
-    "event_date": "2026-11-13",
-    "application_deadline": "2026-11-10",
+    "event_date": "2026-11-17",
+    "application_deadline": "2026-11-13",
     "work_location": "外販（複合施設など）",
     "is_urgent": false
   },
@@ -5964,8 +6560,10 @@ export const regionalJobs = [
     "title": "【徳島近郊】高単価！SoftBank/Y!mobile・モバイル相談会ディレクション・運営",
     "description": "イベントスペースや店舗前のブース設営から運営、集客のマイクパフォーマンス（MC）まで幅広くお任せします。リーダーシップを発揮できる環境です。",
     "author_id": "beta",
-    "price": 12000,
+    "price": 18000,
     "location_name": "徳島県徳島市",
+    "lat": 34.06998894371968,
+    "lng": 134.54783990071454,
     "work_hours": "10:00 - 19:00",
     "requirements": [
       "__JOB_CODE__::JOB-SHK-1098"
@@ -5974,8 +6572,8 @@ export const regionalJobs = [
     "role_type": "ディレクター",
     "sales_channel": "商業施設",
     "carrier": "SoftBank/Y!mobile",
-    "event_date": "2026-09-23",
-    "application_deadline": "2026-09-22",
+    "event_date": "2026-08-02",
+    "application_deadline": "2026-08-01",
     "work_location": "外販（スーパーなど）",
     "is_urgent": true
   },
@@ -5984,8 +6582,10 @@ export const regionalJobs = [
     "title": "【高知量販店】Rakuten Mobileブース販売・クロージング特化クルー募集",
     "description": "週末の来店客数増加に伴う、店頭プロモーション応援業務です。活気のある現場で、チームワークを活かして獲得目標を目指します！",
     "author_id": "gamma",
-    "price": 17000,
+    "price": 20000,
     "location_name": "高知県高知市",
+    "lat": 33.55514235436999,
+    "lng": 133.5289963541488,
     "work_hours": "11:00 - 20:00",
     "requirements": [
       "__JOB_CODE__::JOB-SHK-1099"
@@ -5994,8 +6594,8 @@ export const regionalJobs = [
     "role_type": "イベントMC",
     "sales_channel": "外販（スーパーなど）",
     "carrier": "Rakuten Mobile",
-    "event_date": "2026-12-22",
-    "application_deadline": "2026-12-16",
+    "event_date": "2026-11-08",
+    "application_deadline": "2026-11-02",
     "work_location": "店内",
     "is_urgent": false
   }
