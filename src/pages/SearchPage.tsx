@@ -68,6 +68,22 @@ export function SearchPage() {
   const [allUsers, setAllUsers] = useState<User[]>([]);
   const [targetCompanyId, setTargetCompanyId] = useState<string>('');
 
+  const pastTradeCompanyIds = useMemo(() => {
+    if (!currentUser || !contractTasks) return new Set<string>();
+    const completedTasks = contractTasks.filter(t => t.status === 'completed');
+    const set = new Set<string>();
+    completedTasks.forEach(t => {
+      const tAgencyId = t.agency_id || (t.companyName?.includes('アルファ') ? 'alpha' : t.companyName?.includes('シグマ') ? 'sigma' : t.companyName?.includes('ベータ') ? 'beta' : t.companyName?.includes('ガンマ') ? 'gamma' : t.companyName?.includes('デルタ') ? 'delta' : t.companyName?.includes('SEALs') ? 'seals' : t.companyName?.includes('FreeR') ? 'freer' : t.companyName?.includes('ココラボ') ? 'cocolabo' : '');
+      const tClientId = t.client_id || (t.clientName?.includes('アルファ') ? 'alpha' : t.clientName?.includes('シグマ') ? 'sigma' : t.clientName?.includes('ベータ') ? 'beta' : t.clientName?.includes('ガンマ') ? 'gamma' : t.clientName?.includes('デルタ') ? 'delta' : t.clientName?.includes('SEALs') ? 'seals' : t.clientName?.includes('FreeR') ? 'freer' : t.clientName?.includes('ココラボ') ? 'cocolabo' : '');
+      if (tAgencyId === currentUser.id) {
+        if (tClientId) set.add(tClientId);
+      } else if (tClientId === currentUser.id) {
+        if (tAgencyId) set.add(tAgencyId);
+      }
+    });
+    return set;
+  }, [currentUser, contractTasks]);
+
   // フィルター・ソート用State
   const [isFilterSheetOpen, setIsFilterSheetOpen] = useState(false);
   const [searchKeyword, setSearchKeyword] = useState<string>('');
@@ -1741,6 +1757,16 @@ export function SearchPage() {
                       {remainingDaysText && (
                         <span style={{ margin: 0, fontSize: '11px', whiteSpace: 'nowrap', padding: '4px 8px', borderRadius: '8px', color: remainingDaysColor, backgroundColor: remainingDaysBg, fontWeight: 'bold' }}>
                           {remainingDaysText}
+                        </span>
+                      )}
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '11px', color: 'var(--text-sub)', marginTop: '-8px', marginBottom: '8px' }}>
+                      <span style={{ fontWeight: 'bold' }}>{allUsers.find(u => u.id === job.authorId)?.name || '掲載企業'}</span>
+                      {pastTradeCompanyIds.has(job.authorId) && (
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '2px', background: '#D1FAE5', color: '#065F46', padding: '1px 6px', borderRadius: '4px', fontWeight: 'bold', fontSize: '9px' }}>
+                          <span className="material-symbols-outlined" style={{ fontSize: '11px' }}>handshake</span>
+                          取引実績あり
                         </span>
                       )}
                     </div>

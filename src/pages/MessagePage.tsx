@@ -107,6 +107,17 @@ export function MessagePage() {
   const [editConditionsPrice, setEditConditionsPrice] = useState<number>(0);
   const [editConditionsDate, setEditConditionsDate] = useState('');
 
+  // 業務委託契約の承認・詳細プロフィールのState
+  const [showContractModal, setShowContractModal] = useState(false);
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [clickedCompanyProfile, setClickedCompanyProfile] = useState<any | null>(null);
+  const [clickedStaffProfile, setClickedStaffProfile] = useState<any | null>(null);
+  const [allTrainings, setAllTrainings] = useState<any[]>([]);
+
+  useEffect(() => {
+    api.getTrainings().then(setAllTrainings);
+  }, []);
+
   // メニュー・定型文・写真用のState
   const [showChatMenu, setShowChatMenu] = useState(false);
   const [showPhotoModal, setShowPhotoModal] = useState(false);
@@ -505,6 +516,30 @@ export function MessagePage() {
     return jobs.find(j => j.id === jobIds[0]) || null;
   }, [activeChat, chatTasks, jobs]);
 
+  const relatedTask = useMemo(() => {
+    if (!activeChat) return null;
+    return chatTasks.find(t => t.id === activeChat.id) || null;
+  }, [activeChat, chatTasks]);
+
+  const contractApproved = useMemo(() => {
+    if (!relatedTask) return true;
+    const isJobMatch = relatedTask.jobId && relatedTask.jobId !== 'chat';
+    if (!isJobMatch) return true;
+    const clientOk = relatedTask.clientContractApprovedByClient && relatedTask.clientContractApprovedByAgency;
+    const agencyOk = !relatedTask.agencyContractText || (relatedTask.agencyContractApprovedByClient && relatedTask.agencyContractApprovedByAgency);
+    return !!(clientOk && agencyOk);
+  }, [relatedTask]);
+
+  const workDateNear = useMemo(() => {
+    if (!relatedTask || !relatedTask.date) return false;
+    const workDate = new Date(relatedTask.date);
+    const today = new Date();
+    workDate.setHours(0, 0, 0, 0);
+    today.setHours(0, 0, 0, 0);
+    const diffDays = (workDate.getTime() - today.getTime()) / (1000 * 3600 * 24);
+    return diffDays >= 0 && diffDays <= 2;
+  }, [relatedTask]);
+
   const isClient = useMemo(() => {
     if (!currentUser) return false;
     if (relatedJob) {
@@ -688,6 +723,68 @@ export function MessagePage() {
     }
   };
 
+  const handleSignContract = async () => {
+    if (!relatedTask || !currentUser) return;
+    const side = isClient ? 'client' : 'agency';
+    try {
+      await api.updateContractApproval(relatedTask.id, side, true);
+      const updatedTasks = await api.getContractTasks();
+      setChatTasks(updatedTasks);
+      alert('契約書に署名（承認）しました。');
+    } catch (err) {
+      console.error('Failed to sign contract:', err);
+      alert('契約署名に失敗しました。');
+    }
+  };
+
+  const handleAvatarClick = (msg: any) => {
+    if (!msg || !msg.senderId || !currentUser) return;
+    
+    const foundCompany = allCompanies.find(c => c.id === msg.senderId);
+    if (foundCompany) {
+      setClickedCompanyProfile(foundCompany);
+      setClickedStaffProfile(null);
+      setShowProfileModal(true);
+      return;
+    }
+    
+    const foundStaff = allStaffs.find(s => s.id === msg.senderId);
+    if (foundStaff) {
+      setClickedStaffProfile(foundStaff);
+      setClickedCompanyProfile(null);
+      setShowProfileModal(true);
+      return;
+    }
+    
+    if (msg.senderName) {
+      const cleanName = msg.senderName.split('_')[1] || msg.senderName.split('_')[0];
+      const compByName = allCompanies.find(c => c.name.includes(cleanName) || cleanName.includes(c.name));
+      if (compByName) {
+        setClickedCompanyProfile(compByName);
+        setClickedStaffProfile(null);
+        setShowProfileModal(true);
+        return;
+      }
+      const staffByName = allStaffs.find(s => s.name.includes(cleanName) || cleanName.includes(s.name));
+      if (staffByName) {
+        setClickedStaffProfile(staffByName);
+        setClickedCompanyProfile(null);
+        setShowProfileModal(true);
+        return;
+      }
+    }
+    
+    if (activeChat && activeChat.status !== 'group') {
+      const oppCompanyId = activeChat.id.replace('chat_', '').replace(currentUser.id, '').replace('_', '');
+      const oppCompany = allCompanies.find(c => c.id === oppCompanyId);
+      if (oppCompany) {
+        setClickedCompanyProfile(oppCompany);
+        setClickedStaffProfile(null);
+        setShowProfileModal(true);
+      }
+    }
+  };
+
   const handleApproveProposal = async (proposalMsgId: string) => {
     if (!activeChat || !currentUser) return;
     const now = new Date();
@@ -758,6 +855,7 @@ export function MessagePage() {
       const now = new Date();
       const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
 
+      const clientComp = allCompanies.find(c => c.id === job.authorId);
       // 1. Create a ContractTask for the actual job assignment (status = 'working')
       const newContractTask = {
         id: `ct_${Date.now()}`,
@@ -773,7 +871,15 @@ export function MessagePage() {
           messages: [
             { id: `sys_c_${Date.now()}`, type: 'system', text: 'マッチングが成立しました。業務完了後、実績報告と相互評価を行ってください。', time: '現在' }
           ]
-        }
+        },
+        agency_id: currentUser.id,
+        client_id: job.authorId,
+        clientContractText: clientComp?.contractTemplate || '',
+        clientContractApprovedByClient: false,
+        clientContractApprovedByAgency: false,
+        agencyContractText: currentUser.contractTemplate || '',
+        agencyContractApprovedByClient: false,
+        agencyContractApprovedByAgency: false
       };
 
       await api.createContractTask(newContractTask as any);
@@ -1785,7 +1891,28 @@ export function MessagePage() {
             <button className="icon-btn-dark" onClick={() => window.history.back()}>
               <span className="material-symbols-outlined">arrow_back_ios_new</span>
             </button>
-            <div className="chat-header-title" style={{ textAlign: 'center', flex: 1, overflow: 'hidden', minWidth: 0, padding: '0 8px' }}>
+            <div 
+              className="chat-header-title" 
+              onClick={() => {
+                if (activeChat && activeChat.status !== 'group') {
+                  const oppCompanyId = activeChat.id.replace('chat_', '').replace(currentUser?.id, '').replace('_', '');
+                  const oppCompany = allCompanies.find(c => c.id === oppCompanyId);
+                  if (oppCompany) {
+                    setClickedCompanyProfile(oppCompany);
+                    setClickedStaffProfile(null);
+                    setShowProfileModal(true);
+                  }
+                }
+              }}
+              style={{ 
+                textAlign: 'center', 
+                flex: 1, 
+                overflow: 'hidden', 
+                minWidth: 0, 
+                padding: '0 8px',
+                cursor: activeChat?.status !== 'group' ? 'pointer' : 'default'
+              }}
+            >
               <h1 style={{ fontSize: '14px', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                 {headerTitle}
               </h1>
@@ -1802,6 +1929,66 @@ export function MessagePage() {
               <span className="material-symbols-outlined" style={{ color: 'var(--primary-color)' }}>groups</span>
             </button>
           </div>
+
+          {relatedTask && relatedTask.jobId && relatedTask.jobId !== 'chat' && (
+            !contractApproved ? (
+              <div 
+                onClick={() => setShowContractModal(true)}
+                style={{
+                  background: workDateNear ? '#FEE2E2' : '#FFFBEB',
+                  border: workDateNear ? '1px solid #FCA5A5' : '1px solid #FEF3C7',
+                  borderRadius: '8px',
+                  padding: '8px 12px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: '8px',
+                  marginTop: '8px',
+                  cursor: 'pointer'
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', fontWeight: 'bold', color: workDateNear ? '#991B1B' : '#B45309', textAlign: 'left' }}>
+                  <span className="material-symbols-outlined" style={{ color: workDateNear ? '#DC2626' : '#F59E0B', fontSize: '16px' }}>
+                    {workDateNear ? 'gavel' : 'warning'}
+                  </span>
+                  <span>
+                    {workDateNear 
+                      ? '🚨 稼働直前ですが契約書が未承認です！' 
+                      : '⚠️ 契約書が未承認です。稼働前の相互承認を推奨します。'}
+                  </span>
+                </div>
+                <span className="material-symbols-outlined" style={{ fontSize: '14px', color: workDateNear ? '#991B1B' : '#B45309' }}>
+                  chevron_right
+                </span>
+              </div>
+            ) : (
+              <div 
+                onClick={() => setShowContractModal(true)}
+                style={{
+                  background: '#ECFDF5',
+                  border: '1px solid #A7F3D0',
+                  borderRadius: '8px',
+                  padding: '6px 12px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: '8px',
+                  marginTop: '8px',
+                  cursor: 'pointer'
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', fontWeight: 'bold', color: '#065F46', textAlign: 'left' }}>
+                  <span className="material-symbols-outlined" style={{ color: '#10B981', fontSize: '16px' }}>
+                    verified
+                  </span>
+                  <span>🤝 業務委託契約 相互承認済み</span>
+                </div>
+                <span className="material-symbols-outlined" style={{ fontSize: '14px', color: '#065F46' }}>
+                  chevron_right
+                </span>
+              </div>
+            )
+          )}
 
           {activeChat?.status === 'offered' && !isClient && (
             <div style={{
@@ -1885,7 +2072,11 @@ export function MessagePage() {
               )}
               {msg.type === 'received' && (
                 <div className="message-row received" style={{ animation: 'fadeIn 0.3s ease' }}>
-                  <div className="chat-avatar bg-blue" style={{ fontSize: '11px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <div 
+                    className="chat-avatar bg-blue" 
+                    onClick={() => handleAvatarClick(msg)}
+                    style={{ fontSize: '11px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+                  >
                     {msg.avatar || activeChat?.avatar}
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', flex: 1, minWidth: 0 }}>
@@ -2773,6 +2964,303 @@ export function MessagePage() {
                   </div>
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 業務委託契約の相互承認モーダル */}
+      {showContractModal && relatedTask && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(15, 23, 42, 0.6)',
+          backdropFilter: 'blur(8px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 9999,
+          padding: '16px'
+        }}>
+          <div style={{
+            background: '#FFFFFF',
+            borderRadius: '16px',
+            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+            width: '100%',
+            maxWidth: '440px',
+            maxHeight: '85vh',
+            overflow: 'hidden',
+            display: 'flex',
+            flexDirection: 'column',
+            animation: 'fadeIn 0.2s ease-out'
+          }}>
+            {/* Header */}
+            <div style={{
+              padding: '16px 20px',
+              borderBottom: '1px solid #F1F5F9',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              background: 'linear-gradient(135deg, #EEF2F6 0%, #E2E8F0 100%)'
+            }}>
+              <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 'bold', color: '#1E293B', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span className="material-symbols-outlined" style={{ color: 'var(--primary-color)' }}>gavel</span>
+                業務委託契約の相互承認
+              </h3>
+              <button 
+                onClick={() => setShowContractModal(false)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748B' }}
+              >
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
+
+            {/* Content */}
+            <div style={{ padding: '20px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div style={{ background: '#FFFBEB', border: '1px solid #FEF3C7', padding: '10px 12px', borderRadius: '8px', fontSize: '11px', color: '#B45309', lineHeight: '1.5' }}>
+                💡 <strong>契約承認ポリシー</strong><br />
+                システム上、契約承認が「未承認」の状態でもスタッフの稼働自体は可能ですが、未承認状態でのトラブルに関して運営会社は一切の責任を負いません。トラブル防止のため、稼働前の相互承認を強く推奨します。
+              </div>
+
+              {/* Status details */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '12px' }}>
+                <div><strong>案件名:</strong> {relatedTask.jobTitle}</div>
+                <div><strong>稼働予定日:</strong> {relatedTask.date}</div>
+                
+                <div style={{ display: 'flex', justifyContent: 'space-between', background: '#F8FAFC', padding: '8px 12px', borderRadius: '6px', border: '1px solid #F1F5F9', marginTop: '4px' }}>
+                  <div>
+                    <strong>甲（発注側）の署名:</strong>{' '}
+                    <span style={{ color: relatedTask.clientContractApprovedByClient ? '#10B981' : '#EF4444', fontWeight: 'bold' }}>
+                      {relatedTask.clientContractApprovedByClient ? '済' : '未'}
+                    </span>
+                  </div>
+                  <div>
+                    <strong>乙（受注側）の署名:</strong>{' '}
+                    <span style={{ color: relatedTask.clientContractApprovedByAgency ? '#10B981' : '#EF4444', fontWeight: 'bold' }}>
+                      {relatedTask.clientContractApprovedByAgency ? '済' : '未'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Document Text */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <strong style={{ fontSize: '12px', color: '#334155' }}>契約書面内容:</strong>
+                <div style={{
+                  border: '1px solid #E2E8F0',
+                  borderRadius: '8px',
+                  padding: '12px',
+                  background: '#F8FAFC',
+                  fontSize: '11px',
+                  lineHeight: '1.6',
+                  fontFamily: 'monospace',
+                  whiteSpace: 'pre-wrap',
+                  maxHeight: '200px',
+                  overflowY: 'auto'
+                }}>
+                  {relatedTask.clientContractText || '契約テンプレートが登録されていません。'}
+                </div>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div style={{ padding: '16px 20px', borderTop: '1px solid #F1F5F9', display: 'flex', justifyContent: 'space-between', gap: '10px', background: '#F8FAFC' }}>
+              <button
+                onClick={() => setShowContractModal(false)}
+                style={{ padding: '8px 16px', borderRadius: '8px', border: '1px solid #E2E8F0', background: '#FFFFFF', color: '#64748B', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer' }}
+              >
+                キャンセル
+              </button>
+              
+              {/* Approval Buttons */}
+              {isClient ? (
+                relatedTask.clientContractApprovedByClient ? (
+                  <button disabled style={{ padding: '8px 16px', borderRadius: '8px', border: 'none', background: '#DEF7EC', color: '#03543F', fontSize: '13px', fontWeight: 'bold', cursor: 'not-allowed' }}>
+                    甲（自社）署名済み
+                  </button>
+                ) : (
+                  <button
+                    onClick={handleSignContract}
+                    style={{ padding: '8px 16px', borderRadius: '8px', border: 'none', background: 'var(--primary-color)', color: '#FFFFFF', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 4px 6px -1px rgba(99, 102, 241, 0.2)' }}
+                  >
+                    甲として署名（承認）する
+                  </button>
+                )
+              ) : (
+                relatedTask.clientContractApprovedByAgency ? (
+                  <button disabled style={{ padding: '8px 16px', borderRadius: '8px', border: 'none', background: '#DEF7EC', color: '#03543F', fontSize: '13px', fontWeight: 'bold', cursor: 'not-allowed' }}>
+                    乙（自社）署名済み
+                  </button>
+                ) : (
+                  <button
+                    onClick={handleSignContract}
+                    style={{ padding: '8px 16px', borderRadius: '8px', border: 'none', background: 'var(--primary-color)', color: '#FFFFFF', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 4px 6px -1px rgba(99, 102, 241, 0.2)' }}
+                  >
+                    乙として署名（承認）する
+                  </button>
+                )
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 企業・スタッフ詳細プロフィールポップアップ */}
+      {showProfileModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(15, 23, 42, 0.6)',
+          backdropFilter: 'blur(8px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 9999,
+          padding: '16px'
+        }}>
+          <div onClick={() => setShowProfileModal(false)} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: -1 }} />
+          <div style={{
+            background: '#FFFFFF',
+            borderRadius: '16px',
+            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+            width: '100%',
+            maxWidth: '350px',
+            maxHeight: '80vh',
+            overflow: 'hidden',
+            display: 'flex',
+            flexDirection: 'column',
+            animation: 'fadeIn 0.2s ease-out'
+          }}>
+            {/* Header */}
+            <div style={{
+              padding: '16px 20px',
+              borderBottom: '1px solid #F1F5F9',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              background: 'linear-gradient(135deg, #EEF2F6 0%, #E2E8F0 100%)'
+            }}>
+              <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 'bold', color: '#1E293B', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span className="material-symbols-outlined" style={{ color: 'var(--primary-color)' }}>
+                  {clickedCompanyProfile ? 'business' : 'person'}
+                </span>
+                {clickedCompanyProfile ? '取引先企業情報' : 'パートナーメンバー情報'}
+              </h3>
+              <button 
+                onClick={() => setShowProfileModal(false)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748B' }}
+              >
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
+
+            {/* Content */}
+            <div style={{ padding: '20px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              {clickedCompanyProfile && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div className="profile-avatar" style={{ width: '48px', height: '48px', fontSize: '18px', borderRadius: '50%' }}>
+                      {clickedCompanyProfile.name.charAt(0)}
+                    </div>
+                    <div>
+                      <h4 style={{ fontSize: '15px', fontWeight: 'bold', margin: 0, color: 'var(--text-main)' }}>{clickedCompanyProfile.name}</h4>
+                      <span style={{ fontSize: '10px', background: '#EFF6FF', color: 'var(--primary)', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold', marginTop: '4px', display: 'inline-block' }}>
+                        {clickedCompanyProfile.companyType === 'client' ? '発注企業' : clickedCompanyProfile.companyType === 'agency' ? '受注企業' : '発注・受注兼任'}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '12px', borderTop: '1px solid #F1F5F9', paddingTop: '12px' }}>
+                    <div><strong>代表者/担当者:</strong> {clickedCompanyProfile.representativeName || '未登録'} ({clickedCompanyProfile.gender || '男性'})</div>
+                    {clickedCompanyProfile.email && <div><strong>メールアドレス:</strong> {clickedCompanyProfile.email}</div>}
+                    <div><strong>電話番号:</strong> {clickedCompanyProfile.phone || '090-1234-5678'}</div>
+                    {clickedCompanyProfile.website && (
+                      <div>
+                        <strong>ホームページ:</strong>{' '}
+                        <a href={clickedCompanyProfile.website} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--primary-color)', textDecoration: 'underline' }}>
+                          {clickedCompanyProfile.website}
+                        </a>
+                      </div>
+                    )}
+                    {clickedCompanyProfile.address && <div><strong>本社所在地:</strong> {clickedCompanyProfile.address}</div>}
+                  </div>
+                  
+                  {clickedCompanyProfile.prText && (
+                    <div style={{ background: '#F8FAFC', padding: '10px 12px', borderRadius: '8px', fontSize: '12px', color: '#475569', lineHeight: '1.5' }}>
+                      <strong>企業紹介・得意分野:</strong>
+                      <p style={{ margin: '4px 0 0 0' }}>{clickedCompanyProfile.prText}</p>
+                    </div>
+                  )}
+                </div>
+              )}
+              
+              {clickedStaffProfile && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div className="profile-avatar bg-blue" style={{ width: '48px', height: '48px', fontSize: '18px', borderRadius: '50%' }}>
+                      {clickedStaffProfile.name.charAt(0)}
+                    </div>
+                    <div>
+                      <h4 style={{ fontSize: '15px', fontWeight: 'bold', margin: 0, color: 'var(--text-main)' }}>
+                        {isClient || activeChat?.status === 'group' || (activeChat?.status as any) === 'contracted' || (activeChat?.status as any) === 'working' || (activeChat?.status as any) === 'completed'
+                          ? clickedStaffProfile.name
+                          : (clickedStaffProfile.maskedName || 'パートナー登録メンバー')}
+                      </h4>
+                      <div style={{ display: 'flex', gap: '4px', marginTop: '4px' }}>
+                        <span style={{ fontSize: '10px', background: '#F1F5F9', color: '#475569', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold' }}>
+                          {clickedStaffProfile.gender || '男性'}
+                        </span>
+                        {clickedStaffProfile.birthday && (
+                          <span style={{ fontSize: '10px', background: '#F1F5F9', color: '#475569', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold' }}>
+                            {new Date().getFullYear() - new Date(clickedStaffProfile.birthday).getFullYear()}歳
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '12px', borderTop: '1px solid #F1F5F9', paddingTop: '12px' }}>
+                    {clickedStaffProfile.baseLocation && <div><strong>活動拠点:</strong> {clickedStaffProfile.baseLocation}</div>}
+                    {clickedStaffProfile.nearestStation && <div><strong>最寄り駅:</strong> {clickedStaffProfile.nearestStation}</div>}
+                    <div><strong>契約単価:</strong> ¥{clickedStaffProfile.price.toLocaleString()} / 日</div>
+                    {clickedStaffProfile.skills && clickedStaffProfile.skills.length > 0 && (
+                      <div><strong>保有スキル:</strong> {clickedStaffProfile.skills.join(', ')}</div>
+                    )}
+                    {clickedStaffProfile.completedTrainings && clickedStaffProfile.completedTrainings.length > 0 && (
+                      <div>
+                        <strong>受講済みの研修:</strong>{' '}
+                        {clickedStaffProfile.completedTrainings.map((tId: string) => {
+                          const tr = allTrainings.find((t: any) => t.id === tId);
+                          return tr ? tr.title : tId;
+                        }).join(', ')}
+                      </div>
+                    )}
+                  </div>
+                  
+                  {clickedStaffProfile.prText && (
+                    <div style={{ background: '#F8FAFC', padding: '10px 12px', borderRadius: '8px', fontSize: '12px', color: '#475569', lineHeight: '1.5' }}>
+                      <strong>自己紹介・経歴:</strong>
+                      <p style={{ margin: '4px 0 0 0' }}>{clickedStaffProfile.prText}</p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div style={{ padding: '16px 20px', borderTop: '1px solid #F1F5F9', display: 'flex', justifyContent: 'flex-end', background: '#F8FAFC' }}>
+              <button
+                onClick={() => setShowProfileModal(false)}
+                style={{ padding: '8px 16px', borderRadius: '8px', border: '1px solid #E2E8F0', background: '#FFFFFF', color: '#64748B', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer' }}
+              >
+                閉じる
+              </button>
             </div>
           </div>
         </div>

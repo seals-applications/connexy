@@ -70,6 +70,22 @@ export function ManagementPage() {
   const [allJobsList, setAllJobsList] = useState<Job[]>([]);
   const [allStaffs, setAllStaffs] = useState<Staff[]>([]);
 
+  const pastTradeCompanyIds = useMemo(() => {
+    if (!currentUser || !tasks) return new Set<string>();
+    const completedTasks = tasks.filter(t => t.status === 'completed');
+    const set = new Set<string>();
+    completedTasks.forEach(t => {
+      const tAgencyId = t.agency_id || (t.companyName?.includes('アルファ') ? 'alpha' : t.companyName?.includes('シグマ') ? 'sigma' : t.companyName?.includes('ベータ') ? 'beta' : t.companyName?.includes('ガンマ') ? 'gamma' : t.companyName?.includes('デルタ') ? 'delta' : t.companyName?.includes('SEALs') ? 'seals' : t.companyName?.includes('FreeR') ? 'freer' : t.companyName?.includes('ココラボ') ? 'cocolabo' : '');
+      const tClientId = t.client_id || (t.clientName?.includes('アルファ') ? 'alpha' : t.clientName?.includes('シグマ') ? 'sigma' : t.clientName?.includes('ベータ') ? 'beta' : t.clientName?.includes('ガンマ') ? 'gamma' : t.clientName?.includes('デルタ') ? 'delta' : t.clientName?.includes('SEALs') ? 'seals' : t.clientName?.includes('FreeR') ? 'freer' : t.clientName?.includes('ココラボ') ? 'cocolabo' : '');
+      if (tAgencyId === currentUser.id) {
+        if (tClientId) set.add(tClientId);
+      } else if (tClientId === currentUser.id) {
+        if (tAgencyId) set.add(tAgencyId);
+      }
+    });
+    return set;
+  }, [currentUser, tasks]);
+
   // Tab/Subpage state
   const isUserAdmin = !currentUser?.staffId || currentUser.staffRole === 'admin';
   const [subPage, setSubPage] = useState<'none' | 'posts' | 'staffs' | 'reports' | 'logs' | 'training'>('none');
@@ -1695,7 +1711,15 @@ export function ManagementPage() {
                 {screeningCandidates.map(c => (
                   <div key={c.company.id} style={{ background: 'white', borderRadius: '12px', border: '1px solid var(--border-color)', padding: '14px', boxShadow: '0 2px 6px rgba(0,0,0,0.01)' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
-                      <strong style={{ fontSize: '14px', color: 'var(--text-main)' }}>{c.company.name}</strong>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                        <strong style={{ fontSize: '14px', color: 'var(--text-main)' }}>{c.company.name}</strong>
+                        {pastTradeCompanyIds.has(c.company.id) && (
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '2px', background: '#D1FAE5', color: '#065F46', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold', fontSize: '9px' }}>
+                            <span className="material-symbols-outlined" style={{ fontSize: '11px' }}>handshake</span>
+                            取引実績あり
+                          </span>
+                        )}
+                      </div>
                       <span style={{ fontSize: '10px', background: '#FEF3C7', color: '#D97706', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold' }}>適合度: {Math.round(c.score)}点</span>
                     </div>
                     <p style={{ margin: '0 0 10px 0', fontSize: '12px', color: 'var(--text-sub)' }}>{c.company.prText}</p>

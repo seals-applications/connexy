@@ -19,6 +19,8 @@ export function SettingsDrawer({ isOpen, onClose, onLogoutSuccess }: SettingsDra
   const [websiteInput, setWebsiteInput] = useState('');
   const [addressInput, setAddressInput] = useState('');
   const [prInput, setPrInput] = useState('');
+  const [genderInput, setGenderInput] = useState<'男性' | '女性' | 'その他' | '無回答'>('男性');
+  const [contractTemplateInput, setContractTemplateInput] = useState('');
 
   useEffect(() => {
     if (isOpen) {
@@ -31,6 +33,8 @@ export function SettingsDrawer({ isOpen, onClose, onLogoutSuccess }: SettingsDra
           setWebsiteInput(user.website || '');
           setAddressInput(user.address || '');
           setPrInput(user.prText || '');
+          setGenderInput((user.gender as any) || '男性');
+          setContractTemplateInput(user.contractTemplate || '');
         }
       };
       loadUser();
@@ -53,12 +57,16 @@ export function SettingsDrawer({ isOpen, onClose, onLogoutSuccess }: SettingsDra
       localStorage.setItem('company_website_' + currentUser.id, websiteInput);
       localStorage.setItem('company_address_' + currentUser.id, addressInput);
       localStorage.setItem('company_pr_' + currentUser.id, prInput);
+      localStorage.setItem('company_gender_' + currentUser.id, genderInput);
+      localStorage.setItem('company_contract_template_' + currentUser.id, contractTemplateInput);
 
       currentUser.representativeName = repNameInput;
       currentUser.email = emailInput;
       currentUser.website = websiteInput;
       currentUser.address = addressInput;
       currentUser.prText = prInput;
+      currentUser.gender = genderInput;
+      currentUser.contractTemplate = contractTemplateInput;
 
       if (!currentUser.staffId) {
         currentUser.staffName = repNameInput;
@@ -302,6 +310,31 @@ export function SettingsDrawer({ isOpen, onClose, onLogoutSuccess }: SettingsDra
                   value={prInput} 
                   onChange={e => setPrInput(e.target.value)} 
                   placeholder="自社の強みや稼働実績を記入してください" 
+                />
+              </div>
+              <div className="form-group" style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <label style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--text-sub)' }}>代表者・担当者の性別</label>
+                <select 
+                  className="form-control" 
+                  style={{ padding: '10px', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'white' }}
+                  value={genderInput} 
+                  onChange={e => setGenderInput(e.target.value as any)}
+                >
+                  <option value="男性">男性</option>
+                  <option value="女性">女性</option>
+                  <option value="その他">その他</option>
+                  <option value="無回答">無回答</option>
+                </select>
+              </div>
+              <div className="form-group" style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <label style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--text-sub)' }}>業務委託契約書テンプレート</label>
+                <textarea 
+                  className="form-control" 
+                  style={{ padding: '10px', borderRadius: '6px', border: '1px solid var(--border-color)', resize: 'vertical', fontFamily: 'monospace', fontSize: '11px' }}
+                  rows={8}
+                  value={contractTemplateInput} 
+                  onChange={e => setContractTemplateInput(e.target.value)} 
+                  placeholder="マッチング時に相手に提示する業務委託契約書の本文を記入してください" 
                 />
               </div>
             </div>

@@ -18,6 +18,8 @@ export interface User {
   address?: string;
   prText?: string;
   companyType?: 'client' | 'agency' | 'both';
+  gender?: '男性' | '女性' | 'その他' | '無回答';
+  contractTemplate?: string;
 }
 
 // 評価(Evaluation)の型定義
@@ -152,6 +154,14 @@ export interface ContractTask {
     byAgencyToStaff?: Evaluation;
     byStaffToField?: Evaluation;
   };
+  agency_id?: string;
+  client_id?: string;
+  clientContractText?: string;
+  clientContractApprovedByClient?: boolean;
+  clientContractApprovedByAgency?: boolean;
+  agencyContractText?: string;
+  agencyContractApprovedByClient?: boolean;
+  agencyContractApprovedByAgency?: boolean;
 }
 
 // 研修マスタ(DBではなく固定データとする)
@@ -453,7 +463,15 @@ const mapContractTask = (row: any): ContractTask => ({
   date: row.date,
   status: row.status,
   disputedReason: row.disputed_reason,
-  evaluations: row.evaluations || {}
+  evaluations: row.evaluations || {},
+  agency_id: row.agency_id,
+  client_id: row.client_id,
+  clientContractText: row.client_contract_text,
+  clientContractApprovedByClient: row.client_contract_approved_by_client,
+  clientContractApprovedByAgency: row.client_contract_approved_by_agency,
+  agencyContractText: row.agency_contract_text,
+  agencyContractApprovedByClient: row.agency_contract_approved_by_client,
+  agencyContractApprovedByAgency: row.agency_contract_approved_by_agency
 });
 
 const unmapContractTask = (task: Partial<ContractTask>): any => {
@@ -464,122 +482,13 @@ const unmapContractTask = (task: Partial<ContractTask>): any => {
   if ('companyName' in task) { row.company_name = task.companyName; delete row.companyName; }
   if ('clientName' in task) { row.client_name = task.clientName; delete row.clientName; }
   if ('disputedReason' in task) { row.disputed_reason = task.disputedReason; delete row.disputedReason; }
+  if ('clientContractText' in task) { row.client_contract_text = task.clientContractText; delete row.clientContractText; }
+  if ('clientContractApprovedByClient' in task) { row.client_contract_approved_by_client = task.clientContractApprovedByClient; delete row.clientContractApprovedByClient; }
+  if ('clientContractApprovedByAgency' in task) { row.client_contract_approved_by_agency = task.clientContractApprovedByAgency; delete row.clientContractApprovedByAgency; }
+  if ('agencyContractText' in task) { row.agency_contract_text = task.agencyContractText; delete row.agencyContractText; }
+  if ('agencyContractApprovedByClient' in task) { row.agency_contract_approved_by_client = task.agencyContractApprovedByClient; delete row.agencyContractApprovedByClient; }
+  if ('agencyContractApprovedByAgency' in task) { row.agency_contract_approved_by_agency = task.agencyContractApprovedByAgency; delete row.agencyContractApprovedByAgency; }
   return row;
-};
-
-const mapUser = (row: any): User => {
-  const localStatus = localStorage.getItem('company_status_' + row.id) as 'pending' | 'approved' | 'rejected' | null;
-  const localInvoice = localStorage.getItem('company_invoice_' + row.id);
-  const localRep = localStorage.getItem('company_rep_' + row.id);
-  const localEmail = localStorage.getItem('company_email_' + row.id);
-  const localWebsite = localStorage.getItem('company_website_' + row.id);
-  const localAddress = localStorage.getItem('company_address_' + row.id);
-  const localPr = localStorage.getItem('company_pr_' + row.id);
-  const localType = localStorage.getItem('company_type_' + row.id) as 'client' | 'agency' | 'both' | null;
-  
-  const defaultReps: { [key: string]: string } = {
-    sigma: 'シグマ 太郎',
-    alpha: 'アルファ 健',
-    beta: 'ベータ 拓也',
-    gamma: 'ガンマ 翔',
-    delta: 'デルタ 大介',
-    seals: '佐藤 海人',
-    freer: '林 克樹',
-    cocolabo: '伊内 美伊'
-  };
-
-  const defaultEmails: { [key: string]: string } = {
-    sigma: 'contact@sigma-comm.co.jp',
-    alpha: 'info@alpha-agency.com',
-    beta: 'support@beta-corp.jp',
-    gamma: 'info@gamma-llc.net',
-    delta: 'contact@delta-partners.jp',
-    seals: 'info@seals-comm.co.jp',
-    freer: 'contact@freer-vision.net',
-    cocolabo: 'support@cocolabo-solutions.com'
-  };
-
-  const defaultWebsites: { [key: string]: string } = {
-    sigma: 'https://sigma-comm.co.jp',
-    alpha: 'https://alpha-agency.com',
-    beta: 'https://beta-corp.jp',
-    gamma: 'https://gamma-llc.net',
-    delta: 'https://delta-partners.jp',
-    seals: 'https://seals-comm.co.jp',
-    freer: 'https://freer-vision.net',
-    cocolabo: 'https://cocolabo-solutions.com'
-  };
-
-  const defaultAddresses: { [key: string]: string } = {
-    sigma: '東京都新宿区西新宿2-8-1',
-    alpha: '東京都品川区大崎1-11-1',
-    beta: '東京都渋谷区渋谷3-21-3',
-    gamma: '神奈川県横浜市中区港町1-1',
-    delta: '埼玉県さいたま市大宮区吉敷町1-1',
-    seals: '東京都品川区西五反田1-5-1',
-    freer: '東京都港区南青山2-2-15',
-    cocolabo: '大阪府大阪市北区梅田2-2-2'
-  };
-
-  const defaultPrs: { [key: string]: string } = {
-    sigma: '全国対応の通信キャリアイベント獲得特化集団。量販店・ショップでの稼働実績多数。',
-    alpha: '光回線・モバイルの獲得に特化した営業支援代理店。経験豊富なクローザーが稼働中。',
-    beta: 'ディレクターやキャンペーンクルーの手配から現場の運営までワンストップで受託します。',
-    gamma: '地域密着型のブース販売と店舗支援が得意です。ドコモ・au等全キャリア対応。',
-    delta: '緊急案件の対応力に強み。週末のショップ応援や臨時イベント要員の供給に自信あり。',
-    seals: '通信キャリアのイベント代行と人材手配。現場の課題にコミットするプロ集団です。',
-    freer: '未来のビジョンをフリーに共創する、モバイル営業代行およびコンサルティング企業。',
-    cocolabo: 'コラボレーションによるイノベーション。通信業界の各種ソリューションをご提案。'
-  };
-
-  const defaultTypes: { [key: string]: 'client' | 'agency' | 'both' } = {
-    sigma: 'both',
-    alpha: 'agency',
-    beta: 'agency',
-    gamma: 'both',
-    delta: 'client',
-    seals: 'both',
-    freer: 'agency',
-    cocolabo: 'both'
-  };
-
-  return {
-    id: row.id,
-    name: row.name,
-    role: row.role,
-    loginId: row.login_id,
-    password: row.password,
-    status: ['sigma', 'alpha', 'beta', 'gamma', 'delta', 'seals', 'freer', 'cocolabo'].includes(row.id) ? 'approved' : (localStatus || row.status || 'approved'),
-    invoiceNumber: localInvoice || row.invoice_number,
-    representativeName: localRep || row.representative_name || defaultReps[row.id] || '未登録',
-    email: localEmail || row.email || defaultEmails[row.id] || '',
-    website: localWebsite || row.website || defaultWebsites[row.id] || '',
-    address: localAddress || row.address || defaultAddresses[row.id] || '',
-    prText: localPr || row.pr_text || defaultPrs[row.id] || '',
-    companyType: localType || row.company_type || defaultTypes[row.id] || 'both'
-  };
-};
-const initializeDefaultStaffLogins = (allStaffsData: any[]) => {
-  const companyGroups: { [key: string]: any[] } = {};
-  allStaffsData.forEach(row => {
-    if (!companyGroups[row.user_id]) companyGroups[row.user_id] = [];
-    companyGroups[row.user_id].push(row);
-  });
-  
-  for (const companyId of Object.keys(companyGroups)) {
-    const sorted = [...companyGroups[companyId]].sort((a, b) => {
-      const idA = a.id !== undefined && a.id !== null ? String(a.id) : '';
-      const idB = b.id !== undefined && b.id !== null ? String(b.id) : '';
-      return idA.localeCompare(idB);
-    });
-    sorted.forEach((row, index) => {
-      const existingLogin = localStorage.getItem('staff_login_' + row.id);
-      if (!existingLogin) {
-        localStorage.setItem('staff_login_' + row.id, `${companyId}_s${index + 1}`);
-        localStorage.setItem('staff_password_' + row.id, 'pass');
-      }
-    });
-  }
 };
 
 // --- OFFLINE LOCAL DB FALLBACK SYSTEM ---
@@ -602,8 +511,8 @@ const getOfflineData = (table: string, defaultData: any[]): any[] => {
       if (Array.isArray(parsed)) {
         let merged = [...parsed];
         let updated = false;
-        defaultData.forEach(defItem => {
-          const exists = merged.some(item => item.id === defItem.id);
+        defaultData.forEach((defItem: any) => {
+          const exists = merged.some((item: any) => item.id === defItem.id);
           if (!exists) {
             merged.push(defItem);
             updated = true;
@@ -629,7 +538,162 @@ const saveOfflineData = (table: string, data: any[]) => {
   }
 };
 
-// Default seed data for offline mode
+// Error wrapper that automatically enables local fallback on failures
+async function callSupabase<T>(apiFn: () => Promise<T>, fallbackFn: () => T | Promise<T>): Promise<T> {
+  if (useOfflineMock) {
+    return await fallbackFn();
+  }
+  try {
+    return await apiFn();
+  } catch (e) {
+    console.warn("Supabase API failed, falling back to local storage offline mock", e);
+    useOfflineMock = true;
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('connexy_is_offline', 'true');
+    }
+    return await fallbackFn();
+  }
+}
+
+const mapUser = (row: any): User => {
+  const localStatus = localStorage.getItem('company_status_' + row.id) as 'pending' | 'approved' | 'rejected' | null;
+  const localInvoice = localStorage.getItem('company_invoice_' + row.id);
+  const localRep = localStorage.getItem('company_rep_' + row.id);
+  const localEmail = localStorage.getItem('company_email_' + row.id);
+  const localWebsite = localStorage.getItem('company_website_' + row.id);
+  const localAddress = localStorage.getItem('company_address_' + row.id);
+  const localPr = localStorage.getItem('company_pr_' + row.id);
+  const localType = localStorage.getItem('company_type_' + row.id) as 'client' | 'agency' | 'both' | null;
+  const localGender = localStorage.getItem('company_gender_' + row.id) as '男性' | '女性' | 'その他' | '無回答' | null;
+  const localContractTemplate = localStorage.getItem('company_contract_template_' + row.id);
+  
+  const defaultReps: { [key: string]: string } = {
+    sigma: 'シグマ 太郎',
+    alpha: 'アルファ 健',
+    beta: 'ベータ 拓也',
+    gamma: 'ガンマ 翔',
+    delta: 'デルタ 大介',
+    seals: '佐藤 海人',
+    freer: '林 克樹',
+    cocolabo: '伊内 美伊'
+  };
+ 
+  const defaultEmails: { [key: string]: string } = {
+    sigma: 'contact@sigma-comm.co.jp',
+    alpha: 'info@alpha-agency.com',
+    beta: 'support@beta-corp.jp',
+    gamma: 'info@gamma-llc.net',
+    delta: 'contact@delta-partners.jp',
+    seals: 'info@seals-comm.co.jp',
+    freer: 'contact@freer-vision.net',
+    cocolabo: 'support@cocolabo-solutions.com'
+  };
+ 
+  const defaultWebsites: { [key: string]: string } = {
+    sigma: 'https://sigma-comm.co.jp',
+    alpha: 'https://alpha-agency.com',
+    beta: 'https://beta-corp.jp',
+    gamma: 'https://gamma-llc.net',
+    delta: 'https://delta-partners.jp',
+    seals: 'https://seals-comm.co.jp',
+    freer: 'https://freer-vision.net',
+    cocolabo: 'https://cocolabo-solutions.com'
+  };
+ 
+  const defaultAddresses: { [key: string]: string } = {
+    sigma: '東京都新宿区西新宿2-8-1',
+    alpha: '東京都品川区大崎1-11-1',
+    beta: '東京都渋谷区渋谷3-21-3',
+    gamma: '神奈川県横浜市中区港町1-1',
+    delta: '埼玉県さいたま市大宮区吉敷町1-1',
+    seals: '東京都品川区西五反田1-5-1',
+    freer: '東京都港区南青山2-2-15',
+    cocolabo: '大阪府大阪市北区梅田2-2-2'
+  };
+ 
+  const defaultPrs: { [key: string]: string } = {
+    sigma: '全国対応の通信キャリアイベント獲得特化集団。量販店・ショップでの稼働実績多数。',
+    alpha: '光回線・モバイルの獲得に特化した営業支援代理店。経験豊富なクローザーが稼働中。',
+    beta: 'ディレクターやキャンペーンクルーの手配から現場の運営までワンストップで受託します。',
+    gamma: '地域密着型のブース販売と店舗支援が得意です。ドコモ・au等全キャリア対応。',
+    delta: '緊急案件の対応力に強み。週末のショップ応援や臨時イベント要員の供給に自信あり。',
+    seals: '通信キャリアのイベント代行と人材手配。現場の課題にコミットするプロ集団です。',
+    freer: '未来のビジョンをフリーに共創する、モバイル営業代行およびコンサルティング企業。',
+    cocolabo: 'コラボレーションによるイノベーション。通信業界の各種ソリューションをご提案。'
+  };
+ 
+  const defaultTypes: { [key: string]: 'client' | 'agency' | 'both' } = {
+    sigma: 'both',
+    alpha: 'agency',
+    beta: 'agency',
+    gamma: 'both',
+    delta: 'client',
+    seals: 'both',
+    freer: 'agency',
+    cocolabo: 'both'
+  };
+ 
+  const defaultContractTemplate = `業務委託契約書
+
+発注者（以下「甲」という）と、受注者（以下「乙」という）は、甲乙間で合意した業務（以下「本業務」という）の委託に関し、以下の通り契約を締結する。
+
+第1条（業務内容）
+乙は、甲の指示に従い、本件案件に関わる業務を善良な管理者の注意をもって遂行する。
+
+第2条（委託期間）
+本契約の有効期間は、該当案件の稼働予定日とし、本業務完了をもって終了する。
+
+第3条（委託料及び支払方法）
+委託料は、本アプリ上で双方合意した金額とし、指定の期日までに乙に支払う。甲は、電子請求書の発行を確認し、所定の手続きを行う。
+
+第4条（自己責任及び免責）
+相互承認が完了していない状態での稼働により生じた一切のトラブル・紛争について、運営会社はその責任を一切負わないものとする。
+
+第5条（管轄裁判所）
+本契約に関連して生じた紛争については、甲の本社所在地を管轄する地方裁判所を第一審の専属的合意管轄裁判所とする。`;
+ 
+  return {
+    id: row.id,
+    name: row.name,
+    role: row.role,
+    loginId: row.login_id,
+    password: row.password,
+    status: ['sigma', 'alpha', 'beta', 'gamma', 'delta', 'seals', 'freer', 'cocolabo'].includes(row.id) ? 'approved' : (localStatus || row.status || 'approved'),
+    invoiceNumber: localInvoice || row.invoice_number,
+    representativeName: localRep || row.representative_name || defaultReps[row.id] || '未登録',
+    email: localEmail || row.email || defaultEmails[row.id] || '',
+    website: localWebsite || row.website || defaultWebsites[row.id] || '',
+    address: localAddress || row.address || defaultAddresses[row.id] || '',
+    prText: localPr || row.pr_text || defaultPrs[row.id] || '',
+    companyType: localType || row.company_type || defaultTypes[row.id] || 'both',
+    gender: localGender || '男性',
+    contractTemplate: localContractTemplate || defaultContractTemplate
+  };
+};
+
+const initializeDefaultStaffLogins = (allStaffsData: any[]) => {
+  const companyGroups: { [key: string]: any[] } = {};
+  allStaffsData.forEach((row: any) => {
+    if (!companyGroups[row.user_id]) companyGroups[row.user_id] = [];
+    companyGroups[row.user_id].push(row);
+  });
+  
+  for (const companyId of Object.keys(companyGroups)) {
+    const sorted = [...companyGroups[companyId]].sort((a, b) => {
+      const idA = a.id !== undefined && a.id !== null ? String(a.id) : '';
+      const idB = b.id !== undefined && b.id !== null ? String(b.id) : '';
+      return idA.localeCompare(idB);
+    });
+    sorted.forEach((row, index) => {
+      const existingLogin = localStorage.getItem('staff_login_' + row.id);
+      if (!existingLogin) {
+        localStorage.setItem('staff_login_' + row.id, companyId + '_s' + (index + 1));
+        localStorage.setItem('staff_password_' + row.id, 'pass');
+      }
+    });
+  }
+};
+
 const defaultOfflineCompanies = [
   { id: 'sigma', name: '株式会社シグマ通信', role: 'contractor', login_id: 'sigma', password: 'pass', status: 'approved', representative_name: 'シグマ 太郎', email: 'contact@sigma-comm.co.jp', address: '東京都新宿区西新宿2-8-1', company_type: 'both' },
   { id: 'alpha', name: '株式会社アルファ', role: 'contractor', login_id: 'alpha', password: 'pass', status: 'approved', representative_name: 'アルファ 健', email: 'info@alpha-agency.com', address: '東京都品川区大崎1-11-1', company_type: 'agency' },
@@ -677,26 +741,9 @@ const defaultOfflineTalents = [
 ];
 
 const defaultOfflineTasks = [
-  { id: 'task1', job_id: 'j1', job_title: '【大崎駅】ドコモショップ出張ブース販売イベント要員', worker_name: 'アルファ 一郎', company_name: '株式会社シグマ通信', client_name: '株式会社シグマ通信', price: 15000, date: '2026-07-20', status: 'working', evaluations: { messages: [] } },
-  { id: 'task2', job_id: 'j2', job_title: '【新宿駅】au・UQモバイルの乗り換え案内スタッフ募集', worker_name: 'シグマ 次郎', company_name: '株式会社アルファ', client_name: '株式会社アルファ', price: 18000, date: '2026-07-22', status: 'applying', evaluations: { messages: [] } }
+  { id: 'task1', job_id: 'j1', job_title: '【大崎駅】ドコモショップ出張ブース販売イベント要員', worker_name: 'アルファ 一郎', company_name: '株式会社アルファ', client_name: '株式会社シグマ通信', price: 15000, date: '2026-07-20', status: 'completed', agency_id: 'alpha', client_id: 'sigma', evaluations: { messages: [] } },
+  { id: 'task2', job_id: 'j2', job_title: '【新宿駅】au・UQモバイルの乗り換え案内スタッフ募集', worker_name: 'シグマ 次郎', company_name: '株式会社シグマ通信', client_name: '株式会社アルファ', price: 18000, date: '2026-07-22', status: 'applying', agency_id: 'sigma', client_id: 'alpha', evaluations: { messages: [] } }
 ];
-
-// Error wrapper that automatically enables local fallback on failures
-async function callSupabase<T>(apiFn: () => Promise<T>, fallbackFn: () => T | Promise<T>): Promise<T> {
-  if (useOfflineMock) {
-    return await fallbackFn();
-  }
-  try {
-    return await apiFn();
-  } catch (err: any) {
-    console.warn('Supabase query failed. Switching to Local Offline Mock Mode:', err);
-    useOfflineMock = true;
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('connexy_is_offline', 'true');
-    }
-    return await fallbackFn();
-  }
-}
 
 export const api = {
   getJobs: async (): Promise<Job[]> => {
@@ -736,7 +783,7 @@ export const api = {
       },
       () => {
         const list = getOfflineData('companies', defaultOfflineCompanies);
-        const found = list.find(c => c.id === id);
+        const found = list.find((c: any) => c.id === id);
         return found ? mapUser(found) : undefined;
       }
     );
@@ -769,14 +816,14 @@ export const api = {
       },
       () => {
         const list = getOfflineData('companies', defaultOfflineCompanies);
-        const found = list.find(c => c.id === userId);
+        const found = list.find((c: any) => c.id === userId);
         if (!found) return null;
         const companyUser = mapUser(found);
         
         const staffId = localStorage.getItem('connexy_current_staff_id');
         if (staffId) {
           const staffs = getOfflineData('staffs', defaultOfflineStaffs);
-          const staffFound = staffs.find(s => s.id === staffId);
+          const staffFound = staffs.find((s: any) => s.id === staffId);
           if (staffFound) {
             const staff = mapStaff(staffFound);
             companyUser.staffId = staff.id;
@@ -834,7 +881,7 @@ export const api = {
       },
       () => {
         const companies = getOfflineData('companies', defaultOfflineCompanies);
-        const comp = companies.find(c => c.login_id === loginId && c.password === password);
+        const comp = companies.find((c: any) => c.login_id === loginId && c.password === password);
         if (comp) {
           localStorage.setItem('connexy_current_user_id', comp.id);
           localStorage.removeItem('connexy_current_staff_id');
@@ -849,7 +896,7 @@ export const api = {
             localStorage.setItem('connexy_current_user_id', staff.userId);
             localStorage.setItem('connexy_current_staff_id', staff.id);
             
-            const comp2 = companies.find(c => c.id === staff.userId);
+            const comp2 = companies.find((c: any) => c.id === staff.userId);
             if (comp2) {
               const user = mapUser(comp2);
               user.staffId = staff.id;
@@ -884,7 +931,7 @@ export const api = {
       () => {
         const list = getOfflineData('staffs', defaultOfflineStaffs);
         initializeDefaultStaffLogins(list);
-        return list.filter(s => s.user_id === userId).map(mapStaff);
+        return list.filter((s: any) => s.user_id === userId).map(mapStaff);
       }
     );
   },
@@ -939,7 +986,7 @@ export const api = {
       },
       () => {
         const list = getOfflineData('jobs', defaultOfflineJobs);
-        const index = list.findIndex(j => j.id === jobId);
+        const index = list.findIndex((j: any) => j.id === jobId);
         if (index !== -1) {
           const rowUpdates = unmapJob(updates);
           delete rowUpdates.id;
@@ -1040,7 +1087,7 @@ export const api = {
       },
       () => {
         const staffs = getOfflineData('staffs', defaultOfflineStaffs);
-        const staffIndex = staffs.findIndex(s => s.id === staffId);
+        const staffIndex = staffs.findIndex((s: any) => s.id === staffId);
         if (staffIndex === -1) return;
         
         const staff = mapStaff(staffs[staffIndex]);
@@ -1128,7 +1175,7 @@ export const api = {
       },
       () => {
         const list = getOfflineData('contract_tasks', defaultOfflineTasks);
-        const index = list.findIndex(t => t.id === taskId);
+        const index = list.findIndex((t: any) => t.id === taskId);
         let evaluations: any = { messages };
         if (index !== -1) {
           const existingEvals = list[index].evaluations || {};
@@ -1167,6 +1214,48 @@ export const api = {
       }
     );
   },
+  updateContractApproval: async (taskId: string, side: 'client' | 'agency', approved: boolean): Promise<void> => {
+    return callSupabase(
+      async () => {
+        const updates: any = {};
+        if (side === 'client') {
+          updates.client_contract_approved_by_client = approved;
+          updates.agency_contract_approved_by_client = approved;
+        } else {
+          updates.client_contract_approved_by_agency = approved;
+          updates.agency_contract_approved_by_agency = approved;
+        }
+        const { error } = await supabase.from('contract_tasks').update(updates).eq('id', taskId);
+        if (error) throw error;
+      },
+      () => {
+        const list = getOfflineData('contract_tasks', defaultOfflineTasks);
+        const index = list.findIndex((t: any) => t.id === taskId);
+        if (index !== -1) {
+          if (side === 'client') {
+            list[index].clientContractApprovedByClient = approved;
+            list[index].agencyContractApprovedByClient = approved;
+          } else {
+            list[index].clientContractApprovedByAgency = approved;
+            list[index].agencyContractApprovedByAgency = approved;
+          }
+          saveOfflineData('contract_tasks', list);
+        }
+      }
+    );
+  },
+
+  hasPastTransaction: async (cId1: string, cId2: string): Promise<boolean> => {
+    if (!cId1 || !cId2 || cId1 === cId2) return false;
+    const tasks = getOfflineData('contract_tasks', defaultOfflineTasks);
+    return tasks.some((t: any) => {
+      const isCompleted = t.status === 'completed';
+      if (!isCompleted) return false;
+      const tAgencyId = t.agency_id || (t.company_name?.includes('アルファ') ? 'alpha' : t.company_name?.includes('シグマ') ? 'sigma' : t.company_name?.includes('ベータ') ? 'beta' : t.company_name?.includes('ガンマ') ? 'gamma' : t.company_name?.includes('デルタ') ? 'delta' : t.company_name?.includes('SEALs') ? 'seals' : t.company_name?.includes('FreeR') ? 'freer' : t.company_name?.includes('ココラボ') ? 'cocolabo' : '');
+      const tClientId = t.client_id || (t.client_name?.includes('アルファ') ? 'alpha' : t.client_name?.includes('シグマ') ? 'sigma' : t.client_name?.includes('ベータ') ? 'beta' : t.client_name?.includes('ガンマ') ? 'gamma' : t.client_name?.includes('デルタ') ? 'delta' : t.client_name?.includes('SEALs') ? 'seals' : t.client_name?.includes('FreeR') ? 'freer' : t.client_name?.includes('ココラボ') ? 'cocolabo' : '');
+      return (tAgencyId === cId1 && tClientId === cId2) || (tAgencyId === cId2 && tClientId === cId1);
+    });
+  },
 
   updateContractTaskStatus: async (taskId: string, status: 'applying' | 'offered' | 'working' | 'report_pending' | 'completed' | 'disputed' | 'rejected', additionalEvals?: any): Promise<void> => {
     return callSupabase(
@@ -1181,7 +1270,7 @@ export const api = {
       },
       () => {
         const list = getOfflineData('contract_tasks', defaultOfflineTasks);
-        const index = list.findIndex(t => t.id === taskId);
+        const index = list.findIndex((t: any) => t.id === taskId);
         if (index !== -1) {
           let evaluations = list[index].evaluations || {};
           if (additionalEvals) {
@@ -1256,7 +1345,7 @@ export const api = {
           try {
             const { data: staffsData } = await supabase.from('staffs').select('*');
             if (staffsData) {
-              const staffRow = staffsData.find(s => s.name === task.workerName);
+              const staffRow = staffsData.find((s: any) => s.name === task.workerName);
               if (staffRow) {
                 const staff = mapStaff(staffRow);
                 const nowStr = new Date().toISOString().split('T')[0];
@@ -1275,7 +1364,7 @@ export const api = {
       },
       async () => {
         const list = getOfflineData('contract_tasks', defaultOfflineTasks);
-        const index = list.findIndex(t => t.id === taskId);
+        const index = list.findIndex((t: any) => t.id === taskId);
         if (index === -1) throw new Error('Task not found');
         const task = mapContractTask(list[index]);
 
@@ -1303,7 +1392,7 @@ export const api = {
 
         if (target === 'byClient' && hasLateness !== undefined) {
           const staffs = getOfflineData('staffs', defaultOfflineStaffs);
-          const staffIndex = staffs.findIndex(s => s.name === task.workerName);
+          const staffIndex = staffs.findIndex((s: any) => s.name === task.workerName);
           if (staffIndex !== -1) {
             const staff = mapStaff(staffs[staffIndex]);
             const nowStr = new Date().toISOString().split('T')[0];
@@ -1344,7 +1433,7 @@ export const api = {
       },
       async () => {
         const list = getOfflineData('contract_tasks', defaultOfflineTasks);
-        const index = list.findIndex(t => t.id === taskId);
+        const index = list.findIndex((t: any) => t.id === taskId);
         if (index === -1) throw new Error('Task not found');
         const task = mapContractTask(list[index]);
 
@@ -1436,7 +1525,7 @@ export const api = {
       },
       () => {
         const list = getOfflineData('staffs', defaultOfflineStaffs);
-        const index = list.findIndex(s => s.id === staffId);
+        const index = list.findIndex((s: any) => s.id === staffId);
         if (index !== -1) {
           list[index].role = role;
           saveOfflineData('staffs', list);
@@ -1465,19 +1554,19 @@ export const api = {
         }
 
         if ('furigana' in staff) {
-          completedTrainings = completedTrainings.filter(t => !t.startsWith('STAFF_FURIGANA_'));
+          completedTrainings = completedTrainings.filter((t: any) => !t.startsWith('STAFF_FURIGANA_'));
           if (staff.furigana) completedTrainings.push('STAFF_FURIGANA_' + staff.furigana);
         }
         if ('commuteMethod' in staff) {
-          completedTrainings = completedTrainings.filter(t => !t.startsWith('STAFF_COMMUTE_'));
+          completedTrainings = completedTrainings.filter((t: any) => !t.startsWith('STAFF_COMMUTE_'));
           if (staff.commuteMethod) completedTrainings.push('STAFF_COMMUTE_' + staff.commuteMethod);
         }
         if ('gender' in staff) {
-          completedTrainings = completedTrainings.filter(t => !t.startsWith('STAFF_GENDER_'));
+          completedTrainings = completedTrainings.filter((t: any) => !t.startsWith('STAFF_GENDER_'));
           if (staff.gender) completedTrainings.push('STAFF_GENDER_' + staff.gender);
         }
         if ('birthday' in staff) {
-          completedTrainings = completedTrainings.filter(t => !t.startsWith('STAFF_BIRTHDAY_'));
+          completedTrainings = completedTrainings.filter((t: any) => !t.startsWith('STAFF_BIRTHDAY_'));
           if (staff.birthday) completedTrainings.push('STAFF_BIRTHDAY_' + staff.birthday);
         }
 
@@ -1495,24 +1584,24 @@ export const api = {
       },
       () => {
         const list = getOfflineData('staffs', defaultOfflineStaffs);
-        const index = list.findIndex(s => s.id === staffId);
+        const index = list.findIndex((s: any) => s.id === staffId);
         if (index === -1) return;
 
         let completedTrainings: string[] = list[index].completed_trainings || [];
         if ('furigana' in staff) {
-          completedTrainings = completedTrainings.filter(t => !t.startsWith('STAFF_FURIGANA_'));
+          completedTrainings = completedTrainings.filter((t: any) => !t.startsWith('STAFF_FURIGANA_'));
           if (staff.furigana) completedTrainings.push('STAFF_FURIGANA_' + staff.furigana);
         }
         if ('commuteMethod' in staff) {
-          completedTrainings = completedTrainings.filter(t => !t.startsWith('STAFF_COMMUTE_'));
+          completedTrainings = completedTrainings.filter((t: any) => !t.startsWith('STAFF_COMMUTE_'));
           if (staff.commuteMethod) completedTrainings.push('STAFF_COMMUTE_' + staff.commuteMethod);
         }
         if ('gender' in staff) {
-          completedTrainings = completedTrainings.filter(t => !t.startsWith('STAFF_GENDER_'));
+          completedTrainings = completedTrainings.filter((t: any) => !t.startsWith('STAFF_GENDER_'));
           if (staff.gender) completedTrainings.push('STAFF_GENDER_' + staff.gender);
         }
         if ('birthday' in staff) {
-          completedTrainings = completedTrainings.filter(t => !t.startsWith('STAFF_BIRTHDAY_'));
+          completedTrainings = completedTrainings.filter((t: any) => !t.startsWith('STAFF_BIRTHDAY_'));
           if (staff.birthday) completedTrainings.push('STAFF_BIRTHDAY_' + staff.birthday);
         }
 
@@ -1532,7 +1621,7 @@ export const api = {
       },
       () => {
         const list = getOfflineData('companies', defaultOfflineCompanies);
-        const index = list.findIndex(c => c.id === companyId);
+        const index = list.findIndex((c: any) => c.id === companyId);
         if (index !== -1) {
           list[index].status = status;
           saveOfflineData('companies', list);
@@ -1548,7 +1637,7 @@ export const api = {
         if (error || !staffs) return;
         for (const sRow of staffs) {
           const staff = mapStaff(sRow);
-          const attendanceLogs = (staff.completedTrainings || []).filter(t => t.startsWith('ATTENDANCE_LOG_'));
+          const attendanceLogs = (staff.completedTrainings || []).filter((t: any) => t.startsWith('ATTENDANCE_LOG_'));
           if (attendanceLogs.length >= 8) continue;
 
           const newLogs: string[] = [];
@@ -1568,7 +1657,7 @@ export const api = {
             newLogs.push(`ATTENDANCE_LOG_${date}_${randTime}_${isLate ? 'LATE' : 'OK'}`);
           });
 
-          const cleanTrainings = (staff.completedTrainings || []).filter(t => !t.startsWith('ATTENDANCE_LOG_'));
+          const cleanTrainings = (staff.completedTrainings || []).filter((t: any) => !t.startsWith('ATTENDANCE_LOG_'));
           const updatedTrainings = [...cleanTrainings, ...newLogs];
           
           await supabase.from('staffs').update({ completed_trainings: updatedTrainings }).eq('id', staff.id);
@@ -1578,7 +1667,7 @@ export const api = {
         const staffs = getOfflineData('staffs', defaultOfflineStaffs);
         for (let i = 0; i < staffs.length; i++) {
           const staff = mapStaff(staffs[i]);
-          const attendanceLogs = (staff.completedTrainings || []).filter(t => t.startsWith('ATTENDANCE_LOG_'));
+          const attendanceLogs = (staff.completedTrainings || []).filter((t: any) => t.startsWith('ATTENDANCE_LOG_'));
           if (attendanceLogs.length >= 8) continue;
 
           const newLogs: string[] = [];
@@ -1598,7 +1687,7 @@ export const api = {
             newLogs.push(`ATTENDANCE_LOG_${date}_${randTime}_${isLate ? 'LATE' : 'OK'}`);
           });
 
-          const cleanTrainings = (staff.completedTrainings || []).filter(t => !t.startsWith('ATTENDANCE_LOG_'));
+          const cleanTrainings = (staff.completedTrainings || []).filter((t: any) => !t.startsWith('ATTENDANCE_LOG_'));
           staffs[i].completed_trainings = [...cleanTrainings, ...newLogs];
         }
         saveOfflineData('staffs', staffs);
