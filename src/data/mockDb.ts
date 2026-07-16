@@ -1,4 +1,6 @@
 import { supabase } from '../lib/supabase';
+import { encryptData, decryptData } from '../lib/crypto';
+import { regionalJobs } from './regionalJobs';
 
 // ユーザーの型定義
 export interface User {
@@ -425,7 +427,7 @@ const mapStaff = (row: any): Staff => {
     hasCertificate: row.has_certificate,
     role: localRole || row.role || 'staff',
     loginId: localLogin || row.login_id || '',
-    password: localPassword || row.password || '',
+    password: decryptData(localPassword || row.password) || '',
     furigana,
     commuteMethod,
     gender,
@@ -445,6 +447,7 @@ const unmapStaff = (staff: Partial<Staff>): any => {
   if ('hasCertificate' in staff) { row.has_certificate = staff.hasCertificate; delete row.hasCertificate; }
   if ('role' in staff) { row.role = staff.role; }
   if ('loginId' in staff) { row.login_id = staff.loginId; delete row.loginId; }
+  if ('password' in staff) { row.password = encryptData(staff.password); delete row.password; }
 
   // Strip custom fields
   delete row.furigana;
@@ -818,6 +821,7 @@ const generate100RandomJobs = (): any[] => {
 };
 
 const defaultOfflineJobs = [
+  ...regionalJobs,
   { id: 'j1', title: '【大崎駅】ドコモショップ出張ブース販売イベント要員', description: 'ドコモショップ出張イベントでのブース案内・獲得業務です。経験者優遇。', author_id: 'sigma', price: 15000, location_name: '東京都品川区大崎', work_hours: '10:00 - 19:00', requirements: ['__JOB_CODE__::JOB-100201'], role_type: 'キャンペーンクルー', sales_channel: 'ショップ', carrier: 'docomo', event_date: '2026-07-20', application_deadline: '2026-07-18', work_location: '外販（複合施設など）', is_urgent: true },
   { id: 'j2', title: '【新宿駅】au・UQモバイルの乗り換え案内スタッフ募集', description: '量販店店頭でのau・UQモバイル乗り換え案内クロージング業務です。', author_id: 'alpha', price: 18000, location_name: '東京都新宿区新宿', work_hours: '10:00 - 19:00', requirements: ['__JOB_CODE__::JOB-100202'], role_type: 'クローザー', sales_channel: '量販店', carrier: 'au/UQmobile', event_date: '2026-07-22', application_deadline: '2026-07-20', work_location: '店内', is_urgent: false },
   { id: 'j3', title: '【渋谷駅】ソフトバンク・ワイモバイルの臨時イベントMC/クルー', description: '店舗前ブースでのチラシ・ノベルティ配布、およびマイクMC進行。未経験歓迎！', author_id: 'beta', price: 14000, location_name: '東京都渋谷区渋谷', work_hours: '11:00 - 20:00', requirements: ['__JOB_CODE__::JOB-100203'], role_type: 'キャンペーンクルー', sales_channel: 'ショップ', carrier: 'SoftBank/Y!mobile', event_date: '2026-07-21', application_deadline: '2026-07-19', work_location: '外販（スーパーなど）', is_urgent: false },

@@ -198,10 +198,13 @@ export function MessagePage() {
 
   const maskContactInfo = (text: string) => {
     if (activeChat?.status === 'contracted' || activeChat?.status === 'group') return text;
-    let masked = text.replace(/[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+/g, '[連絡先はマッチング完了まで非公開です]');
-    masked = masked.replace(/0\d{1,4}-\d{1,4}-\d{3,4}/g, '[連絡先はマッチング完了まで非公開です]');
-    masked = masked.replace(/0[789]0\d{8}/g, '[連絡先はマッチング完了まで非公開です]');
-    masked = masked.replace(/line\.me\/\S+/g, '[連絡先はマッチング完了まで非公開です]');
+    let masked = text;
+    // Email addresses
+    masked = masked.replace(/[a-zA-Z0-9_.+-]+[\s　]*@[\s　]*[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+/g, '[連絡先はマッチング完了まで非公開です]');
+    // Phone numbers (with or without hyphens/spaces, matching 10-11 digits)
+    masked = masked.replace(/(?:0\d{1,4}[-\s　]?\d{1,4}[-\s　]?\d{3,4}|0[789]0[-\s　]?\d{4}[-\s　]?\d{4})/g, '[連絡先はマッチング完了まで非公開です]');
+    // LINE ID and Links
+    masked = masked.replace(/(?:line\.me\/\S+|(?:LINE|ライン)\s*ID\s*[:：]?\s*[a-zA-Z0-9_.-]+)/gi, '[連絡先はマッチング完了まで非公開です]');
     return masked;
   };
 
