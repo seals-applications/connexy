@@ -5,7 +5,7 @@ import { api } from '../data/mockDb';
 import type { Job, Talent, Staff, Training, User, ContractTask } from '../data/mockDb';
 import { CalendarPicker } from '../components/CalendarPicker';
 import { formatJobDates } from '../utils/dateFormatter';
-import { generateMaskedLocation, extractArea } from '../utils/maskingUtils';
+import { generateMaskedLocation, extractArea, getCommonAreaName } from '../utils/maskingUtils';
 import Autocomplete from 'react-google-autocomplete';
 
 export const getStaffGender = (name: string): '男性' | '女性' => {
@@ -3326,7 +3326,7 @@ export function SearchPage() {
 
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
             <span style={{ fontSize: '15px', fontWeight: 'bold', color: 'var(--text-main)' }}>
-              {selectedMapJobs.length > 0 ? extractArea(selectedMapJobs[0].locationName || '') : 'このエリア'}の募集: {selectedMapJobs.length}件
+              {selectedMapJobs.length > 0 ? getCommonAreaName(selectedMapJobs.map(j => j.locationName || '')) : 'このエリア'}の募集: {selectedMapJobs.length}件
             </span>
             <button 
               onClick={() => setSelectedMapJobs(null)}
@@ -3456,7 +3456,7 @@ export function SearchPage() {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
             <div>
               <span style={{ fontSize: '15px', fontWeight: 'bold', color: 'var(--text-main)', display: 'block' }}>
-                {selectedMapTalents.locationName}
+                {getCommonAreaName(selectedMapTalents.talents.map(t => t.locationName || ''))}
               </span>
               <span style={{ fontSize: '12px', color: '#10B981', fontWeight: 'bold' }}>
                 対応可能な人材: {selectedMapTalents.talents.length}名
