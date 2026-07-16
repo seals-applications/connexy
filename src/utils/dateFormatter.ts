@@ -5,11 +5,13 @@ export function formatJobDates(dateStr: string | undefined): string {
   if (dates.length === 0) return '';
   if (dates.length === 1) return formatDate(dates[0]);
 
-  // Convert to Date objects
+  // Convert to Date objects and filter out invalid dates
   const dateObjs = dates.map(d => ({
     str: d,
-    obj: new Date(d)
-  }));
+    obj: new Date(d.replace(/\//g, '-')) // handle slash format if present
+  })).filter(d => !isNaN(d.obj.getTime()));
+
+  if (dateObjs.length === 0) return dateStr;
 
   let result = '';
   let streakStart = dateObjs[0];
@@ -41,9 +43,9 @@ export function formatJobDates(dateStr: string | undefined): string {
 }
 
 function formatDate(dateStr: string): string {
-  const parts = dateStr.split('-');
-  if (parts.length !== 3) return dateStr;
-  return `${parseInt(parts[1], 10)}/${parseInt(parts[2], 10)}`;
+  const d = new Date(dateStr.replace(/\//g, '-'));
+  if (isNaN(d.getTime())) return dateStr;
+  return `${d.getMonth() + 1}/${d.getDate()}`;
 }
 
 function formatStreak(start: {str: string}, end: {str: string}, streak: number): string {

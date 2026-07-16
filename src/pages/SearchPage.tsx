@@ -7,10 +7,12 @@ import { CalendarPicker } from '../components/CalendarPicker';
 import { formatJobDates } from '../utils/dateFormatter';
 import { generateMaskedLocation, extractArea, getCommonAreaName } from '../utils/maskingUtils';
 import Autocomplete from 'react-google-autocomplete';
+import { useSessionState } from '../hooks/useSessionState';
 
 export const getStaffGender = (name: string): '男性' | '女性' => {
   const femaleNames = ['舞', '優花', '陽子', '沙織', '美咲', '愛', '結衣', '莉子', '咲良', '葵', 'さくら', 'つばさ'];
-  const isFemale = femaleNames.some(fn => name.includes(fn));
+  const firstName = name.split(/[\s　]+/)[1] || name;
+  const isFemale = femaleNames.includes(firstName) || firstName.endsWith('子') || firstName.endsWith('美');
   return isFemale ? '女性' : '男性';
 };
 
@@ -22,15 +24,16 @@ export function SearchPage() {
   const advancedMarkerClassRef = useRef<any>(null);
   const infoWindowClassRef = useRef<any>(null);
   const [isMapLoaded, setIsMapLoaded] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [mapZoom, setMapZoom] = useState(14);
 
-  const [mode, setMode] = useState<'talent' | 'job'>('job');
-  const [viewMode, setViewMode] = useState<'map' | 'list'>('map');
+  const [mode, setMode] = useSessionState<'talent' | 'job'>('connexy_mode', 'job');
+  const [viewMode, setViewMode] = useSessionState<'map' | 'list'>('connexy_viewMode', 'map');
   
   const [jobs, setJobs] = useState<Job[]>([]);
   const [talents, setTalents] = useState<Talent[]>([]);
   const [contractTasks, setContractTasks] = useState<ContractTask[]>([]);
-  const [filterArea, setFilterArea] = useState<string>('all');
+  const [filterArea, setFilterArea] = useSessionState<string>('connexy_filterArea', 'all');
   const [allTrainings, setAllTrainings] = useState<Training[]>([]);
 
   const [selectedTalent, setSelectedTalent] = useState<Talent | null>(null);
@@ -86,22 +89,22 @@ export function SearchPage() {
 
   // フィルター・ソート用State
   const [isFilterSheetOpen, setIsFilterSheetOpen] = useState(false);
-  const [searchKeyword, setSearchKeyword] = useState<string>('');
-  const [tempKeyword, setTempKeyword] = useState<string>('');
+  const [searchKeyword, setSearchKeyword] = useSessionState<string>('connexy_searchKeyword', '');
+  const [tempKeyword, setTempKeyword] = useState<string>(searchKeyword);
   
   // 案件用フィルター & ソート
-  const [jobSortOrder, setJobSortOrder] = useState<'newest' | 'priceHigh' | 'dateNear'>('newest');
-  const [filterJobRoles, setFilterJobRoles] = useState<string[]>([]);
-  const [filterCarriers, setFilterCarriers] = useState<string[]>([]);
-  const [filterChannels, setFilterChannels] = useState<string[]>([]);
-  const [filterMinPrice, setFilterMinPrice] = useState<number>(0);
-  const [filterDeadlineDays, setFilterDeadlineDays] = useState<number | null>(null);
+  const [jobSortOrder, setJobSortOrder] = useSessionState<'newest' | 'priceHigh' | 'dateNear'>('connexy_jobSortOrder', 'newest');
+  const [filterJobRoles, setFilterJobRoles] = useSessionState<string[]>('connexy_filterJobRoles', []);
+  const [filterCarriers, setFilterCarriers] = useSessionState<string[]>('connexy_filterCarriers', []);
+  const [filterChannels, setFilterChannels] = useSessionState<string[]>('connexy_filterChannels', []);
+  const [filterMinPrice, setFilterMinPrice] = useSessionState<number>('connexy_filterMinPrice', 0);
+  const [filterDeadlineDays, setFilterDeadlineDays] = useSessionState<number | null>('connexy_filterDeadlineDays', null);
   
   // 人材用フィルター & ソート
-  const [talentSortOrder, setTalentSortOrder] = useState<'priceLow' | 'priceHigh'>('priceLow');
-  const [filterTalentSkills, setFilterTalentSkills] = useState<string[]>([]);
-  const [filterTalentCarriers, setFilterTalentCarriers] = useState<string[]>([]);
-  const [filterTalentTrainings, setFilterTalentTrainings] = useState<string[]>([]);
+  const [talentSortOrder, setTalentSortOrder] = useSessionState<'priceLow' | 'priceHigh'>('connexy_talentSortOrder', 'priceLow');
+  const [filterTalentSkills, setFilterTalentSkills] = useSessionState<string[]>('connexy_filterTalentSkills', []);
+  const [filterTalentCarriers, setFilterTalentCarriers] = useSessionState<string[]>('connexy_filterTalentCarriers', []);
+  const [filterTalentTrainings, setFilterTalentTrainings] = useSessionState<string[]>('connexy_filterTalentTrainings', []);
 
   useEffect(() => {
     if (isFilterSheetOpen) {
@@ -148,32 +151,36 @@ export function SearchPage() {
 
   // selectedJobDatesの変更に応じてdailyPricesのキーを更新
   useEffect(() => {
-    const nextPrices = { ...dailyPrices };
-    // 新しく選択された日付があれば追加
-    selectedJobDates.forEach(date => {
-      if (!(date in nextPrices)) {
-        nextPrices[date] = commonPrice || 0;
-      }
+    setDailyPrices(prev => {
+      const nextPrices = { ...prev };
+      // 新しく選択された日付があれば追加
+      selectedJobDates.forEach(date => {
+        if (!(date in nextPrices)) {
+          nextPrices[date] = commonPrice || 0;
+        }
+      });
+      // 選択解除された日付があれば削除
+      Object.keys(nextPrices).forEach(date => {
+        if (!selectedJobDates.includes(date)) {
+          delete nextPrices[date];
+        }
+      });
+      return nextPrices;
     });
-    // 選択解除された日付があれば削除
-    Object.keys(nextPrices).forEach(date => {
-      if (!selectedJobDates.includes(date)) {
-        delete nextPrices[date];
-      }
-    });
-    setDailyPrices(nextPrices);
-  }, [selectedJobDates]);
+  }, [selectedJobDates]); // commonPrice は初回追加時のみ使用するため依存に含めない
 
   // 全日程同一価格が有効な場合、commonPriceの変更を全ての日程に同期
   useEffect(() => {
     if (isSamePriceAllDates) {
-      const nextPrices: { [date: string]: number } = {};
-      selectedJobDates.forEach(date => {
-        nextPrices[date] = commonPrice;
+      setDailyPrices(prev => {
+        const nextPrices: { [date: string]: number } = {};
+        Object.keys(prev).forEach(date => {
+          nextPrices[date] = commonPrice;
+        });
+        return nextPrices;
       });
-      setDailyPrices(nextPrices);
     }
-  }, [commonPrice, isSamePriceAllDates, selectedJobDates]);
+  }, [commonPrice, isSamePriceAllDates]);
 
   // 案件情報複製処理（コピーして新規作成）
   const handleDuplicateJob = (job: Job) => {
@@ -259,27 +266,27 @@ export function SearchPage() {
         return (
           <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
             <span style={{ display: 'flex', alignItems: 'baseline' }}>
-              <span className="job-price" style={{ fontSize: '16px' }}>¥{minPrice.toLocaleString()}</span>
+              <span className="job-price" style={{ fontSize: '16px' }}>¥{minPrice?.toLocaleString()}</span>
               <span className="job-price-unit" style={{ fontSize: '10px', color: 'var(--text-sub)' }}>/ 日</span>
             </span>
-            <span style={{ fontSize: '11px', color: '#1E40AF', fontWeight: 'bold' }}>合計 ¥{job.price.toLocaleString()}</span>
+            <span style={{ fontSize: '11px', color: '#1E40AF', fontWeight: 'bold' }}>合計 ¥{job.price?.toLocaleString()}</span>
           </span>
         );
       } else {
         return (
           <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
             <span style={{ display: 'flex', alignItems: 'baseline' }}>
-              <span className="job-price" style={{ fontSize: '14px' }}>¥{minPrice.toLocaleString()}〜{maxPrice.toLocaleString()}</span>
+              <span className="job-price" style={{ fontSize: '14px' }}>¥{minPrice?.toLocaleString()}〜{maxPrice?.toLocaleString()}</span>
               <span className="job-price-unit" style={{ fontSize: '10px', color: 'var(--text-sub)' }}>/ 日</span>
             </span>
-            <span style={{ fontSize: '11px', color: '#1E40AF', fontWeight: 'bold' }}>合計 ¥{job.price.toLocaleString()}</span>
+            <span style={{ fontSize: '11px', color: '#1E40AF', fontWeight: 'bold' }}>合計 ¥{job.price?.toLocaleString()}</span>
           </span>
         );
       }
     }
     return (
       <>
-        <span className="job-price">¥{job.price.toLocaleString()}</span>
+        <span className="job-price">¥{job.price?.toLocaleString()}</span>
         <span className="job-price-unit">/ 日</span>
       </>
     );
@@ -475,6 +482,7 @@ export function SearchPage() {
     let resizeObserver: ResizeObserver | null = null;
     let initObserver: ResizeObserver | null = null;
     let isCleanedUp = false;
+    let currentLocMarker: any = null;
 
     const initMap = async () => {
       try {
@@ -535,6 +543,7 @@ export function SearchPage() {
                 content: currentLocPin,
                 title: '現在地',
               });
+              currentLocMarker = marker;
 
               const infoWindow = new InfoWindow({
                 content: '<b>現在地</b>'
@@ -611,6 +620,8 @@ export function SearchPage() {
         }
       } catch (error) {
         console.error('データの取得に失敗しました', error);
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -624,7 +635,18 @@ export function SearchPage() {
       if (initObserver) {
         initObserver.disconnect();
       }
-      mapRef.current = null;
+      if (currentLocMarker) {
+        if ((window as any).google?.maps?.event) {
+          (window as any).google.maps.event.clearInstanceListeners(currentLocMarker);
+        }
+        currentLocMarker.map = null;
+      }
+      if (mapRef.current) {
+        if ((window as any).google?.maps?.event) {
+          (window as any).google.maps.event.clearInstanceListeners(mapRef.current);
+        }
+        mapRef.current = null;
+      }
     };
   }, []);
 
@@ -734,20 +756,28 @@ export function SearchPage() {
     };
   }, [isSelectingLocationOnMap]);
 
+  const latestJobsRef = useRef(jobs);
+  const latestTalentsRef = useRef(talents);
+  const latestUserRef = useRef(currentUser);
+
+  useEffect(() => { latestJobsRef.current = jobs; }, [jobs]);
+  useEffect(() => { latestTalentsRef.current = talents; }, [talents]);
+  useEffect(() => { latestUserRef.current = currentUser; }, [currentUser]);
+
   // talentsやjobsが更新されたときにドキュメントレベルのイベントリスナーを設定
   useEffect(() => {
     const handleDocumentClick = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
       if (target && target.classList.contains('view-profile-btn')) {
         const talentId = target.getAttribute('data-id');
-        const talent = talents.find(t => t.id === talentId);
+        const talent = latestTalentsRef.current.find(t => t.id === talentId);
         if (talent) setSelectedTalent(talent);
       } else if (target && target.classList.contains('view-job-btn')) {
         const jobId = target.getAttribute('data-id');
-        const job = jobs.find(j => j.id === jobId);
+        const job = latestJobsRef.current.find(j => j.id === jobId);
         if (job) {
-          if (currentUser?.status === 'pending') {
-            alert('本人確認書類（登記簿等）の審査中です。\n審査完了後に詳細情報が閲覧可能になります。');
+          if (latestUserRef.current?.status === 'pending') {
+            alert('本人確認書類（登記簿等）の審査中です。\\n審査完了後に詳細情報が閲覧可能になります。');
             return;
           }
           setSelectedJob(job);
@@ -765,7 +795,7 @@ export function SearchPage() {
     };
     document.addEventListener('click', handleDocumentClick);
     return () => document.removeEventListener('click', handleDocumentClick);
-  }, [talents, jobs, currentUser]);
+  }, []);
 
   // 人材をフィルタリング＆ソートする
   const filteredTalents = useMemo(() => {
@@ -902,11 +932,13 @@ export function SearchPage() {
       // 8. 締切フィルター＆期限切れ非表示
       let remainingDays = 999;
       if (job.applicationDeadline) {
-        const dl = new Date(job.applicationDeadline);
-        const today = new Date();
-        dl.setHours(0, 0, 0, 0);
-        today.setHours(0, 0, 0, 0);
-        remainingDays = Math.ceil((dl.getTime() - today.getTime()) / (1000 * 3600 * 24));
+        const dl = new Date(job.applicationDeadline.replace(/\//g, '-'));
+        if (!isNaN(dl.getTime())) {
+          const today = new Date();
+          dl.setHours(0, 0, 0, 0);
+          today.setHours(0, 0, 0, 0);
+          remainingDays = Math.ceil((dl.getTime() - today.getTime()) / (1000 * 3600 * 24));
+        }
       }
 
       if (remainingDays < 0) {
@@ -1070,6 +1102,9 @@ export function SearchPage() {
 
     // Clear existing markers
     markersRef.current.forEach((m) => {
+      if ((window as any).google?.maps?.event) {
+        (window as any).google.maps.event.clearInstanceListeners(m);
+      }
       m.map = null;
     });
     markersRef.current = [];
@@ -1685,7 +1720,7 @@ export function SearchPage() {
                       ))}
                       {filterMinPrice > 0 && (
                         <div className="filter-chip">
-                          <span>¥{filterMinPrice.toLocaleString()}以上</span>
+                          <span>¥{filterMinPrice?.toLocaleString()}以上</span>
                           <button onClick={() => setFilterMinPrice(0)}>
                             <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>close</span>
                           </button>
@@ -1773,7 +1808,16 @@ export function SearchPage() {
           </div>
 
           <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {mode === 'job' ? (
+            {isLoading ? (
+              Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="card" style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <div className="skeleton" style={{ height: '24px', width: '70%' }}></div>
+                  <div className="skeleton" style={{ height: '16px', width: '40%' }}></div>
+                  <div className="skeleton" style={{ height: '16px', width: '50%' }}></div>
+                  <div className="skeleton" style={{ height: '40px', width: '100%', marginTop: '8px' }}></div>
+                </div>
+              ))
+            ) : mode === 'job' ? (
               sortedJobs.length > 0 ? (
                 sortedJobs.map(job => {
                   let remainingDaysText = '';
@@ -1931,7 +1975,7 @@ export function SearchPage() {
                             <div className="job-stat-item">
                               <span className="job-stat-label">単価</span>
                               <span className="job-stat-value">
-                                <span className="job-price" style={{ color: '#10B981' }}>¥{talent.price.toLocaleString()}</span>
+                                <span className="job-price" style={{ color: '#10B981' }}>¥{talent.price?.toLocaleString()}</span>
                                 <span className="job-price-unit">/ 日〜</span>
                               </span>
                             </div>
@@ -2032,7 +2076,7 @@ export function SearchPage() {
                   <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>monetization_on</span>
                   希望単価
                 </h3>
-                <p style={{ margin: 0, fontSize: '16px', fontWeight: 'bold' }}>¥{selectedTalent.price.toLocaleString()} <span style={{ fontSize: '12px', fontWeight: 'normal', color: 'var(--text-sub)' }}>/ 日〜</span></p>
+                <p style={{ margin: 0, fontSize: '16px', fontWeight: 'bold' }}>¥{selectedTalent.price?.toLocaleString()} <span style={{ fontSize: '12px', fontWeight: 'normal', color: 'var(--text-sub)' }}>/ 日〜</span></p>
               </div>
 
               <div style={{ background: 'var(--surface-color)', padding: '16px', marginTop: '8px', borderTop: '1px solid var(--border-color)', borderBottom: '1px solid var(--border-color)' }}>
@@ -2132,17 +2176,17 @@ export function SearchPage() {
                       {Object.entries(selectedJob.dailyPrices).sort((a, b) => a[0].localeCompare(b[0])).map(([date, dailyPrice]) => (
                         <div key={date} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
                           <span style={{ color: 'var(--text-main)' }}>{date}</span>
-                          <span style={{ fontWeight: 'bold', color: 'var(--text-main)' }}>¥{dailyPrice.toLocaleString()} / 日</span>
+                          <span style={{ fontWeight: 'bold', color: 'var(--text-main)' }}>¥{dailyPrice?.toLocaleString()} / 日</span>
                         </div>
                       ))}
                       <div style={{ borderTop: '1px solid #E2E8F0', paddingTop: '8px', marginTop: '4px', display: 'flex', justifyContent: 'space-between', fontSize: '14px', fontWeight: 'bold', color: 'var(--primary)' }}>
                         <span>想定支払額合計</span>
-                        <span>¥{selectedJob.price.toLocaleString()}</span>
+                        <span>¥{selectedJob.price?.toLocaleString()}</span>
                       </div>
                     </div>
                   </div>
                 ) : (
-                  <p style={{ margin: 0, fontSize: '18px', fontWeight: 'bold', color: 'var(--primary)' }}>¥{selectedJob.price.toLocaleString()} <span style={{ fontSize: '12px', fontWeight: 'normal', color: 'var(--text-main)' }}>/ 日</span></p>
+                  <p style={{ margin: 0, fontSize: '18px', fontWeight: 'bold', color: 'var(--primary)' }}>¥{selectedJob.price?.toLocaleString()} <span style={{ fontSize: '12px', fontWeight: 'normal', color: 'var(--text-main)' }}>/ 日</span></p>
                 )}
 
                 {/* 交通費・宿泊費の別途表示 */}
@@ -2158,7 +2202,7 @@ export function SearchPage() {
                             {(() => {
                               const t = selectedJob.expenses.transportType;
                               const val = selectedJob.expenses.transportValue;
-                              if (t === 'pay_separate') return val && val > 0 ? `あり（別途支給・上限 ${val.toLocaleString()}円 / 日）` : 'あり（別途支給・上限なし）';
+                              if (t === 'pay_separate') return val && val > 0 ? `あり（別途支給・上限 ${val?.toLocaleString()}円 / 日）` : 'あり（別途支給・上限なし）';
                               if (t === 'arranged') return 'あり（こちらで手配）';
                               if (t === 'flat') return `一律 ${val?.toLocaleString()}円 / 日`;
                               return `実費支給（上限 ${val?.toLocaleString()}円 / 日）`;
@@ -2174,7 +2218,7 @@ export function SearchPage() {
                             {(() => {
                               const t = selectedJob.expenses.accommodationType;
                               const val = selectedJob.expenses.accommodationValue;
-                              if (t === 'pay_separate') return val && val > 0 ? `あり（別途支給・上限 ${val.toLocaleString()}円 / 泊）` : 'あり（別途支給・上限なし）';
+                              if (t === 'pay_separate') return val && val > 0 ? `あり（別途支給・上限 ${val?.toLocaleString()}円 / 泊）` : 'あり（別途支給・上限なし）';
                               if (t === 'arranged') return 'あり（こちらで手配）';
                               if (t === 'flat') return `一律 ${val?.toLocaleString()}円 / 泊`;
                               return `実費支給（上限 ${val?.toLocaleString()}円 / 泊）`;
@@ -2885,7 +2929,7 @@ export function SearchPage() {
                       案件の想定総支払額 (仮押さえ額)
                     </div>
                     <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#1E3A8A' }}>
-                      ¥ {Object.values(dailyPrices).reduce((sum, val) => sum + val, 0).toLocaleString()}
+                      ¥ {Object.values(dailyPrices).reduce((sum, val) => sum + val, 0)?.toLocaleString()}
                       <span style={{ fontSize: '11px', fontWeight: 'normal', color: '#475569', marginLeft: '4px' }}>
                         ({selectedJobDates.length}日間分)
                       </span>
@@ -3367,7 +3411,7 @@ export function SearchPage() {
                     <span className="badge-role" style={{ fontSize: '10px', padding: '2px 6px' }}>{job.roleType}</span>
                   </div>
                   <div className="job-price" style={{ fontSize: '15px' }}>
-                    <span className="price-num">¥{job.price.toLocaleString()}</span>
+                    <span className="price-num">¥{job.price?.toLocaleString()}</span>
                     <span className="price-unit">/日</span>
                   </div>
                 </div>
