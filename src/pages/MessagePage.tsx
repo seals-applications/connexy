@@ -1444,7 +1444,7 @@ export function MessagePage() {
     
     return (
       <div className="receipt-card" style={{ 
-        background: '#FFFFFF', 
+        background: 'var(--surface-color)', 
         border: isApproved ? '2px solid #10B981' : '2px dashed #F59E0B', 
         borderRadius: '12px', 
         padding: '14px', 
@@ -1583,7 +1583,7 @@ export function MessagePage() {
     
     return (
       <div className="arrangement-card" style={{ 
-        background: '#FFFFFF', 
+        background: 'var(--surface-color)', 
         border: '2px solid #3B82F6', 
         borderRadius: '12px', 
         padding: '14px', 
@@ -1625,7 +1625,7 @@ export function MessagePage() {
     
     return (
       <div className="photo-card" style={{ 
-        background: '#FFFFFF', 
+        background: 'var(--surface-color)', 
         border: '1px solid #E2E8F0', 
         borderRadius: '12px', 
         overflow: 'hidden',
@@ -1654,7 +1654,7 @@ export function MessagePage() {
     
     return (
       <div className="location-card" style={{ 
-        background: '#FFFFFF', 
+        background: 'var(--surface-color)', 
         border: '2px solid #F59E0B', 
         borderRadius: '12px', 
         padding: '12px', 
@@ -2101,7 +2101,7 @@ export function MessagePage() {
                     ) : (
                       <div className="message-bubble">
                         {msg.isProposal ? (
-                          <div className="contract-card" style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '8px', padding: '12px', width: '220px' }}>
+                          <div className="contract-card" style={{ background: 'var(--surface-color)', border: '1px solid #E2E8F0', borderRadius: '8px', padding: '12px', width: '220px' }}>
                             <div className="contract-header" style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 'bold', color: 'var(--primary-color)', marginBottom: '8px' }}>
                               <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>description</span>
                               <span style={{ fontSize: '13px' }}>電子発注書</span>
@@ -2122,7 +2122,7 @@ export function MessagePage() {
                             )}
                           </div>
                         ) : msg.isOffer ? (
-                          <div style={{ background: '#FFFFFF', border: '1px solid #FEF3C7', borderRadius: '12px', padding: '14px', width: '230px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)', boxSizing: 'border-box' }}>
+                          <div style={{ background: 'var(--surface-color)', border: '1px solid #FEF3C7', borderRadius: '12px', padding: '14px', width: '230px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)', boxSizing: 'border-box' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 'bold', color: '#D97706', marginBottom: '10px' }}>
                               <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>workspace_premium</span>
                               <span style={{ fontSize: '13px' }}>内定通知オファー</span>
@@ -2194,7 +2194,7 @@ export function MessagePage() {
                     ) : (
                       <div className="message-bubble">
                         {msg.isProposal ? (
-                          <div className="contract-card" style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '8px', padding: '12px', width: '220px' }}>
+                          <div className="contract-card" style={{ background: 'var(--surface-color)', border: '1px solid #E2E8F0', borderRadius: '8px', padding: '12px', width: '220px' }}>
                             <div className="contract-header" style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 'bold', color: 'var(--primary-color)', marginBottom: '8px' }}>
                               <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>description</span>
                               <span style={{ fontSize: '13px' }}>電子発注書</span>
@@ -2215,7 +2215,7 @@ export function MessagePage() {
                             )}
                           </div>
                         ) : msg.isOffer ? (
-                          <div style={{ background: '#FFFFFF', border: '1px solid #FEF3C7', borderRadius: '12px', padding: '14px', width: '230px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)', boxSizing: 'border-box' }}>
+                          <div style={{ background: 'var(--surface-color)', border: '1px solid #FEF3C7', borderRadius: '12px', padding: '14px', width: '230px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)', boxSizing: 'border-box' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 'bold', color: '#D97706', marginBottom: '10px' }}>
                               <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>workspace_premium</span>
                               <span style={{ fontSize: '13px' }}>内定通知オファー</span>
@@ -2238,7 +2238,7 @@ export function MessagePage() {
                                 setShowOfferModal(true);
                               }}
                               style={{
-                                background: '#FFFFFF',
+                                background: 'var(--surface-color)',
                                 color: '#D97706',
                                 border: '1px solid #D97706',
                                 padding: '8px 12px',
@@ -2552,7 +2552,7 @@ export function MessagePage() {
           padding: '16px'
         }}>
           <div style={{
-            background: '#FFFFFF',
+            background: 'var(--surface-color)',
             borderRadius: '16px',
             boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
             width: '100%',
@@ -2638,7 +2638,7 @@ export function MessagePage() {
                   padding: '8px 16px',
                   borderRadius: '8px',
                   border: '1px solid #E2E8F0',
-                  background: '#FFFFFF',
+                  background: 'var(--surface-color)',
                   color: '#64748B',
                   fontSize: '13px',
                   fontWeight: 'bold',
@@ -2669,7 +2669,7 @@ export function MessagePage() {
           padding: '16px'
         }}>
           <div style={{
-            background: '#FFFFFF',
+            background: 'var(--surface-color)',
             borderRadius: '16px',
             boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
             width: '100%',
@@ -2783,7 +2783,7 @@ export function MessagePage() {
                             padding: '12px',
                             borderRadius: '8px',
                             border: '1px solid #EF4444',
-                            background: '#FFFFFF',
+                            background: 'var(--surface-color)',
                             color: '#EF4444',
                             fontSize: '14px',
                             fontWeight: 'bold',
@@ -2874,7 +2874,7 @@ export function MessagePage() {
                         padding: '12px',
                         borderRadius: '8px',
                         border: '1px solid #E2E8F0',
-                        background: '#FFFFFF',
+                        background: 'var(--surface-color)',
                         color: '#64748B',
                         fontSize: '14px',
                         fontWeight: 'bold',
@@ -2936,7 +2936,7 @@ export function MessagePage() {
                         padding: '12px',
                         borderRadius: '8px',
                         border: '1px solid #E2E8F0',
-                        background: '#FFFFFF',
+                        background: 'var(--surface-color)',
                         color: '#64748B',
                         fontSize: '14px',
                         fontWeight: 'bold',
@@ -2991,7 +2991,7 @@ export function MessagePage() {
           padding: '16px'
         }}>
           <div style={{
-            background: '#FFFFFF',
+            background: 'var(--surface-color)',
             borderRadius: '16px',
             boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
             width: '100%',
@@ -3119,7 +3119,7 @@ export function MessagePage() {
             <div style={{ padding: '16px 20px', borderTop: '1px solid #F1F5F9', display: 'flex', justifyContent: 'space-between', gap: '10px', background: '#F8FAFC' }}>
               <button
                 onClick={() => setShowContractModal(false)}
-                style={{ padding: '8px 16px', borderRadius: '8px', border: '1px solid #E2E8F0', background: '#FFFFFF', color: '#64748B', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer' }}
+                style={{ padding: '8px 16px', borderRadius: '8px', border: '1px solid #E2E8F0', background: 'var(--surface-color)', color: '#64748B', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer' }}
               >
                 キャンセル
               </button>
@@ -3175,7 +3175,7 @@ export function MessagePage() {
         }}>
           <div onClick={() => setShowProfileModal(false)} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: -1 }} />
           <div style={{
-            background: '#FFFFFF',
+            background: 'var(--surface-color)',
             borderRadius: '16px',
             boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
             width: '100%',
@@ -3306,7 +3306,7 @@ export function MessagePage() {
             <div style={{ padding: '16px 20px', borderTop: '1px solid #F1F5F9', display: 'flex', justifyContent: 'flex-end', background: '#F8FAFC' }}>
               <button
                 onClick={() => setShowProfileModal(false)}
-                style={{ padding: '8px 16px', borderRadius: '8px', border: '1px solid #E2E8F0', background: '#FFFFFF', color: '#64748B', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer' }}
+                style={{ padding: '8px 16px', borderRadius: '8px', border: '1px solid #E2E8F0', background: 'var(--surface-color)', color: '#64748B', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer' }}
               >
                 閉じる
               </button>
@@ -3331,7 +3331,7 @@ export function MessagePage() {
           padding: '16px'
         }}>
           <div style={{
-            background: 'white',
+            background: 'var(--surface-color)',
             borderRadius: '12px',
             padding: '20px',
             width: '100%',
@@ -3686,7 +3686,7 @@ export function MessagePage() {
                   padding: '10px',
                   borderRadius: '6px',
                   border: '1px solid #E2E8F0',
-                  background: 'white',
+                  background: 'var(--surface-color)',
                   fontSize: '13px',
                   fontWeight: 'bold',
                   cursor: 'pointer'
@@ -3734,7 +3734,7 @@ export function MessagePage() {
           padding: '16px'
         }}>
           <div style={{
-            background: 'white',
+            background: 'var(--surface-color)',
             borderRadius: '12px',
             padding: '20px',
             width: '100%',
@@ -3824,7 +3824,7 @@ export function MessagePage() {
                   padding: '10px',
                   borderRadius: '6px',
                   border: '1px solid #E2E8F0',
-                  background: 'white',
+                  background: 'var(--surface-color)',
                   fontSize: '13px',
                   fontWeight: 'bold',
                   cursor: 'pointer'
@@ -3872,7 +3872,7 @@ export function MessagePage() {
           padding: '16px'
         }}>
           <div style={{
-            background: 'white',
+            background: 'var(--surface-color)',
             borderRadius: '12px',
             padding: '20px',
             width: '100%',
@@ -3969,7 +3969,7 @@ export function MessagePage() {
                    padding: '10px',
                    borderRadius: '6px',
                    border: '1px solid #E2E8F0',
-                   background: 'white',
+                   background: 'var(--surface-color)',
                    fontSize: '13px',
                    fontWeight: 'bold',
                    cursor: 'pointer'
@@ -4018,7 +4018,7 @@ export function MessagePage() {
             padding: '16px'
           }}>
             <div style={{
-              background: 'white',
+              background: 'var(--surface-color)',
               borderRadius: '16px',
               padding: '24px',
               width: '100%',
@@ -4251,7 +4251,7 @@ export function MessagePage() {
             padding: '16px'
           }}>
             <div style={{
-              background: 'white',
+              background: 'var(--surface-color)',
               borderRadius: '16px',
               padding: '24px',
               width: '100%',

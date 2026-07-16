@@ -314,14 +314,14 @@ export function ManagementPage() {
       <>
         {/* Staff filter dropdown */}
         {isUserAdmin && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'white', padding: '10px 14px', borderRadius: '12px', border: '1px solid var(--border-color)', marginBottom: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--surface-color)', padding: '10px 14px', borderRadius: '12px', border: '1px solid var(--border-color)', marginBottom: '12px' }}>
             <span className="material-symbols-outlined" style={{ fontSize: '18px', color: 'var(--text-sub)' }}>filter_alt</span>
             <span style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--text-main)' }}>スタッフ絞り込み:</span>
             {calendarType === 'own_staff' ? (
               <select
                 value={calendarFilterStaffId}
                 onChange={e => setCalendarFilterStaffId(e.target.value)}
-                style={{ flex: 1, padding: '6px 10px', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'white', fontSize: '12px', color: 'var(--text-main)' }}
+                style={{ flex: 1, padding: '6px 10px', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'var(--surface-color)', fontSize: '12px', color: 'var(--text-main)' }}
               >
                 <option value="all">全員を表示</option>
                 {companyStaffs.map(s => (
@@ -332,7 +332,7 @@ export function ManagementPage() {
               <select
                 value={calendarFilterOtherCompanyName}
                 onChange={e => setCalendarFilterOtherCompanyName(e.target.value)}
-                style={{ flex: 1, padding: '6px 10px', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'white', fontSize: '12px', color: 'var(--text-main)' }}
+                style={{ flex: 1, padding: '6px 10px', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'var(--surface-color)', fontSize: '12px', color: 'var(--text-main)' }}
               >
                 <option value="all">すべての会社を表示</option>
                 {otherCompaniesOnOurJobs.map(name => (
@@ -344,7 +344,7 @@ export function ManagementPage() {
         )}
 
         {/* Calendar Selector / Month switcher */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'white', padding: '12px 16px', borderRadius: '12px', border: '1px solid var(--border-color)', marginBottom: '16px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--surface-color)', padding: '12px 16px', borderRadius: '12px', border: '1px solid var(--border-color)', marginBottom: '16px' }}>
           <button 
             type="button"
             onClick={() => {
@@ -383,7 +383,7 @@ export function ManagementPage() {
         </div>
 
         {/* Calendar Grid */}
-        <div style={{ background: 'white', borderRadius: '16px', border: '1px solid var(--border-color)', padding: '12px', boxShadow: '0 2px 10px rgba(0,0,0,0.02)', marginBottom: '16px' }}>
+        <div style={{ background: 'var(--surface-color)', borderRadius: '16px', border: '1px solid var(--border-color)', padding: '12px', boxShadow: '0 2px 10px rgba(0,0,0,0.02)', marginBottom: '16px' }}>
           {/* Weekdays */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', textAlign: 'center', borderBottom: '1px solid #F1F5F9', paddingBottom: '8px', marginBottom: '8px' }}>
             {['日', '月', '火', '水', '木', '金', '土'].map((d, idx) => {
@@ -486,7 +486,7 @@ export function ManagementPage() {
               const dayTasks = getTasksForDate(selectedCalendarDate, calendarType);
               if (dayTasks.length === 0) {
                 return (
-                  <div style={{ textAlign: 'center', padding: '20px', background: 'white', borderRadius: '12px', color: 'var(--text-sub)', fontSize: '12px', border: '1px solid var(--border-color)' }}>
+                  <div style={{ textAlign: 'center', padding: '20px', background: 'var(--surface-color)', borderRadius: '12px', color: 'var(--text-sub)', fontSize: '12px', border: '1px solid var(--border-color)' }}>
                     この日のアサイン予定はありません。
                   </div>
                 );
@@ -499,7 +499,7 @@ export function ManagementPage() {
                   <div 
                     key={task.id} 
                     style={{ 
-                      background: 'white', 
+                      background: 'var(--surface-color)', 
                       borderRadius: '12px', 
                       padding: '14px', 
                       border: '1px solid var(--border-color)', 
@@ -1017,7 +1017,7 @@ export function ManagementPage() {
           </div>
 
           {/* iOS-Style Menu Card */}
-          <div style={{ background: 'white', borderRadius: '16px', border: '1px solid var(--border-color)', overflow: 'hidden', boxShadow: '0 2px 10px rgba(0,0,0,0.03)' }}>
+          <div style={{ background: 'var(--surface-color)', borderRadius: '16px', border: '1px solid var(--border-color)', overflow: 'hidden', boxShadow: '0 2px 10px rgba(0,0,0,0.03)' }}>
             {menuItems.map((item, idx) => (
               <div 
                 key={item.id}
@@ -1151,7 +1151,7 @@ export function ManagementPage() {
                     const isOffered = tasks.some(t => t.jobId === job.id && t.status === 'offered');
                     
                     return (
-                      <div key={job.id} style={{ background: 'white', borderRadius: '12px', border: '1px solid var(--border-color)', boxShadow: '0 2px 6px rgba(0,0,0,0.02)', overflow: 'hidden' }}>
+                      <div key={job.id} style={{ background: 'var(--surface-color)', borderRadius: '12px', border: '1px solid var(--border-color)', boxShadow: '0 2px 6px rgba(0,0,0,0.02)', overflow: 'hidden' }}>
                         <div onClick={() => setExpandedJobId(isExpanded ? null : job.id)} style={{ padding: '14px', cursor: 'pointer', display: 'flex', gap: '12px', justifyContent: 'space-between' }}>
                           <div style={{ flex: 1 }}>
                             <div style={{ display: 'flex', gap: '6px', marginBottom: '6px', flexWrap: 'wrap' }}>
@@ -1195,7 +1195,7 @@ export function ManagementPage() {
                             <div><strong>📍 勤務エリア:</strong> {job.locationName || '未指定'} ({job.exactLocation || '住所詳細なし'})</div>
                             <div><strong>📅 開催日日程:</strong> {(job.eventDate ? job.eventDate.split(', ') : []).join(', ')}</div>
                             <div><strong>💼 条件:</strong> {job.roleType} / {job.carrier} / {job.salesChannel}</div>
-                            {job.detailedDescription && <div><strong>📝 詳細内容:</strong> <div style={{ background: 'white', padding: '8px', borderRadius: '6px', border: '1px solid #E2E8F0', marginTop: '4px', whiteSpace: 'pre-wrap' }}>{job.detailedDescription}</div></div>}
+                            {job.detailedDescription && <div><strong>📝 詳細内容:</strong> <div style={{ background: 'var(--surface-color)', padding: '8px', borderRadius: '6px', border: '1px solid #E2E8F0', marginTop: '4px', whiteSpace: 'pre-wrap' }}>{job.detailedDescription}</div></div>}
                             
                             {job.status !== 'cancelled' && !isPast && !isContracted && (
                               <div style={{ display: 'flex', justifyContent: 'flex-end', borderTop: '1px solid #E2E8F0', paddingTop: '10px', marginTop: '4px' }}>
@@ -1210,7 +1210,7 @@ export function ManagementPage() {
                     );
                   })}
                   {myJobs.length === 0 && (
-                    <div style={{ textAlign: 'center', padding: '24px', background: 'white', borderRadius: '12px', color: 'var(--text-sub)', fontSize: '13px' }}>
+                    <div style={{ textAlign: 'center', padding: '24px', background: 'var(--surface-color)', borderRadius: '12px', color: 'var(--text-sub)', fontSize: '13px' }}>
                       現在掲載している案件はありません。
                     </div>
                   )}
@@ -1239,7 +1239,7 @@ export function ManagementPage() {
                 <button onClick={() => setShowAddStaffOverlay(true)} className="btn-primary" style={{ flex: 1, padding: '10px', borderRadius: '8px', fontSize: '13px', border: 'none', background: 'var(--primary)', color: 'white', fontWeight: 'bold', cursor: 'pointer' }}>
                   スタッフを追加
                 </button>
-                <button onClick={() => { setStaffRoles(Object.fromEntries(companyStaffs.map(s => [s.id, s.role || 'staff']))); setShowRoleOverlay(true); }} className="btn-secondary" style={{ flex: 1, padding: '10px', borderRadius: '8px', fontSize: '13px', border: '1px solid #CBD5E1', background: 'white', color: '#475569', fontWeight: 'bold', cursor: 'pointer' }}>
+                <button onClick={() => { setStaffRoles(Object.fromEntries(companyStaffs.map(s => [s.id, s.role || 'staff']))); setShowRoleOverlay(true); }} className="btn-secondary" style={{ flex: 1, padding: '10px', borderRadius: '8px', fontSize: '13px', border: '1px solid #CBD5E1', background: 'var(--surface-color)', color: '#475569', fontWeight: 'bold', cursor: 'pointer' }}>
                   権限を一括管理
                 </button>
               </div>
@@ -1249,7 +1249,7 @@ export function ManagementPage() {
               </h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 {companyStaffs.map(s => (
-                  <div key={s.id} style={{ background: 'white', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div key={s.id} style={{ background: 'var(--surface-color)', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div>
                       <div style={{ fontSize: '14px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
                         <span>{s.name}</span>
@@ -1295,7 +1295,7 @@ export function ManagementPage() {
             <h3 className="section-title" style={{ marginTop: 0 }}>業務完了報告・評価待ち</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '20px' }}>
               {relatedTasks.filter(t => t.status === 'report_pending' || t.status === 'disputed').map(task => (
-                <div key={task.id} style={{ background: 'white', borderRadius: '12px', padding: '16px', border: task.status === 'disputed' ? '1px solid #FCA5A5' : '1px solid var(--border-color)' }}>
+                <div key={task.id} style={{ background: 'var(--surface-color)', borderRadius: '12px', padding: '16px', border: task.status === 'disputed' ? '1px solid #FCA5A5' : '1px solid var(--border-color)' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
                     <span style={{ fontSize: '10px', padding: '2px 8px', borderRadius: '10px', background: task.status === 'disputed' ? '#FEE2E2' : '#FFF7ED', color: task.status === 'disputed' ? '#991B1B' : '#C2410C', fontWeight: 'bold' }}>
                       {task.status === 'disputed' ? '差戻し対応待ち' : '未報告'}
@@ -1322,7 +1322,7 @@ export function ManagementPage() {
                 </div>
               ))}
               {relatedTasks.filter(t => t.status === 'report_pending' || t.status === 'disputed').length === 0 && (
-                <div style={{ textAlign: 'center', padding: '16px', background: 'white', borderRadius: '12px', color: 'var(--text-sub)', fontSize: '12px' }}>
+                <div style={{ textAlign: 'center', padding: '16px', background: 'var(--surface-color)', borderRadius: '12px', color: 'var(--text-sub)', fontSize: '12px' }}>
                   現在報告待ちのタスクはありません。
                 </div>
               )}
@@ -1336,7 +1336,7 @@ export function ManagementPage() {
                 const bothEvaluated = !!evalClient && !!evalWorker;
 
                 return (
-                  <div key={task.id} style={{ background: 'white', borderRadius: '12px', padding: '14px', border: '1px solid var(--border-color)' }}>
+                  <div key={task.id} style={{ background: 'var(--surface-color)', borderRadius: '12px', padding: '14px', border: '1px solid var(--border-color)' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: 'var(--text-sub)', marginBottom: '4px' }}>
                       <span>確定完了</span>
                       <span>{task.date}</span>
@@ -1415,14 +1415,14 @@ export function ManagementPage() {
           ) : (
             <div>
               <h3 className="section-title" style={{ marginTop: 0 }}>年月と対象の指定</h3>
-              <div style={{ background: 'white', padding: '16px', borderRadius: '12px', border: '1px solid var(--border-color)', marginBottom: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div style={{ background: 'var(--surface-color)', padding: '16px', borderRadius: '12px', border: '1px solid var(--border-color)', marginBottom: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 {isUserAdmin && companyStaffs.length > 0 && (
                   <div>
                     <label style={{ fontSize: '11px', color: 'var(--text-sub)', fontWeight: 'bold', display: 'block', marginBottom: '4px' }}>スタッフを選択</label>
                     <select 
                       value={selectedHistoryStaffId || ''} 
                       onChange={e => setSelectedHistoryStaffId(e.target.value)} 
-                      style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'white' }}
+                      style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'var(--surface-color)' }}
                     >
                       {companyStaffs.map(s => (
                         <option key={s.id} value={s.id}>{s.name} ({s.role === 'admin' ? '管理者' : '一般'})</option>
@@ -1440,14 +1440,14 @@ export function ManagementPage() {
                 <div style={{ display: 'flex', gap: '10px' }}>
                   <div style={{ flex: 1 }}>
                     <label style={{ fontSize: '11px', color: 'var(--text-sub)', fontWeight: 'bold', display: 'block', marginBottom: '4px' }}>年</label>
-                    <select value={selectedHistoryYear} onChange={e => setSelectedHistoryYear(Number(e.target.value))} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'white' }}>
+                    <select value={selectedHistoryYear} onChange={e => setSelectedHistoryYear(Number(e.target.value))} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'var(--surface-color)' }}>
                       <option value="2026">2026年</option>
                       <option value="2025">2025年</option>
                     </select>
                   </div>
                   <div style={{ flex: 1 }}>
                     <label style={{ fontSize: '11px', color: 'var(--text-sub)', fontWeight: 'bold', display: 'block', marginBottom: '4px' }}>月</label>
-                    <select value={selectedHistoryMonth} onChange={e => setSelectedHistoryMonth(Number(e.target.value))} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'white' }}>
+                    <select value={selectedHistoryMonth} onChange={e => setSelectedHistoryMonth(Number(e.target.value))} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'var(--surface-color)' }}>
                       {Array.from({ length: 12 }, (_, i) => i + 1).map(m => (
                         <option key={m} value={m}>{m}月</option>
                       ))}
@@ -1487,7 +1487,7 @@ export function ManagementPage() {
                         const jCode = task ? allJobsList.find(j => j.id === task.jobId)?.jobCode : null;
 
                         return (
-                          <div key={idx} style={{ background: 'white', padding: '12px 14px', borderRadius: '8px', border: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <div key={idx} style={{ background: 'var(--surface-color)', padding: '12px 14px', borderRadius: '8px', border: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <div>
                               <div style={{ fontWeight: 'bold', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                                 <span>{log.date}</span>
@@ -1502,7 +1502,7 @@ export function ManagementPage() {
                         );
                       })}
                       {filteredLogs.length === 0 && (
-                        <div style={{ textAlign: 'center', padding: '16px', background: 'white', borderRadius: '12px', color: 'var(--text-sub)', fontSize: '12px' }}>
+                        <div style={{ textAlign: 'center', padding: '16px', background: 'var(--surface-color)', borderRadius: '12px', color: 'var(--text-sub)', fontSize: '12px' }}>
                           打刻データはありません。
                         </div>
                       )}
@@ -1528,7 +1528,7 @@ export function ManagementPage() {
           <main className="list-area bg-gray" style={{ flex: 1, overflowY: 'auto', padding: '16px', paddingBottom: '90px' }}>
             <div>
               <h3 className="section-title" style={{ marginTop: 0 }}>受講済みの研修バッジ</h3>
-              <div style={{ background: 'white', padding: '16px', borderRadius: '12px', border: '1px solid var(--border-color)', marginBottom: '16px' }}>
+              <div style={{ background: 'var(--surface-color)', padding: '16px', borderRadius: '12px', border: '1px solid var(--border-color)', marginBottom: '16px' }}>
                 <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
                   {myStaff?.completedTrainings && myStaff.completedTrainings.filter(t => !t.startsWith('ATTENDANCE_LOG_') && !t.startsWith('CHECKIN_STATUS_')).length > 0 ? (
                     myStaff.completedTrainings
@@ -1552,7 +1552,7 @@ export function ManagementPage() {
                 {trainings.map(tr => {
                   const isCompleted = myStaff?.completedTrainings?.includes(tr.id);
                   return (
-                    <div key={tr.id} style={{ background: 'white', padding: '14px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
+                    <div key={tr.id} style={{ background: 'var(--surface-color)', padding: '14px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
                       <strong style={{ fontSize: '13px', display: 'block', color: 'var(--text-main)' }}>{tr.title}</strong>
                       
                       {isCompleted ? (
@@ -1678,7 +1678,7 @@ export function ManagementPage() {
             <main className="list-area bg-gray" style={{ flex: 1, overflowY: 'auto', padding: '16px', paddingBottom: '90px' }}>
               
               {/* Job summary */}
-              <div style={{ background: 'white', padding: '12px 16px', borderRadius: '12px', border: '1px solid var(--border-color)', marginBottom: '16px' }}>
+              <div style={{ background: 'var(--surface-color)', padding: '12px 16px', borderRadius: '12px', border: '1px solid var(--border-color)', marginBottom: '16px' }}>
                 <span style={{ fontSize: '10px', background: '#EFF6FF', color: 'var(--primary)', padding: '2px 8px', borderRadius: '10px', fontWeight: 'bold' }}>対象案件</span>
                 <h3 style={{ margin: '6px 0 0 0', fontSize: '15px', fontWeight: 'bold' }}>{activeScreeningJob.title}</h3>
                 <div style={{ fontSize: '11px', color: 'var(--text-sub)', marginTop: '4px' }}>
@@ -1687,7 +1687,7 @@ export function ManagementPage() {
               </div>
 
               {/* Selection policy switch */}
-              <div style={{ background: 'white', padding: '12px', borderRadius: '12px', border: '1px solid var(--border-color)', marginBottom: '16px' }}>
+              <div style={{ background: 'var(--surface-color)', padding: '12px', borderRadius: '12px', border: '1px solid var(--border-color)', marginBottom: '16px' }}>
                 <div style={{ fontSize: '11px', fontWeight: 'bold', color: 'var(--text-sub)', marginBottom: '8px' }}>選定重視ポリシー:</div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px' }}>
                   {[
@@ -1709,7 +1709,7 @@ export function ManagementPage() {
               {/* Candidates list */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 {screeningCandidates.map(c => (
-                  <div key={c.company.id} style={{ background: 'white', borderRadius: '12px', border: '1px solid var(--border-color)', padding: '14px', boxShadow: '0 2px 6px rgba(0,0,0,0.01)' }}>
+                  <div key={c.company.id} style={{ background: 'var(--surface-color)', borderRadius: '12px', border: '1px solid var(--border-color)', padding: '14px', boxShadow: '0 2px 6px rgba(0,0,0,0.01)' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                         <strong style={{ fontSize: '14px', color: 'var(--text-main)' }}>{c.company.name}</strong>
@@ -1728,7 +1728,7 @@ export function ManagementPage() {
                     </div>
 
                     <div style={{ display: 'flex', gap: '10px' }}>
-                      <button type="button" onClick={() => handleStartScreeningChat(c.chatTask, c.company.id)} style={{ flex: 1, padding: '8px', borderRadius: '6px', border: '1px solid #CBD5E1', background: 'white', color: '#475569', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}>
+                      <button type="button" onClick={() => handleStartScreeningChat(c.chatTask, c.company.id)} style={{ flex: 1, padding: '8px', borderRadius: '6px', border: '1px solid #CBD5E1', background: 'var(--surface-color)', color: '#475569', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}>
                         チャットで相談
                       </button>
                       
@@ -1762,7 +1762,7 @@ export function ManagementPage() {
       {showOrderConfirmModal && confirmingCandidate && (
         <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', zIndex: 4000, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
           <div onClick={() => setShowOrderConfirmModal(false)} style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(15, 23, 42, 0.5)', backdropFilter: 'blur(3px)' }} />
-          <div style={{ position: 'relative', background: 'white', width: '90%', maxWidth: '380px', borderRadius: '16px', padding: '20px', boxShadow: '0 8px 30px rgba(0,0,0,0.15)', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+          <div style={{ position: 'relative', background: 'var(--surface-color)', width: '90%', maxWidth: '380px', borderRadius: '16px', padding: '20px', boxShadow: '0 8px 30px rgba(0,0,0,0.15)', display: 'flex', flexDirection: 'column', gap: '14px' }}>
             <h3 style={{ fontSize: '16px', fontWeight: 'bold', margin: 0, color: 'var(--text-main)' }}>内定オファーの確認</h3>
             <div style={{ fontSize: '12px', color: 'var(--text-sub)', lineHeight: '1.4' }}>
               以下の内容で <strong>{confirmingCandidate.company.name}</strong> へ内定を通知します。
@@ -1775,7 +1775,7 @@ export function ManagementPage() {
             </div>
 
             <div style={{ display: 'flex', gap: '10px', marginTop: '6px' }}>
-              <button type="button" onClick={() => setShowOrderConfirmModal(false)} style={{ flex: 1, padding: '10px', borderRadius: '8px', border: '1px solid #CBD5E1', background: 'white', color: '#475569', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer' }}>
+              <button type="button" onClick={() => setShowOrderConfirmModal(false)} style={{ flex: 1, padding: '10px', borderRadius: '8px', border: '1px solid #CBD5E1', background: 'var(--surface-color)', color: '#475569', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer' }}>
                 キャンセル
               </button>
               <button type="button" onClick={handleConfirmOrderSubmit} disabled={isContractSaving} style={{ flex: 1, padding: '10px', borderRadius: '8px', border: 'none', background: 'var(--primary)', color: 'white', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer' }}>
@@ -1797,7 +1797,7 @@ export function ManagementPage() {
             <div style={{ width: '40px' }}></div>
           </header>
           <main className="list-area bg-gray" style={{ flex: 1, overflowY: 'auto', padding: '16px', paddingBottom: '90px' }}>
-            <form onSubmit={handleStaffSave} style={{ background: 'white', padding: '16px', borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '14px', border: '1px solid var(--border-color)' }}>
+            <form onSubmit={handleStaffSave} style={{ background: 'var(--surface-color)', padding: '16px', borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '14px', border: '1px solid var(--border-color)' }}>
               <div style={{ display: 'flex', gap: '10px' }}>
                 <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
                   <label style={{ fontSize: '12px', fontWeight: 'bold' }}>ログインID *</label>
@@ -1822,7 +1822,7 @@ export function ManagementPage() {
               <div style={{ display: 'flex', gap: '10px' }}>
                 <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
                   <label style={{ fontSize: '12px', fontWeight: 'bold' }}>性別 *</label>
-                  <select value={formData.gender} onChange={e => setFormData({ ...formData, gender: e.target.value as '男性' | '女性' })} style={{ padding: '8px', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'white' }}>
+                  <select value={formData.gender} onChange={e => setFormData({ ...formData, gender: e.target.value as '男性' | '女性' })} style={{ padding: '8px', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'var(--surface-color)' }}>
                     <option value="男性">男性</option>
                     <option value="女性">女性</option>
                   </select>
@@ -1845,7 +1845,7 @@ export function ManagementPage() {
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                 <label style={{ fontSize: '12px', fontWeight: 'bold' }}>通勤方法 *</label>
-                <select value={formData.commuteMethod} onChange={e => setFormData({ ...formData, commuteMethod: e.target.value as '公共交通機関' | '自家用車' })} style={{ padding: '8px', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'white' }}>
+                <select value={formData.commuteMethod} onChange={e => setFormData({ ...formData, commuteMethod: e.target.value as '公共交通機関' | '自家用車' })} style={{ padding: '8px', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'var(--surface-color)' }}>
                   <option value="公共交通機関">公共交通機関</option>
                   <option value="自家用車">自家用車</option>
                 </select>
@@ -1870,7 +1870,7 @@ export function ManagementPage() {
             <div style={{ width: '40px' }}></div>
           </header>
           <main className="list-area bg-gray" style={{ flex: 1, overflowY: 'auto', padding: '16px', paddingBottom: '90px' }}>
-            <form onSubmit={handleStaffUpdate} style={{ background: 'white', padding: '16px', borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '14px', border: '1px solid var(--border-color)' }}>
+            <form onSubmit={handleStaffUpdate} style={{ background: 'var(--surface-color)', padding: '16px', borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '14px', border: '1px solid var(--border-color)' }}>
               <div style={{ display: 'flex', gap: '10px' }}>
                 <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
                   <label style={{ fontSize: '12px', fontWeight: 'bold' }}>ログインID *</label>
@@ -1922,7 +1922,7 @@ export function ManagementPage() {
               {companyStaffs.map(s => {
                 const currentRole = staffRoles[s.id] || s.role || 'staff';
                 return (
-                  <div key={s.id} style={{ background: 'white', padding: '12px 14px', borderRadius: '8px', border: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div key={s.id} style={{ background: 'var(--surface-color)', padding: '12px 14px', borderRadius: '8px', border: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div>
                       <div style={{ fontWeight: 'bold', fontSize: '13px' }}>{s.name}</div>
                       <div style={{ fontSize: '11px', color: 'var(--text-sub)', marginTop: '2px' }}>現在: {s.role === 'admin' ? '管理者' : '一般'}</div>
@@ -1930,7 +1930,7 @@ export function ManagementPage() {
                     <select 
                       value={currentRole} 
                       onChange={e => setStaffRoles({ ...staffRoles, [s.id]: e.target.value as 'admin' | 'staff' })} 
-                      style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'white', fontSize: '12px' }}
+                      style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'var(--surface-color)', fontSize: '12px' }}
                     >
                       <option value="staff">一般メンバー</option>
                       <option value="admin">管理者</option>
@@ -1947,7 +1947,7 @@ export function ManagementPage() {
       {showRoleConfirmModal && (
         <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', zIndex: 4100, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
           <div onClick={() => setShowRoleConfirmModal(false)} style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(15, 23, 42, 0.5)', backdropFilter: 'blur(3px)' }} />
-          <div style={{ position: 'relative', background: 'white', width: '90%', maxWidth: '360px', borderRadius: '16px', padding: '20px', boxShadow: '0 8px 30px rgba(0,0,0,0.15)', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <div style={{ position: 'relative', background: 'var(--surface-color)', width: '90%', maxWidth: '360px', borderRadius: '16px', padding: '20px', boxShadow: '0 8px 30px rgba(0,0,0,0.15)', display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <h3 style={{ fontSize: '15px', fontWeight: 'bold', margin: 0 }}>権限変更の確認</h3>
             <div style={{ fontSize: '12px', color: 'var(--text-sub)' }}>以下のスタッフの権限を変更します。よろしいですか？</div>
             <div style={{ maxHeight: '120px', overflowY: 'auto', background: '#F8FAFC', padding: '10px', borderRadius: '8px', border: '1px solid #E2E8F0', display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '11px' }}>
@@ -1958,7 +1958,7 @@ export function ManagementPage() {
               ))}
             </div>
             <div style={{ display: 'flex', gap: '10px', marginTop: '6px' }}>
-              <button type="button" onClick={() => setShowRoleConfirmModal(false)} style={{ flex: 1, padding: '8px', borderRadius: '6px', border: '1px solid #CBD5E1', background: 'white', fontSize: '12px' }}>キャンセル</button>
+              <button type="button" onClick={() => setShowRoleConfirmModal(false)} style={{ flex: 1, padding: '8px', borderRadius: '6px', border: '1px solid #CBD5E1', background: 'var(--surface-color)', fontSize: '12px' }}>キャンセル</button>
               <button type="button" onClick={handleRolesSaveConfirm} disabled={roleSaving} style={{ flex: 1, padding: '8px', borderRadius: '6px', border: 'none', background: 'var(--primary)', color: 'white', fontSize: '12px', fontWeight: 'bold' }}>
                 {roleSaving ? '保存中...' : '変更を保存'}
               </button>
@@ -1971,13 +1971,13 @@ export function ManagementPage() {
       {selectedTask && (
         <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', zIndex: 4000, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
           <div onClick={() => setSelectedTask(null)} style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(15, 23, 42, 0.5)', backdropFilter: 'blur(3px)' }} />
-          <form onSubmit={handleReportSubmit} style={{ position: 'relative', background: 'white', width: '90%', maxWidth: '380px', borderRadius: '16px', padding: '20px', boxShadow: '0 8px 30px rgba(0,0,0,0.15)', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+          <form onSubmit={handleReportSubmit} style={{ position: 'relative', background: 'var(--surface-color)', width: '90%', maxWidth: '380px', borderRadius: '16px', padding: '20px', boxShadow: '0 8px 30px rgba(0,0,0,0.15)', display: 'flex', flexDirection: 'column', gap: '14px' }}>
             <h3 style={{ fontSize: '15px', fontWeight: 'bold', margin: 0 }}>実績報告と評価の入力</h3>
             <div style={{ fontSize: '12px', color: 'var(--text-sub)' }}>対象現場: {selectedTask.jobTitle} ({selectedTask.date})</div>
             
             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
               <label style={{ fontSize: '12px', fontWeight: 'bold' }}>評価区分</label>
-              <select value={evalRole} onChange={e => setEvalRole(e.target.value as any)} style={{ padding: '8px', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'white' }}>
+              <select value={evalRole} onChange={e => setEvalRole(e.target.value as any)} style={{ padding: '8px', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'var(--surface-color)' }}>
                 <option value="client">発注者としての評価（スタッフへ）</option>
                 <option value="worker">スタッフとしての評価（元請けへ）</option>
               </select>
@@ -2007,7 +2007,7 @@ export function ManagementPage() {
             </div>
 
             <div style={{ display: 'flex', gap: '10px', marginTop: '6px' }}>
-              <button type="button" onClick={() => setSelectedTask(null)} style={{ flex: 1, padding: '10px', borderRadius: '8px', border: '1px solid #CBD5E1', background: 'white', fontSize: '12px' }}>キャンセル</button>
+              <button type="button" onClick={() => setSelectedTask(null)} style={{ flex: 1, padding: '10px', borderRadius: '8px', border: '1px solid #CBD5E1', background: 'var(--surface-color)', fontSize: '12px' }}>キャンセル</button>
               <button type="submit" style={{ flex: 1, padding: '10px', borderRadius: '8px', border: 'none', background: 'var(--primary)', color: 'white', fontSize: '12px', fontWeight: 'bold' }}>評価を送信</button>
             </div>
           </form>
@@ -2032,7 +2032,7 @@ export function ManagementPage() {
             <main className="list-area bg-gray" style={{ flex: 1, overflowY: 'auto', padding: '20px 16px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
               
               {!quizCompleted ? (
-                <div style={{ background: 'white', padding: '20px', borderRadius: '16px', border: '1px solid var(--border-color)', boxShadow: '0 4px 12px rgba(0,0,0,0.02)' }}>
+                <div style={{ background: 'var(--surface-color)', padding: '20px', borderRadius: '16px', border: '1px solid var(--border-color)', boxShadow: '0 4px 12px rgba(0,0,0,0.02)' }}>
                   <div style={{ fontSize: '11px', color: 'var(--text-sub)', fontWeight: 'bold', marginBottom: '8px' }}>
                     問題 {activeQuizIndex + 1} / {questions.length}
                   </div>
@@ -2054,7 +2054,7 @@ export function ManagementPage() {
                   </div>
                 </div>
               ) : (
-                <div style={{ background: 'white', padding: '24px 20px', borderRadius: '16px', border: '1px solid var(--border-color)', textAlign: 'center' }}>
+                <div style={{ background: 'var(--surface-color)', padding: '24px 20px', borderRadius: '16px', border: '1px solid var(--border-color)', textAlign: 'center' }}>
                   <span className="material-symbols-outlined" style={{ fontSize: '64px', color: (quizScore || 0) >= 80 ? '#10B981' : '#EF4444', marginBottom: '16px' }}>
                     {(quizScore || 0) >= 80 ? 'check_circle' : 'cancel'}
                   </span>

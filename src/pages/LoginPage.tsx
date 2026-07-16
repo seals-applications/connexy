@@ -568,7 +568,7 @@ const styles = {
   activeTab: {
     flex: 1,
     padding: '10px',
-    background: 'white',
+    background: 'var(--surface-color)',
     color: '#2563EB',
     border: 'none',
     borderRadius: '8px',

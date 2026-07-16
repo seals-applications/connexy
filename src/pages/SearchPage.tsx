@@ -1565,7 +1565,7 @@ export function SearchPage() {
               className="filter-btn" 
               onClick={handleRefresh}
             style={{ 
-              backgroundColor: 'white',
+              backgroundColor: 'var(--surface-color)',
               color: 'var(--text-main)',
               border: 'none',
               boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
@@ -1629,7 +1629,7 @@ export function SearchPage() {
 
       {viewMode === 'list' && !isSelectingLocationOnMap && (
         <main className="list-area bg-gray" style={{ flex: 1, overflowY: 'auto', zIndex: 2, paddingBottom: '80px' }}>
-          <div style={{ padding: '16px', background: 'white', borderBottom: '1px solid var(--border-color)', position: 'sticky', top: 0, zIndex: 10 }}>
+          <div style={{ padding: '16px', background: 'var(--surface-color)', borderBottom: '1px solid var(--border-color)', position: 'sticky', top: 0, zIndex: 10 }}>
             <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '4px', flexWrap: 'wrap', alignItems: 'center' }}>
               {!hasActiveFilters ? (
                 <span style={{ fontSize: '13px', color: 'var(--text-sub)' }}>フィルター未設定</span>
@@ -1870,7 +1870,7 @@ export function SearchPage() {
             ) : (
               filteredTalentGroups.length > 0 ? (
                 filteredTalentGroups.map(group => (
-                  <div key={group.locationName} style={{ background: 'white', borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', animation: 'fadeIn 0.3s ease', overflow: 'hidden' }}>
+                  <div key={group.locationName} style={{ background: 'var(--surface-color)', borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', animation: 'fadeIn 0.3s ease', overflow: 'hidden' }}>
                     <div style={{ padding: '12px 16px', background: '#F9FAFB', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <h3 style={{ margin: 0, fontSize: '15px', color: 'var(--text-main)' }}>{group.locationName}</h3>
                       <span style={{ fontSize: '13px', fontWeight: 'bold', color: '#10B981', background: '#D1FAE5', padding: '4px 10px', borderRadius: '12px' }}>{group.talents.length}名</span>
@@ -1961,7 +1961,7 @@ export function SearchPage() {
           {selectedTalent && (
             <>
               {/* 基本情報 */}
-              <div style={{ background: 'white', padding: '24px 16px', textAlign: 'center', borderBottom: '1px solid var(--border-color)' }}>
+              <div style={{ background: 'var(--surface-color)', padding: '24px 16px', textAlign: 'center', borderBottom: '1px solid var(--border-color)' }}>
                 <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: '#10B981', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '32px', margin: '0 auto 12px auto', fontWeight: 'bold' }}>
                   {selectedTalent.maskedName.charAt(0)}
                 </div>
@@ -1986,7 +1986,7 @@ export function SearchPage() {
 
               {/* 希望勤務日 */}
               {selectedTalent.availableDates && (
-                <div style={{ background: 'white', padding: '16px', marginTop: '8px', borderTop: '1px solid var(--border-color)', borderBottom: '1px solid var(--border-color)' }}>
+                <div style={{ background: 'var(--surface-color)', padding: '16px', marginTop: '8px', borderTop: '1px solid var(--border-color)', borderBottom: '1px solid var(--border-color)' }}>
                   <h3 style={{ fontSize: '14px', color: 'var(--text-sub)', margin: '0 0 16px 0', display: 'flex', alignItems: 'center', gap: '4px' }}>
                     <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>calendar_month</span>
                     希望勤務日
@@ -1997,7 +1997,7 @@ export function SearchPage() {
 
               {/* 受講済み研修 */}
               {selectedTalent.completedTrainings && selectedTalent.completedTrainings.length > 0 && (
-                <div style={{ background: 'white', padding: '16px', marginTop: '8px', borderTop: '1px solid var(--border-color)', borderBottom: '1px solid var(--border-color)' }}>
+                <div style={{ background: 'var(--surface-color)', padding: '16px', marginTop: '8px', borderTop: '1px solid var(--border-color)', borderBottom: '1px solid var(--border-color)' }}>
                   <h3 style={{ fontSize: '14px', color: 'var(--text-sub)', margin: '0 0 12px 0', display: 'flex', alignItems: 'center', gap: '4px' }}>
                     <span className="material-symbols-outlined" style={{ fontSize: '18px', color: '#10B981' }}>verified</span>
                     受講済み研修
@@ -2016,7 +2016,7 @@ export function SearchPage() {
               )}
 
               {/* 詳細情報 */}
-              <div style={{ background: 'white', padding: '16px', marginTop: '8px', borderTop: '1px solid var(--border-color)', borderBottom: '1px solid var(--border-color)' }}>
+              <div style={{ background: 'var(--surface-color)', padding: '16px', marginTop: '8px', borderTop: '1px solid var(--border-color)', borderBottom: '1px solid var(--border-color)' }}>
                 <h3 style={{ fontSize: '14px', color: 'var(--text-sub)', margin: '0 0 16px 0', display: 'flex', alignItems: 'center', gap: '4px' }}>
                   <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>monetization_on</span>
                   希望単価
@@ -2024,7 +2024,7 @@ export function SearchPage() {
                 <p style={{ margin: 0, fontSize: '16px', fontWeight: 'bold' }}>¥{selectedTalent.price.toLocaleString()} <span style={{ fontSize: '12px', fontWeight: 'normal', color: 'var(--text-sub)' }}>/ 日〜</span></p>
               </div>
 
-              <div style={{ background: 'white', padding: '16px', marginTop: '8px', borderTop: '1px solid var(--border-color)', borderBottom: '1px solid var(--border-color)' }}>
+              <div style={{ background: 'var(--surface-color)', padding: '16px', marginTop: '8px', borderTop: '1px solid var(--border-color)', borderBottom: '1px solid var(--border-color)' }}>
                 <h3 style={{ fontSize: '14px', color: 'var(--text-sub)', margin: '0 0 16px 0', display: 'flex', alignItems: 'center', gap: '4px' }}>
                   <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>corporate_fare</span>
                   拠点・最寄り駅
@@ -2035,7 +2035,7 @@ export function SearchPage() {
                 </p>
               </div>
 
-              <div style={{ background: 'white', padding: '16px', marginTop: '8px', borderTop: '1px solid var(--border-color)', borderBottom: '1px solid var(--border-color)' }}>
+              <div style={{ background: 'var(--surface-color)', padding: '16px', marginTop: '8px', borderTop: '1px solid var(--border-color)', borderBottom: '1px solid var(--border-color)' }}>
                 <h3 style={{ fontSize: '14px', color: 'var(--text-sub)', margin: '0 0 16px 0', display: 'flex', alignItems: 'center', gap: '4px' }}>
                   <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>location_on</span>
                   希望勤務エリア
@@ -2043,7 +2043,7 @@ export function SearchPage() {
                 <p style={{ margin: 0, fontSize: '14px', lineHeight: '1.5' }}>{selectedTalent.preferredArea || '全国対応可能'}</p>
               </div>
 
-              <div style={{ background: 'white', padding: '16px', marginTop: '8px', borderTop: '1px solid var(--border-color)', borderBottom: '1px solid var(--border-color)' }}>
+              <div style={{ background: 'var(--surface-color)', padding: '16px', marginTop: '8px', borderTop: '1px solid var(--border-color)', borderBottom: '1px solid var(--border-color)' }}>
                 <h3 style={{ fontSize: '14px', color: 'var(--text-sub)', margin: '0 0 16px 0', display: 'flex', alignItems: 'center', gap: '4px' }}>
                   <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>history</span>
                   経歴・実績
@@ -2051,7 +2051,7 @@ export function SearchPage() {
                 <p style={{ margin: 0, fontSize: '14px', lineHeight: '1.6' }}>{selectedTalent.experience || '記載なし'}</p>
               </div>
 
-              <div style={{ background: 'white', padding: '16px', marginTop: '8px', borderTop: '1px solid var(--border-color)', borderBottom: '1px solid var(--border-color)' }}>
+              <div style={{ background: 'var(--surface-color)', padding: '16px', marginTop: '8px', borderTop: '1px solid var(--border-color)', borderBottom: '1px solid var(--border-color)' }}>
                 <h3 style={{ fontSize: '14px', color: 'var(--text-sub)', margin: '0 0 16px 0', display: 'flex', alignItems: 'center', gap: '4px' }}>
                   <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>edit_note</span>
                   自己PR
@@ -2062,7 +2062,7 @@ export function SearchPage() {
           )}
         </main>
 
-        <footer style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: 'white', padding: '16px', borderTop: '1px solid var(--border-color)', display: 'flex', gap: '12px', zIndex: 10 }}>
+        <footer style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: 'var(--surface-color)', padding: '16px', borderTop: '1px solid var(--border-color)', display: 'flex', gap: '12px', zIndex: 10 }}>
           <button 
             onClick={handleStartTalentChat}
             style={{ flex: 1, padding: '12px', background: '#10B981', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '14px', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}
@@ -2088,7 +2088,7 @@ export function SearchPage() {
         <main className="list-area bg-gray" style={{ flex: 1, overflowY: 'auto', paddingBottom: '100px' }}>
           {selectedJob && (
             <>
-              <div style={{ background: 'white', padding: '24px 16px', borderBottom: '1px solid var(--border-color)' }}>
+              <div style={{ background: 'var(--surface-color)', padding: '24px 16px', borderBottom: '1px solid var(--border-color)' }}>
                 <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '12px' }}>
                   {selectedJob.carrier && <span style={{ fontSize: '12px', padding: '4px 10px', background: '#E0E7FF', color: '#4338CA', borderRadius: '16px', fontWeight: 'bold' }}>{selectedJob.carrier}</span>}
                   {selectedJob.salesChannel && <span style={{ fontSize: '12px', padding: '4px 10px', background: '#FEF3C7', color: '#D97706', borderRadius: '16px', fontWeight: 'bold' }}>{selectedJob.salesChannel}</span>}
@@ -2109,7 +2109,7 @@ export function SearchPage() {
                 </div>
               </div>
 
-              <div style={{ background: 'white', padding: '16px', marginTop: '8px', borderTop: '1px solid var(--border-color)', borderBottom: '1px solid var(--border-color)' }}>
+              <div style={{ background: 'var(--surface-color)', padding: '16px', marginTop: '8px', borderTop: '1px solid var(--border-color)', borderBottom: '1px solid var(--border-color)' }}>
                 <h3 style={{ fontSize: '14px', color: 'var(--text-sub)', margin: '0 0 16px 0', display: 'flex', alignItems: 'center', gap: '4px' }}>
                   <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>monetization_on</span>
                   単価（報酬）
@@ -2181,7 +2181,7 @@ export function SearchPage() {
                 )}
               </div>
 
-              <div style={{ background: 'white', padding: '16px', marginTop: '8px', borderTop: '1px solid var(--border-color)', borderBottom: '1px solid var(--border-color)' }}>
+              <div style={{ background: 'var(--surface-color)', padding: '16px', marginTop: '8px', borderTop: '1px solid var(--border-color)', borderBottom: '1px solid var(--border-color)' }}>
                 <h3 style={{ fontSize: '14px', color: 'var(--text-sub)', margin: '0 0 16px 0', display: 'flex', alignItems: 'center', gap: '4px' }}>
                   <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>location_on</span>
                   勤務エリア
@@ -2189,7 +2189,7 @@ export function SearchPage() {
                 <p style={{ margin: 0, fontSize: '15px' }}>{selectedJob.locationName || '記載なし'}</p>
               </div>
 
-              <div style={{ background: 'white', padding: '16px', marginTop: '8px', borderTop: '1px solid var(--border-color)', borderBottom: '1px solid var(--border-color)' }}>
+              <div style={{ background: 'var(--surface-color)', padding: '16px', marginTop: '8px', borderTop: '1px solid var(--border-color)', borderBottom: '1px solid var(--border-color)' }}>
                 <h3 style={{ fontSize: '14px', color: 'var(--text-sub)', margin: '0 0 16px 0', display: 'flex', alignItems: 'center', gap: '4px' }}>
                   <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>schedule</span>
                   勤務時間・期間
@@ -2202,7 +2202,7 @@ export function SearchPage() {
               </div>
 
               {selectedJob.requirements && selectedJob.requirements.length > 0 && (
-                <div style={{ background: 'white', padding: '16px', marginTop: '8px', borderTop: '1px solid var(--border-color)', borderBottom: '1px solid var(--border-color)' }}>
+                <div style={{ background: 'var(--surface-color)', padding: '16px', marginTop: '8px', borderTop: '1px solid var(--border-color)', borderBottom: '1px solid var(--border-color)' }}>
                   <h3 style={{ fontSize: '14px', color: 'var(--text-sub)', margin: '0 0 16px 0', display: 'flex', alignItems: 'center', gap: '4px' }}>
                     <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>psychology</span>
                     求めるスキル・条件
@@ -2215,7 +2215,7 @@ export function SearchPage() {
                 </div>
               )}
 
-              <div style={{ background: 'white', padding: '16px', marginTop: '8px', borderTop: '1px solid var(--border-color)', borderBottom: '1px solid var(--border-color)' }}>
+              <div style={{ background: 'var(--surface-color)', padding: '16px', marginTop: '8px', borderTop: '1px solid var(--border-color)', borderBottom: '1px solid var(--border-color)' }}>
                 <h3 style={{ fontSize: '14px', color: 'var(--text-sub)', margin: '0 0 16px 0', display: 'flex', alignItems: 'center', gap: '4px' }}>
                   <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>description</span>
                   業務内容の詳細
@@ -2227,7 +2227,7 @@ export function SearchPage() {
         </main>
 
         {selectedJob && (selectedJob.authorId === currentUser?.id || currentUser?.companyType === 'agency' || currentUser?.companyType === 'both' || currentUser?.role === 'worker') && (
-          <footer style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: 'white', padding: '16px', borderTop: '1px solid var(--border-color)', display: 'flex', gap: '12px', zIndex: 10 }}>
+          <footer style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: 'var(--surface-color)', padding: '16px', borderTop: '1px solid var(--border-color)', display: 'flex', gap: '12px', zIndex: 10 }}>
             {selectedJob.authorId === currentUser?.id ? (
               <button 
                 onClick={() => handleDuplicateJob(selectedJob)}
@@ -2260,7 +2260,7 @@ export function SearchPage() {
 
         {isNdaModalOpen && selectedJob && (
           <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', zIndex: 3000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
-            <div style={{ background: 'white', padding: '24px', borderRadius: '16px', width: '100%', maxWidth: '420px', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 20px 40px rgba(0,0,0,0.2)', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div style={{ background: 'var(--surface-color)', padding: '24px', borderRadius: '16px', width: '100%', maxWidth: '420px', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 20px 40px rgba(0,0,0,0.2)', display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <h3 style={{ margin: 0, fontSize: '18px', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 'bold', color: 'var(--text-main)' }}>
                 <span className="material-symbols-outlined" style={{ color: 'var(--primary)', fontSize: '24px' }}>security</span>
                 応募の確認と秘密保持
@@ -2285,7 +2285,7 @@ export function SearchPage() {
                         borderRadius: '8px',
                         border: '1px solid #CBD5E1',
                         fontSize: '14px',
-                        background: 'white',
+                        background: 'var(--surface-color)',
                         outline: 'none',
                         color: 'var(--text-main)',
                         fontWeight: 'bold',
@@ -2357,7 +2357,7 @@ export function SearchPage() {
                           </div>
 
                           {selectedStaff.prText && (
-                            <div style={{ background: 'white', padding: '8px', borderRadius: '6px', border: '1px solid #E2E8F0', marginTop: '2px' }}>
+                            <div style={{ background: 'var(--surface-color)', padding: '8px', borderRadius: '6px', border: '1px solid #E2E8F0', marginTop: '2px' }}>
                               <span style={{ color: 'var(--text-sub)', fontSize: '10px', display: 'block', marginBottom: '2px' }}>自己PR・アピール</span>
                               <div style={{ color: '#475569', lineHeight: '1.4', fontStyle: 'italic' }}>
                                 「{selectedStaff.prText}」
@@ -2464,7 +2464,7 @@ export function SearchPage() {
 
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                     <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)' }}>稼働場所のタイプ *</label>
-                    <select required value={formData.workLocation} onChange={e => setFormData({...formData, workLocation: e.target.value as any, locationName: formData.exactLocation ? generateMaskedLocation(formData.exactLocation, formData.exactLocation, formData.salesChannel, formData.carrier, e.target.value) : formData.locationName})} disabled={isSubmitting} style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc', background: 'white' }}>
+                    <select required value={formData.workLocation} onChange={e => setFormData({...formData, workLocation: e.target.value as any, locationName: formData.exactLocation ? generateMaskedLocation(formData.exactLocation, formData.exactLocation, formData.salesChannel, formData.carrier, e.target.value) : formData.locationName})} disabled={isSubmitting} style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc', background: 'var(--surface-color)' }}>
                       <option value="店内">店内</option>
                       <option value="外販（複合施設など）">外販（複合施設など）</option>
                       <option value="外販（スーパーなど）">外販（スーパーなど）</option>
@@ -2592,7 +2592,7 @@ export function SearchPage() {
                             value={formData.locationName} 
                             onChange={e => setFormData({...formData, locationName: e.target.value})} 
                             disabled={isSubmitting} 
-                            style={{ flex: 1, padding: '4px 8px', fontSize: '12px', borderRadius: '4px', border: '1px solid #CBD5E1', background: 'white' }} 
+                            style={{ flex: 1, padding: '4px 8px', fontSize: '12px', borderRadius: '4px', border: '1px solid #CBD5E1', background: 'var(--surface-color)' }} 
                             placeholder="例: 新宿区の量販店" 
                           />
                           <button
@@ -2656,7 +2656,7 @@ export function SearchPage() {
                   <div style={{ display: 'flex', gap: '12px' }}>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: 1 }}>
                       <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)' }}>キャリア/回線 *</label>
-                      <select required value={formData.carrier} onChange={e => setFormData({...formData, carrier: e.target.value as any, locationName: formData.exactLocation ? generateMaskedLocation(formData.exactLocation, formData.exactLocation, formData.salesChannel, e.target.value, formData.workLocation) : formData.locationName})} disabled={isSubmitting} style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc', background: 'white' }}>
+                      <select required value={formData.carrier} onChange={e => setFormData({...formData, carrier: e.target.value as any, locationName: formData.exactLocation ? generateMaskedLocation(formData.exactLocation, formData.exactLocation, formData.salesChannel, e.target.value, formData.workLocation) : formData.locationName})} disabled={isSubmitting} style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc', background: 'var(--surface-color)' }}>
                         <option value="" disabled>選択</option>
                         <option value="docomo">docomo</option>
                         <option value="au/UQmobile">au/UQmobile</option>
@@ -2666,7 +2666,7 @@ export function SearchPage() {
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: 1 }}>
                       <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)' }}>販路 *</label>
-                      <select required value={formData.salesChannel} onChange={e => setFormData({...formData, salesChannel: e.target.value as any, locationName: formData.exactLocation ? generateMaskedLocation(formData.exactLocation, formData.exactLocation, e.target.value, formData.carrier, formData.workLocation) : formData.locationName})} disabled={isSubmitting} style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc', background: 'white' }}>
+                      <select required value={formData.salesChannel} onChange={e => setFormData({...formData, salesChannel: e.target.value as any, locationName: formData.exactLocation ? generateMaskedLocation(formData.exactLocation, formData.exactLocation, e.target.value, formData.carrier, formData.workLocation) : formData.locationName})} disabled={isSubmitting} style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc', background: 'var(--surface-color)' }}>
                         <option value="" disabled>選択</option>
                         <option value="量販店">量販店</option>
                         <option value="ショップ">ショップ</option>
@@ -2692,7 +2692,7 @@ export function SearchPage() {
                   </div>
 
                   {/* 交通費・宿泊費の支給設定 */}
-                  <div style={{ background: 'white', padding: '12px', borderRadius: '8px', border: '1px solid #E2E8F0', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <div style={{ background: 'var(--surface-color)', padding: '12px', borderRadius: '8px', border: '1px solid #E2E8F0', display: 'flex', flexDirection: 'column', gap: '12px' }}>
                     <div style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--text-main)' }}>交通費・宿泊費の設定</div>
                     
                     <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
@@ -2701,7 +2701,7 @@ export function SearchPage() {
                         <select 
                           value={expenses.transportType} 
                           onChange={e => setExpenses(prev => ({ ...prev, transportType: e.target.value as any }))}
-                          style={{ padding: '8px', borderRadius: '4px', border: '1px solid #ccc', background: 'white', fontSize: '13px' }}
+                          style={{ padding: '8px', borderRadius: '4px', border: '1px solid #ccc', background: 'var(--surface-color)', fontSize: '13px' }}
                         >
                           <option value="none">なし（単価に含む）</option>
                           <option value="pay_separate">あり（別途支給）</option>
@@ -2731,7 +2731,7 @@ export function SearchPage() {
                         <select 
                           value={expenses.accommodationType} 
                           onChange={e => setExpenses(prev => ({ ...prev, accommodationType: e.target.value as any }))}
-                          style={{ padding: '8px', borderRadius: '4px', border: '1px solid #ccc', background: 'white', fontSize: '13px' }}
+                          style={{ padding: '8px', borderRadius: '4px', border: '1px solid #ccc', background: 'var(--surface-color)', fontSize: '13px' }}
                         >
                           <option value="none">なし（単価に含む）</option>
                           <option value="pay_separate">あり（別途支給）</option>
@@ -2771,13 +2771,13 @@ export function SearchPage() {
                     </div>
 
                     {formData.isLimited && (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '4px', background: 'white', padding: '12px', borderRadius: '8px', border: '1px solid #E2E8F0' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '4px', background: 'var(--surface-color)', padding: '12px', borderRadius: '8px', border: '1px solid #E2E8F0' }}>
                         <label style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--text-main)' }}>公開先企業を選択してください *</label>
                         <select 
                           value={targetCompanyId} 
                           onChange={e => setTargetCompanyId(e.target.value)} 
                           disabled={isSubmitting} 
-                          style={{ padding: '8px', borderRadius: '6px', border: '1px solid #CBD5E1', background: 'white', fontSize: '14px', outline: 'none' }}
+                          style={{ padding: '8px', borderRadius: '6px', border: '1px solid #CBD5E1', background: 'var(--surface-color)', fontSize: '14px', outline: 'none' }}
                         >
                           {allUsers
                             .filter(u => u.id !== currentUser?.id)
@@ -2798,7 +2798,7 @@ export function SearchPage() {
 
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                     <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)' }}>スキル *</label>
-                    <select required value={formData.roleType} onChange={e => setFormData({...formData, roleType: e.target.value})} disabled={isSubmitting} style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc', background: 'white' }}>
+                    <select required value={formData.roleType} onChange={e => setFormData({...formData, roleType: e.target.value})} disabled={isSubmitting} style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc', background: 'var(--surface-color)' }}>
                       <option value="" disabled>選択してください</option>
                       <option value="キャンペーンクルー">キャンペーンクルー</option>
                       <option value="クローザー">クローザー</option>
@@ -2835,7 +2835,7 @@ export function SearchPage() {
                         />
                       </div>
                     ) : (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', background: 'white', padding: '12px', borderRadius: '8px', border: '1px solid #E2E8F0' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', background: 'var(--surface-color)', padding: '12px', borderRadius: '8px', border: '1px solid #E2E8F0' }}>
                         <div style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--text-main)' }}>日程ごとの単価設定</div>
                         {selectedJobDates.length === 0 ? (
                           <div style={{ fontSize: '12px', color: '#EF4444', fontStyle: 'italic' }}>
@@ -2891,7 +2891,7 @@ export function SearchPage() {
                       value={selectedStaffId} 
                       onChange={e => setSelectedStaffId(e.target.value)} 
                       disabled={isSubmitting} 
-                      style={{ padding: '12px', borderRadius: '8px', border: '1px solid #ccc', background: 'white', fontSize: '15px' }}
+                      style={{ padding: '12px', borderRadius: '8px', border: '1px solid #ccc', background: 'var(--surface-color)', fontSize: '15px' }}
                     >
                       {myStaffs.map(staff => (
                         <option key={staff.id} value={staff.id}>{staff.name} ({staff.maskedName}) - {staff.baseLocation}</option>
@@ -3235,13 +3235,13 @@ export function SearchPage() {
             )}
           </div>
           
-          <div className="filter-sheet-footer" style={{ display: 'flex', gap: '12px', padding: '16px', borderTop: '1px solid var(--border-color)', background: 'white' }}>
+          <div className="filter-sheet-footer" style={{ display: 'flex', gap: '12px', padding: '16px', borderTop: '1px solid var(--border-color)', background: 'var(--surface-color)' }}>
             <button
               style={{
                 flex: 1,
                 margin: 0,
                 padding: '12px',
-                background: 'white',
+                background: 'var(--surface-color)',
                 border: '1px solid var(--border-color)',
                 color: 'var(--text-main)',
                 borderRadius: '10px',
@@ -3293,7 +3293,7 @@ export function SearchPage() {
           bottom: 'calc(var(--nav-height) + env(safe-area-inset-bottom))',
           left: 0,
           right: 0,
-          backgroundColor: 'white',
+          backgroundColor: 'var(--surface-color)',
           borderTopLeftRadius: '20px',
           borderTopRightRadius: '20px',
           boxShadow: '0 -10px 25px rgba(0,0,0,0.15)',
@@ -3422,7 +3422,7 @@ export function SearchPage() {
           bottom: 'calc(var(--nav-height) + env(safe-area-inset-bottom))',
           left: 0,
           right: 0,
-          backgroundColor: 'white',
+          backgroundColor: 'var(--surface-color)',
           borderTopLeftRadius: '20px',
           borderTopRightRadius: '20px',
           boxShadow: '0 -10px 25px rgba(0,0,0,0.15)',

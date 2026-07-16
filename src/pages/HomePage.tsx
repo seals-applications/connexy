@@ -122,7 +122,7 @@ export function HomePage() {
           <div style={{ width: '40px' }}></div>
         </header>
         <main className="list-area p-16" style={{ background: '#F8FAFC', flex: 1, overflowY: 'auto' }}>
-          <div style={{ background: '#FFFFFF', borderRadius: '16px', padding: '20px', boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)', border: '1px solid #E2E8F0', marginBottom: '16px' }}>
+          <div style={{ background: 'var(--surface-color)', borderRadius: '16px', padding: '20px', boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)', border: '1px solid #E2E8F0', marginBottom: '16px' }}>
             <div style={{ fontSize: '12px', color: '#64748B', fontWeight: 'bold', marginBottom: '6px' }}>
               {nextMonth}月入金予定総額（{currentMonth}月稼働分）
             </div>
@@ -162,7 +162,7 @@ export function HomePage() {
               </div>
             </div>
           </div>
-          <div style={{ background: '#FFFFFF', borderRadius: '12px', padding: '16px', border: '1px solid #E2E8F0', display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+          <div style={{ background: 'var(--surface-color)', borderRadius: '12px', padding: '16px', border: '1px solid #E2E8F0', display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
             <span className="material-symbols-outlined" style={{ color: '#3B82F6', fontSize: '20px' }}>info</span>
             <div style={{ fontSize: '12px', color: '#475569', lineHeight: '1.5' }}>
               この金額は元請け企業から支払われる予定の売上額（手数料差引前）です。実際の銀行口座への振込予定額は「振込予定額」の明細をご確認ください。
@@ -184,7 +184,7 @@ export function HomePage() {
           <div style={{ width: '40px' }}></div>
         </header>
         <main className="list-area p-16" style={{ background: '#F8FAFC', flex: 1, overflowY: 'auto' }}>
-          <div style={{ background: '#FFFFFF', borderRadius: '16px', padding: '20px', boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)', border: '1px solid #E2E8F0', marginBottom: '16px' }}>
+          <div style={{ background: 'var(--surface-color)', borderRadius: '16px', padding: '20px', boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)', border: '1px solid #E2E8F0', marginBottom: '16px' }}>
             <div style={{ fontSize: '12px', color: '#64748B', fontWeight: 'bold', marginBottom: '6px' }}>
               {nextMonth}月振込予定総額（{currentMonth}月稼働分）
             </div>
@@ -241,7 +241,7 @@ export function HomePage() {
               </div>
             </div>
           </div>
-          <div style={{ background: '#FFFFFF', borderRadius: '16px', padding: '20px', boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)', border: '1px solid #E2E8F0', textAlign: 'center' }}>
+          <div style={{ background: 'var(--surface-color)', borderRadius: '16px', padding: '20px', boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)', border: '1px solid #E2E8F0', textAlign: 'center' }}>
             <button 
               className="btn-primary" 
               onClick={handleWithdraw}
@@ -287,7 +287,7 @@ export function HomePage() {
       <main className="list-area bg-gray" style={{ flex: 1, overflowY: 'auto', padding: '16px', paddingBottom: '90px' }}>
 
         {/* 運営からのお知らせ掲示板 */}
-        <div style={{ background: 'white', borderRadius: '14px', padding: '16px', border: '1px solid var(--border-color)', marginBottom: '16px', boxShadow: '0 2px 6px rgba(0,0,0,0.01)' }}>
+        <div style={{ background: 'var(--surface-color)', borderRadius: '14px', padding: '16px', border: '1px solid var(--border-color)', marginBottom: '16px', boxShadow: '0 2px 6px rgba(0,0,0,0.01)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '12px', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px' }}>
             <span className="material-symbols-outlined" style={{ color: 'var(--primary)', fontSize: '20px' }}>campaign</span>
             <span style={{ fontSize: '14px', fontWeight: 'bold', color: 'var(--text-main)' }}>運営からのお知らせ</span>
@@ -325,7 +325,7 @@ export function HomePage() {
         </div>
 
         {/* Expected Finances (Dashboard fusion) */}
-        <div style={{ background: 'white', borderRadius: '14px', padding: '16px', border: '1px solid var(--border-color)', marginBottom: '16px', boxShadow: '0 2px 6px rgba(0,0,0,0.01)' }}>
+        <div style={{ background: 'var(--surface-color)', borderRadius: '14px', padding: '16px', border: '1px solid var(--border-color)', marginBottom: '16px', boxShadow: '0 2px 6px rgba(0,0,0,0.01)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '12px', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px' }}>
             <span className="material-symbols-outlined" style={{ color: 'var(--primary)', fontSize: '20px' }}>savings</span>
             <span style={{ fontSize: '14px', fontWeight: 'bold', color: 'var(--text-main)' }}>売上・入出金状況</span>
@@ -361,7 +361,7 @@ export function HomePage() {
         </div>
 
         {/* GPS Clock-in/out (Task fusion) */}
-        <div style={{ background: 'white', borderRadius: '14px', padding: '16px', border: '1px solid var(--border-color)', marginBottom: '16px', boxShadow: '0 2px 6px rgba(0,0,0,0.01)' }}>
+        <div style={{ background: 'var(--surface-color)', borderRadius: '14px', padding: '16px', border: '1px solid var(--border-color)', marginBottom: '16px', boxShadow: '0 2px 6px rgba(0,0,0,0.01)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '12px', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px' }}>
             <span className="material-symbols-outlined" style={{ color: 'var(--primary)', fontSize: '20px' }}>location_on</span>
             <span style={{ fontSize: '14px', fontWeight: 'bold', color: 'var(--text-main)' }}>本日の現場・出退勤打刻</span>
@@ -436,7 +436,7 @@ export function HomePage() {
         </div>
 
         {/* Quick Summaries & Badges */}
-        <div style={{ background: 'white', borderRadius: '14px', padding: '16px', border: '1px solid var(--border-color)', marginBottom: '16px', boxShadow: '0 2px 6px rgba(0,0,0,0.01)' }}>
+        <div style={{ background: 'var(--surface-color)', borderRadius: '14px', padding: '16px', border: '1px solid var(--border-color)', marginBottom: '16px', boxShadow: '0 2px 6px rgba(0,0,0,0.01)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '12px', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px' }}>
             <span className="material-symbols-outlined" style={{ color: 'var(--primary)', fontSize: '20px' }}>assignment</span>
             <span style={{ fontSize: '14px', fontWeight: 'bold', color: 'var(--text-main)' }}>タスクサマリー</span>
@@ -462,7 +462,7 @@ export function HomePage() {
           <div onClick={() => setSelectedAnn(null)} style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(15, 23, 42, 0.5)', backdropFilter: 'blur(4px)' }} />
 
           {/* Modal Content */}
-          <div style={{ position: 'relative', background: 'white', width: '90%', maxWidth: '420px', borderRadius: '16px', boxShadow: '0 10px 25px rgba(0,0,0,0.15)', display: 'flex', flexDirection: 'column', maxHeight: '80%', overflow: 'hidden', animation: 'scaleUp 0.25s cubic-bezier(0.16, 1, 0.3, 1)' }}>
+          <div style={{ position: 'relative', background: 'var(--surface-color)', width: '90%', maxWidth: '420px', borderRadius: '16px', boxShadow: '0 10px 25px rgba(0,0,0,0.15)', display: 'flex', flexDirection: 'column', maxHeight: '80%', overflow: 'hidden', animation: 'scaleUp 0.25s cubic-bezier(0.16, 1, 0.3, 1)' }}>
             <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', borderBottom: '1px solid var(--border-color)' }}>
               <div>
                 <span style={{ fontSize: '11px', color: 'var(--text-sub)' }}>{selectedAnn.date}</span>

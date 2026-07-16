@@ -137,7 +137,7 @@ export function SettingsDrawer({ isOpen, onClose, onLogoutSuccess }: SettingsDra
           width: '80%', 
           maxWidth: '360px', 
           height: '100%', 
-          background: 'white', 
+          background: 'var(--surface-color)', 
           boxShadow: '-4px 0 24px rgba(0, 0, 0, 0.15)',
           display: 'flex', 
           flexDirection: 'column',
@@ -153,7 +153,7 @@ export function SettingsDrawer({ isOpen, onClose, onLogoutSuccess }: SettingsDra
 
         <main style={{ flex: 1, overflowY: 'auto', padding: '20px 16px', background: '#F8FAFC' }}>
           {/* User profile card */}
-          <div style={{ background: 'white', padding: '16px', borderRadius: '12px', border: '1px solid var(--border-color)', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{ background: 'var(--surface-color)', padding: '16px', borderRadius: '12px', border: '1px solid var(--border-color)', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '12px' }}>
             <div className="profile-avatar" style={{ width: '48px', height: '48px', fontSize: '18px', borderRadius: '24px' }}>
               {currentUser?.name.charAt(0) || '株'}
             </div>
@@ -182,7 +182,7 @@ export function SettingsDrawer({ isOpen, onClose, onLogoutSuccess }: SettingsDra
                 else alert('管理者権限が必要です。'); 
               }} 
               style={{ 
-                background: 'white', 
+                background: 'var(--surface-color)', 
                 padding: '14px 16px', 
                 borderRadius: '10px', 
                 border: '1px solid var(--border-color)',
@@ -208,7 +208,7 @@ export function SettingsDrawer({ isOpen, onClose, onLogoutSuccess }: SettingsDra
                 else alert('管理者権限が必要です。');
               }}
               style={{ 
-                background: 'white', 
+                background: 'var(--surface-color)', 
                 padding: '14px 16px', 
                 borderRadius: '10px', 
                 border: '1px solid var(--border-color)',
@@ -231,7 +231,7 @@ export function SettingsDrawer({ isOpen, onClose, onLogoutSuccess }: SettingsDra
               className="settings-item" 
               onClick={handleLogout}
               style={{ 
-                background: 'white', 
+                background: 'var(--surface-color)', 
                 padding: '14px 16px', 
                 borderRadius: '10px', 
                 border: '1px solid var(--border-color)',
@@ -265,18 +265,18 @@ export function SettingsDrawer({ isOpen, onClose, onLogoutSuccess }: SettingsDra
             </button>
           </header>
           <main className="list-area bg-gray p-16 pb-80 form-container" style={{ flex: 1, overflowY: 'auto' }}>
-            <div className="form-section" style={{ background: 'white', padding: '16px', borderRadius: '12px', border: '1px solid var(--border-color)', marginBottom: '16px' }}>
+            <div className="form-section" style={{ background: 'var(--surface-color)', padding: '16px', borderRadius: '12px', border: '1px solid var(--border-color)', marginBottom: '16px' }}>
               <div className="form-avatar-edit" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '12px 0' }}>
                 <div className="profile-avatar large" style={{ width: '64px', height: '64px', fontSize: '24px' }}>
                   {currentUser?.name.charAt(0) || '株'}
                 </div>
-                <button className="btn-secondary mt-8" style={{ border: '1px solid var(--border-color)', background: 'white', padding: '6px 12px', borderRadius: '6px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer', marginTop: '8px' }}>
+                <button className="btn-secondary mt-8" style={{ border: '1px solid var(--border-color)', background: 'var(--surface-color)', padding: '6px 12px', borderRadius: '6px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer', marginTop: '8px' }}>
                   画像を変更
                 </button>
               </div>
             </div>
 
-            <div className="form-section" style={{ background: 'white', padding: '16px', borderRadius: '12px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            <div className="form-section" style={{ background: 'var(--surface-color)', padding: '16px', borderRadius: '12px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '14px' }}>
               <h3 style={{ fontSize: '14px', margin: '0 0 4px 0', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px' }}>基本情報</h3>
               <div className="form-group" style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                 <label style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--text-sub)' }}>法人名（屋号） <span style={{ color: '#EF4444' }}>必須</span></label>
@@ -347,7 +347,7 @@ export function SettingsDrawer({ isOpen, onClose, onLogoutSuccess }: SettingsDra
                 <label style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--text-sub)' }}>代表者・担当者の性別</label>
                 <select 
                   className="form-control" 
-                  style={{ padding: '10px', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'white' }}
+                  style={{ padding: '10px', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'var(--surface-color)' }}
                   value={genderInput} 
                   onChange={e => setGenderInput(e.target.value as any)}
                 >
