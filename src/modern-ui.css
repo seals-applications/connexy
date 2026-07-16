@@ -39,7 +39,7 @@
   font-weight: bold;
   transform: rotate(45deg);
   box-shadow: 0 2px 4px rgba(239, 68, 68, 0.3);
-  z-index: 10;
+  z-index: 2;
 }
 
 .job-title-row {

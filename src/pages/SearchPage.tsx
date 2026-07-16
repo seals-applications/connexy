@@ -1640,7 +1640,7 @@ export function SearchPage() {
 
       {viewMode === 'list' && !isSelectingLocationOnMap && (
         <main className="list-area bg-gray" style={{ flex: 1, overflowY: 'auto', zIndex: 2, paddingBottom: '80px' }}>
-          <div style={{ padding: '16px', background: 'var(--surface-color)', borderBottom: '1px solid var(--border-color)', position: 'sticky', top: 0, zIndex: 10 }}>
+          <div style={{ padding: '16px', background: 'var(--surface-color)', borderBottom: '1px solid var(--border-color)', position: 'sticky', top: 0, zIndex: 100 }}>
             <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '4px', flexWrap: 'wrap', alignItems: 'center' }}>
               {!hasActiveFilters ? (
                 <span style={{ fontSize: '13px', color: 'var(--text-sub)' }}>フィルター未設定</span>
