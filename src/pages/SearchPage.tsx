@@ -982,14 +982,15 @@ export function SearchPage() {
 
   const gridSize = useMemo(() => {
     const roundedZoom = Math.floor(mapZoom);
-    if (roundedZoom >= 14) return 0;
-    if (roundedZoom === 13) return 0.008;
-    if (roundedZoom === 12) return 0.02;
-    if (roundedZoom === 11) return 0.04;
-    if (roundedZoom === 10) return 0.08;
-    if (roundedZoom === 9) return 0.16;
-    if (roundedZoom === 8) return 0.32;
-    return 0.64;
+    if (roundedZoom >= 15) return 0;
+    if (roundedZoom === 14) return 0.002;
+    if (roundedZoom === 13) return 0.005;
+    if (roundedZoom === 12) return 0.01;
+    if (roundedZoom === 11) return 0.025;
+    if (roundedZoom === 10) return 0.05;
+    if (roundedZoom === 9) return 0.1;
+    if (roundedZoom === 8) return 0.2;
+    return 0.4;
   }, [mapZoom]);
 
   const clusteredJobs = useMemo(() => {
