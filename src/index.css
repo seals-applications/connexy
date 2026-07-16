@@ -431,9 +431,10 @@ h1 {
   content: '';
   display: inline-block;
   width: 8px;
-  left: -20px;
+  height: 8px;
   background-color: var(--primary);
   border-radius: 50%;
+  margin-right: 6px;
 }
 
 /* =========================================
@@ -450,8 +451,7 @@ h1 {
   0% { background-position: 200% 0; }
   100% { background-position: -200% 0; }
 }
-  margin-right: 6px;
-}
+
 .task-time {
   font-weight: 600;
   font-size: 14px;
