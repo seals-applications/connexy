@@ -42,21 +42,6 @@
   --header-height: 120px;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --primary: #3B82F6;
-    --primary-light: #1E3A8A;
-    --bg-color: #0F172A;
-    --surface-color: #1E293B;
-    --bg-gray: #020617;
-    --text-main: #F8FAFC;
-    --text-sub: #94A3B8;
-    --text-muted: #64748B;
-    --border-color: #334155;
-    --shadow-sm: 0 2px 5px rgba(0,0,0,0.3);
-    --shadow-md: 0 4px 12px rgba(0,0,0,0.4);
-  }
-}
 
 body {
   font-family: 'Inter', 'Noto Sans JP', sans-serif;
@@ -126,12 +111,7 @@ h1 {
   padding: calc(16px + env(safe-area-inset-top)) 16px 16px 16px;
   border-bottom: 1px solid rgba(0,0,0,0.05);
 }
-@media (prefers-color-scheme: dark) {
-  .glass-header {
-    background: rgba(30, 41, 59, 0.65);
-    border-bottom: 1px solid rgba(255,255,255,0.05);
-  }
-}
+
 
 .solid-header {
   background-color: var(--bg-color);
