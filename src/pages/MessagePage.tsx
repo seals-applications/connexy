@@ -875,9 +875,11 @@ export function MessagePage() {
         agency_id: currentUser.id,
         client_id: job.authorId,
         clientContractText: clientComp?.contractTemplate || '',
+        clientContractPdf: clientComp?.contractPdf || '',
         clientContractApprovedByClient: false,
         clientContractApprovedByAgency: false,
         agencyContractText: currentUser.contractTemplate || '',
+        agencyContractPdf: currentUser.contractPdf || '',
         agencyContractApprovedByClient: false,
         agencyContractApprovedByAgency: false
       };
@@ -3049,20 +3051,64 @@ export function MessagePage() {
               {/* Document Text */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                 <strong style={{ fontSize: '12px', color: '#334155' }}>契約書面内容:</strong>
-                <div style={{
-                  border: '1px solid #E2E8F0',
-                  borderRadius: '8px',
-                  padding: '12px',
-                  background: '#F8FAFC',
-                  fontSize: '11px',
-                  lineHeight: '1.6',
-                  fontFamily: 'monospace',
-                  whiteSpace: 'pre-wrap',
-                  maxHeight: '200px',
-                  overflowY: 'auto'
-                }}>
-                  {relatedTask.clientContractText || '契約テンプレートが登録されていません。'}
-                </div>
+                {relatedTask.clientContractPdf ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <div style={{
+                      border: '1px solid #E2E8F0',
+                      borderRadius: '8px',
+                      overflow: 'hidden',
+                      height: '240px',
+                      background: '#F8FAFC',
+                      position: 'relative'
+                    }}>
+                      <iframe 
+                        src={relatedTask.clientContractPdf} 
+                        width="100%" 
+                        height="100%" 
+                        style={{ border: 'none' }}
+                        title="PDF Contract Preview"
+                      />
+                    </div>
+                    <button
+                      onClick={() => {
+                        const win = window.open();
+                        if (win) win.document.write(`<iframe src="${relatedTask.clientContractPdf}" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>`);
+                      }}
+                      style={{
+                        padding: '8px',
+                        background: '#EFF6FF',
+                        border: '1px solid #BFDBFE',
+                        color: 'var(--primary)',
+                        borderRadius: '6px',
+                        fontSize: '11px',
+                        fontWeight: 'bold',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '4px'
+                      }}
+                    >
+                      <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>open_in_new</span>
+                      PDF契約書を別窓で表示
+                    </button>
+                  </div>
+                ) : (
+                  <div style={{
+                    border: '1px solid #E2E8F0',
+                    borderRadius: '8px',
+                    padding: '12px',
+                    background: '#F8FAFC',
+                    fontSize: '11px',
+                    lineHeight: '1.6',
+                    fontFamily: 'monospace',
+                    whiteSpace: 'pre-wrap',
+                    maxHeight: '200px',
+                    overflowY: 'auto'
+                  }}>
+                    {relatedTask.clientContractText || '契約テンプレートが登録されていません。'}
+                  </div>
+                )}
               </div>
             </div>
 

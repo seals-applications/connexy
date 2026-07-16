@@ -20,6 +20,7 @@ export interface User {
   companyType?: 'client' | 'agency' | 'both';
   gender?: '男性' | '女性' | 'その他' | '無回答';
   contractTemplate?: string;
+  contractPdf?: string;
 }
 
 // 評価(Evaluation)の型定義
@@ -162,6 +163,8 @@ export interface ContractTask {
   agencyContractText?: string;
   agencyContractApprovedByClient?: boolean;
   agencyContractApprovedByAgency?: boolean;
+  clientContractPdf?: string;
+  agencyContractPdf?: string;
 }
 
 // 研修マスタ(DBではなく固定データとする)
@@ -471,7 +474,9 @@ const mapContractTask = (row: any): ContractTask => ({
   clientContractApprovedByAgency: row.client_contract_approved_by_agency,
   agencyContractText: row.agency_contract_text,
   agencyContractApprovedByClient: row.agency_contract_approved_by_client,
-  agencyContractApprovedByAgency: row.agency_contract_approved_by_agency
+  agencyContractApprovedByAgency: row.agency_contract_approved_by_agency,
+  clientContractPdf: row.client_contract_pdf,
+  agencyContractPdf: row.agency_contract_pdf
 });
 
 const unmapContractTask = (task: Partial<ContractTask>): any => {
@@ -488,6 +493,8 @@ const unmapContractTask = (task: Partial<ContractTask>): any => {
   if ('agencyContractText' in task) { row.agency_contract_text = task.agencyContractText; delete row.agencyContractText; }
   if ('agencyContractApprovedByClient' in task) { row.agency_contract_approved_by_client = task.agencyContractApprovedByClient; delete row.agencyContractApprovedByClient; }
   if ('agencyContractApprovedByAgency' in task) { row.agency_contract_approved_by_agency = task.agencyContractApprovedByAgency; delete row.agencyContractApprovedByAgency; }
+  if ('clientContractPdf' in task) { row.client_contract_pdf = task.clientContractPdf; delete row.clientContractPdf; }
+  if ('agencyContractPdf' in task) { row.agency_contract_pdf = task.agencyContractPdf; delete row.agencyContractPdf; }
   return row;
 };
 
@@ -566,6 +573,7 @@ const mapUser = (row: any): User => {
   const localType = localStorage.getItem('company_type_' + row.id) as 'client' | 'agency' | 'both' | null;
   const localGender = localStorage.getItem('company_gender_' + row.id) as '男性' | '女性' | 'その他' | '無回答' | null;
   const localContractTemplate = localStorage.getItem('company_contract_template_' + row.id);
+  const localContractPdf = localStorage.getItem('company_contract_pdf_' + row.id);
   
   const defaultReps: { [key: string]: string } = {
     sigma: 'シグマ 太郎',
@@ -667,7 +675,8 @@ const mapUser = (row: any): User => {
     prText: localPr || row.pr_text || defaultPrs[row.id] || '',
     companyType: localType || row.company_type || defaultTypes[row.id] || 'both',
     gender: localGender || '男性',
-    contractTemplate: localContractTemplate || defaultContractTemplate
+    contractTemplate: localContractTemplate || defaultContractTemplate,
+    contractPdf: localContractPdf || undefined
   };
 };
 
@@ -729,10 +738,90 @@ const defaultOfflineStaffs = [
   { id: 's_cocolabo_staff2', user_id: 'cocolabo', name: '四内 美伊', role: 'staff', login_id: 'cocolabo_s3', password: 'pass', base_location: '京都府京都市', nearest_station: '京都駅', price: 13000, skills: ['イベント運営'], completed_trainings: [] }
 ];
 
+const generate100RandomJobs = (): any[] => {
+  const jobsList: any[] = [];
+  const companies = ['sigma', 'alpha', 'beta', 'gamma', 'delta', 'seals', 'freer', 'cocolabo'];
+  const stations = ['新宿', '渋谷', '池袋', '五反田', '品川', '横浜', '梅田', '大崎', '六本木', '秋葉原'];
+  const locations = [
+    '東京都新宿区新宿', '東京都渋谷区神南', '東京都豊島区東池袋', '東京都品川区西五反田',
+    '東京都港区高輪', '神奈川県横浜市中区', '大阪府大阪市北区梅田', '東京都品川区大崎',
+    '東京都港区六本木', '東京都千代田区外神田'
+  ];
+  const roleTypes = ['キャンペーンクルー', 'クローザー', 'ディレクター', 'イベントMC'];
+  const salesChannels = ['ショップ', '量販店', '商業施設', '外販（スーパーなど）'];
+  const carriers = ['docomo', 'au/UQmobile', 'SoftBank/Y!mobile', 'Rakuten Mobile'];
+  const workLocations = ['店内', '外販（複合施設など）', '外販（スーパーなど）'];
+  
+  const titleTemplates = [
+    '【{station}】{carrier} 臨時イベントプロモーション・接客案内スタッフ',
+    '【{station}駅前】{role}募集！{carrier}ショップ獲得イベント要員',
+    '【{station}近郊】高単価！{carrier}・モバイル相談会ディレクション・運営',
+    '【{station}量販店】{carrier}ブース販売・クロージング特化クルー募集'
+  ];
+  
+  const descriptions = [
+    '大手通信キャリアのイベントブースにて、お声がけやティッシュ配り、サービスのご案内を行うお仕事です。未経験の方も歓迎します！',
+    'モバイル端末の新規契約、MNP乗り換え相談に特化した業務です。獲得スキルやクロージングに自信のある方のご応募お待ちしております。',
+    'イベントスペースや店舗前のブース設営から運営、集客のマイクパフォーマンス（MC）まで幅広くお任せします。リーダーシップを発揮できる環境です。',
+    '週末の来店客数増加に伴う、店頭プロモーション応援業務です。活気のある現場で、チームワークを活かして獲得目標を目指します！'
+  ];
+
+  for (let i = 1; i <= 100; i++) {
+    const rCompany = companies[i % companies.length];
+    const rIndex = i % stations.length;
+    const rStation = stations[rIndex];
+    const rLocation = locations[rIndex];
+    const rRole = roleTypes[i % roleTypes.length];
+    const rChannel = salesChannels[i % salesChannels.length];
+    const rCarrier = carriers[i % carriers.length];
+    const rWorkLoc = workLocations[i % workLocations.length];
+    const price = 12000 + (i % 9) * 1000;
+    
+    let title = titleTemplates[i % titleTemplates.length]
+      .replace('{station}', rStation)
+      .replace('{carrier}', rCarrier)
+      .replace('{role}', rRole);
+      
+    const desc = descriptions[i % descriptions.length];
+    const isUrgent = i % 7 === 0;
+    
+    const eventDay = 20 + (i % 25);
+    const eventMonth = 7 + Math.floor((20 + (i % 25)) / 31);
+    const eventMonthStr = eventMonth.toString().padStart(2, '0');
+    const eventDayStr = (eventDay % 28 + 1).toString().padStart(2, '0');
+    const eventDate = `2026-${eventMonthStr}-${eventDayStr}`;
+    
+    const dlDay = (eventDay % 28 + 1) - 2;
+    const dlDayStr = (dlDay > 0 ? dlDay : 1).toString().padStart(2, '0');
+    const applicationDeadline = `2026-${eventMonthStr}-${dlDayStr}`;
+
+    jobsList.push({
+      id: `rand_j_${i}`,
+      title,
+      description: desc,
+      author_id: rCompany,
+      price,
+      location_name: rLocation,
+      work_hours: i % 2 === 0 ? '10:00 - 19:00' : '11:00 - 20:00',
+      requirements: [`__JOB_CODE__::JOB-RAND-${1000 + i}`],
+      jobCode: `JOB-RAND-${1000 + i}`,
+      role_type: rRole,
+      sales_channel: rChannel,
+      carrier: rCarrier,
+      event_date: eventDate,
+      application_deadline: applicationDeadline,
+      work_location: rWorkLoc,
+      is_urgent: isUrgent
+    });
+  }
+  return jobsList;
+};
+
 const defaultOfflineJobs = [
   { id: 'j1', title: '【大崎駅】ドコモショップ出張ブース販売イベント要員', description: 'ドコモショップ出張イベントでのブース案内・獲得業務です。経験者優遇。', author_id: 'sigma', price: 15000, location_name: '東京都品川区大崎', work_hours: '10:00 - 19:00', requirements: ['__JOB_CODE__::JOB-100201'], role_type: 'キャンペーンクルー', sales_channel: 'ショップ', carrier: 'docomo', event_date: '2026-07-20', application_deadline: '2026-07-18', work_location: '外販（複合施設など）', is_urgent: true },
   { id: 'j2', title: '【新宿駅】au・UQモバイルの乗り換え案内スタッフ募集', description: '量販店店頭でのau・UQモバイル乗り換え案内クロージング業務です。', author_id: 'alpha', price: 18000, location_name: '東京都新宿区新宿', work_hours: '10:00 - 19:00', requirements: ['__JOB_CODE__::JOB-100202'], role_type: 'クローザー', sales_channel: '量販店', carrier: 'au/UQmobile', event_date: '2026-07-22', application_deadline: '2026-07-20', work_location: '店内', is_urgent: false },
-  { id: 'j3', title: '【渋谷駅】ソフトバンク・ワイモバイルの臨時イベントMC/クルー', description: '店舗前ブースでのチラシ・ノベルティ配布、およびマイクMC進行。未経験歓迎！', author_id: 'beta', price: 14000, location_name: '東京都渋谷区渋谷', work_hours: '11:00 - 20:00', requirements: ['__JOB_CODE__::JOB-100203'], role_type: 'キャンペーンクルー', sales_channel: 'ショップ', carrier: 'SoftBank/Y!mobile', event_date: '2026-07-21', application_deadline: '2026-07-19', work_location: '外販（スーパーなど）', is_urgent: false }
+  { id: 'j3', title: '【渋谷駅】ソフトバンク・ワイモバイルの臨時イベントMC/クルー', description: '店舗前ブースでのチラシ・ノベルティ配布、およびマイクMC進行。未経験歓迎！', author_id: 'beta', price: 14000, location_name: '東京都渋谷区渋谷', work_hours: '11:00 - 20:00', requirements: ['__JOB_CODE__::JOB-100203'], role_type: 'キャンペーンクルー', sales_channel: 'ショップ', carrier: 'SoftBank/Y!mobile', event_date: '2026-07-21', application_deadline: '2026-07-19', work_location: '外販（スーパーなど）', is_urgent: false },
+  ...generate100RandomJobs()
 ];
 
 const defaultOfflineTalents = [

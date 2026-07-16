@@ -21,6 +21,8 @@ export function SettingsDrawer({ isOpen, onClose, onLogoutSuccess }: SettingsDra
   const [prInput, setPrInput] = useState('');
   const [genderInput, setGenderInput] = useState<'男性' | '女性' | 'その他' | '無回答'>('男性');
   const [contractTemplateInput, setContractTemplateInput] = useState('');
+  const [contractPdfInput, setContractPdfInput] = useState('');
+  const [pdfName, setPdfName] = useState('');
 
   useEffect(() => {
     if (isOpen) {
@@ -35,6 +37,9 @@ export function SettingsDrawer({ isOpen, onClose, onLogoutSuccess }: SettingsDra
           setPrInput(user.prText || '');
           setGenderInput((user.gender as any) || '男性');
           setContractTemplateInput(user.contractTemplate || '');
+          setContractPdfInput(user.contractPdf || '');
+          const localPdfName = localStorage.getItem('company_contract_pdf_name_' + user.id) || '';
+          setPdfName(user.contractPdf ? (localPdfName || '登録済みPDF') : '');
         }
       };
       loadUser();
@@ -49,6 +54,30 @@ export function SettingsDrawer({ isOpen, onClose, onLogoutSuccess }: SettingsDra
     }
   };
 
+  const handlePdfUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.type !== 'application/pdf') {
+        alert('PDFファイルのみアップロード可能です。');
+        return;
+      }
+      if (file.size > 2 * 1024 * 1024) {
+        alert('ローカル保存制限のため、2MB以下のPDFファイルを選択してください。');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const result = event.target?.result as string;
+        setContractPdfInput(result);
+        setPdfName(file.name);
+        if (currentUser) {
+          localStorage.setItem('company_contract_pdf_name_' + currentUser.id, file.name);
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleProfileSave = () => {
     setProfileSaving(true);
     if (currentUser) {
@@ -59,6 +88,7 @@ export function SettingsDrawer({ isOpen, onClose, onLogoutSuccess }: SettingsDra
       localStorage.setItem('company_pr_' + currentUser.id, prInput);
       localStorage.setItem('company_gender_' + currentUser.id, genderInput);
       localStorage.setItem('company_contract_template_' + currentUser.id, contractTemplateInput);
+      localStorage.setItem('company_contract_pdf_' + currentUser.id, contractPdfInput);
 
       currentUser.representativeName = repNameInput;
       currentUser.email = emailInput;
@@ -67,6 +97,7 @@ export function SettingsDrawer({ isOpen, onClose, onLogoutSuccess }: SettingsDra
       currentUser.prText = prInput;
       currentUser.gender = genderInput;
       currentUser.contractTemplate = contractTemplateInput;
+      currentUser.contractPdf = contractPdfInput;
 
       if (!currentUser.staffId) {
         currentUser.staffName = repNameInput;
@@ -336,6 +367,55 @@ export function SettingsDrawer({ isOpen, onClose, onLogoutSuccess }: SettingsDra
                   onChange={e => setContractTemplateInput(e.target.value)} 
                   placeholder="マッチング時に相手に提示する業務委託契約書の本文を記入してください" 
                 />
+                
+                <div style={{ marginTop: '8px', borderTop: '1px dashed var(--border-color)', paddingTop: '10px' }}>
+                  <label style={{ fontSize: '11px', fontWeight: 'bold', color: 'var(--text-sub)' }}>または 契約書PDFファイルをアップロード (推奨)</label>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '6px' }}>
+                    <input 
+                      type="file" 
+                      accept="application/pdf" 
+                      onChange={handlePdfUpload}
+                      style={{ display: 'none' }}
+                      id="pdf-upload-input"
+                    />
+                    <label htmlFor="pdf-upload-input" style={{ padding: '6px 12px', background: '#F1F5F9', border: '1px solid #CBD5E1', borderRadius: '6px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                      <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>upload_file</span>
+                      PDFを選択
+                    </label>
+                    {pdfName && (
+                      <span style={{ fontSize: '11px', color: '#059669', display: 'inline-flex', alignItems: 'center', gap: '2px', fontWeight: 'bold' }}>
+                        <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>check_circle</span>
+                        {pdfName}
+                      </span>
+                    )}
+                  </div>
+                  {contractPdfInput && (
+                    <div style={{ marginTop: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <button 
+                        type="button" 
+                        onClick={() => {
+                          const win = window.open();
+                          if (win) win.document.write(`<iframe src="${contractPdfInput}" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>`);
+                        }} 
+                        style={{ padding: '6px 10px', background: '#EFF6FF', border: '1px solid #BFDBFE', color: 'var(--primary)', borderRadius: '6px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                      >
+                        <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>visibility</span>
+                        プレビュー
+                      </button>
+                      <button 
+                        type="button" 
+                        onClick={() => {
+                          setContractPdfInput('');
+                          setPdfName('');
+                        }} 
+                        style={{ padding: '6px 10px', background: '#FEF2F2', border: '1px solid #FCA5A5', color: '#DC2626', borderRadius: '6px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                      >
+                        <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>delete</span>
+                        削除
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </main>
