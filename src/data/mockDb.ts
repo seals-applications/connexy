@@ -522,10 +522,17 @@ const getOfflineData = (table: string, defaultData: any[]): any[] => {
         let merged = [...parsed];
         let updated = false;
         defaultData.forEach((defItem: any) => {
-          const exists = merged.some((item: any) => item.id === defItem.id);
-          if (!exists) {
+          const existingIndex = merged.findIndex((item: any) => item.id === defItem.id);
+          if (existingIndex === -1) {
             merged.push(defItem);
             updated = true;
+          } else {
+            // Update lat/lng if the default item has them but cached item doesn't (or they differ)
+            if (defItem.lat !== undefined && merged[existingIndex].lat !== defItem.lat) {
+              merged[existingIndex].lat = defItem.lat;
+              merged[existingIndex].lng = defItem.lng;
+              updated = true;
+            }
           }
         });
         if (updated) {
