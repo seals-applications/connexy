@@ -65,6 +65,7 @@ export function SearchPage() {
   const tempMarkerRef = useRef<any>(null);
   const [isNdaModalOpen, setIsNdaModalOpen] = useState(false);
   const [ndaAgreed, setNdaAgreed] = useState(false);
+  const [isCsvModalOpen, setIsCsvModalOpen] = useState(false);
 
   // ログインユーザーおよび限定公開先の動的管理用State
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -99,6 +100,8 @@ export function SearchPage() {
   const [filterChannels, setFilterChannels] = useSessionState<string[]>('connexy_filterChannels', []);
   const [filterMinPrice, setFilterMinPrice] = useSessionState<number>('connexy_filterMinPrice', 0);
   const [filterDeadlineDays, setFilterDeadlineDays] = useSessionState<number | null>('connexy_filterDeadlineDays', null);
+  const [showFavoritesOnly, setShowFavoritesOnly] = useSessionState<boolean>('connexy_showFavoritesOnly', false);
+  const [appliedJobIds, setAppliedJobIds] = useState<Set<string>>(new Set());
   
   // 人材用フィルター & ソート
   const [talentSortOrder, setTalentSortOrder] = useSessionState<'priceLow' | 'priceHigh'>('connexy_talentSortOrder', 'priceLow');
@@ -111,6 +114,110 @@ export function SearchPage() {
       setTempKeyword(searchKeyword);
     }
   }, [isFilterSheetOpen, searchKeyword]);
+
+  const [hasSavedFilters, setHasSavedFilters] = useState(false);
+
+  useEffect(() => {
+    setHasSavedFilters(!!localStorage.getItem('connexy_saved_filters'));
+  }, []);
+
+  const [isSamePriceAllDates, setIsSamePriceAllDates] = useState(true);
+
+  // 新着アラートバッジ
+  const [newMatchesCount, setNewMatchesCount] = useState(0);
+
+  useEffect(() => {
+    const saved = localStorage.getItem('connexy_saved_filters');
+    if (saved && jobs.length > 0) {
+      try {
+        const filters = JSON.parse(saved);
+        // 簡易チェック：保存条件でフィルタリング
+        const matches = jobs.filter(job => {
+          let matchesArea = true;
+          if (filters.filterArea === 'shinjuku') matchesArea = !!job.locationName?.includes('新宿');
+          else if (filters.filterArea === 'shibuya') matchesArea = !!job.locationName?.includes('渋谷');
+          else if (filters.filterArea === 'ikebukuro') matchesArea = !!job.locationName?.includes('池袋') || !!job.locationName?.includes('豊島');
+
+          let remainingDays = 999;
+          if (job.applicationDeadline) {
+            const dl = new Date(job.applicationDeadline.replace(/\//g, '-'));
+            if (!isNaN(dl.getTime())) {
+              const today = new Date();
+              dl.setHours(0, 0, 0, 0);
+              today.setHours(0, 0, 0, 0);
+              remainingDays = Math.ceil((dl.getTime() - today.getTime()) / (1000 * 3600 * 24));
+            }
+          }
+          if (remainingDays < 0) return false;
+          if (filters.filterDeadlineDays !== null && remainingDays > filters.filterDeadlineDays) return false;
+
+          return matchesArea;
+        });
+
+        const savedCount = parseInt(localStorage.getItem('connexy_last_seen_saved_count') || '0', 10);
+        if (matches.length > savedCount) {
+          setNewMatchesCount(matches.length - savedCount);
+        } else {
+          setNewMatchesCount(0);
+        }
+      } catch(e) {}
+    }
+  }, [jobs]);
+
+  const saveFilters = () => {
+    const filters = {
+      searchKeyword,
+      filterJobRoles,
+      filterCarriers,
+      filterChannels,
+      filterMinPrice,
+      filterDeadlineDays,
+      filterTalentSkills,
+      filterTalentCarriers,
+      filterTalentTrainings,
+      filterArea,
+      includeUrgent,
+      showFavoritesOnly
+    };
+    localStorage.setItem('connexy_saved_filters', JSON.stringify(filters));
+    setHasSavedFilters(true);
+    alert('現在の検索条件を保存しました');
+  };
+
+  const loadFilters = () => {
+    const saved = localStorage.getItem('connexy_saved_filters');
+    if (saved) {
+      try {
+        const filters = JSON.parse(saved);
+        setSearchKeyword(filters.searchKeyword || '');
+        setTempKeyword(filters.searchKeyword || '');
+        setFilterJobRoles(filters.filterJobRoles || []);
+        setFilterCarriers(filters.filterCarriers || []);
+        setFilterChannels(filters.filterChannels || []);
+        setFilterMinPrice(filters.filterMinPrice || 0);
+        setFilterDeadlineDays(filters.filterDeadlineDays ?? null);
+        setFilterTalentSkills(filters.filterTalentSkills || []);
+        setFilterTalentCarriers(filters.filterTalentCarriers || []);
+        setFilterTalentTrainings(filters.filterTalentTrainings || []);
+        setFilterArea(filters.filterArea || 'all');
+        setIncludeUrgent(filters.includeUrgent ?? false);
+        setShowFavoritesOnly(filters.showFavoritesOnly ?? false);
+        
+        // 更新確認済みにする
+        const matches = jobs.filter(job => {
+          let matchesArea = true;
+          if (filters.filterArea === 'shinjuku') matchesArea = !!job.locationName?.includes('新宿');
+          else if (filters.filterArea === 'shibuya') matchesArea = !!job.locationName?.includes('渋谷');
+          else if (filters.filterArea === 'ikebukuro') matchesArea = !!job.locationName?.includes('池袋') || !!job.locationName?.includes('豊島');
+          return matchesArea;
+        });
+        localStorage.setItem('connexy_last_seen_saved_count', matches.length.toString());
+        setNewMatchesCount(0);
+        
+        alert('保存された検索条件を呼び出しました');
+      } catch(e) {}
+    }
+  };
 
   useEffect(() => {
     if (viewMode === 'list') {
@@ -134,7 +241,6 @@ export function SearchPage() {
     isLimited: false
   });
 
-  const [isSamePriceAllDates, setIsSamePriceAllDates] = useState(true);
   const [commonPrice, setCommonPrice] = useState<number>(0);
   const [dailyPrices, setDailyPrices] = useState<{ [date: string]: number }>({});
   const [expenses, setExpenses] = useState<{
@@ -256,6 +362,21 @@ export function SearchPage() {
     setSelectedJob(null);
   };
 
+  const handleToggleFavoriteJob = async (jobId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!currentUser) return;
+    const newFavorites = await api.toggleFavoriteJob(currentUser.id, jobId);
+    setCurrentUser({ ...currentUser, favoriteJobIds: newFavorites });
+  };
+
+  const handleToggleFavoriteTalent = async (talentId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!currentUser) return;
+    const newFavorites = await api.toggleFavoriteTalent(currentUser.id, talentId);
+    setCurrentUser({ ...currentUser, favoriteTalentIds: newFavorites });
+  };
+
+
   // 一覧表示での単価・総額レンダリング
   const renderJobPrice = (job: Job) => {
     if (job.dailyPrices && Object.keys(job.dailyPrices).length > 0) {
@@ -330,6 +451,92 @@ export function SearchPage() {
     setCreateFormType(mode);
     setIsEditingLocationName(false);
     setIsCreateFormOpen(true);
+  };
+
+  const downloadCsvTemplate = () => {
+    const header = mode === 'job' 
+      ? 'title,description,locationName,price,eventDate\n案件タイトル,案件詳細,東京都新宿区...,15000,2024-12-01'
+      : 'name,skills,baseLocation,price,experience\n人材 太郎,営業,東京都新宿区,15000,3年';
+    const blob = new Blob([new Uint8Array([0xEF, 0xBB, 0xBF]), header], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', mode === 'job' ? 'job_template.csv' : 'talent_template.csv');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleCsvFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (evt) => {
+      const text = evt.target?.result as string;
+      const lines = text.split('\n');
+      if (lines.length <= 1) {
+        alert('CSVデータが空かヘッダーのみです');
+        return;
+      }
+      
+      try {
+        setIsRefreshing(true);
+        const currentUser = await api.getCurrentUser();
+        if (!currentUser) throw new Error('未ログイン');
+        
+        let successCount = 0;
+        for (let i = 1; i < lines.length; i++) {
+          const line = lines[i].trim();
+          if (!line) continue;
+          const cols = line.split(',');
+          
+          if (mode === 'job' && cols.length >= 5) {
+            const newJob: Job = {
+              id: 'job_' + Date.now() + '_' + i,
+              authorId: currentUser.id,
+              title: cols[0],
+              description: cols[1],
+              locationName: cols[2],
+              lat: 35.68 + (Math.random() * 0.1), // モック処理
+              lng: 139.76 + (Math.random() * 0.1),
+              price: parseInt(cols[3]) || 0,
+              eventDate: cols[4] || '未定',
+              createdAt: new Date().toISOString()
+            };
+            await api.addJob(newJob);
+            successCount++;
+          } else if (mode === 'talent' && cols.length >= 5) {
+            const newTalent: Talent = {
+              id: 'talent_' + Date.now() + '_' + i,
+              userId: currentUser.id,
+              companyName: currentUser.name,
+              name: cols[0],
+              maskedName: cols[0].substring(0, 1) + '○',
+              skills: [cols[1]],
+              baseLocation: cols[2],
+              lat: 35.68 + (Math.random() * 0.1),
+              lng: 139.76 + (Math.random() * 0.1),
+              price: parseInt(cols[3]) || 0,
+              experience: cols[4] || '未経験',
+              createdAt: new Date().toISOString()
+            };
+            await api.addTalent(newTalent);
+            successCount++;
+          }
+        }
+        alert(`${successCount}件のデータを一括登録しました`);
+        setIsCsvModalOpen(false);
+        await handleRefresh();
+      } catch (err) {
+        console.error(err);
+        alert('CSVのインポートに失敗しました');
+      } finally {
+        setIsRefreshing(false);
+        if (e.target) e.target.value = '';
+      }
+    };
+    reader.readAsText(file);
   };
 
   const geocodeAddress = async (address: string): Promise<{lat: number, lng: number}> => {
@@ -807,6 +1014,14 @@ export function SearchPage() {
           return false;
         }
       }
+      
+      // 5. お気に入りフィルター
+      if (showFavoritesOnly && currentUser) {
+        if (!currentUser.favoriteTalentIds?.includes(talent.id)) {
+          return false;
+        }
+      }
+      
       return true;
     });
 
@@ -820,7 +1035,7 @@ export function SearchPage() {
     });
 
     return list;
-  }, [talents, filterTalentSkills, filterTalentCarriers, filterTalentTrainings, talentSortOrder, searchKeyword]);
+  }, [talents, filterTalentSkills, filterTalentCarriers, filterTalentTrainings, talentSortOrder, searchKeyword, showFavoritesOnly, currentUser]);
 
   // 人材を「市町村・区」エリア単位にグループ化し、正確な位置を丸める（プライバシー保護）
   const groupedTalents = useMemo(() => {
@@ -944,9 +1159,16 @@ export function SearchPage() {
         }
       }
 
+      // 10. お気に入りフィルター
+      if (showFavoritesOnly && currentUser) {
+        if (!currentUser.favoriteJobIds?.includes(job.id)) {
+          return false;
+        }
+      }
+
       return matchesArea && matchesLimited && matchesUrgent;
     });
-  }, [jobs, filterArea, includeUrgent, currentUser, filterJobRoles, filterCarriers, filterChannels, filterMinPrice, filterDeadlineDays, searchKeyword, appliedJobIds]);
+  }, [jobs, filterArea, includeUrgent, currentUser, filterJobRoles, filterCarriers, filterChannels, filterMinPrice, filterDeadlineDays, searchKeyword, appliedJobIds, showFavoritesOnly]);
 
   const sortedJobs = useMemo(() => {
     let list = [...filteredJobs];
@@ -1286,6 +1508,7 @@ export function SearchPage() {
     }
   };
 
+
   const handleJobApplication = async () => {
     if (!currentUser || !selectedJob) return;
     
@@ -1593,6 +1816,23 @@ export function SearchPage() {
           <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
             <button 
               className="filter-btn" 
+              onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}
+              style={{ 
+                backgroundColor: showFavoritesOnly ? '#FEE2E2' : 'var(--surface-color)',
+                color: showFavoritesOnly ? '#EF4444' : 'var(--text-main)',
+                border: 'none',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                transition: 'all 0.2s ease',
+                marginLeft: '4px'
+              }}
+              title="お気に入りのみ表示"
+            >
+              <span className="material-symbols-outlined" style={{ fontVariationSettings: showFavoritesOnly ? "'FILL' 1" : "'FILL' 0" }}>
+                favorite
+              </span>
+            </button>
+            <button 
+              className="filter-btn" 
               onClick={handleRefresh}
             style={{ 
               backgroundColor: 'var(--surface-color)',
@@ -1846,11 +2086,23 @@ export function SearchPage() {
                           </span>
                         )}
                       </h3>
-                      {remainingDaysText && (
-                        <span style={{ margin: 0, fontSize: '11px', whiteSpace: 'nowrap', padding: '4px 8px', borderRadius: '8px', color: remainingDaysColor, backgroundColor: remainingDaysBg, fontWeight: 'bold' }}>
-                          {remainingDaysText}
-                        </span>
-                      )}
+                      <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                        {currentUser && (
+                          <button
+                            onClick={(e) => handleToggleFavoriteJob(job.id, e)}
+                            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', display: 'flex', alignItems: 'center' }}
+                          >
+                            <span className="material-symbols-outlined" style={{ fontSize: '20px', color: currentUser.favoriteJobIds?.includes(job.id) ? '#EF4444' : '#CBD5E1', fontVariationSettings: currentUser.favoriteJobIds?.includes(job.id) ? "'FILL' 1" : "'FILL' 0" }}>
+                              favorite
+                            </span>
+                          </button>
+                        )}
+                        {remainingDaysText && (
+                          <span style={{ margin: 0, fontSize: '11px', whiteSpace: 'nowrap', padding: '4px 8px', borderRadius: '8px', color: remainingDaysColor, backgroundColor: remainingDaysBg, fontWeight: 'bold' }}>
+                            {remainingDaysText}
+                          </span>
+                        )}
+                      </div>
                     </div>
 
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '11px', color: 'var(--text-sub)', marginTop: '-8px', marginBottom: '8px' }}>
@@ -1935,9 +2187,21 @@ export function SearchPage() {
                                   )}
                                 </h3>
                               </div>
+                              </div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <span className="status-badge badge-contracted" style={{ margin: 0, fontSize: '11px', background: '#D1FAE5', color: '#065F46', whiteSpace: 'nowrap' }}>稼働可能</span>
+                                {currentUser && (
+                                  <button
+                                    onClick={(e) => handleToggleFavoriteTalent(talent.id, e)}
+                                    style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', display: 'flex', alignItems: 'center' }}
+                                  >
+                                    <span className="material-symbols-outlined" style={{ fontSize: '20px', color: currentUser.favoriteTalentIds?.includes(talent.id) ? '#EF4444' : '#CBD5E1', fontVariationSettings: currentUser.favoriteTalentIds?.includes(talent.id) ? "'FILL' 1" : "'FILL' 0" }}>
+                                      favorite
+                                    </span>
+                                  </button>
+                                )}
+                              </div>
                             </div>
-                            <span className="status-badge badge-contracted" style={{ margin: 0, fontSize: '11px', background: '#D1FAE5', color: '#065F46', whiteSpace: 'nowrap' }}>稼働可能</span>
-                          </div>
                           
                           {talent.availableDates && (
                             <div className="job-location" style={{ color: 'var(--primary)', marginTop: '8px' }}>
@@ -1991,9 +2255,22 @@ export function SearchPage() {
             <span className="material-symbols-outlined">arrow_back_ios_new</span>
           </button>
           <h1 style={{ fontSize: '16px' }}>{selectedTalent?.maskedName}の詳細</h1>
-          <button className="icon-btn-dark">
-            <span className="material-symbols-outlined">more_vert</span>
-          </button>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            {currentUser && selectedTalent && (
+              <button 
+                className="icon-btn-dark"
+                onClick={(e) => handleToggleFavoriteTalent(selectedTalent.id, e)}
+                style={{ color: currentUser.favoriteTalentIds?.includes(selectedTalent.id) ? '#EF4444' : 'inherit' }}
+              >
+                <span className="material-symbols-outlined" style={{ fontVariationSettings: currentUser.favoriteTalentIds?.includes(selectedTalent.id) ? "'FILL' 1" : "'FILL' 0" }}>
+                  favorite
+                </span>
+              </button>
+            )}
+            <button className="icon-btn-dark">
+              <span className="material-symbols-outlined">more_vert</span>
+            </button>
+          </div>
         </header>
 
         <main className="list-area bg-gray" style={{ flex: 1, overflowY: 'auto', paddingBottom: '100px' }}>
@@ -2119,9 +2396,22 @@ export function SearchPage() {
             <span className="material-symbols-outlined">arrow_back_ios_new</span>
           </button>
           <h1 style={{ fontSize: '16px' }}>案件詳細</h1>
-          <button className="icon-btn-dark">
-            <span className="material-symbols-outlined">more_vert</span>
-          </button>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            {currentUser && selectedJob && (
+              <button 
+                className="icon-btn-dark"
+                onClick={(e) => handleToggleFavoriteJob(selectedJob.id, e)}
+                style={{ color: currentUser.favoriteJobIds?.includes(selectedJob.id) ? '#EF4444' : 'inherit' }}
+              >
+                <span className="material-symbols-outlined" style={{ fontVariationSettings: currentUser.favoriteJobIds?.includes(selectedJob.id) ? "'FILL' 1" : "'FILL' 0" }}>
+                  favorite
+                </span>
+              </button>
+            )}
+            <button className="icon-btn-dark">
+              <span className="material-symbols-outlined">more_vert</span>
+            </button>
+          </div>
         </header>
 
         <main className="list-area bg-gray" style={{ flex: 1, overflowY: 'auto', paddingBottom: '100px' }}>
@@ -3273,6 +3563,25 @@ export function SearchPage() {
             )}
           </div>
           
+          <div style={{ padding: '0 16px 16px 16px', display: 'flex', gap: '8px', flexDirection: 'column' }}>
+            <button 
+              onClick={saveFilters}
+              style={{ width: '100%', padding: '10px', background: 'var(--bg-gray)', border: '1px solid var(--border-color)', borderRadius: '8px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', fontWeight: 'bold', color: 'var(--text-main)', cursor: 'pointer' }}
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>save</span>
+              現在の検索条件を保存する
+            </button>
+            {hasSavedFilters && (
+              <button 
+                onClick={loadFilters}
+                style={{ width: '100%', padding: '10px', background: '#DBEAFE', border: '1px solid #BFDBFE', borderRadius: '8px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', fontWeight: 'bold', color: '#1E3A8A', cursor: 'pointer' }}
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>settings_backup_restore</span>
+                保存した検索条件を呼び出す
+              </button>
+            )}
+          </div>
+          
           <div className="filter-sheet-footer" style={{ display: 'flex', gap: '12px', padding: '16px', borderTop: '1px solid var(--border-color)', background: 'var(--surface-color)' }}>
             <button
               style={{
@@ -3541,11 +3850,55 @@ export function SearchPage() {
         </div>
       )}
 
-      <div className="fab-container">
+      <div className="fab-container" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+        <button 
+          className="fab-main" 
+          onClick={() => setIsCsvModalOpen(true)}
+          style={{ width: '40px', height: '40px', background: '#3B82F6' }}
+          title="CSV一括登録"
+        >
+          <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>upload_file</span>
+        </button>
         <button className="fab-main" onClick={handleOpenCreateForm}>
           <span className="material-symbols-outlined">add</span>
         </button>
       </div>
+
+      {isCsvModalOpen && (
+        <div className="modal-overlay" onClick={() => setIsCsvModalOpen(false)}>
+          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ padding: '24px', maxWidth: '400px' }}>
+            <h2 style={{ fontSize: '18px', marginBottom: '16px' }}>CSV一括登録</h2>
+            <p style={{ fontSize: '13px', color: 'var(--text-sub)', marginBottom: '16px' }}>
+              テンプレートをダウンロードし、データを入力してからアップロードしてください。<br/>
+              ※座標はダミー値が自動入力されます。
+            </p>
+            <button 
+              onClick={downloadCsvTemplate}
+              className="btn-outline" 
+              style={{ width: '100%', marginBottom: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>download</span>
+              テンプレートをダウンロード
+            </button>
+            <label 
+              className="btn-primary" 
+              style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', cursor: 'pointer' }}
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>upload</span>
+              CSVファイルを選択
+              <input 
+                type="file" 
+                accept=".csv" 
+                style={{ display: 'none' }} 
+                onChange={handleCsvFileUpload}
+              />
+            </label>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '24px' }}>
+              <button className="btn-outline" onClick={() => setIsCsvModalOpen(false)}>閉じる</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

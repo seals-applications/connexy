@@ -23,6 +23,8 @@ export interface User {
   gender?: '男性' | '女性' | 'その他' | '無回答';
   contractTemplate?: string;
   contractPdf?: string;
+  favoriteJobIds?: string[];
+  favoriteTalentIds?: string[];
 }
 
 // 評価(Evaluation)の型定義
@@ -589,6 +591,13 @@ const mapUser = (row: any): User => {
   const localContractTemplate = localStorage.getItem('company_contract_template_' + row.id);
   const localContractPdf = localStorage.getItem('company_contract_pdf_' + row.id);
   
+  let favoriteJobIds: string[] = [];
+  let favoriteTalentIds: string[] = [];
+  try {
+    favoriteJobIds = JSON.parse(localStorage.getItem('company_favorite_jobs_' + row.id) || '[]');
+    favoriteTalentIds = JSON.parse(localStorage.getItem('company_favorite_talents_' + row.id) || '[]');
+  } catch(e) {}
+  
   const defaultReps: { [key: string]: string } = {
     sigma: 'シグマ 太郎',
     alpha: 'アルファ 健',
@@ -690,7 +699,9 @@ const mapUser = (row: any): User => {
     companyType: localType || row.company_type || defaultTypes[row.id] || 'both',
     gender: localGender || '男性',
     contractTemplate: localContractTemplate || defaultContractTemplate,
-    contractPdf: localContractPdf || undefined
+    contractPdf: localContractPdf || undefined,
+    favoriteJobIds,
+    favoriteTalentIds
   };
 };
 
@@ -1715,6 +1726,36 @@ export const api = {
         saveOfflineData('staffs', list);
       }
     );
+  },
+
+  toggleFavoriteJob: async (userId: string, jobId: string): Promise<string[]> => {
+    let currentFavorites: string[] = [];
+    try {
+      currentFavorites = JSON.parse(localStorage.getItem('company_favorite_jobs_' + userId) || '[]');
+    } catch(e) {}
+    
+    if (currentFavorites.includes(jobId)) {
+      currentFavorites = currentFavorites.filter(id => id !== jobId);
+    } else {
+      currentFavorites.push(jobId);
+    }
+    localStorage.setItem('company_favorite_jobs_' + userId, JSON.stringify(currentFavorites));
+    return currentFavorites;
+  },
+
+  toggleFavoriteTalent: async (userId: string, talentId: string): Promise<string[]> => {
+    let currentFavorites: string[] = [];
+    try {
+      currentFavorites = JSON.parse(localStorage.getItem('company_favorite_talents_' + userId) || '[]');
+    } catch(e) {}
+    
+    if (currentFavorites.includes(talentId)) {
+      currentFavorites = currentFavorites.filter(id => id !== talentId);
+    } else {
+      currentFavorites.push(talentId);
+    }
+    localStorage.setItem('company_favorite_talents_' + userId, JSON.stringify(currentFavorites));
+    return currentFavorites;
   },
 
   updateCompanyStatus: async (companyId: string, status: 'pending' | 'approved' | 'rejected'): Promise<void> => {
