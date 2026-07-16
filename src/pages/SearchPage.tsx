@@ -3326,7 +3326,7 @@ export function SearchPage() {
 
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
             <span style={{ fontSize: '15px', fontWeight: 'bold', color: 'var(--text-main)' }}>
-              このエリアの募集: {selectedMapJobs.length}件
+              {selectedMapJobs.length > 0 ? extractArea(selectedMapJobs[0].locationName || '') : 'このエリア'}の募集: {selectedMapJobs.length}件
             </span>
             <button 
               onClick={() => setSelectedMapJobs(null)}
