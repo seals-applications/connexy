@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { setOptions, importLibrary } from '@googlemaps/js-api-loader';
-import { MarkerClusterer } from '@googlemaps/markerclusterer';
 import { api } from '../data/mockDb';
 import type { Job, Talent, Staff, Training, User, ContractTask } from '../data/mockDb';
 import { CalendarPicker } from '../components/CalendarPicker';
@@ -23,6 +22,7 @@ export function SearchPage() {
   const advancedMarkerClassRef = useRef<any>(null);
   const infoWindowClassRef = useRef<any>(null);
   const [isMapLoaded, setIsMapLoaded] = useState(false);
+  const [mapZoom, setMapZoom] = useState(14);
 
   const [mode, setMode] = useState<'talent' | 'job'>('job');
   const [viewMode, setViewMode] = useState<'map' | 'list'>('map');
@@ -500,6 +500,10 @@ export function SearchPage() {
         mapRef.current = map;
         setIsMapLoaded(true);
 
+        map.addListener('zoom_changed', () => {
+          setMapZoom(map.getZoom());
+        });
+
         map.addListener('click', () => {
           setSelectedMapJobs(null);
           setSelectedMapTalents(null);
@@ -976,6 +980,78 @@ export function SearchPage() {
     return Object.values(groups);
   }, [filteredJobs]);
 
+  const gridSize = useMemo(() => {
+    if (mapZoom >= 14) return 0;
+    if (mapZoom === 13) return 0.01;
+    if (mapZoom === 12) return 0.025;
+    if (mapZoom === 11) return 0.05;
+    if (mapZoom === 10) return 0.1;
+    if (mapZoom === 9) return 0.2;
+    if (mapZoom === 8) return 0.4;
+    return 0.8;
+  }, [mapZoom]);
+
+  const clusteredJobs = useMemo(() => {
+    if (gridSize === 0) return groupedJobs;
+    const clusters: typeof groupedJobs = [];
+    groupedJobs.forEach(group => {
+      let found = false;
+      for (const cluster of clusters) {
+        const latDiff = Math.abs(cluster.lat - group.lat);
+        const lngDiff = Math.abs(cluster.lng - group.lng);
+        if (latDiff < gridSize && lngDiff < gridSize) {
+          cluster.jobs = [...cluster.jobs, ...group.jobs];
+          cluster.hasUrgent = cluster.hasUrgent || group.hasUrgent;
+          const totalJobs = cluster.jobs.length;
+          const newJobs = group.jobs.length;
+          cluster.lat = (cluster.lat * (totalJobs - newJobs) + group.lat * newJobs) / totalJobs;
+          cluster.lng = (cluster.lng * (totalJobs - newJobs) + group.lng * newJobs) / totalJobs;
+          found = true;
+          break;
+        }
+      }
+      if (!found) {
+        clusters.push({
+          lat: group.lat,
+          lng: group.lng,
+          jobs: [...group.jobs],
+          hasUrgent: group.hasUrgent
+        });
+      }
+    });
+    return clusters;
+  }, [groupedJobs, gridSize]);
+
+  const clusteredTalents = useMemo(() => {
+    if (gridSize === 0) return filteredTalentGroups;
+    const clusters: typeof filteredTalentGroups = [];
+    filteredTalentGroups.forEach(group => {
+      let found = false;
+      for (const cluster of clusters) {
+        const latDiff = Math.abs(cluster.lat - group.lat);
+        const lngDiff = Math.abs(cluster.lng - group.lng);
+        if (latDiff < gridSize && lngDiff < gridSize) {
+          cluster.talents = [...cluster.talents, ...group.talents];
+          const totalTalents = cluster.talents.length;
+          const newTalents = group.talents.length;
+          cluster.lat = (cluster.lat * (totalTalents - newTalents) + group.lat * newTalents) / totalTalents;
+          cluster.lng = (cluster.lng * (totalTalents - newTalents) + group.lng * newTalents) / totalTalents;
+          found = true;
+          break;
+        }
+      }
+      if (!found) {
+        clusters.push({
+          lat: group.lat,
+          lng: group.lng,
+          talents: [...group.talents],
+          locationName: group.locationName
+        });
+      }
+    });
+    return clusters;
+  }, [filteredTalentGroups, gridSize]);
+
   // mode と data の変更を検知してマップのピンを出し分ける
   useEffect(() => {
     if (!isMapLoaded || !mapRef.current || !advancedMarkerClassRef.current || !infoWindowClassRef.current) return;
@@ -992,29 +1068,42 @@ export function SearchPage() {
     }
 
     const AdvancedMarkerElement = advancedMarkerClassRef.current;
-
     const newMarkers: any[] = [];
 
     if (mode === 'job') {
-      groupedJobs.forEach((group) => {
-        const circleColor = group.hasUrgent ? '#EF4444' : '#3B82F6';
+      clusteredJobs.forEach((group) => {
+        const isCluster = group.jobs.length > 1 && gridSize > 0;
+        
+        let circleColor = group.hasUrgent ? '#EF4444' : '#3B82F6';
+        let size = 32;
+        let fontSize = 14;
+        let border = '3px solid white';
+        let shadow = group.hasUrgent ? 'rgba(239, 68, 68, 0.4)' : 'rgba(59, 130, 246, 0.4)';
+        
+        if (isCluster) {
+          circleColor = '#1E3A8A';
+          size = 40;
+          fontSize = 15;
+          border = '3px solid #FFFFFF';
+          shadow = 'rgba(30, 58, 138, 0.5)';
+        }
         
         const pinElement = document.createElement('div');
         pinElement.style.cursor = 'pointer';
         pinElement.innerHTML = `
           <div style="
-            width: 32px;
-            height: 32px;
+            width: ${size}px;
+            height: ${size}px;
             background-color: ${circleColor};
-            border: 3px solid white;
+            border: ${border};
             border-radius: 50%;
-            box-shadow: 0 4px 6px ${group.hasUrgent ? 'rgba(239, 68, 68, 0.4)' : 'rgba(59, 130, 246, 0.4)'};
+            box-shadow: 0 4px 6px ${shadow};
             display: flex;
             align-items: center;
             justify-content: center;
             color: white;
             font-weight: bold;
-            font-size: 14px;
+            font-size: ${fontSize}px;
             transition: transform 0.15s ease;
           ">
             ${group.jobs.length}
@@ -1032,12 +1121,16 @@ export function SearchPage() {
 
         const marker = new AdvancedMarkerElement({
           position: { lat: group.lat, lng: group.lng },
+          map: mapRef.current,
           content: pinElement,
-          title: `案件: ${group.jobs.length}件`,
+          title: isCluster ? `案件クラスター: ${group.jobs.length}件` : `案件: ${group.jobs.length}件`,
         });
-        (marker as any).customCount = group.jobs.length;
 
         marker.addListener('click', () => {
+          if (isCluster) {
+            mapRef.current.setZoom(mapRef.current.getZoom() + 2);
+            mapRef.current.panTo({ lat: group.lat, lng: group.lng });
+          }
           setSelectedMapJobs(group.jobs);
           setSelectedMapTalents(null);
         });
@@ -1045,23 +1138,39 @@ export function SearchPage() {
         newMarkers.push(marker);
       });
     } else {
-      filteredTalentGroups.forEach((group) => {
+      clusteredTalents.forEach((group) => {
+        const isCluster = group.talents.length > 1 && gridSize > 0;
+        
+        let circleColor = '#10B981';
+        let size = 32;
+        let fontSize = 14;
+        let border = '3px solid white';
+        let shadow = 'rgba(16, 185, 129, 0.4)';
+        
+        if (isCluster) {
+          circleColor = '#065F46';
+          size = 40;
+          fontSize = 15;
+          border = '3px solid #FFFFFF';
+          shadow = 'rgba(6, 95, 70, 0.5)';
+        }
+        
         const pinElement = document.createElement('div');
         pinElement.style.cursor = 'pointer';
         pinElement.innerHTML = `
           <div style="
-            width: 32px;
-            height: 32px;
-            background-color: #10B981;
-            border: 3px solid white;
+            width: ${size}px;
+            height: ${size}px;
+            background-color: ${circleColor};
+            border: ${border};
             border-radius: 50%;
-            box-shadow: 0 4px 6px rgba(16, 185, 129, 0.4);
+            box-shadow: 0 4px 6px ${shadow};
             display: flex;
             align-items: center;
             justify-content: center;
             color: white;
             font-weight: bold;
-            font-size: 14px;
+            font-size: ${fontSize}px;
             transition: transform 0.15s ease;
           ">
             ${group.talents.length}
@@ -1079,13 +1188,17 @@ export function SearchPage() {
 
         const marker = new AdvancedMarkerElement({
           position: { lat: group.lat, lng: group.lng },
+          map: mapRef.current,
           content: pinElement,
-          title: `人材: ${group.talents.length}名`,
+          title: isCluster ? `人材クラスター: ${group.talents.length}名` : `人材: ${group.talents.length}名`,
         });
-        (marker as any).customCount = group.talents.length;
 
         marker.addListener('click', () => {
-          setSelectedMapTalents({ locationName: group.locationName, talents: group.talents });
+          if (isCluster) {
+            mapRef.current.setZoom(mapRef.current.getZoom() + 2);
+            mapRef.current.panTo({ lat: group.lat, lng: group.lng });
+          }
+          setSelectedMapTalents({ locationName: group.locationName || '複数エリア', talents: group.talents });
           setSelectedMapJobs(null);
         });
 
@@ -1095,68 +1208,7 @@ export function SearchPage() {
 
     markersRef.current = newMarkers;
 
-    // Create marker clusterer
-    clustererRef.current = new MarkerClusterer({
-      map: mapRef.current,
-      markers: newMarkers,
-      renderer: {
-        render: (cluster) => {
-          const { count, position, markers } = cluster;
-          let totalCount = 0;
-          if (markers) {
-            markers.forEach((m: any) => {
-              totalCount += m.customCount || 1;
-            });
-          } else {
-            totalCount = count;
-          }
-
-          const clusterContainer = document.createElement('div');
-          clusterContainer.style.cursor = 'pointer';
-          
-          let clusterBg = '#1E3A8A'; // 案件クラスターは濃い青
-          if (mode === 'talent') {
-            clusterBg = '#065F46'; // 人材クラスターは濃い緑
-          }
-
-          clusterContainer.innerHTML = `
-            <div style="
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              width: 40px;
-              height: 40px;
-              background-color: ${clusterBg};
-              color: #FFFFFF;
-              border: 3px solid #FFFFFF;
-              border-radius: 50%;
-              font-weight: 800;
-              font-size: 14px;
-              box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-              transition: transform 0.15s ease;
-            ">
-              ${totalCount}
-            </div>
-          `;
-
-          clusterContainer.addEventListener('mouseenter', () => {
-            const inner = clusterContainer.firstElementChild as HTMLElement;
-            if (inner) inner.style.transform = 'scale(1.1)';
-          });
-          clusterContainer.addEventListener('mouseleave', () => {
-            const inner = clusterContainer.firstElementChild as HTMLElement;
-            if (inner) inner.style.transform = 'scale(1)';
-          });
-
-          return new AdvancedMarkerElement({
-            position,
-            content: clusterContainer,
-          });
-        }
-      }
-    });
-
-  }, [isMapLoaded, mode, groupedJobs, filteredTalentGroups]);
+  }, [isMapLoaded, mode, clusteredJobs, clusteredTalents, mapZoom, gridSize]);
 
 
   const activeFiltersCount = useMemo(() => {
