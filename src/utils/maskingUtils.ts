@@ -1,6 +1,7 @@
 export function extractArea(address: string): string {
-  // 1. Try to match standard Japanese cities/wards/towns
-  const cityMatch = address.match(/([^都道府県\s]+?[市区町村])/);
+  // 1. Remove prefecture and match City/Ward/Town/Village, optionally followed by Ward
+  const stripped = address.replace(/^.+?[都道府県]/, '');
+  const cityMatch = stripped.match(/^(.+?[市区町村](?:.+?区)?)/);
   if (cityMatch) return cityMatch[1];
 
   // 2. Fallback: Check for major Tokyo districts/wards or popular areas

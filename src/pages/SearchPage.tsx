@@ -808,18 +808,24 @@ export function SearchPage() {
     return list;
   }, [talents, filterTalentSkills, filterTalentCarriers, filterTalentTrainings, talentSortOrder, searchKeyword]);
 
+  // 人材を「市町村・区」エリア単位にグループ化し、正確な位置を丸める（プライバシー保護）
   const groupedTalents = useMemo(() => {
     const groups: Record<string, { locationName: string, lat: number, lng: number, talents: Talent[] }> = {};
     filteredTalents.forEach(talent => {
-      if (!groups[talent.locationName]) {
-        groups[talent.locationName] = {
-          locationName: talent.locationName,
-          lat: talent.lat,
-          lng: talent.lng,
+      const areaKey = extractArea(talent.locationName || '');
+      
+      if (!groups[areaKey]) {
+        // 座標を約1.1km単位のグリッドに丸めて代表地点とする
+        const obfLat = Math.round(talent.lat * 100) / 100;
+        const obfLng = Math.round(talent.lng * 100) / 100;
+        groups[areaKey] = {
+          locationName: areaKey,
+          lat: obfLat,
+          lng: obfLng,
           talents: []
         };
       }
-      groups[talent.locationName].talents.push(talent);
+      groups[areaKey].talents.push(talent);
     });
     return Object.values(groups);
   }, [filteredTalents]);
@@ -959,22 +965,26 @@ export function SearchPage() {
     });
   }, [groupedTalents, filterArea]);
 
-  // 案件をエリア（座標）ごとにグループ化する
+  // 案件を「市町村・区」エリア単位にグループ化し、正確な位置を丸める（プライバシー保護）
   const groupedJobs = useMemo(() => {
     const groups: Record<string, { lat: number, lng: number, jobs: Job[], hasUrgent: boolean }> = {};
     filteredJobs.forEach(job => {
-      const key = `${job.lat.toFixed(4)},${job.lng.toFixed(4)}`; // 座標でグループ化
-      if (!groups[key]) {
-        groups[key] = {
-          lat: job.lat,
-          lng: job.lng,
+      const areaKey = extractArea(job.locationName || '');
+      
+      if (!groups[areaKey]) {
+        // 座標を約1.1km単位のグリッドに丸めて代表地点とする
+        const obfLat = Math.round(job.lat * 100) / 100;
+        const obfLng = Math.round(job.lng * 100) / 100;
+        groups[areaKey] = {
+          lat: obfLat,
+          lng: obfLng,
           jobs: [],
           hasUrgent: false
         };
       }
-      groups[key].jobs.push(job);
+      groups[areaKey].jobs.push(job);
       if (job.isUrgent) {
-        groups[key].hasUrgent = true;
+        groups[areaKey].hasUrgent = true;
       }
     });
     return Object.values(groups);
