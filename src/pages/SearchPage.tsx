@@ -101,7 +101,7 @@ export function SearchPage() {
   const [filterMinPrice, setFilterMinPrice] = useSessionState<number>('connexy_filterMinPrice', 0);
   const [filterDeadlineDays, setFilterDeadlineDays] = useSessionState<number | null>('connexy_filterDeadlineDays', null);
   const [showFavoritesOnly, setShowFavoritesOnly] = useSessionState<boolean>('connexy_showFavoritesOnly', false);
-  const [appliedJobIds, setAppliedJobIds] = useState<Set<string>>(new Set());
+
   
   // 人材用フィルター & ソート
   const [talentSortOrder, setTalentSortOrder] = useSessionState<'priceLow' | 'priceHigh'>('connexy_talentSortOrder', 'priceLow');
@@ -501,8 +501,7 @@ export function SearchPage() {
               lat: 35.68 + (Math.random() * 0.1), // モック処理
               lng: 139.76 + (Math.random() * 0.1),
               price: parseInt(cols[3]) || 0,
-              eventDate: cols[4] || '未定',
-              createdAt: new Date().toISOString()
+              eventDate: cols[4] || '未定'
             };
             await api.addJob(newJob);
             successCount++;
@@ -513,13 +512,14 @@ export function SearchPage() {
               companyName: currentUser.name,
               name: cols[0],
               maskedName: cols[0].substring(0, 1) + '○',
+              description: 'インポートされたデータ',
+              locationName: cols[2],
               skills: [cols[1]],
               baseLocation: cols[2],
               lat: 35.68 + (Math.random() * 0.1),
               lng: 139.76 + (Math.random() * 0.1),
               price: parseInt(cols[3]) || 0,
-              experience: cols[4] || '未経験',
-              createdAt: new Date().toISOString()
+              experience: cols[4] || '未経験'
             };
             await api.addTalent(newTalent);
             successCount++;
@@ -1883,6 +1883,26 @@ export function SearchPage() {
                 border: '2px solid white'
               }}>
                 {activeFiltersCount}
+              </span>
+            )}
+            {newMatchesCount > 0 && activeFiltersCount === 0 && (
+              <span style={{
+                position: 'absolute',
+                top: '-4px',
+                right: '-4px',
+                background: '#3B82F6',
+                color: 'white',
+                borderRadius: '50%',
+                width: '16px',
+                height: '16px',
+                fontSize: '10px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontWeight: 'bold',
+                boxShadow: '0 2px 4px rgba(59,130,246,0.3)'
+              }}>
+                {newMatchesCount}
               </span>
             )}
           </button>
