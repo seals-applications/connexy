@@ -89,7 +89,7 @@ export function ManagementPage() {
 
   // Tab/Subpage state
   const isUserAdmin = !currentUser?.staffId || currentUser.staffRole === 'admin';
-  const [subPage, setSubPage] = useState<'none' | 'posts' | 'staffs' | 'reports' | 'logs' | 'training' | 'analytics' | 'ai_security'>('none');
+  const [subPage, setSubPage] = useState<'none' | 'posts' | 'staffs' | 'reports' | 'logs' | 'training' | 'analytics'>('none');
 
   // プロフィール充実度
   const profileCompletion = useMemo(() => {
@@ -1075,108 +1075,6 @@ export function ManagementPage() {
     localStorage.setItem(`connexy_ng_dates_${currentUser?.id || 'guest'}`, JSON.stringify(updated));
   };
 
-  // AI 不正防止・コンプライアンス監視用データ＆ハンドラー
-  interface AIFraudLog {
-    id: string;
-    chatId: string;
-    senderName: string;
-    receiverName: string;
-    detectedText: string;
-    riskCategory: '直取引・抜き行為' | '個人情報過度要求' | '威圧・不当要求';
-    riskLevel: 'critical' | 'warning' | 'info';
-    aiConfidence: number;
-    timestamp: string;
-    status: 'unresolved' | 'warned' | 'frozen' | 'resolved';
-  }
-
-  const [aiFraudLogs, setAiFraudLogs] = useState<AIFraudLog[]>([
-    {
-      id: 'fraud_101',
-      chatId: 'chat_alpha_sigma',
-      senderName: '株式会社アルファ (発注者)',
-      receiverName: 'シグマプロモーション (ワーカー)',
-      detectedText: '「システム利用料を浮かせるため、次回から直接振込で直接契約しませんか？連絡先LINEを教えてください。」',
-      riskCategory: '直取引・抜き行為',
-      riskLevel: 'critical',
-      aiConfidence: 97,
-      timestamp: '2026-07-21 14:20',
-      status: 'unresolved'
-    },
-    {
-      id: 'fraud_102',
-      chatId: 'chat_beta_gamma',
-      senderName: '合同会社ガンマ (ワーカー)',
-      receiverName: 'ベータ株式会社 (発注者)',
-      detectedText: '「本人確認と身元証明のため、チャット欄に運転免許証とマイナンバーカードの表面裏面写真を添付してください。」',
-      riskCategory: '個人情報過度要求',
-      riskLevel: 'warning',
-      aiConfidence: 91,
-      timestamp: '2026-07-20 18:45',
-      status: 'unresolved'
-    },
-    {
-      id: 'fraud_103',
-      chatId: 'chat_delta_alpha',
-      senderName: 'デルタ合同会社 (発注者)',
-      receiverName: '株式会社アルファ (パートナー)',
-      detectedText: '「こちらの提示額で合意しない場合、プラットフォーム上で最低評価を付けてペナルティ報告しますよ。」',
-      riskCategory: '威圧・不当要求',
-      riskLevel: 'warning',
-      aiConfidence: 86,
-      timestamp: '2026-07-19 11:05',
-      status: 'warned'
-    }
-  ]);
-
-  const [aiAutoWarningEnabled, setAiAutoWarningEnabled] = useState(true);
-  const [aiAutoFreezeEnabled, setAiAutoFreezeEnabled] = useState(false);
-
-  const handleSendAIWarning = (id: string) => {
-    setAiFraudLogs(prev => prev.map(log => log.id === id ? { ...log, status: 'warned' } : log));
-    alert('運営事務局より該当チャットルームへ「コンプライアンス違反警告メッセージ」を送信しました。');
-  };
-
-  const handleFreezeChat = (id: string) => {
-    setAiFraudLogs(prev => prev.map(log => log.id === id ? { ...log, status: 'frozen' } : log));
-    alert('該当チャットルームのメッセージ送信機能を一時凍結しました。');
-  };
-
-  const handleResolveAILog = (id: string) => {
-    setAiFraudLogs(prev => prev.map(log => log.id === id ? { ...log, status: 'resolved' } : log));
-    alert('該当検知ログを「審査完了・対応済み」へ変更しました。');
-  };
-
-  // 運営専用 統合プラットフォーム分析用State & CSVダウンロード
-  const [analyticsPeriod, setAnalyticsPeriod] = useState<'7d' | '30d' | 'month' | 'all'>('30d');
-
-  const handleExportAdminAnalyticsCSV = () => {
-    try {
-      const headers = ['日付', '新規案件掲載数', '応募総数', '成立成約数', '案件マッチング率(%)', '日次総流通額(円)', '運営手数料収入(円)'];
-      const mockDailyData = [
-        ['2026-07-21', 32, 45, 30, '93.8%', 580000, 116000],
-        ['2026-07-20', 28, 40, 27, '96.4%', 520000, 104000],
-        ['2026-07-19', 30, 42, 28, '93.3%', 540000, 108000],
-        ['2026-07-18', 25, 38, 24, '96.0%', 480000, 96000],
-        ['2026-07-17', 22, 32, 20, '90.9%', 420000, 84000],
-        ['2026-07-16', 18, 28, 17, '94.4%', 350000, 70000],
-        ['2026-07-15', 16, 25, 15, '93.8%', 310000, 62000]
-      ];
-      
-      const csvContent = '\uFEFF' + [headers.join(','), ...mockDailyData.map(r => r.join(','))].join('\n');
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `CONNEXY_運営プラットフォーム日次全指標_${new Date().toISOString().slice(0, 10)}.csv`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-    } catch (e) {
-      console.error(e);
-      alert('統計CSVエクスポートに失敗しました。');
-    }
-  };
-
 
 
   // Quizzes and Training methods
@@ -1187,6 +1085,7 @@ export function ManagementPage() {
     setQuizScore(null);
     setQuizCompleted(false);
   };
+  void handleStartQuiz;
 
   const handleQuizAnswer = (optionIndex: number) => {
     if (!activeQuizId) return;
@@ -1221,8 +1120,7 @@ export function ManagementPage() {
     { id: 'staffs', label: 'スタッフ管理', desc: 'メンバー登録、アカウント追加、権限管理', icon: 'groups', bg: '#ECFDF5', color: '#059669' },
     { id: 'reports', label: '報告・評価', desc: '業務完了報告の確認とスタッフ相互評価', icon: 'rate_review', bg: '#FDF2F8', color: '#DB2777' },
     { id: 'logs', label: '出勤管理', desc: '自社スタッフの出勤予定カレンダーと打刻履歴', icon: 'history', bg: '#EFF6FF', color: '#1D4ED8' },
-    { id: 'analytics', label: '分析・ダッシュボード', desc: '利用実績、応募率、成約総額のグラフ可視化', icon: 'analytics', bg: '#F3E8FF', color: '#7E22CE' },
-    { id: 'ai_security', label: 'AI不正監視・コンプライアンス', desc: 'AIによる直取引・抜き行為・不当メッセージのリアルタイム自動判定・保護', icon: 'shield_lock', bg: '#FEE2E2', color: '#DC2626' },
+    { id: 'analytics', label: '分析・ダッシュボード', desc: '自社の取引実績、完了率、対応履歴の可視化', icon: 'analytics', bg: '#F3E8FF', color: '#7E22CE' },
   ] : [
     { id: 'training', label: '研修・クイズ', desc: '動画視聴と理解度テストの受講（準備中 / Coming Soon）', icon: 'school', bg: '#F1F5F9', color: '#94A3B8', disabled: true },
     { id: 'reports', label: '報告・評価', desc: '完了した業務の評価と元請けへの評価送信', icon: 'rate_review', bg: '#FDF2F8', color: '#DB2777' },
@@ -1967,61 +1865,11 @@ export function ManagementPage() {
           <main className="list-area bg-gray" style={{ flex: 1, overflowY: 'auto', padding: '16px', paddingBottom: '90px' }}>
             <div style={{ background: '#FFFBEB', border: '1px solid #FDE68A', borderRadius: '12px', padding: '12px 16px', marginBottom: '16px', color: '#B45309', fontSize: '12px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px' }}>
               <span className="material-symbols-outlined" style={{ fontSize: '20px', color: '#D97706' }}>lock</span>
-              現在「研修・クイズ」機能は準備中 (Coming Soon) です。順次テスト動画および受講テストを公開予定です。
-            </div>
-            <div>
-              <h3 className="section-title" style={{ marginTop: 0 }}>受講済みの研修バッジ</h3>
-              <div style={{ background: 'var(--surface-color)', padding: '16px', borderRadius: '12px', border: '1px solid var(--border-color)', marginBottom: '16px' }}>
-                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                  {myStaff?.completedTrainings && myStaff.completedTrainings.filter(t => !t.startsWith('ATTENDANCE_LOG_') && !t.startsWith('CHECKIN_STATUS_')).length > 0 ? (
-                    myStaff.completedTrainings
-                      .filter(t => !t.startsWith('ATTENDANCE_LOG_') && !t.startsWith('CHECKIN_STATUS_'))
-                      .map(tid => {
-                        const tr = trainings.find(t => t.id === tid);
-                        return (
-                          <span key={tid} style={{ background: '#D1FAE5', color: '#065F46', padding: '4px 8px', borderRadius: '12px', fontSize: '11px', fontWeight: 'bold' }}>
-                            ✓ {tr?.title || tid}
-                          </span>
-                        );
-                      })
-                  ) : (
-                    <span style={{ fontSize: '12px', color: 'var(--text-sub)' }}>現在、受講完了している研修はありません。</span>
-                  )}
-                </div>
-              </div>
-
-              <h3 className="section-title">研修一覧・テスト受講</h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                {trainings.map(tr => {
-                  const isCompleted = myStaff?.completedTrainings?.includes(tr.id);
-                  return (
-                    <div key={tr.id} style={{ background: 'var(--surface-color)', padding: '14px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
-                      <strong style={{ fontSize: '13px', display: 'block', color: 'var(--text-main)' }}>{tr.title}</strong>
-                      
-                      {isCompleted ? (
-                        <div style={{ background: '#ECFDF5', color: '#065F46', fontSize: '11px', padding: '6px 8px', borderRadius: '6px', marginTop: '8px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                          <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>check_circle</span>
-                          受講完了済み（合格）
-                        </div>
-                      ) : (
-                        <div style={{ marginTop: '8px', display: 'flex', gap: '8px' }}>
-                          <a href={tr.zoomLink} target="_blank" rel="noreferrer" style={{ flex: 1, textDecoration: 'none', background: '#EFF6FF', color: 'var(--primary)', textAlign: 'center', padding: '6px', borderRadius: '6px', fontSize: '11px', fontWeight: 'bold', border: '1px solid #BFDBFE' }}>
-                            研修動画を視聴
-                          </a>
-                          <button onClick={() => handleStartQuiz(tr.id)} style={{ flex: 1, background: 'var(--primary)', color: 'white', border: 'none', padding: '6px', borderRadius: '6px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}>
-                            テストを受講する
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
+              現在「研修・クイズ」機能は準備中 (Coming Soon) です。
             </div>
           </main>
         </div>
       )}
-
 
       {/* (G) Analytics Dashboard Overlay */}
       <div className={`overlay-view ${subPage === 'analytics' ? 'show' : ''}`} style={{ zIndex: 1100, display: 'flex', flexDirection: 'column' }}>
@@ -2029,399 +1877,28 @@ export function ManagementPage() {
           <button className="icon-btn-dark" onClick={() => setSubPage('none')}>
             <span className="material-symbols-outlined">arrow_back_ios_new</span>
           </button>
-          <h1 style={{ fontSize: '16px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <span className="material-symbols-outlined" style={{ color: '#7E22CE' }}>analytics</span>
-            {isUserAdmin ? '運営専用 統合プラットフォーム分析' : '分析・ダッシュボード'}
-          </h1>
+          <h1 style={{ fontSize: '16px', fontWeight: 'bold' }}>分析・ダッシュボード</h1>
           <div style={{ width: '40px' }}></div>
         </header>
 
         <main className="list-area bg-gray" style={{ flex: 1, overflowY: 'auto', padding: '16px', paddingBottom: '90px' }}>
-          {/* Admin Executive Header */}
-          {isUserAdmin ? (
-            <div>
-              {/* Period Selector Bar */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '8px' }}>
-                <div style={{ display: 'flex', background: '#E2E8F0', padding: '2px', borderRadius: '8px' }}>
-                  {[
-                    { id: '7d', label: '直近7日' },
-                    { id: '30d', label: '直近30日' },
-                    { id: 'month', label: '今月' },
-                    { id: 'all', label: '全期間' }
-                  ].map(p => (
-                    <button
-                      key={p.id}
-                      onClick={() => setAnalyticsPeriod(p.id as any)}
-                      style={{
-                        padding: '6px 12px',
-                        borderRadius: '6px',
-                        border: 'none',
-                        background: analyticsPeriod === p.id ? 'white' : 'transparent',
-                        color: analyticsPeriod === p.id ? 'var(--text-main)' : 'var(--text-sub)',
-                        fontSize: '11px',
-                        fontWeight: 'bold',
-                        cursor: 'pointer',
-                        boxShadow: analyticsPeriod === p.id ? '0 1px 3px rgba(0,0,0,0.1)' : 'none'
-                      }}
-                    >
-                      {p.label}
-                    </button>
-                  ))}
-                </div>
-
-                <button
-                  onClick={handleExportAdminAnalyticsCSV}
-                  style={{ background: '#7E22CE', color: 'white', border: 'none', borderRadius: '6px', padding: '6px 12px', fontSize: '11px', fontWeight: 'bold', display: 'inline-flex', alignItems: 'center', gap: '4px', cursor: 'pointer', boxShadow: '0 2px 4px rgba(126, 34, 206, 0.2)' }}
-                >
-                  <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>download</span>
-                  全指標CSVエクスポート
-                </button>
-              </div>
-
-              {/* 4 Major Platform KPI Summary Cards */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px', marginBottom: '16px' }}>
-                <div style={{ background: 'var(--surface-color)', padding: '14px', borderRadius: '12px', border: '1px solid var(--border-color)', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
-                  <div style={{ fontSize: '11px', color: 'var(--text-sub)', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <span className="material-symbols-outlined" style={{ fontSize: '14px', color: '#3B82F6' }}>receipt_long</span>
-                    日別平均取引件数
-                  </div>
-                  <div style={{ fontSize: '20px', fontWeight: 'bold', color: 'var(--text-main)' }}>
-                    28.4 <span style={{ fontSize: '11px', fontWeight: 'normal', color: '#10B981' }}>件/日 (+14.2%)</span>
-                  </div>
-                </div>
-
-                <div style={{ background: 'var(--surface-color)', padding: '14px', borderRadius: '12px', border: '1px solid var(--border-color)', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
-                  <div style={{ fontSize: '11px', color: 'var(--text-sub)', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <span className="material-symbols-outlined" style={{ fontSize: '14px', color: '#F59E0B' }}>campaign</span>
-                    アクティブ案件掲載数
-                  </div>
-                  <div style={{ fontSize: '20px', fontWeight: 'bold', color: 'var(--text-main)' }}>
-                    142 <span style={{ fontSize: '11px', fontWeight: 'normal', color: 'var(--text-sub)' }}>件 (+18件/日)</span>
-                  </div>
-                </div>
-
-                <div style={{ background: 'var(--surface-color)', padding: '14px', borderRadius: '12px', border: '1px solid var(--border-color)', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
-                  <div style={{ fontSize: '11px', color: 'var(--text-sub)', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <span className="material-symbols-outlined" style={{ fontSize: '14px', color: '#10B981' }}>handshake</span>
-                    案件マッチング成功率
-                  </div>
-                  <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#10B981' }}>
-                    94.2% <span style={{ fontSize: '11px', fontWeight: 'normal', color: 'var(--text-sub)' }}>(高アサイン率)</span>
-                  </div>
-                </div>
-
-                <div style={{ background: 'var(--surface-color)', padding: '14px', borderRadius: '12px', border: '1px solid var(--border-color)', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
-                  <div style={{ fontSize: '11px', color: 'var(--text-sub)', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <span className="material-symbols-outlined" style={{ fontSize: '14px', color: '#7E22CE' }}>monetization_on</span>
-                    プラットフォーム月間流通額
-                  </div>
-                  <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#7E22CE' }}>
-                    ¥24.8M <span style={{ fontSize: '10px', fontWeight: 'normal', color: 'var(--text-sub)' }}>(手数料: ¥4.9M)</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Daily Transactions & Job Postings Trend Chart */}
-              <div style={{ background: 'var(--surface-color)', padding: '16px', borderRadius: '12px', border: '1px solid var(--border-color)', marginBottom: '16px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                  <h3 style={{ margin: 0, fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)' }}>日次取引件数 & 新規掲載推移 (直近7日間)</h3>
-                  <div style={{ display: 'flex', gap: '12px', fontSize: '10px' }}>
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: '#4F46E5', fontWeight: 'bold' }}>
-                      <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#4F46E5' }}></span> 掲載数
-                    </span>
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: '#10B981', fontWeight: 'bold' }}>
-                      <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10B981' }}></span> 成立取引数
-                    </span>
-                  </div>
-                </div>
-
-                <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', height: '150px', paddingTop: '20px', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px' }}>
-                  {[
-                    { date: '7/15', posted: 16, matched: 15, h1: '50%', h2: '45%' },
-                    { date: '7/16', posted: 18, matched: 17, h1: '55%', h2: '52%' },
-                    { date: '7/17', posted: 22, matched: 20, h1: '68%', h2: '62%' },
-                    { date: '7/18', posted: 25, matched: 24, h1: '78%', h2: '75%' },
-                    { date: '7/19', posted: 30, matched: 28, h1: '94%', h2: '88%' },
-                    { date: '7/20', posted: 28, matched: 27, h1: '88%', h2: '85%' },
-                    { date: '7/21', posted: 32, matched: 30, h1: '100%', h2: '94%' },
-                  ].map((item) => (
-                    <div key={item.date} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', flex: 1 }}>
-                      <div style={{ display: 'flex', gap: '3px', alignItems: 'flex-end', height: '110px' }}>
-                        <div title={`掲載: ${item.posted}件`} style={{ width: '12px', height: item.h1, background: '#818CF8', borderRadius: '3px 3px 0 0' }}></div>
-                        <div title={`成立: ${item.matched}件`} style={{ width: '12px', height: item.h2, background: '#10B981', borderRadius: '3px 3px 0 0' }}></div>
-                      </div>
-                      <span style={{ fontSize: '10px', color: 'var(--text-sub)' }}>{item.date}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Category Breakdown & Match Rates */}
-              <div style={{ background: 'var(--surface-color)', padding: '16px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
-                <h3 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)' }}>職種別マッチング率 & 平均取引単価</h3>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                  {[
-                    { category: '光回線・通信アライアンス', matchRate: '92.5%', avgPrice: '¥24,500', ratio: 45, color: '#4F46E5' },
-                    { category: 'イベント設営・ブース運営', matchRate: '96.8%', avgPrice: '¥18,000', ratio: 30, color: '#10B981' },
-                    { category: 'モバイル・店舗アサインサポート', matchRate: '94.0%', avgPrice: '¥16,500', ratio: 15, color: '#F59E0B' },
-                    { category: '現場店舗責任者 / SV統括', matchRate: '89.2%', avgPrice: '¥32,000', ratio: 10, color: '#7E22CE' },
-                  ].map((item) => (
-                    <div key={item.category} style={{ background: '#F8FAFC', padding: '10px 12px', borderRadius: '8px' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', fontWeight: 'bold', marginBottom: '4px' }}>
-                        <span>{item.category}</span>
-                        <span style={{ color: item.color }}>マッチ率 {item.matchRate} / 平均 {item.avgPrice}</span>
-                      </div>
-                      <div style={{ width: '100%', height: '6px', background: '#E2E8F0', borderRadius: '3px', overflow: 'hidden' }}>
-                        <div style={{ width: `${item.ratio * 2}%`, height: '100%', background: item.color }}></div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', marginBottom: '16px' }}>
+            <div style={{ background: 'var(--surface-color)', padding: '14px', borderRadius: '12px', border: '1px solid var(--border-color)', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+              <div style={{ fontSize: '12px', color: 'var(--text-sub)', marginBottom: '4px' }}>総案件・対応数</div>
+              <div style={{ fontSize: '22px', fontWeight: 'bold', color: 'var(--primary)' }}>
+                {tasks.length} <span style={{ fontSize: '12px', fontWeight: 'normal', color: 'var(--text-sub)' }}>件</span>
               </div>
             </div>
-          ) : (
-            /* General Staff Dashboard View */
-            <div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', marginBottom: '16px' }}>
-                <div style={{ background: 'var(--surface-color)', padding: '14px', borderRadius: '12px', border: '1px solid var(--border-color)', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-                  <div style={{ fontSize: '12px', color: 'var(--text-sub)', marginBottom: '4px' }}>総案件・対応数</div>
-                  <div style={{ fontSize: '22px', fontWeight: 'bold', color: 'var(--primary)' }}>
-                    {tasks.length} <span style={{ fontSize: '12px', fontWeight: 'normal', color: 'var(--text-sub)' }}>件</span>
-                  </div>
-                </div>
 
-                <div style={{ background: 'var(--surface-color)', padding: '14px', borderRadius: '12px', border: '1px solid var(--border-color)', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-                  <div style={{ fontSize: '12px', color: 'var(--text-sub)', marginBottom: '4px' }}>完了実績率</div>
-                  <div style={{ fontSize: '22px', fontWeight: 'bold', color: '#10B981' }}>
-                    {tasks.length > 0 ? Math.round((tasks.filter(t => t.status === 'completed').length / tasks.length) * 100) : 100}%
-                  </div>
-                </div>
-
-                <div style={{ background: 'var(--surface-color)', padding: '14px', borderRadius: '12px', border: '1px solid var(--border-color)', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-                  <div style={{ fontSize: '12px', color: 'var(--text-sub)', marginBottom: '4px' }}>累計取引金額</div>
-                  <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#8B5CF6' }}>
-                    ¥{tasks.reduce((sum, t) => sum + (t.price || 0), 0).toLocaleString()}
-                  </div>
-                </div>
-
-                <div style={{ background: 'var(--surface-color)', padding: '14px', borderRadius: '12px', border: '1px solid var(--border-color)', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-                  <div style={{ fontSize: '12px', color: 'var(--text-sub)', marginBottom: '4px' }}>高評価平均</div>
-                  <div style={{ fontSize: '22px', fontWeight: 'bold', color: '#F59E0B', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <span className="material-symbols-outlined" style={{ fontSize: '22px' }}>star</span>
-                    4.8
-                  </div>
-                </div>
-              </div>
-
-              <div style={{ background: 'var(--surface-color)', padding: '16px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
-                <h3 style={{ margin: '0 0 12px 0', fontSize: '14px', fontWeight: 'bold', color: 'var(--text-main)' }}>月別成約・稼働推移</h3>
-                <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', height: '140px', paddingTop: '20px', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px' }}>
-                  {[
-                    { month: '2月', count: 12, height: '40%' },
-                    { month: '3月', count: 18, height: '60%' },
-                    { month: '4月', count: 15, height: '50%' },
-                    { month: '5月', count: 24, height: '80%' },
-                    { month: '6月', count: 28, height: '95%' },
-                    { month: '7月', count: 20, height: '70%' },
-                  ].map((item) => (
-                    <div key={item.month} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', flex: 1 }}>
-                      <span style={{ fontSize: '10px', color: 'var(--text-sub)', fontWeight: 'bold' }}>{item.count}件</span>
-                      <div style={{ width: '20px', height: item.height, background: 'linear-gradient(180deg, #6366F1 0%, #818CF8 100%)', borderRadius: '4px 4px 0 0' }}></div>
-                      <span style={{ fontSize: '11px', color: 'var(--text-sub)' }}>{item.month}</span>
-                    </div>
-                  ))}
-                </div>
+            <div style={{ background: 'var(--surface-color)', padding: '14px', borderRadius: '12px', border: '1px solid var(--border-color)', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+              <div style={{ fontSize: '12px', color: 'var(--text-sub)', marginBottom: '4px' }}>完了実績率</div>
+              <div style={{ fontSize: '22px', fontWeight: 'bold', color: '#10B981' }}>
+                {tasks.length > 0 ? Math.round((tasks.filter(t => t.status === 'completed').length / tasks.length) * 100) : 100}%
               </div>
             </div>
-          )}
+          </div>
         </main>
       </div>
-
-
-      {/* --- OVERLAYS & MODALS --- */}
-
-      {/* (G) AI Security & Anti-Fraud Center Overlay (Admin) */}
-      {isUserAdmin && (
-        <div className={`overlay-view ${subPage === 'ai_security' ? 'show' : ''}`} style={{ zIndex: 1100, display: 'flex', flexDirection: 'column' }}>
-          <header className="solid-header overlay-header" style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-            <button className="icon-btn-dark" onClick={() => setSubPage('none')}>
-              <span className="material-symbols-outlined">arrow_back_ios_new</span>
-            </button>
-            <h1 style={{ fontSize: '16px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <span className="material-symbols-outlined" style={{ color: '#EF4444' }}>shield_lock</span>
-              AI不正監視・コンプライアンス
-            </h1>
-            <div style={{ width: '40px' }}></div>
-          </header>
-
-          <main className="list-area bg-gray" style={{ flex: 1, overflowY: 'auto', padding: '16px', paddingBottom: '90px' }}>
-            {/* Realtime Status Banner */}
-            <div style={{ background: 'linear-gradient(135deg, #1E293B 0%, #0F172A 100%)', borderRadius: '16px', padding: '18px', color: 'white', marginBottom: '16px', boxShadow: '0 4px 14px rgba(0,0,0,0.1)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span className="material-symbols-outlined" style={{ color: '#10B981', fontSize: '24px' }}>verified_user</span>
-                  <div>
-                    <div style={{ fontSize: '15px', fontWeight: 'bold' }}>リアルタイムAIセーフティエンジン</div>
-                    <div style={{ fontSize: '11px', color: '#94A3B8' }}>全商談チャット・メッセージをNLP AIが自動スキャン中</div>
-                  </div>
-                </div>
-                <span style={{ background: '#065F46', color: '#D1FAE5', padding: '4px 10px', borderRadius: '12px', fontSize: '11px', fontWeight: 'bold', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                  <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10B981' }}></span>
-                  正常稼働中
-                </span>
-              </div>
-
-              {/* Security KPI Metrics */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', background: 'rgba(255,255,255,0.05)', padding: '12px', borderRadius: '10px' }}>
-                <div style={{ textAlign: 'center' }}>
-                  <div style={{ fontSize: '10px', color: '#94A3B8' }}>本日スキャンメッセージ</div>
-                  <div style={{ fontSize: '18px', fontWeight: 'bold', marginTop: '2px' }}>342 <span style={{ fontSize: '10px', fontWeight: 'normal' }}>件</span></div>
-                </div>
-                <div style={{ textAlign: 'center', borderLeft: '1px solid rgba(255,255,255,0.1)', borderRight: '1px solid rgba(255,255,255,0.1)' }}>
-                  <div style={{ fontSize: '10px', color: '#FCA5A5' }}>未対応リスク検知</div>
-                  <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#EF4444', marginTop: '2px' }}>
-                    {aiFraudLogs.filter(l => l.status === 'unresolved').length} <span style={{ fontSize: '10px', fontWeight: 'normal' }}>件</span>
-                  </div>
-                </div>
-                <div style={{ textAlign: 'center' }}>
-                  <div style={{ fontSize: '10px', color: '#94A3B8' }}>直取引・抜き行為防止率</div>
-                  <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#10B981', marginTop: '2px' }}>99.4%</div>
-                </div>
-              </div>
-            </div>
-
-            {/* AI Rules Toggle Panel */}
-            <div style={{ background: 'var(--surface-color)', borderRadius: '12px', padding: '16px', border: '1px solid var(--border-color)', marginBottom: '16px' }}>
-              <h3 className="section-title" style={{ marginTop: 0, marginBottom: '12px', fontSize: '13px' }}>AI自動防壁ルールの設定</h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px' }}>
-                  <div>
-                    <strong style={{ color: 'var(--text-main)' }}>直取引ワード検知時に運営警告バナーを自動挿入</strong>
-                    <div style={{ fontSize: '10px', color: 'var(--text-sub)' }}>「LINE」「直接振込」「手数料を浮かす」等を自動警告</div>
-                  </div>
-                  <input 
-                    type="checkbox" 
-                    checked={aiAutoWarningEnabled} 
-                    onChange={e => setAiAutoWarningEnabled(e.target.checked)} 
-                    style={{ width: '18px', height: '18px', cursor: 'pointer' }}
-                  />
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px', paddingTop: '8px', borderTop: '1px solid #F1F5F9' }}>
-                  <div>
-                    <strong style={{ color: 'var(--text-main)' }}>確信度95%以上の高リスクチャットを即時一時保留</strong>
-                    <div style={{ fontSize: '10px', color: 'var(--text-sub)' }}>悪質な抜き行為が疑われる場合にメッセージ送信を保留</div>
-                  </div>
-                  <input 
-                    type="checkbox" 
-                    checked={aiAutoFreezeEnabled} 
-                    onChange={e => setAiAutoFreezeEnabled(e.target.checked)} 
-                    style={{ width: '18px', height: '18px', cursor: 'pointer' }}
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* AI Fraud Detections Log Table */}
-            <h3 className="section-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span>AI判定検知ログ ({aiFraudLogs.length}件)</span>
-              <span style={{ fontSize: '11px', color: 'var(--text-sub)', fontWeight: 'normal' }}>AI確信度スコア順</span>
-            </h3>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              {aiFraudLogs.map(log => {
-                const isCritical = log.riskLevel === 'critical';
-                const isWarned = log.status === 'warned';
-                const isFrozen = log.status === 'frozen';
-                const isResolved = log.status === 'resolved';
-
-                return (
-                  <div key={log.id} style={{ background: 'var(--surface-color)', borderRadius: '12px', padding: '16px', border: isCritical ? '1px solid #FCA5A5' : '1px solid var(--border-color)', boxShadow: '0 2px 6px rgba(0,0,0,0.02)' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                      <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-                        <span style={{ 
-                          background: isCritical ? '#FEE2E2' : '#FEF3C7', 
-                          color: isCritical ? '#991B1B' : '#92400E', 
-                          fontSize: '10px', 
-                          fontWeight: 'bold', 
-                          padding: '2px 8px', 
-                          borderRadius: '10px',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '4px'
-                        }}>
-                          <span className="material-symbols-outlined" style={{ fontSize: '12px' }}>
-                            {isCritical ? 'warning' : 'info'}
-                          </span>
-                          {log.riskCategory}
-                        </span>
-                        <span style={{ background: '#F1F5F9', color: '#475569', fontSize: '10px', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold' }}>
-                          AI確信度 {log.aiConfidence}%
-                        </span>
-                      </div>
-                      <span style={{ fontSize: '11px', color: 'var(--text-sub)' }}>{log.timestamp}</span>
-                    </div>
-
-                    <div style={{ fontSize: '11px', color: 'var(--text-sub)', marginBottom: '6px' }}>
-                      送信者: <strong>{log.senderName}</strong> ➔ 受信者: <strong>{log.receiverName}</strong>
-                    </div>
-
-                    {/* Detected Content */}
-                    <div style={{ background: isCritical ? '#FFF5F5' : '#FFFBEB', padding: '10px 12px', borderRadius: '8px', borderLeft: isCritical ? '4px solid #EF4444' : '4px solid #F59E0B', fontSize: '12px', color: 'var(--text-main)', marginBottom: '12px', lineHeight: '1.5' }}>
-                      {log.detectedText}
-                    </div>
-
-                    {/* Action buttons */}
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
-                      <div style={{ fontSize: '11px', fontWeight: 'bold' }}>
-                        ステータス: {' '}
-                        {isResolved ? (
-                          <span style={{ color: '#10B981' }}>✓ 対応・審査完了</span>
-                        ) : isFrozen ? (
-                          <span style={{ color: '#DC2626' }}>🔒 チャット凍結中</span>
-                        ) : isWarned ? (
-                          <span style={{ color: '#D97706' }}>⚠️ 警告メッセージ送信済み</span>
-                        ) : (
-                          <span style={{ color: '#EF4444' }}>🚨 未対応（要確認）</span>
-                        )}
-                      </div>
-
-                      <div style={{ display: 'flex', gap: '6px' }}>
-                        {!isResolved && !isWarned && (
-                          <button 
-                            onClick={() => handleSendAIWarning(log.id)}
-                            style={{ background: '#FEF3C7', color: '#92400E', border: '1px solid #FCD34D', borderRadius: '6px', padding: '4px 8px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
-                          >
-                            <span className="material-symbols-outlined" style={{ fontSize: '13px' }}>warning</span>
-                            警告送信
-                          </button>
-                        )}
-                        {!isResolved && !isFrozen && (
-                          <button 
-                            onClick={() => handleFreezeChat(log.id)}
-                            style={{ background: '#FEE2E2', color: '#991B1B', border: '1px solid #FCA5A5', borderRadius: '6px', padding: '4px 8px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
-                          >
-                            <span className="material-symbols-outlined" style={{ fontSize: '13px' }}>block</span>
-                            チャット一時凍結
-                          </button>
-                        )}
-                        {!isResolved && (
-                          <button 
-                            onClick={() => handleResolveAILog(log.id)}
-                            style={{ background: '#D1FAE5', color: '#065F46', border: '1px solid #6EE7B7', borderRadius: '6px', padding: '4px 8px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
-                          >
-                            <span className="material-symbols-outlined" style={{ fontSize: '13px' }}>check</span>
-                            対応完了
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </main>
-        </div>
-      )}
 
       {/* 1. Screening/Matching Overlay (Admin) */}
       {screeningJobId && (() => {
