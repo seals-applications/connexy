@@ -125,6 +125,28 @@ export function MessagePage() {
   const [selectedPhotoUrl, setSelectedPhotoUrl] = useState('');
   const [selectedPhotoName, setSelectedPhotoName] = useState('');
 
+  // 定型文テンプレートModal用のState
+  const [showTemplateModal, setShowTemplateModal] = useState(false);
+  const defaultChatTemplates = [
+    'お世話になっております。業務内容および条件を確認いたしました。どうぞよろしくお願いいたします。',
+    '本日の案件にご応募いただきありがとうございます。詳細条件につきまして確認させていただきます。',
+    '現場に到着いたしました。これより準備および業務を開始いたします。',
+    '本日の業務がすべて完了いたしました。完了報告と相互評価を送信いたしますのでご確認ください。',
+    '経費の領収書を添付・申請いたしました。ご確認のほどよろしくお願いいたします。'
+  ];
+  const [customTemplates, setCustomTemplates] = useState<string[]>(() => {
+    try {
+      return JSON.parse(localStorage.getItem('connexy_chat_templates') || '[]');
+    } catch (e) { return []; }
+  });
+  const [newTemplateInput, setNewTemplateInput] = useState('');
+
+  // 電子サインModal用のState
+  const [showSignatureModal, setShowSignatureModal] = useState(false);
+  const [pendingProposalMsgId, setPendingProposalMsgId] = useState<string | null>(null);
+  const signatureCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const [isDrawingSignature, setIsDrawingSignature] = useState(false);
+
   const handleSync = async () => {
     try {
       const tasks = await api.getContractTasks();
@@ -789,7 +811,7 @@ export function MessagePage() {
     }
   };
 
-  const handleApproveProposal = async (proposalMsgId: string) => {
+  const handleApproveProposal = async (proposalMsgId: string, signatureDataUrl?: string) => {
     if (!activeChat || !currentUser) return;
     const now = new Date();
     const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
@@ -799,7 +821,7 @@ export function MessagePage() {
 
     const updatedMessages = messages.map((m: any) => {
       if (m.id === proposalMsgId) {
-        return { ...m, proposalStatus: 'approved' };
+        return { ...m, proposalStatus: 'approved', signatureDataUrl };
       }
       return m;
     });
@@ -807,7 +829,9 @@ export function MessagePage() {
     const systemConfirm = {
       id: 'sys_' + Date.now(),
       type: 'system',
-      text: `${currentUser.name}が条件を承認し、Stripe決済（仮押さえ）が完了しました`,
+      text: signatureDataUrl 
+        ? `${currentUser.name}が電子サイン（手書き署名）を完了し契約に同意しました` 
+        : `${currentUser.name}が条件を承認し、Stripe決済（仮押さえ）が完了しました`,
       time: timeStr
     };
 
@@ -815,7 +839,7 @@ export function MessagePage() {
       id: 'msg_' + Date.now(),
       senderId: currentUser.id,
       senderName,
-      text: '発注ありがとうございます！承認いたしました。当日はよろしくお願いいたします。',
+      text: '発注・契約の同意ありがとうございます！署名手続きを行いました。当日はよろしくお願いいたします。',
       time: timeStr
     };
 
@@ -1362,6 +1386,77 @@ export function MessagePage() {
     }
   };
 
+  const handleRejectReceipt = async (msgId: string) => {
+    if (!activeChat || !currentUser) return;
+    const reason = prompt('差戻し理由を入力してください（任意）:', '内容・金額に不備があるため再確認をお願いします。');
+    if (reason === null) return;
+    
+    try {
+      const task = chatTasks.find(t => t.id === activeChat.id);
+      const msgs = [...(task?.evaluations?.messages || [])];
+      
+      const targetIdx = msgs.findIndex(m => m.id === msgId);
+      if (targetIdx === -1) return;
+      
+      const targetMsg = { ...msgs[targetIdx] };
+      if (!targetMsg.receiptDetails) return;
+      
+      targetMsg.receiptDetails = {
+        ...targetMsg.receiptDetails,
+        status: 'rejected',
+        rejectionReason: reason
+      };
+      msgs[targetIdx] = targetMsg;
+      
+      const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      const systemLogMsg = {
+        id: 'sys_rej_rc_' + Date.now(),
+        type: 'system',
+        text: `【経費申請差戻し】申請（¥${targetMsg.receiptDetails.amount?.toLocaleString()}）が差戻されました。理由: ${reason}`,
+        time: timeStr
+      };
+      
+      const updated = [...msgs, systemLogMsg];
+      
+      const jobTitle = activeChat.title || '商談チャット';
+      const clientName = currentUser.name;
+      const workerName = activeChat.id.includes('alpha') ? '株式会社アルファ通信' : 
+                         activeChat.id.includes('beta') ? 'ベータエージェンシー' : 'パートナー会社';
+      
+      await api.saveContractTaskChat(activeChat.id, updated, jobTitle, clientName, workerName);
+      
+      const updatedTasks = await api.getContractTasks();
+      setChatTasks(updatedTasks);
+    } catch (e) {
+      console.error(e);
+      alert('精算の差戻し処理に失敗しました');
+    }
+  };
+
+  const handleOpenSignatureModal = (msgId: string) => {
+    setPendingProposalMsgId(msgId);
+    setShowSignatureModal(true);
+  };
+
+  const handleConfirmSignatureAndApprove = async () => {
+    if (!pendingProposalMsgId || !activeChat || !currentUser) return;
+    
+    let signatureDataUrl = '';
+    if (signatureCanvasRef.current) {
+      signatureDataUrl = signatureCanvasRef.current.toDataURL('image/png');
+    }
+
+    try {
+      await handleApproveProposal(pendingProposalMsgId, signatureDataUrl);
+      setShowSignatureModal(false);
+      setPendingProposalMsgId(null);
+      alert('電子サインを取り行い、契約同意が完了いたしました！');
+    } catch (e) {
+      console.error(e);
+      alert('署名承認に失敗しました');
+    }
+  };
+
   // 条件編集モーダルを開く
   const handleOpenEditConditions = () => {
     if (!relatedJob) return;
@@ -1540,29 +1635,56 @@ export function MessagePage() {
           </div>
         </div>
         
-        {!isApproved && isClient ? (
-          <button 
-            onClick={() => handleApproveReceipt(msg.id)}
-            style={{ 
-              background: '#10B981', 
-              color: '#FFFFFF', 
-              border: 'none', 
-              fontSize: '11px', 
-              padding: '8px 12px', 
-              borderRadius: '6px', 
-              cursor: 'pointer', 
-              fontWeight: 'bold', 
-              width: '100%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '4px',
-              boxShadow: '0 2px 4px rgba(16, 185, 129, 0.2)'
-            }}
-          >
-            <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>check_circle</span>
-            精算を承認する
-          </button>
+        {msg.receiptDetails?.status === 'rejected' ? (
+          <div style={{ background: '#FEE2E2', color: '#991B1B', padding: '6px', borderRadius: '6px', fontSize: '11px', fontWeight: 'bold', textAlign: 'center' }}>
+            ✕ 差戻し中（{msg.receiptDetails?.rejectionReason || '内容修正が必要'}）
+          </div>
+        ) : !isApproved && isClient ? (
+          <div style={{ display: 'flex', gap: '6px' }}>
+            <button 
+              onClick={() => handleApproveReceipt(msg.id)}
+              style={{ 
+                flex: 1,
+                background: '#10B981', 
+                color: '#FFFFFF', 
+                border: 'none', 
+                fontSize: '11px', 
+                padding: '8px', 
+                borderRadius: '6px', 
+                cursor: 'pointer', 
+                fontWeight: 'bold', 
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '2px',
+                boxShadow: '0 2px 4px rgba(16, 185, 129, 0.2)'
+              }}
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>check_circle</span>
+              承認
+            </button>
+            <button 
+              onClick={() => handleRejectReceipt(msg.id)}
+              style={{ 
+                flex: 1,
+                background: '#EF4444', 
+                color: '#FFFFFF', 
+                border: 'none', 
+                fontSize: '11px', 
+                padding: '8px', 
+                borderRadius: '6px', 
+                cursor: 'pointer', 
+                fontWeight: 'bold', 
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '2px'
+              }}
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>cancel</span>
+              差戻し
+            </button>
+          </div>
         ) : !isApproved ? (
           <div style={{ textAlign: 'center', fontSize: '10px', color: '#9CA3AF', padding: '4px 0' }}>
             ※承認されると精算が確定します
@@ -1571,6 +1693,292 @@ export function MessagePage() {
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', fontSize: '11px', color: '#10B981', fontWeight: 'bold', padding: '4px 0' }}>
             <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>task_alt</span>
             精算が完了しています
+          </div>
+        )}
+
+        {/* (Template Modal) 定型文テンプレート選択・作成モーダル */}
+        {showTemplateModal && (
+          <div style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(0,0,0,0.6)',
+            zIndex: 1300,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '16px'
+          }}>
+            <div style={{
+              background: 'var(--surface-color)',
+              borderRadius: '16px',
+              width: '100%',
+              maxWidth: '440px',
+              padding: '20px',
+              maxHeight: '85vh',
+              display: 'flex',
+              flexDirection: 'column',
+              boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.2)'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-main)' }}>
+                  <span className="material-symbols-outlined" style={{ color: '#4F46E5' }}>description</span>
+                  定型文テンプレートを選択
+                </h3>
+                <button 
+                  onClick={() => setShowTemplateModal(false)}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-sub)' }}
+                >
+                  <span className="material-symbols-outlined">close</span>
+                </button>
+              </div>
+
+              <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px', paddingRight: '4px', marginBottom: '16px' }}>
+                <div style={{ fontSize: '11px', fontWeight: 'bold', color: 'var(--text-sub)', marginBottom: '4px' }}>標準定型文</div>
+                {defaultChatTemplates.map((tmpl, idx) => (
+                  <div
+                    key={'def_' + idx}
+                    onClick={() => {
+                      setInputText(prev => prev ? `${prev}\n${tmpl}` : tmpl);
+                      setShowTemplateModal(false);
+                    }}
+                    style={{
+                      background: '#F8FAFC',
+                      border: '1px solid #E2E8F0',
+                      borderRadius: '8px',
+                      padding: '10px 12px',
+                      fontSize: '12px',
+                      lineHeight: '1.5',
+                      cursor: 'pointer',
+                      transition: 'background 0.15s ease'
+                    }}
+                  >
+                    {tmpl}
+                  </div>
+                ))}
+
+                {customTemplates.length > 0 && (
+                  <>
+                    <div style={{ fontSize: '11px', fontWeight: 'bold', color: 'var(--text-sub)', marginTop: '8px', marginBottom: '4px' }}>マイ保存テンプレート</div>
+                    {customTemplates.map((tmpl, idx) => (
+                      <div
+                        key={'cust_' + idx}
+                        onClick={() => {
+                          setInputText(prev => prev ? `${prev}\n${tmpl}` : tmpl);
+                          setShowTemplateModal(false);
+                        }}
+                        style={{
+                          background: '#EEF2FF',
+                          border: '1px solid #C7D2FE',
+                          borderRadius: '8px',
+                          padding: '10px 12px',
+                          fontSize: '12px',
+                          lineHeight: '1.5',
+                          cursor: 'pointer',
+                          position: 'relative'
+                        }}
+                      >
+                        {tmpl}
+                      </div>
+                    ))}
+                  </>
+                )}
+              </div>
+
+              {/* 新規定型文の追加 */}
+              <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '12px', display: 'flex', gap: '8px' }}>
+                <input 
+                  type="text"
+                  placeholder="新しい定型文を保存..."
+                  value={newTemplateInput}
+                  onChange={e => setNewTemplateInput(e.target.value)}
+                  style={{ flex: 1, padding: '8px 12px', borderRadius: '6px', border: '1px solid #CBD5E1', fontSize: '12px' }}
+                />
+                <button
+                  onClick={() => {
+                    if (!newTemplateInput.trim()) return;
+                    const updated = [...customTemplates, newTemplateInput.trim()];
+                    setCustomTemplates(updated);
+                    localStorage.setItem('connexy_chat_templates', JSON.stringify(updated));
+                    setNewTemplateInput('');
+                  }}
+                  disabled={!newTemplateInput.trim()}
+                  style={{
+                    background: newTemplateInput.trim() ? '#4F46E5' : '#CBD5E1',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '6px',
+                    padding: '8px 12px',
+                    fontSize: '12px',
+                    fontWeight: 'bold',
+                    cursor: newTemplateInput.trim() ? 'pointer' : 'not-allowed'
+                  }}
+                >
+                  保存
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* (Signature Modal) 手書き電子サインコンポーネントモーダル */}
+        {showSignatureModal && (
+          <div style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(0,0,0,0.6)',
+            zIndex: 1350,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '16px'
+          }}>
+            <div style={{
+              background: 'var(--surface-color)',
+              borderRadius: '16px',
+              width: '100%',
+              maxWidth: '400px',
+              padding: '20px',
+              display: 'flex',
+              flexDirection: 'column',
+              boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.2)'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-main)' }}>
+                  <span className="material-symbols-outlined" style={{ color: '#10B981' }}>draw</span>
+                  手書き電子サイン・契約同意
+                </h3>
+                <button 
+                  onClick={() => setShowSignatureModal(false)}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-sub)' }}
+                >
+                  <span className="material-symbols-outlined">close</span>
+                </button>
+              </div>
+
+              <p style={{ fontSize: '12px', color: 'var(--text-sub)', margin: '0 0 12px 0', lineHeight: '1.4' }}>
+                下記の枠内にマウスまたはタッチ操作で署名（サイン）をご記入の上、同意ボタンを押してください。
+              </p>
+
+              {/* Canvas 描画枠 */}
+              <div style={{ border: '2px dashed #94A3B8', borderRadius: '8px', background: '#FFFFFF', position: 'relative', marginBottom: '12px' }}>
+                <canvas 
+                  ref={signatureCanvasRef}
+                  width={340}
+                  height={140}
+                  onMouseDown={(e) => {
+                    const ctx = signatureCanvasRef.current?.getContext('2d');
+                    if (!ctx) return;
+                    setIsDrawingSignature(true);
+                    const rect = signatureCanvasRef.current!.getBoundingClientRect();
+                    ctx.beginPath();
+                    ctx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
+                  }}
+                  onMouseMove={(e) => {
+                    if (!isDrawingSignature) return;
+                    const ctx = signatureCanvasRef.current?.getContext('2d');
+                    if (!ctx) return;
+                    const rect = signatureCanvasRef.current!.getBoundingClientRect();
+                    ctx.lineWidth = 2.5;
+                    ctx.lineCap = 'round';
+                    ctx.strokeStyle = '#0F172A';
+                    ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
+                    ctx.stroke();
+                  }}
+                  onMouseUp={() => setIsDrawingSignature(false)}
+                  onTouchStart={(e) => {
+                    const ctx = signatureCanvasRef.current?.getContext('2d');
+                    if (!ctx || !e.touches[0]) return;
+                    setIsDrawingSignature(true);
+                    const rect = signatureCanvasRef.current!.getBoundingClientRect();
+                    ctx.beginPath();
+                    ctx.moveTo(e.touches[0].clientX - rect.left, e.touches[0].clientY - rect.top);
+                  }}
+                  onTouchMove={(e) => {
+                    if (!isDrawingSignature || !e.touches[0]) return;
+                    const ctx = signatureCanvasRef.current?.getContext('2d');
+                    if (!ctx) return;
+                    const rect = signatureCanvasRef.current!.getBoundingClientRect();
+                    ctx.lineWidth = 2.5;
+                    ctx.lineCap = 'round';
+                    ctx.strokeStyle = '#0F172A';
+                    ctx.lineTo(e.touches[0].clientX - rect.left, e.touches[0].clientY - rect.top);
+                    ctx.stroke();
+                  }}
+                  onTouchEnd={() => setIsDrawingSignature(false)}
+                  style={{ width: '100%', height: '140px', display: 'block', cursor: 'crosshair', touchAction: 'none' }}
+                />
+                <button
+                  onClick={() => {
+                    const ctx = signatureCanvasRef.current?.getContext('2d');
+                    if (ctx && signatureCanvasRef.current) {
+                      ctx.clearRect(0, 0, signatureCanvasRef.current.width, signatureCanvasRef.current.height);
+                    }
+                  }}
+                  style={{
+                    position: 'absolute',
+                    top: '6px',
+                    right: '6px',
+                    background: '#F1F5F9',
+                    border: '1px solid #CBD5E1',
+                    borderRadius: '4px',
+                    padding: '2px 8px',
+                    fontSize: '10px',
+                    fontWeight: 'bold',
+                    color: '#475569',
+                    cursor: 'pointer'
+                  }}
+                >
+                  クリア
+                </button>
+              </div>
+
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button 
+                  onClick={() => setShowSignatureModal(false)}
+                  style={{
+                    flex: 1,
+                    padding: '10px',
+                    borderRadius: '8px',
+                    border: '1px solid #CBD5E1',
+                    background: '#F8FAFC',
+                    fontSize: '12px',
+                    fontWeight: 'bold',
+                    color: '#475569',
+                    cursor: 'pointer'
+                  }}
+                >
+                  キャンセル
+                </button>
+                <button 
+                  onClick={handleConfirmSignatureAndApprove}
+                  style={{
+                    flex: 2,
+                    padding: '10px',
+                    borderRadius: '8px',
+                    border: 'none',
+                    background: '#10B981',
+                    color: '#FFFFFF',
+                    fontSize: '12px',
+                    fontWeight: 'bold',
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '4px',
+                    boxShadow: '0 4px 6px -1px rgba(16, 185, 129, 0.2)'
+                  }}
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>verified</span>
+                  電子署名して契約同意
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </div>
@@ -2113,13 +2521,22 @@ export function MessagePage() {
                               <div><strong>期間:</strong> {msg.proposalDetails?.duration || '10/14 - 10/15 (2日間)'}</div>
                             </div>
                             {msg.proposalStatus === 'pending' ? (
-                              <button className="btn-primary btn-small w-full" onClick={() => handleApproveProposal(msg.id)} style={{ background: 'var(--primary-color)', color: '#FFFFFF', border: 'none', fontSize: '11px', padding: '6px', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', width: '100%' }}>
-                                承認する
+                              <button className="btn-primary btn-small w-full" onClick={() => handleOpenSignatureModal(msg.id)} style={{ background: 'var(--primary-color)', color: '#FFFFFF', border: 'none', fontSize: '11px', padding: '6px', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+                                <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>draw</span>
+                                手書き電子サインをして同意
                               </button>
                             ) : (
-                              <button className="btn-primary btn-small w-full" disabled style={{ background: '#DEF7EC', color: '#03543F', border: 'none', fontSize: '11px', padding: '6px', borderRadius: '4px', cursor: 'not-allowed', fontWeight: 'bold', width: '100%' }}>
-                                契約成立済み
-                              </button>
+                              <div>
+                                <button className="btn-primary btn-small w-full" disabled style={{ background: '#DEF7EC', color: '#03543F', border: 'none', fontSize: '11px', padding: '6px', borderRadius: '4px', cursor: 'not-allowed', fontWeight: 'bold', width: '100%', marginBottom: '4px' }}>
+                                  ✓ 契約成立済み (署名完了)
+                                </button>
+                                {msg.signatureDataUrl && (
+                                  <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', padding: '4px', borderRadius: '4px', textAlign: 'center' }}>
+                                    <div style={{ fontSize: '9px', color: '#64748B', marginBottom: '2px' }}>電子署名確認:</div>
+                                    <img src={msg.signatureDataUrl} alt="Signature" style={{ maxHeight: '36px', maxWidth: '100%', objectFit: 'contain' }} />
+                                  </div>
+                                )}
+                              </div>
                             )}
                           </div>
                         ) : msg.isOffer ? (
@@ -2510,6 +2927,28 @@ export function MessagePage() {
               >
                 add_circle
               </span>
+            </button>
+
+            <button
+              onClick={() => setShowTemplateModal(true)}
+              style={{
+                background: '#EEF2FF',
+                color: '#4338CA',
+                border: '1px solid #C7D2FE',
+                borderRadius: '16px',
+                padding: '4px 10px',
+                fontSize: '11px',
+                fontWeight: 'bold',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '2px',
+                cursor: 'pointer',
+                whiteSpace: 'nowrap'
+              }}
+              title="定型文テンプレートから挿入"
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>description</span>
+              定型文
             </button>
             <textarea
               className="form-control chat-textarea"

@@ -60,6 +60,67 @@ export function SearchPage() {
 
   // 新規作成フォーム用のState
   const [visibleCount, setVisibleCount] = useState(10);
+  
+  // 検索条件の保存用State
+  const [searchPresets, setSearchPresets] = useState<{ id: string, name: string, filters: any }[]>(() => {
+    try {
+      return JSON.parse(localStorage.getItem('connexy_search_presets') || '[]');
+    } catch (e) {
+      return [];
+    }
+  });
+
+  const handleSaveSearchPreset = () => {
+    const presetName = prompt('この検索条件の登録名を入力してください:', `マイ条件_${new Date().toLocaleDateString()}`);
+    if (!presetName) return;
+
+    const newPreset = {
+      id: 'preset_' + Date.now(),
+      name: presetName,
+      filters: {
+        mode,
+        filterArea,
+        searchKeyword,
+        filterJobRoles,
+        filterCarriers,
+        filterChannels,
+        filterMinPrice,
+        filterDeadlineDays,
+        filterTalentSkills,
+        filterTalentCarriers
+      }
+    };
+
+    const updated = [...searchPresets, newPreset];
+    setSearchPresets(updated);
+    localStorage.setItem('connexy_search_presets', JSON.stringify(updated));
+    alert('検索条件を保存しました！');
+  };
+
+  const handleApplyPreset = (preset: any) => {
+    const f = preset.filters;
+    if (f.mode) setMode(f.mode);
+    if (f.filterArea) setFilterArea(f.filterArea);
+    if (f.searchKeyword !== undefined) {
+      setSearchKeyword(f.searchKeyword);
+      setTempKeyword(f.searchKeyword);
+    }
+    if (f.filterJobRoles) setFilterJobRoles(f.filterJobRoles);
+    if (f.filterCarriers) setFilterCarriers(f.filterCarriers);
+    if (f.filterChannels) setFilterChannels(f.filterChannels);
+    if (f.filterMinPrice !== undefined) setFilterMinPrice(f.filterMinPrice);
+    if (f.filterDeadlineDays !== undefined) setFilterDeadlineDays(f.filterDeadlineDays);
+    if (f.filterTalentSkills) setFilterTalentSkills(f.filterTalentSkills);
+    if (f.filterTalentCarriers) setFilterTalentCarriers(f.filterTalentCarriers);
+  };
+
+  const handleDeletePreset = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const updated = searchPresets.filter(p => p.id !== id);
+    setSearchPresets(updated);
+    localStorage.setItem('connexy_search_presets', JSON.stringify(updated));
+  };
+
   const [isCreateFormOpen, setIsCreateFormOpen] = useState(false);
   const [createFormType, setCreateFormType] = useState<'job' | 'talent'>('job');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -2034,6 +2095,33 @@ export function SearchPage() {
           }}
         >
           <div style={{ padding: '16px', background: 'var(--surface-color)', borderBottom: '1px solid var(--border-color)', position: 'sticky', top: 0, zIndex: 100 }}>
+            {/* マイ検索条件バー */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', flexWrap: 'wrap' }}>
+              <button 
+                onClick={handleSaveSearchPreset}
+                style={{ background: 'linear-gradient(135deg, #6366F1 0%, #4F46E5 100%)', color: 'white', border: 'none', borderRadius: '16px', padding: '4px 12px', fontSize: '11px', fontWeight: 'bold', display: 'inline-flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>bookmark</span>
+                現在の検索条件を保存
+              </button>
+
+              {searchPresets.length > 0 && (
+                <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', alignItems: 'center' }}>
+                  <span style={{ fontSize: '11px', color: 'var(--text-sub)', fontWeight: 'bold' }}>マイ条件:</span>
+                  {searchPresets.map(p => (
+                    <span 
+                      key={p.id} 
+                      onClick={() => handleApplyPreset(p)}
+                      style={{ background: '#EEF2FF', color: '#4338CA', border: '1px solid #C7D2FE', borderRadius: '12px', padding: '2px 8px', fontSize: '11px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px', fontWeight: 'bold' }}
+                    >
+                      {p.name}
+                      <span className="material-symbols-outlined" style={{ fontSize: '12px', color: '#6366F1' }} onClick={(e) => handleDeletePreset(p.id, e)}>close</span>
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+
             <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '4px', flexWrap: 'wrap', alignItems: 'center' }}>
               {!hasActiveFilters ? (
                 <span style={{ fontSize: '13px', color: 'var(--text-sub)' }}>フィルター未設定</span>
