@@ -111,7 +111,7 @@ export function ManagementPage() {
 
   // Sub-tabs inside overlays
   const [postsSubTab, setPostsSubTab] = useState<'list' | 'calendar'>('list');
-  const [logsSubTab, setLogsSubTab] = useState<'calendar' | 'history'>('calendar');
+  const [logsSubTab, setLogsSubTab] = useState<'calendar' | 'ng_dates' | 'history'>('calendar');
 
 
 
@@ -971,6 +971,88 @@ export function ManagementPage() {
     }
   };
 
+  // 一括CSVダウンロード機能
+  const handleBulkExportCSV = () => {
+    try {
+      const headers = ['契約ID', 'クライアントID', 'ワーカーID', '案件名', '金額(円)', 'ステータス', '実施日'];
+      const rows = relatedTasks.map((t: ContractTask) => [
+        t.id,
+        t.client_id || '',
+        t.agency_id || '',
+        `"${t.jobTitle || '案件'}"`,
+        t.price,
+        t.status === 'completed' ? '完了' : t.status === 'working' ? '進行中' : '稼働準備中',
+        t.date || new Date().toLocaleDateString()
+      ]);
+      
+      const csvContent = '\uFEFF' + [headers.join(','), ...rows.map((r: (string | number)[]) => r.join(','))].join('\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `CONNEXY_取引・請求明細一括_${new Date().toISOString().slice(0, 10)}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    } catch (e) {
+      console.error(e);
+      alert('CSV一括出力に失敗しました。');
+    }
+  };
+
+  // iCalendar (.ics) カレンダー同期出力機能
+  const handleExportICS = (task: ContractTask) => {
+    try {
+      const title = task.jobTitle || 'CONNEXY契約案件';
+      const nowStr = new Date().toISOString().replace(/-|:|\.\d+/g, '').slice(0, 15) + 'Z';
+      const endDateStr = new Date(Date.now() + 86400000).toISOString().replace(/-|:|\.\d+/g, '').slice(0, 15) + 'Z';
+      
+      const icsData = [
+        'BEGIN:VCALENDAR',
+        'VERSION:2.0',
+        'PRODID:-//CONNEXY//Job Calendar//JA',
+        'BEGIN:VEVENT',
+        `UID:task_${task.id}@connexy.app`,
+        `DTSTAMP:${nowStr}`,
+        `DTSTART:${nowStr}`,
+        `DTEND:${endDateStr}`,
+        `SUMMARY:${title}`,
+        `DESCRIPTION:CONNEXY 契約案件 (ID: ${task.id}) / 金額: ¥${task.price.toLocaleString()}`,
+        'END:VEVENT',
+        'END:VCALENDAR'
+      ].join('\r\n');
+
+      const blob = new Blob([icsData], { type: 'text/calendar;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `event_${task.id.slice(0, 8)}.ics`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    } catch (e) {
+      console.error(e);
+      alert('カレンダーファイルの生成に失敗しました。');
+    }
+  };
+
+  // 稼働不可日（NG日）設定用のState
+  const [ngDates, setNgDates] = useState<string[]>(() => {
+    try {
+      return JSON.parse(localStorage.getItem(`connexy_ng_dates_${currentUser?.id || 'guest'}`) || '[]');
+    } catch (e) {
+      return [];
+    }
+  });
+
+  const handleToggleNgDate = (dateStr: string) => {
+    const updated = ngDates.includes(dateStr) 
+      ? ngDates.filter(d => d !== dateStr) 
+      : [...ngDates, dateStr];
+    setNgDates(updated);
+    localStorage.setItem(`connexy_ng_dates_${currentUser?.id || 'guest'}`, JSON.stringify(updated));
+  };
+
 
 
   // Quizzes and Training methods
@@ -1400,7 +1482,16 @@ export function ManagementPage() {
               )}
             </div>
 
-            <h3 className="section-title">完了済みのタスク (評価開示)</h3>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '16px 0 8px 0', flexWrap: 'wrap', gap: '8px' }}>
+              <h3 className="section-title" style={{ margin: 0 }}>完了済みのタスク (評価開示)</h3>
+              <button 
+                onClick={handleBulkExportCSV}
+                style={{ background: '#10B981', color: 'white', border: 'none', borderRadius: '6px', padding: '6px 12px', fontSize: '11px', fontWeight: 'bold', display: 'inline-flex', alignItems: 'center', gap: '4px', cursor: 'pointer', boxShadow: '0 2px 4px rgba(16, 185, 129, 0.2)' }}
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>csv</span>
+                確定実績・請求データ一括CSV出力
+              </button>
+            </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               {relatedTasks.filter(t => t.status === 'completed').map(task => {
                 const evalClient = task.evaluations?.byClient;
@@ -1420,10 +1511,16 @@ export function ManagementPage() {
                         <div><strong style={{ color: 'var(--primary)' }}>発注者評価:</strong> <span style={{ color: '#F59E0B' }}>{'★'.repeat(evalClient.rating)}</span> {evalClient.comment}</div>
                         <div><strong style={{ color: '#16A34A' }}>スタッフ評価:</strong> <span style={{ color: '#F59E0B' }}>{'★'.repeat(evalWorker.rating)}</span> {evalWorker.comment}</div>
                         
-                        <button onClick={() => handleDownloadInvoice(task)} style={{ alignSelf: 'flex-start', background: '#3B82F6', color: 'white', border: 'none', padding: '6px 12px', borderRadius: '6px', display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', fontWeight: 'bold' }}>
-                          <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>download</span>
-                          請求書(PDF)をダウンロード
-                        </button>
+                        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                          <button onClick={() => handleDownloadInvoice(task)} style={{ background: '#3B82F6', color: 'white', border: 'none', padding: '6px 12px', borderRadius: '6px', display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', fontWeight: 'bold', fontSize: '11px' }}>
+                            <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>download</span>
+                            請求書(PDF)をダウンロード
+                          </button>
+                          <button onClick={() => handleExportICS(task)} style={{ background: '#6366F1', color: 'white', border: 'none', padding: '6px 12px', borderRadius: '6px', display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', fontWeight: 'bold', fontSize: '11px' }}>
+                            <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>calendar_add_on</span>
+                            カレンダー同期 (.ics) 出力
+                          </button>
+                        </div>
                       </div>
                     ) : (
                       <div style={{ background: '#FFFBEB', padding: '8px', borderRadius: '6px', marginTop: '8px', fontSize: '11px', color: '#B45309' }}>
@@ -1469,6 +1566,24 @@ export function ManagementPage() {
             </button>
             <button
               type="button"
+              onClick={() => setLogsSubTab('ng_dates')}
+              style={{
+                flex: 1,
+                padding: '8px',
+                borderRadius: '6px',
+                border: 'none',
+                background: logsSubTab === 'ng_dates' ? 'white' : 'transparent',
+                color: logsSubTab === 'ng_dates' ? '#EF4444' : 'var(--text-sub)',
+                fontSize: '12px',
+                fontWeight: 'bold',
+                cursor: 'pointer',
+                boxShadow: logsSubTab === 'ng_dates' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none'
+              }}
+            >
+              稼働不可日(NG日)設定
+            </button>
+            <button
+              type="button"
               onClick={() => setLogsSubTab('history')}
               style={{
                 flex: 1,
@@ -1489,6 +1604,107 @@ export function ManagementPage() {
 
           {logsSubTab === 'calendar' ? (
             renderCalendar('own_staff')
+          ) : logsSubTab === 'ng_dates' ? (
+            <div>
+              <div style={{ background: 'var(--surface-color)', padding: '16px', borderRadius: '12px', border: '1px solid var(--border-color)', marginBottom: '16px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                  <div>
+                    <h3 className="section-title" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span className="material-symbols-outlined" style={{ color: '#EF4444' }}>event_busy</span>
+                      稼働不可日（NG日）のタップ登録
+                    </h3>
+                    <div style={{ fontSize: '11px', color: 'var(--text-sub)', marginTop: '2px' }}>
+                      日付をタップすると稼働不可日（オファー受領不可）を登録・解除できます。
+                    </div>
+                  </div>
+                  {ngDates.length > 0 && (
+                    <button 
+                      onClick={() => { setNgDates([]); localStorage.removeItem(`connexy_ng_dates_${currentUser?.id || 'guest'}`); }}
+                      style={{ background: '#FEE2E2', color: '#991B1B', border: 'none', borderRadius: '6px', padding: '4px 10px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}
+                    >
+                      一括クリア
+                    </button>
+                  )}
+                </div>
+
+                {/* 月別カレンダーグリッド (2026年7月) */}
+                <div style={{ fontSize: '13px', fontWeight: 'bold', textAlign: 'center', marginBottom: '8px', color: 'var(--text-main)' }}>
+                  2026年 7月
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '4px', textAlign: 'center', fontSize: '11px', fontWeight: 'bold', color: 'var(--text-sub)', marginBottom: '6px' }}>
+                  <span style={{ color: '#EF4444' }}>日</span>
+                  <span>月</span>
+                  <span>火</span>
+                  <span>水</span>
+                  <span>木</span>
+                  <span>金</span>
+                  <span style={{ color: '#3B82F6' }}>土</span>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '4px' }}>
+                  {/* 空白セル (7月1日は水曜日 -> 前に3日分) */}
+                  <div style={{ height: '44px' }}></div>
+                  <div style={{ height: '44px' }}></div>
+                  <div style={{ height: '44px' }}></div>
+                  {Array.from({ length: 31 }, (_, i) => {
+                    const dayNum = i + 1;
+                    const dateStr = `2026-07-${String(dayNum).padStart(2, '0')}`;
+                    const isNg = ngDates.includes(dateStr);
+                    return (
+                      <div
+                        key={dayNum}
+                        onClick={() => handleToggleNgDate(dateStr)}
+                        style={{
+                          height: '44px',
+                          borderRadius: '8px',
+                          border: isNg ? '2px solid #EF4444' : '1px solid #E2E8F0',
+                          background: isNg ? '#FEE2E2' : '#FFFFFF',
+                          color: isNg ? '#991B1B' : '#1E293B',
+                          fontWeight: 'bold',
+                          fontSize: '12px',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          cursor: 'pointer',
+                          transition: 'all 0.15s ease',
+                          position: 'relative'
+                        }}
+                      >
+                        <span>{dayNum}</span>
+                        {isNg && (
+                          <span style={{ fontSize: '9px', background: '#EF4444', color: 'white', padding: '0 4px', borderRadius: '4px', marginTop: '2px', fontWeight: 'bold' }}>
+                            NG
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* 登録中のNG日一覧 */}
+              <div style={{ background: 'var(--surface-color)', padding: '16px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
+                <h4 style={{ margin: '0 0 8px 0', fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)' }}>
+                  登録済みNG日一覧 ({ngDates.length}日)
+                </h4>
+                {ngDates.length === 0 ? (
+                  <div style={{ fontSize: '12px', color: 'var(--text-sub)' }}>稼働不可日は設定されていません。</div>
+                ) : (
+                  <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                    {ngDates.sort().map(d => (
+                      <span 
+                        key={d} 
+                        onClick={() => handleToggleNgDate(d)}
+                        style={{ background: '#FEE2E2', color: '#991B1B', border: '1px solid #FCA5A5', borderRadius: '16px', padding: '4px 10px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                      >
+                        {d}
+                        <span className="material-symbols-outlined" style={{ fontSize: '12px' }}>close</span>
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
           ) : (
             <div>
               <h3 className="section-title" style={{ marginTop: 0 }}>年月と対象の指定</h3>

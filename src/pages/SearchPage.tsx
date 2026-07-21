@@ -121,6 +121,44 @@ export function SearchPage() {
     localStorage.setItem('connexy_search_presets', JSON.stringify(updated));
   };
 
+  // 一括スカウト用State
+  const [selectedTalentIds, setSelectedTalentIds] = useState<string[]>([]);
+  const [showBulkScoutModal, setShowBulkScoutModal] = useState(false);
+  const [bulkScoutMessage, setBulkScoutMessage] = useState('はじめまして！ご経歴とご実績を拝見し、ぜひ弊社のイベント・店舗支援案件にご参画いただきたくスカウトを送らせていただきました。条件面など詳細についてご相談可能です。');
+
+  const handleToggleSelectTalent = (talentId: string, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    setSelectedTalentIds(prev => 
+      prev.includes(talentId) ? prev.filter(id => id !== talentId) : [...prev, talentId]
+    );
+  };
+
+  const handleSendBulkScout = async () => {
+    if (selectedTalentIds.length === 0 || !currentUser) return;
+    try {
+      for (const tId of selectedTalentIds) {
+        const chatId = `chat_${[currentUser.id, tId].sort().join('_')}`;
+        const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const initMsgs = [
+          {
+            id: 'msg_' + Date.now() + Math.random(),
+            senderId: currentUser.id,
+            senderName: currentUser.name,
+            text: bulkScoutMessage,
+            time: timeStr
+          }
+        ];
+        await api.saveContractTaskChat(chatId, initMsgs, '【一括スカウト】新規案件のご案内', currentUser.name, 'スカウト対象パートナー');
+      }
+      alert(`${selectedTalentIds.length}名の人材へ一括スカウトを正常に送信いたしました！`);
+      setShowBulkScoutModal(false);
+      setSelectedTalentIds([]);
+    } catch (e) {
+      console.error(e);
+      alert('一括スカウトの送信に失敗しました');
+    }
+  };
+
   const [isCreateFormOpen, setIsCreateFormOpen] = useState(false);
   const [createFormType, setCreateFormType] = useState<'job' | 'talent'>('job');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -2405,6 +2443,13 @@ export function SearchPage() {
                         >
                           <div className="job-title-row" style={{ paddingRight: '0' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <input 
+                                type="checkbox" 
+                                checked={selectedTalentIds.includes(talent.id)} 
+                                onChange={(e) => handleToggleSelectTalent(talent.id, e as any)}
+                                onClick={(e) => e.stopPropagation()}
+                                style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: '#4F46E5' }} 
+                              />
                               <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#10B981', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', fontWeight: 'bold' }}>
                                 {talent.maskedName.charAt(0)}
                               </div>
@@ -4262,6 +4307,102 @@ export function SearchPage() {
             
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '24px' }}>
               <button className="btn-outline" onClick={() => setFolderModalState(null)}>閉じる</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 一括スカウトフローティングバー */}
+      {mode === 'talent' && selectedTalentIds.length > 0 && (
+        <div style={{
+          position: 'fixed',
+          bottom: '24px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          background: '#0F172A',
+          color: 'white',
+          padding: '12px 24px',
+          borderRadius: '30px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '16px',
+          boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.4)',
+          zIndex: 9999
+        }}>
+          <span style={{ fontSize: '13px', fontWeight: 'bold' }}>
+            {selectedTalentIds.length} 名を選択中
+          </span>
+          <button
+            onClick={() => setShowBulkScoutModal(true)}
+            style={{
+              background: 'linear-gradient(135deg, #6366F1 0%, #4F46E5 100%)',
+              color: 'white',
+              border: 'none',
+              borderRadius: '20px',
+              padding: '8px 16px',
+              fontSize: '12px',
+              fontWeight: 'bold',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px'
+            }}
+          >
+            <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>send</span>
+            一括スカウト送信
+          </button>
+          <button
+            onClick={() => setSelectedTalentIds([])}
+            style={{ background: 'none', border: 'none', color: '#94A3B8', cursor: 'pointer', fontSize: '12px' }}
+          >
+            解除
+          </button>
+        </div>
+      )}
+
+      {/* 一括スカウト作成モーダル */}
+      {showBulkScoutModal && (
+        <div className="modal-overlay" onClick={() => setShowBulkScoutModal(false)}>
+          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ padding: '24px', maxWidth: '480px' }}>
+            <h2 style={{ fontSize: '18px', margin: '0 0 16px 0', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-main)' }}>
+              <span className="material-symbols-outlined" style={{ color: '#6366F1' }}>send</span>
+              一括スカウト送信 ({selectedTalentIds.length}名)
+            </h2>
+            <p style={{ fontSize: '12px', color: 'var(--text-sub)', marginBottom: '16px', lineHeight: '1.5' }}>
+              選択した {selectedTalentIds.length} 名の人材へ個別のメッセージチャットルームを開設し、一括でスカウトメッセージを送信します。
+            </p>
+
+            <div style={{ marginBottom: '16px' }}>
+              <label style={{ fontSize: '12px', fontWeight: 'bold', display: 'block', marginBottom: '6px', color: 'var(--text-main)' }}>スカウトメッセージ本文</label>
+              <textarea 
+                rows={5}
+                value={bulkScoutMessage}
+                onChange={e => setBulkScoutMessage(e.target.value)}
+                style={{ width: '100%', borderRadius: '8px', border: '1px solid #CBD5E1', padding: '10px', fontSize: '13px', lineHeight: '1.5' }}
+              />
+            </div>
+
+            <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+              <button className="btn-outline" onClick={() => setShowBulkScoutModal(false)}>キャンセル</button>
+              <button 
+                onClick={handleSendBulkScout}
+                style={{
+                  background: 'linear-gradient(135deg, #6366F1 0%, #4F46E5 100%)',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '8px',
+                  padding: '10px 20px',
+                  fontSize: '13px',
+                  fontWeight: 'bold',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px'
+                }}
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>send</span>
+                一括送信する
+              </button>
             </div>
           </div>
         </div>
