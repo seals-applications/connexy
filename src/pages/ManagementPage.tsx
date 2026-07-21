@@ -1146,6 +1146,37 @@ export function ManagementPage() {
     alert('該当検知ログを「審査完了・対応済み」へ変更しました。');
   };
 
+  // 運営専用 統合プラットフォーム分析用State & CSVダウンロード
+  const [analyticsPeriod, setAnalyticsPeriod] = useState<'7d' | '30d' | 'month' | 'all'>('30d');
+
+  const handleExportAdminAnalyticsCSV = () => {
+    try {
+      const headers = ['日付', '新規案件掲載数', '応募総数', '成立成約数', '案件マッチング率(%)', '日次総流通額(円)', '運営手数料収入(円)'];
+      const mockDailyData = [
+        ['2026-07-21', 32, 45, 30, '93.8%', 580000, 116000],
+        ['2026-07-20', 28, 40, 27, '96.4%', 520000, 104000],
+        ['2026-07-19', 30, 42, 28, '93.3%', 540000, 108000],
+        ['2026-07-18', 25, 38, 24, '96.0%', 480000, 96000],
+        ['2026-07-17', 22, 32, 20, '90.9%', 420000, 84000],
+        ['2026-07-16', 18, 28, 17, '94.4%', 350000, 70000],
+        ['2026-07-15', 16, 25, 15, '93.8%', 310000, 62000]
+      ];
+      
+      const csvContent = '\uFEFF' + [headers.join(','), ...mockDailyData.map(r => r.join(','))].join('\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `CONNEXY_運営プラットフォーム日次全指標_${new Date().toISOString().slice(0, 10)}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    } catch (e) {
+      console.error(e);
+      alert('統計CSVエクスポートに失敗しました。');
+    }
+  };
+
 
 
   // Quizzes and Training methods
@@ -1998,86 +2029,211 @@ export function ManagementPage() {
           <button className="icon-btn-dark" onClick={() => setSubPage('none')}>
             <span className="material-symbols-outlined">arrow_back_ios_new</span>
           </button>
-          <h1 style={{ fontSize: '16px', fontWeight: 'bold' }}>分析・ダッシュボード</h1>
+          <h1 style={{ fontSize: '16px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span className="material-symbols-outlined" style={{ color: '#7E22CE' }}>analytics</span>
+            {isUserAdmin ? '運営専用 統合プラットフォーム分析' : '分析・ダッシュボード'}
+          </h1>
           <div style={{ width: '40px' }}></div>
         </header>
 
         <main className="list-area bg-gray" style={{ flex: 1, overflowY: 'auto', padding: '16px', paddingBottom: '90px' }}>
-          {/* KPI Summary Cards */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', marginBottom: '16px' }}>
-            <div style={{ background: 'var(--surface-color)', padding: '14px', borderRadius: '12px', border: '1px solid var(--border-color)', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-              <div style={{ fontSize: '12px', color: 'var(--text-sub)', marginBottom: '4px' }}>総案件・対応数</div>
-              <div style={{ fontSize: '22px', fontWeight: 'bold', color: 'var(--primary)' }}>
-                {tasks.length} <span style={{ fontSize: '12px', fontWeight: 'normal', color: 'var(--text-sub)' }}>件</span>
-              </div>
-            </div>
-
-            <div style={{ background: 'var(--surface-color)', padding: '14px', borderRadius: '12px', border: '1px solid var(--border-color)', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-              <div style={{ fontSize: '12px', color: 'var(--text-sub)', marginBottom: '4px' }}>完了実績率</div>
-              <div style={{ fontSize: '22px', fontWeight: 'bold', color: '#10B981' }}>
-                {tasks.length > 0 ? Math.round((tasks.filter(t => t.status === 'completed').length / tasks.length) * 100) : 100}%
-              </div>
-            </div>
-
-            <div style={{ background: 'var(--surface-color)', padding: '14px', borderRadius: '12px', border: '1px solid var(--border-color)', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-              <div style={{ fontSize: '12px', color: 'var(--text-sub)', marginBottom: '4px' }}>累計取引金額</div>
-              <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#8B5CF6' }}>
-                ¥{tasks.reduce((sum, t) => sum + (t.price || 0), 0).toLocaleString()}
-              </div>
-            </div>
-
-            <div style={{ background: 'var(--surface-color)', padding: '14px', borderRadius: '12px', border: '1px solid var(--border-color)', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-              <div style={{ fontSize: '12px', color: 'var(--text-sub)', marginBottom: '4px' }}>高評価平均</div>
-              <div style={{ fontSize: '22px', fontWeight: 'bold', color: '#F59E0B', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <span className="material-symbols-outlined" style={{ fontSize: '22px' }}>star</span>
-                4.8
-              </div>
-            </div>
-          </div>
-
-          {/* Visual Performance Charts */}
-          <div style={{ background: 'var(--surface-color)', padding: '16px', borderRadius: '12px', border: '1px solid var(--border-color)', marginBottom: '16px' }}>
-            <h3 style={{ margin: '0 0 12px 0', fontSize: '14px', fontWeight: 'bold', color: 'var(--text-main)' }}>月別成約・稼働推移 (直近6ヶ月)</h3>
-            <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', height: '140px', paddingTop: '20px', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px' }}>
-              {[
-                { month: '2月', count: 12, height: '40%' },
-                { month: '3月', count: 18, height: '60%' },
-                { month: '4月', count: 15, height: '50%' },
-                { month: '5月', count: 24, height: '80%' },
-                { month: '6月', count: 28, height: '95%' },
-                { month: '7月', count: 20, height: '70%' },
-              ].map((item) => (
-                <div key={item.month} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', flex: 1 }}>
-                  <span style={{ fontSize: '10px', color: 'var(--text-sub)', fontWeight: 'bold' }}>{item.count}件</span>
-                  <div style={{ width: '20px', height: item.height, background: 'linear-gradient(180deg, #6366F1 0%, #818CF8 100%)', borderRadius: '4px 4px 0 0' }}></div>
-                  <span style={{ fontSize: '11px', color: 'var(--text-sub)' }}>{item.month}</span>
+          {/* Admin Executive Header */}
+          {isUserAdmin ? (
+            <div>
+              {/* Period Selector Bar */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '8px' }}>
+                <div style={{ display: 'flex', background: '#E2E8F0', padding: '2px', borderRadius: '8px' }}>
+                  {[
+                    { id: '7d', label: '直近7日' },
+                    { id: '30d', label: '直近30日' },
+                    { id: 'month', label: '今月' },
+                    { id: 'all', label: '全期間' }
+                  ].map(p => (
+                    <button
+                      key={p.id}
+                      onClick={() => setAnalyticsPeriod(p.id as any)}
+                      style={{
+                        padding: '6px 12px',
+                        borderRadius: '6px',
+                        border: 'none',
+                        background: analyticsPeriod === p.id ? 'white' : 'transparent',
+                        color: analyticsPeriod === p.id ? 'var(--text-main)' : 'var(--text-sub)',
+                        fontSize: '11px',
+                        fontWeight: 'bold',
+                        cursor: 'pointer',
+                        boxShadow: analyticsPeriod === p.id ? '0 1px 3px rgba(0,0,0,0.1)' : 'none'
+                      }}
+                    >
+                      {p.label}
+                    </button>
+                  ))}
                 </div>
-              ))}
-            </div>
-          </div>
 
-          {/* Category Breakdown */}
-          <div style={{ background: 'var(--surface-color)', padding: '16px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
-            <h3 style={{ margin: '0 0 12px 0', fontSize: '14px', fontWeight: 'bold', color: 'var(--text-main)' }}>主要案件カテゴリ比率</h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              {[
-                { category: '光回線・通信アライアンス', ratio: 45, color: '#4F46E5' },
-                { category: 'イベント・ブース運営', ratio: 30, color: '#10B981' },
-                { category: 'モバイル・店舗獲得', ratio: 15, color: '#F59E0B' },
-                { category: 'その他派遣・サポート', ratio: 10, color: '#6B7280' },
-              ].map((item) => (
-                <div key={item.category}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '4px' }}>
-                    <span>{item.category}</span>
-                    <span style={{ fontWeight: 'bold' }}>{item.ratio}%</span>
+                <button
+                  onClick={handleExportAdminAnalyticsCSV}
+                  style={{ background: '#7E22CE', color: 'white', border: 'none', borderRadius: '6px', padding: '6px 12px', fontSize: '11px', fontWeight: 'bold', display: 'inline-flex', alignItems: 'center', gap: '4px', cursor: 'pointer', boxShadow: '0 2px 4px rgba(126, 34, 206, 0.2)' }}
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>download</span>
+                  全指標CSVエクスポート
+                </button>
+              </div>
+
+              {/* 4 Major Platform KPI Summary Cards */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px', marginBottom: '16px' }}>
+                <div style={{ background: 'var(--surface-color)', padding: '14px', borderRadius: '12px', border: '1px solid var(--border-color)', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
+                  <div style={{ fontSize: '11px', color: 'var(--text-sub)', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <span className="material-symbols-outlined" style={{ fontSize: '14px', color: '#3B82F6' }}>receipt_long</span>
+                    日別平均取引件数
                   </div>
-                  <div style={{ width: '100%', height: '8px', background: '#F3F4F6', borderRadius: '4px', overflow: 'hidden' }}>
-                    <div style={{ width: `${item.ratio}%`, height: '100%', background: item.color }}></div>
+                  <div style={{ fontSize: '20px', fontWeight: 'bold', color: 'var(--text-main)' }}>
+                    28.4 <span style={{ fontSize: '11px', fontWeight: 'normal', color: '#10B981' }}>件/日 (+14.2%)</span>
                   </div>
                 </div>
-              ))}
+
+                <div style={{ background: 'var(--surface-color)', padding: '14px', borderRadius: '12px', border: '1px solid var(--border-color)', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
+                  <div style={{ fontSize: '11px', color: 'var(--text-sub)', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <span className="material-symbols-outlined" style={{ fontSize: '14px', color: '#F59E0B' }}>campaign</span>
+                    アクティブ案件掲載数
+                  </div>
+                  <div style={{ fontSize: '20px', fontWeight: 'bold', color: 'var(--text-main)' }}>
+                    142 <span style={{ fontSize: '11px', fontWeight: 'normal', color: 'var(--text-sub)' }}>件 (+18件/日)</span>
+                  </div>
+                </div>
+
+                <div style={{ background: 'var(--surface-color)', padding: '14px', borderRadius: '12px', border: '1px solid var(--border-color)', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
+                  <div style={{ fontSize: '11px', color: 'var(--text-sub)', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <span className="material-symbols-outlined" style={{ fontSize: '14px', color: '#10B981' }}>handshake</span>
+                    案件マッチング成功率
+                  </div>
+                  <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#10B981' }}>
+                    94.2% <span style={{ fontSize: '11px', fontWeight: 'normal', color: 'var(--text-sub)' }}>(高アサイン率)</span>
+                  </div>
+                </div>
+
+                <div style={{ background: 'var(--surface-color)', padding: '14px', borderRadius: '12px', border: '1px solid var(--border-color)', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
+                  <div style={{ fontSize: '11px', color: 'var(--text-sub)', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <span className="material-symbols-outlined" style={{ fontSize: '14px', color: '#7E22CE' }}>monetization_on</span>
+                    プラットフォーム月間流通額
+                  </div>
+                  <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#7E22CE' }}>
+                    ¥24.8M <span style={{ fontSize: '10px', fontWeight: 'normal', color: 'var(--text-sub)' }}>(手数料: ¥4.9M)</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Daily Transactions & Job Postings Trend Chart */}
+              <div style={{ background: 'var(--surface-color)', padding: '16px', borderRadius: '12px', border: '1px solid var(--border-color)', marginBottom: '16px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                  <h3 style={{ margin: 0, fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)' }}>日次取引件数 & 新規掲載推移 (直近7日間)</h3>
+                  <div style={{ display: 'flex', gap: '12px', fontSize: '10px' }}>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: '#4F46E5', fontWeight: 'bold' }}>
+                      <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#4F46E5' }}></span> 掲載数
+                    </span>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: '#10B981', fontWeight: 'bold' }}>
+                      <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10B981' }}></span> 成立取引数
+                    </span>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', height: '150px', paddingTop: '20px', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px' }}>
+                  {[
+                    { date: '7/15', posted: 16, matched: 15, h1: '50%', h2: '45%' },
+                    { date: '7/16', posted: 18, matched: 17, h1: '55%', h2: '52%' },
+                    { date: '7/17', posted: 22, matched: 20, h1: '68%', h2: '62%' },
+                    { date: '7/18', posted: 25, matched: 24, h1: '78%', h2: '75%' },
+                    { date: '7/19', posted: 30, matched: 28, h1: '94%', h2: '88%' },
+                    { date: '7/20', posted: 28, matched: 27, h1: '88%', h2: '85%' },
+                    { date: '7/21', posted: 32, matched: 30, h1: '100%', h2: '94%' },
+                  ].map((item) => (
+                    <div key={item.date} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', flex: 1 }}>
+                      <div style={{ display: 'flex', gap: '3px', alignItems: 'flex-end', height: '110px' }}>
+                        <div title={`掲載: ${item.posted}件`} style={{ width: '12px', height: item.h1, background: '#818CF8', borderRadius: '3px 3px 0 0' }}></div>
+                        <div title={`成立: ${item.matched}件`} style={{ width: '12px', height: item.h2, background: '#10B981', borderRadius: '3px 3px 0 0' }}></div>
+                      </div>
+                      <span style={{ fontSize: '10px', color: 'var(--text-sub)' }}>{item.date}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Category Breakdown & Match Rates */}
+              <div style={{ background: 'var(--surface-color)', padding: '16px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
+                <h3 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)' }}>職種別マッチング率 & 平均取引単価</h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  {[
+                    { category: '光回線・通信アライアンス', matchRate: '92.5%', avgPrice: '¥24,500', ratio: 45, color: '#4F46E5' },
+                    { category: 'イベント設営・ブース運営', matchRate: '96.8%', avgPrice: '¥18,000', ratio: 30, color: '#10B981' },
+                    { category: 'モバイル・店舗アサインサポート', matchRate: '94.0%', avgPrice: '¥16,500', ratio: 15, color: '#F59E0B' },
+                    { category: '現場店舗責任者 / SV統括', matchRate: '89.2%', avgPrice: '¥32,000', ratio: 10, color: '#7E22CE' },
+                  ].map((item) => (
+                    <div key={item.category} style={{ background: '#F8FAFC', padding: '10px 12px', borderRadius: '8px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', fontWeight: 'bold', marginBottom: '4px' }}>
+                        <span>{item.category}</span>
+                        <span style={{ color: item.color }}>マッチ率 {item.matchRate} / 平均 {item.avgPrice}</span>
+                      </div>
+                      <div style={{ width: '100%', height: '6px', background: '#E2E8F0', borderRadius: '3px', overflow: 'hidden' }}>
+                        <div style={{ width: `${item.ratio * 2}%`, height: '100%', background: item.color }}></div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
-          </div>
+          ) : (
+            /* General Staff Dashboard View */
+            <div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', marginBottom: '16px' }}>
+                <div style={{ background: 'var(--surface-color)', padding: '14px', borderRadius: '12px', border: '1px solid var(--border-color)', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+                  <div style={{ fontSize: '12px', color: 'var(--text-sub)', marginBottom: '4px' }}>総案件・対応数</div>
+                  <div style={{ fontSize: '22px', fontWeight: 'bold', color: 'var(--primary)' }}>
+                    {tasks.length} <span style={{ fontSize: '12px', fontWeight: 'normal', color: 'var(--text-sub)' }}>件</span>
+                  </div>
+                </div>
+
+                <div style={{ background: 'var(--surface-color)', padding: '14px', borderRadius: '12px', border: '1px solid var(--border-color)', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+                  <div style={{ fontSize: '12px', color: 'var(--text-sub)', marginBottom: '4px' }}>完了実績率</div>
+                  <div style={{ fontSize: '22px', fontWeight: 'bold', color: '#10B981' }}>
+                    {tasks.length > 0 ? Math.round((tasks.filter(t => t.status === 'completed').length / tasks.length) * 100) : 100}%
+                  </div>
+                </div>
+
+                <div style={{ background: 'var(--surface-color)', padding: '14px', borderRadius: '12px', border: '1px solid var(--border-color)', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+                  <div style={{ fontSize: '12px', color: 'var(--text-sub)', marginBottom: '4px' }}>累計取引金額</div>
+                  <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#8B5CF6' }}>
+                    ¥{tasks.reduce((sum, t) => sum + (t.price || 0), 0).toLocaleString()}
+                  </div>
+                </div>
+
+                <div style={{ background: 'var(--surface-color)', padding: '14px', borderRadius: '12px', border: '1px solid var(--border-color)', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+                  <div style={{ fontSize: '12px', color: 'var(--text-sub)', marginBottom: '4px' }}>高評価平均</div>
+                  <div style={{ fontSize: '22px', fontWeight: 'bold', color: '#F59E0B', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <span className="material-symbols-outlined" style={{ fontSize: '22px' }}>star</span>
+                    4.8
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ background: 'var(--surface-color)', padding: '16px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
+                <h3 style={{ margin: '0 0 12px 0', fontSize: '14px', fontWeight: 'bold', color: 'var(--text-main)' }}>月別成約・稼働推移</h3>
+                <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', height: '140px', paddingTop: '20px', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px' }}>
+                  {[
+                    { month: '2月', count: 12, height: '40%' },
+                    { month: '3月', count: 18, height: '60%' },
+                    { month: '4月', count: 15, height: '50%' },
+                    { month: '5月', count: 24, height: '80%' },
+                    { month: '6月', count: 28, height: '95%' },
+                    { month: '7月', count: 20, height: '70%' },
+                  ].map((item) => (
+                    <div key={item.month} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', flex: 1 }}>
+                      <span style={{ fontSize: '10px', color: 'var(--text-sub)', fontWeight: 'bold' }}>{item.count}件</span>
+                      <div style={{ width: '20px', height: item.height, background: 'linear-gradient(180deg, #6366F1 0%, #818CF8 100%)', borderRadius: '4px 4px 0 0' }}></div>
+                      <span style={{ fontSize: '11px', color: 'var(--text-sub)' }}>{item.month}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
         </main>
       </div>
 
