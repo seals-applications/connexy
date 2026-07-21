@@ -89,7 +89,7 @@ export function ManagementPage() {
 
   // Tab/Subpage state
   const isUserAdmin = !currentUser?.staffId || currentUser.staffRole === 'admin';
-  const [subPage, setSubPage] = useState<'none' | 'posts' | 'staffs' | 'reports' | 'logs' | 'training'>('none');
+  const [subPage, setSubPage] = useState<'none' | 'posts' | 'staffs' | 'reports' | 'logs' | 'training' | 'analytics'>('none');
 
   // プロフィール充実度
   const profileCompletion = useMemo(() => {
@@ -1015,10 +1015,12 @@ export function ManagementPage() {
     { id: 'staffs', label: 'スタッフ管理', desc: 'メンバー登録、アカウント追加、権限管理', icon: 'groups', bg: '#ECFDF5', color: '#059669' },
     { id: 'reports', label: '報告・評価', desc: '業務完了報告の確認とスタッフ相互評価', icon: 'rate_review', bg: '#FDF2F8', color: '#DB2777' },
     { id: 'logs', label: '出勤管理', desc: '自社スタッフの出勤予定カレンダーと打刻履歴', icon: 'history', bg: '#EFF6FF', color: '#1D4ED8' },
+    { id: 'analytics', label: '分析・ダッシュボード', desc: '利用実績、応募率、成約総額のグラフ可視化', icon: 'analytics', bg: '#F3E8FF', color: '#7E22CE' },
   ] : [
     { id: 'training', label: '研修・クイズ', desc: '動画視聴と理解度テストの受講（バッジ獲得）', icon: 'school', bg: '#ECFDF5', color: '#059669' },
     { id: 'reports', label: '報告・評価', desc: '完了した業務の評価と元請けへの評価送信', icon: 'rate_review', bg: '#FDF2F8', color: '#DB2777' },
     { id: 'logs', label: '出勤管理', desc: '自身の出勤予定カレンダーと打刻履歴', icon: 'history', bg: '#EFF6FF', color: '#1D4ED8' },
+    { id: 'analytics', label: '分析・ダッシュボード', desc: '稼働実績、獲得報酬総額、高評価率の可視化', icon: 'analytics', bg: '#F3E8FF', color: '#7E22CE' },
   ];
 
 
@@ -1653,6 +1655,96 @@ export function ManagementPage() {
           </main>
         </div>
       )}
+
+
+      {/* (G) Analytics Dashboard Overlay */}
+      <div className={`overlay-view ${subPage === 'analytics' ? 'show' : ''}`} style={{ zIndex: 1100, display: 'flex', flexDirection: 'column' }}>
+        <header className="solid-header overlay-header" style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+          <button className="icon-btn-dark" onClick={() => setSubPage('none')}>
+            <span className="material-symbols-outlined">arrow_back_ios_new</span>
+          </button>
+          <h1 style={{ fontSize: '16px', fontWeight: 'bold' }}>分析・ダッシュボード</h1>
+          <div style={{ width: '40px' }}></div>
+        </header>
+
+        <main className="list-area bg-gray" style={{ flex: 1, overflowY: 'auto', padding: '16px', paddingBottom: '90px' }}>
+          {/* KPI Summary Cards */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', marginBottom: '16px' }}>
+            <div style={{ background: 'var(--surface-color)', padding: '14px', borderRadius: '12px', border: '1px solid var(--border-color)', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+              <div style={{ fontSize: '12px', color: 'var(--text-sub)', marginBottom: '4px' }}>総案件・対応数</div>
+              <div style={{ fontSize: '22px', fontWeight: 'bold', color: 'var(--primary)' }}>
+                {tasks.length} <span style={{ fontSize: '12px', fontWeight: 'normal', color: 'var(--text-sub)' }}>件</span>
+              </div>
+            </div>
+
+            <div style={{ background: 'var(--surface-color)', padding: '14px', borderRadius: '12px', border: '1px solid var(--border-color)', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+              <div style={{ fontSize: '12px', color: 'var(--text-sub)', marginBottom: '4px' }}>完了実績率</div>
+              <div style={{ fontSize: '22px', fontWeight: 'bold', color: '#10B981' }}>
+                {tasks.length > 0 ? Math.round((tasks.filter(t => t.status === 'completed').length / tasks.length) * 100) : 100}%
+              </div>
+            </div>
+
+            <div style={{ background: 'var(--surface-color)', padding: '14px', borderRadius: '12px', border: '1px solid var(--border-color)', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+              <div style={{ fontSize: '12px', color: 'var(--text-sub)', marginBottom: '4px' }}>累計取引金額</div>
+              <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#8B5CF6' }}>
+                ¥{tasks.reduce((sum, t) => sum + (t.price || 0), 0).toLocaleString()}
+              </div>
+            </div>
+
+            <div style={{ background: 'var(--surface-color)', padding: '14px', borderRadius: '12px', border: '1px solid var(--border-color)', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+              <div style={{ fontSize: '12px', color: 'var(--text-sub)', marginBottom: '4px' }}>高評価平均</div>
+              <div style={{ fontSize: '22px', fontWeight: 'bold', color: '#F59E0B', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <span className="material-symbols-outlined" style={{ fontSize: '22px' }}>star</span>
+                4.8
+              </div>
+            </div>
+          </div>
+
+          {/* Visual Performance Charts */}
+          <div style={{ background: 'var(--surface-color)', padding: '16px', borderRadius: '12px', border: '1px solid var(--border-color)', marginBottom: '16px' }}>
+            <h3 style={{ margin: '0 0 12px 0', fontSize: '14px', fontWeight: 'bold', color: 'var(--text-main)' }}>月別成約・稼働推移 (直近6ヶ月)</h3>
+            <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', height: '140px', paddingTop: '20px', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px' }}>
+              {[
+                { month: '2月', count: 12, height: '40%' },
+                { month: '3月', count: 18, height: '60%' },
+                { month: '4月', count: 15, height: '50%' },
+                { month: '5月', count: 24, height: '80%' },
+                { month: '6月', count: 28, height: '95%' },
+                { month: '7月', count: 20, height: '70%' },
+              ].map((item) => (
+                <div key={item.month} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', flex: 1 }}>
+                  <span style={{ fontSize: '10px', color: 'var(--text-sub)', fontWeight: 'bold' }}>{item.count}件</span>
+                  <div style={{ width: '20px', height: item.height, background: 'linear-gradient(180deg, #6366F1 0%, #818CF8 100%)', borderRadius: '4px 4px 0 0' }}></div>
+                  <span style={{ fontSize: '11px', color: 'var(--text-sub)' }}>{item.month}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Category Breakdown */}
+          <div style={{ background: 'var(--surface-color)', padding: '16px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
+            <h3 style={{ margin: '0 0 12px 0', fontSize: '14px', fontWeight: 'bold', color: 'var(--text-main)' }}>主要案件カテゴリ比率</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              {[
+                { category: '光回線・通信アライアンス', ratio: 45, color: '#4F46E5' },
+                { category: 'イベント・ブース運営', ratio: 30, color: '#10B981' },
+                { category: 'モバイル・店舗獲得', ratio: 15, color: '#F59E0B' },
+                { category: 'その他派遣・サポート', ratio: 10, color: '#6B7280' },
+              ].map((item) => (
+                <div key={item.category}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '4px' }}>
+                    <span>{item.category}</span>
+                    <span style={{ fontWeight: 'bold' }}>{item.ratio}%</span>
+                  </div>
+                  <div style={{ width: '100%', height: '8px', background: '#F3F4F6', borderRadius: '4px', overflow: 'hidden' }}>
+                    <div style={{ width: `${item.ratio}%`, height: '100%', background: item.color }}></div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </main>
+      </div>
 
 
       {/* --- OVERLAYS & MODALS --- */}

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { setOptions, importLibrary } from '@googlemaps/js-api-loader';
+import { MarkerClusterer } from '@googlemaps/markerclusterer';
 import { api } from '../data/mockDb';
 import type { Job, Talent, Staff, Training, User, ContractTask } from '../data/mockDb';
 import { CalendarPicker } from '../components/CalendarPicker';
@@ -58,6 +59,7 @@ export function SearchPage() {
   }, [selectedTalent]);
 
   // 新規作成フォーム用のState
+  const [visibleCount, setVisibleCount] = useState(10);
   const [isCreateFormOpen, setIsCreateFormOpen] = useState(false);
   const [createFormType, setCreateFormType] = useState<'job' | 'talent'>('job');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -1553,6 +1555,17 @@ export function SearchPage() {
 
     markersRef.current = newMarkers;
 
+    if (mapRef.current && newMarkers.length > 0) {
+      try {
+        clustererRef.current = new MarkerClusterer({
+          map: mapRef.current,
+          markers: newMarkers
+        });
+      } catch (e) {
+        console.warn('MarkerClusterer init warning:', e);
+      }
+    }
+
   }, [isMapLoaded, mode, clusteredJobs, clusteredTalents, mapZoom, gridSize]);
 
 
@@ -2155,7 +2168,8 @@ export function SearchPage() {
               ))
             ) : mode === 'job' ? (
               sortedJobs.length > 0 ? (
-                sortedJobs.map(job => {
+                <>
+                {sortedJobs.slice(0, visibleCount).map(job => {
                   let remainingDaysText = '';
                   let remainingDaysColor = '#059669';
                   let remainingDaysBg = '#ECFDF5';
@@ -2263,7 +2277,28 @@ export function SearchPage() {
                       <span className="material-symbols-outlined" style={{ fontSize: '24px' }}>arrow_forward</span>
                     </div>
                   </div>
-                )})
+                )})}
+                {sortedJobs.length > visibleCount && (
+                  <div style={{ textAlign: 'center', padding: '16px 0' }}>
+                    <button
+                      onClick={() => setVisibleCount(prev => prev + 10)}
+                      style={{
+                        background: 'var(--surface-color)',
+                        border: '1px solid var(--border-color)',
+                        borderRadius: '24px',
+                        padding: '10px 24px',
+                        fontSize: '13px',
+                        fontWeight: 'bold',
+                        color: 'var(--primary)',
+                        cursor: 'pointer',
+                        boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
+                      }}
+                    >
+                      さらに読み込む (全{sortedJobs.length}件中 {visibleCount}件表示)
+                    </button>
+                  </div>
+                )}
+                </>
               ) : (
                 <div style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--text-sub)' }}>
                   <span className="material-symbols-outlined" style={{ fontSize: '40px', marginBottom: '8px', opacity: 0.5 }}>search_off</span>
@@ -2272,7 +2307,8 @@ export function SearchPage() {
               )
             ) : (
               filteredTalentGroups.length > 0 ? (
-                filteredTalentGroups.map(group => (
+                <>
+                {filteredTalentGroups.slice(0, visibleCount).map(group => (
                   <div key={group.locationName} style={{ background: 'var(--surface-color)', borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', animation: 'fadeIn 0.3s ease', overflow: 'hidden' }}>
                     <div style={{ padding: '12px 16px', background: '#F9FAFB', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <h3 style={{ margin: 0, fontSize: '15px', color: 'var(--text-main)' }}>{group.locationName}</h3>
@@ -2348,7 +2384,28 @@ export function SearchPage() {
                       ))}
                     </div>
                   </div>
-                ))
+                ))}
+                {filteredTalentGroups.length > visibleCount && (
+                  <div style={{ textAlign: 'center', padding: '16px 0' }}>
+                    <button
+                      onClick={() => setVisibleCount(prev => prev + 10)}
+                      style={{
+                        background: 'var(--surface-color)',
+                        border: '1px solid var(--border-color)',
+                        borderRadius: '24px',
+                        padding: '10px 24px',
+                        fontSize: '13px',
+                        fontWeight: 'bold',
+                        color: '#10B981',
+                        cursor: 'pointer',
+                        boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
+                      }}
+                    >
+                      さらに読み込む (全{filteredTalentGroups.length}エリア中 {visibleCount}エリア表示)
+                    </button>
+                  </div>
+                )}
+                </>
               ) : (
                 <div style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--text-sub)' }}>
                   <span className="material-symbols-outlined" style={{ fontSize: '40px', marginBottom: '8px', opacity: 0.5 }}>search_off</span>

@@ -869,30 +869,44 @@ const defaultOfflineTasks = [
 ];
 
 export const api = {
-  getJobs: async (): Promise<Job[]> => {
+  getJobs: async (limit?: number, offset?: number): Promise<Job[]> => {
     return callSupabase(
       async () => {
-        const { data, error } = await supabase.from('jobs').select('*');
+        let query = supabase.from('jobs').select('*');
+        if (typeof limit === 'number' && typeof offset === 'number') {
+          query = query.range(offset, offset + limit - 1);
+        }
+        const { data, error } = await query;
         if (error) throw error;
         return data.map(mapJob);
       },
       () => {
-        const list = getOfflineData('jobs', defaultOfflineJobs);
-        return list.map(mapJob);
+        let list = getOfflineData('jobs', defaultOfflineJobs).map(mapJob);
+        if (typeof limit === 'number' && typeof offset === 'number') {
+          list = list.slice(offset, offset + limit);
+        }
+        return list;
       }
     );
   },
 
-  getTalents: async (): Promise<Talent[]> => {
+  getTalents: async (limit?: number, offset?: number): Promise<Talent[]> => {
     return callSupabase(
       async () => {
-        const { data, error } = await supabase.from('talents').select('*');
+        let query = supabase.from('talents').select('*');
+        if (typeof limit === 'number' && typeof offset === 'number') {
+          query = query.range(offset, offset + limit - 1);
+        }
+        const { data, error } = await query;
         if (error) throw error;
         return data.map(mapTalent);
       },
       () => {
-        const list = getOfflineData('talents', defaultOfflineTalents);
-        return list.map(mapTalent);
+        let list = getOfflineData('talents', defaultOfflineTalents).map(mapTalent);
+        if (typeof limit === 'number' && typeof offset === 'number') {
+          list = list.slice(offset, offset + limit);
+        }
+        return list;
       }
     );
   },
