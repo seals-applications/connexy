@@ -1332,6 +1332,8 @@ export function MessagePage() {
       setChatTasks(updatedTasks);
       setShowPhotoModal(false);
       setPhotoCaption('');
+      setSelectedPhotoUrl('');
+      setSelectedPhotoName('');
     } catch (err) {
       console.error('Failed to send photo:', err);
       alert('写真の送信に失敗しました');
@@ -1873,41 +1875,49 @@ export function MessagePage() {
                   height={140}
                   onMouseDown={(e) => {
                     const ctx = signatureCanvasRef.current?.getContext('2d');
-                    if (!ctx) return;
+                    if (!ctx || !signatureCanvasRef.current) return;
                     setIsDrawingSignature(true);
-                    const rect = signatureCanvasRef.current!.getBoundingClientRect();
+                    const rect = signatureCanvasRef.current.getBoundingClientRect();
+                    const scaleX = signatureCanvasRef.current.width / rect.width;
+                    const scaleY = signatureCanvasRef.current.height / rect.height;
                     ctx.beginPath();
-                    ctx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
+                    ctx.moveTo((e.clientX - rect.left) * scaleX, (e.clientY - rect.top) * scaleY);
                   }}
                   onMouseMove={(e) => {
-                    if (!isDrawingSignature) return;
-                    const ctx = signatureCanvasRef.current?.getContext('2d');
+                    if (!isDrawingSignature || !signatureCanvasRef.current) return;
+                    const ctx = signatureCanvasRef.current.getContext('2d');
                     if (!ctx) return;
-                    const rect = signatureCanvasRef.current!.getBoundingClientRect();
+                    const rect = signatureCanvasRef.current.getBoundingClientRect();
+                    const scaleX = signatureCanvasRef.current.width / rect.width;
+                    const scaleY = signatureCanvasRef.current.height / rect.height;
                     ctx.lineWidth = 2.5;
                     ctx.lineCap = 'round';
                     ctx.strokeStyle = '#0F172A';
-                    ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
+                    ctx.lineTo((e.clientX - rect.left) * scaleX, (e.clientY - rect.top) * scaleY);
                     ctx.stroke();
                   }}
                   onMouseUp={() => setIsDrawingSignature(false)}
                   onTouchStart={(e) => {
                     const ctx = signatureCanvasRef.current?.getContext('2d');
-                    if (!ctx || !e.touches[0]) return;
+                    if (!ctx || !e.touches[0] || !signatureCanvasRef.current) return;
                     setIsDrawingSignature(true);
-                    const rect = signatureCanvasRef.current!.getBoundingClientRect();
+                    const rect = signatureCanvasRef.current.getBoundingClientRect();
+                    const scaleX = signatureCanvasRef.current.width / rect.width;
+                    const scaleY = signatureCanvasRef.current.height / rect.height;
                     ctx.beginPath();
-                    ctx.moveTo(e.touches[0].clientX - rect.left, e.touches[0].clientY - rect.top);
+                    ctx.moveTo((e.touches[0].clientX - rect.left) * scaleX, (e.touches[0].clientY - rect.top) * scaleY);
                   }}
                   onTouchMove={(e) => {
-                    if (!isDrawingSignature || !e.touches[0]) return;
-                    const ctx = signatureCanvasRef.current?.getContext('2d');
+                    if (!isDrawingSignature || !e.touches[0] || !signatureCanvasRef.current) return;
+                    const ctx = signatureCanvasRef.current.getContext('2d');
                     if (!ctx) return;
-                    const rect = signatureCanvasRef.current!.getBoundingClientRect();
+                    const rect = signatureCanvasRef.current.getBoundingClientRect();
+                    const scaleX = signatureCanvasRef.current.width / rect.width;
+                    const scaleY = signatureCanvasRef.current.height / rect.height;
                     ctx.lineWidth = 2.5;
                     ctx.lineCap = 'round';
                     ctx.strokeStyle = '#0F172A';
-                    ctx.lineTo(e.touches[0].clientX - rect.left, e.touches[0].clientY - rect.top);
+                    ctx.lineTo((e.touches[0].clientX - rect.left) * scaleX, (e.touches[0].clientY - rect.top) * scaleY);
                     ctx.stroke();
                   }}
                   onTouchEnd={() => setIsDrawingSignature(false)}

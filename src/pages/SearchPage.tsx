@@ -137,7 +137,9 @@ export function SearchPage() {
     if (selectedTalentIds.length === 0 || !currentUser) return;
     try {
       for (const tId of selectedTalentIds) {
-        const chatId = `chat_${[currentUser.id, tId].sort().join('_')}`;
+        const talentObj = talents.find(t => t.id === tId);
+        const targetUserId = talentObj ? (talentObj.userId || talentObj.companyName) : tId;
+        const chatId = `chat_${[currentUser.id, targetUserId].sort().join('_')}`;
         const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         const initMsgs = [
           {
@@ -148,7 +150,7 @@ export function SearchPage() {
             time: timeStr
           }
         ];
-        await api.saveContractTaskChat(chatId, initMsgs, '【一括スカウト】新規案件のご案内', currentUser.name, 'スカウト対象パートナー');
+        await api.saveContractTaskChat(chatId, initMsgs, '【一括スカウト】新規案件のご案内', currentUser.name, talentObj?.companyName || 'スカウト対象パートナー');
       }
       alert(`${selectedTalentIds.length}名の人材へ一括スカウトを正常に送信いたしました！`);
       setShowBulkScoutModal(false);
@@ -2127,7 +2129,8 @@ export function SearchPage() {
           style={{ flex: 1, overflowY: 'auto', zIndex: 2, paddingBottom: '80px' }}
           onScroll={(e) => {
             const target = e.currentTarget;
-            if (target.scrollHeight - target.scrollTop - target.clientHeight < 200) {
+            const total = mode === 'job' ? sortedJobs.length : filteredTalentGroups.length;
+            if (visibleCount < total && target.scrollHeight - target.scrollTop - target.clientHeight < 200) {
               setVisibleCount(prev => prev + 10);
             }
           }}

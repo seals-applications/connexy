@@ -1004,8 +1004,17 @@ export function ManagementPage() {
   const handleExportICS = (task: ContractTask) => {
     try {
       const title = task.jobTitle || 'CONNEXY契約案件';
+      
+      // Parse task.date (e.g., "2026-07-25") or fallback to today
+      const startDate = task.date ? new Date(task.date.replace(/\./g, '-')) : new Date();
+      if (isNaN(startDate.getTime())) {
+        startDate.setTime(Date.now());
+      }
+      const endDate = new Date(startDate.getTime() + 86400000);
+
+      const startStr = startDate.toISOString().replace(/-|:|\.\d+/g, '').slice(0, 15) + 'Z';
+      const endStr = endDate.toISOString().replace(/-|:|\.\d+/g, '').slice(0, 15) + 'Z';
       const nowStr = new Date().toISOString().replace(/-|:|\.\d+/g, '').slice(0, 15) + 'Z';
-      const endDateStr = new Date(Date.now() + 86400000).toISOString().replace(/-|:|\.\d+/g, '').slice(0, 15) + 'Z';
       
       const icsData = [
         'BEGIN:VCALENDAR',
@@ -1014,8 +1023,8 @@ export function ManagementPage() {
         'BEGIN:VEVENT',
         `UID:task_${task.id}@connexy.app`,
         `DTSTAMP:${nowStr}`,
-        `DTSTART:${nowStr}`,
-        `DTEND:${endDateStr}`,
+        `DTSTART:${startStr}`,
+        `DTEND:${endStr}`,
         `SUMMARY:${title}`,
         `DESCRIPTION:CONNEXY 契約案件 (ID: ${task.id}) / 金額: ¥${task.price.toLocaleString()}`,
         'END:VEVENT',
@@ -1044,6 +1053,19 @@ export function ManagementPage() {
       return [];
     }
   });
+
+  useEffect(() => {
+    if (currentUser?.id) {
+      try {
+        const stored = localStorage.getItem(`connexy_ng_dates_${currentUser.id}`);
+        if (stored) {
+          setNgDates(JSON.parse(stored));
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    }
+  }, [currentUser?.id]);
 
   const handleToggleNgDate = (dateStr: string) => {
     const updated = ngDates.includes(dateStr) 
