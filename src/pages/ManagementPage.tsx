@@ -1099,7 +1099,7 @@ export function ManagementPage() {
     { id: 'logs', label: '出勤管理', desc: '自社スタッフの出勤予定カレンダーと打刻履歴', icon: 'history', bg: '#EFF6FF', color: '#1D4ED8' },
     { id: 'analytics', label: '分析・ダッシュボード', desc: '利用実績、応募率、成約総額のグラフ可視化', icon: 'analytics', bg: '#F3E8FF', color: '#7E22CE' },
   ] : [
-    { id: 'training', label: '研修・クイズ', desc: '動画視聴と理解度テストの受講（バッジ獲得）', icon: 'school', bg: '#ECFDF5', color: '#059669' },
+    { id: 'training', label: '研修・クイズ', desc: '動画視聴と理解度テストの受講（準備中 / Coming Soon）', icon: 'school', bg: '#F1F5F9', color: '#94A3B8', disabled: true },
     { id: 'reports', label: '報告・評価', desc: '完了した業務の評価と元請けへの評価送信', icon: 'rate_review', bg: '#FDF2F8', color: '#DB2777' },
     { id: 'logs', label: '出勤管理', desc: '自身の出勤予定カレンダーと打刻履歴', icon: 'history', bg: '#EFF6FF', color: '#1D4ED8' },
     { id: 'analytics', label: '分析・ダッシュボード', desc: '稼働実績、獲得報酬総額、高評価率の可視化', icon: 'analytics', bg: '#F3E8FF', color: '#7E22CE' },
@@ -1175,13 +1175,20 @@ export function ManagementPage() {
             {menuItems.map((item, idx) => (
               <div 
                 key={item.id}
-                onClick={() => setSubPage(item.id as any)}
+                onClick={() => {
+                  if ((item as any).disabled) {
+                    alert('現在「研修・クイズ」機能は準備中 (Coming Soon) です。順次機能解放予定となります。');
+                    return;
+                  }
+                  setSubPage(item.id as any);
+                }}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
                   padding: '16px 20px',
-                  cursor: 'pointer',
+                  cursor: (item as any).disabled ? 'not-allowed' : 'pointer',
+                  opacity: (item as any).disabled ? 0.65 : 1,
                   borderBottom: idx === menuItems.length - 1 ? 'none' : '1px solid #F1F5F9',
                   transition: 'background-color 0.2s',
                 }}
@@ -1203,7 +1210,19 @@ export function ManagementPage() {
                   <div>
                     <div style={{ fontSize: '14px', fontWeight: 'bold', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <span>{item.label}</span>
-                      {(() => {
+                      {(item as any).disabled ? (
+                        <span style={{ 
+                          background: '#E2E8F0', 
+                          color: '#475569', 
+                          fontSize: '10px', 
+                          fontWeight: 'bold', 
+                          padding: '2px 8px', 
+                          borderRadius: '10px',
+                          lineHeight: 1
+                        }}>
+                          Coming Soon
+                        </span>
+                      ) : (() => {
                         let count = 0;
                         if (item.id === 'reports') {
                           count = relatedTasks.filter(t => t.status === 'report_pending' || t.status === 'disputed').length;
@@ -1231,7 +1250,9 @@ export function ManagementPage() {
                     <div style={{ fontSize: '11px', color: 'var(--text-sub)', marginTop: '2px' }}>{item.desc}</div>
                   </div>
                 </div>
-                <span className="material-symbols-outlined" style={{ color: '#CBD5E1', fontSize: '20px' }}>arrow_forward_ios</span>
+                <span className="material-symbols-outlined" style={{ color: '#CBD5E1', fontSize: '20px' }}>
+                  {(item as any).disabled ? 'lock' : 'arrow_forward_ios'}
+                </span>
               </div>
             ))}
           </div>
@@ -1819,6 +1840,10 @@ export function ManagementPage() {
             <div style={{ width: '40px' }}></div>
           </header>
           <main className="list-area bg-gray" style={{ flex: 1, overflowY: 'auto', padding: '16px', paddingBottom: '90px' }}>
+            <div style={{ background: '#FFFBEB', border: '1px solid #FDE68A', borderRadius: '12px', padding: '12px 16px', marginBottom: '16px', color: '#B45309', fontSize: '12px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span className="material-symbols-outlined" style={{ fontSize: '20px', color: '#D97706' }}>lock</span>
+              現在「研修・クイズ」機能は準備中 (Coming Soon) です。順次テスト動画および受講テストを公開予定です。
+            </div>
             <div>
               <h3 className="section-title" style={{ marginTop: 0 }}>受講済みの研修バッジ</h3>
               <div style={{ background: 'var(--surface-color)', padding: '16px', borderRadius: '12px', border: '1px solid var(--border-color)', marginBottom: '16px' }}>
