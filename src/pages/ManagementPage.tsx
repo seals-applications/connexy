@@ -89,7 +89,7 @@ export function ManagementPage() {
 
   // Tab/Subpage state
   const isUserAdmin = !currentUser?.staffId || currentUser.staffRole === 'admin';
-  const [subPage, setSubPage] = useState<'none' | 'posts' | 'staffs' | 'reports' | 'logs' | 'training' | 'analytics'>('none');
+  const [subPage, setSubPage] = useState<'none' | 'posts' | 'staffs' | 'reports' | 'logs' | 'training' | 'analytics' | 'ai_security'>('none');
 
   // プロフィール充実度
   const profileCompletion = useMemo(() => {
@@ -1075,6 +1075,77 @@ export function ManagementPage() {
     localStorage.setItem(`connexy_ng_dates_${currentUser?.id || 'guest'}`, JSON.stringify(updated));
   };
 
+  // AI 不正防止・コンプライアンス監視用データ＆ハンドラー
+  interface AIFraudLog {
+    id: string;
+    chatId: string;
+    senderName: string;
+    receiverName: string;
+    detectedText: string;
+    riskCategory: '直取引・抜き行為' | '個人情報過度要求' | '威圧・不当要求';
+    riskLevel: 'critical' | 'warning' | 'info';
+    aiConfidence: number;
+    timestamp: string;
+    status: 'unresolved' | 'warned' | 'frozen' | 'resolved';
+  }
+
+  const [aiFraudLogs, setAiFraudLogs] = useState<AIFraudLog[]>([
+    {
+      id: 'fraud_101',
+      chatId: 'chat_alpha_sigma',
+      senderName: '株式会社アルファ (発注者)',
+      receiverName: 'シグマプロモーション (ワーカー)',
+      detectedText: '「システム利用料を浮かせるため、次回から直接振込で直接契約しませんか？連絡先LINEを教えてください。」',
+      riskCategory: '直取引・抜き行為',
+      riskLevel: 'critical',
+      aiConfidence: 97,
+      timestamp: '2026-07-21 14:20',
+      status: 'unresolved'
+    },
+    {
+      id: 'fraud_102',
+      chatId: 'chat_beta_gamma',
+      senderName: '合同会社ガンマ (ワーカー)',
+      receiverName: 'ベータ株式会社 (発注者)',
+      detectedText: '「本人確認と身元証明のため、チャット欄に運転免許証とマイナンバーカードの表面裏面写真を添付してください。」',
+      riskCategory: '個人情報過度要求',
+      riskLevel: 'warning',
+      aiConfidence: 91,
+      timestamp: '2026-07-20 18:45',
+      status: 'unresolved'
+    },
+    {
+      id: 'fraud_103',
+      chatId: 'chat_delta_alpha',
+      senderName: 'デルタ合同会社 (発注者)',
+      receiverName: '株式会社アルファ (パートナー)',
+      detectedText: '「こちらの提示額で合意しない場合、プラットフォーム上で最低評価を付けてペナルティ報告しますよ。」',
+      riskCategory: '威圧・不当要求',
+      riskLevel: 'warning',
+      aiConfidence: 86,
+      timestamp: '2026-07-19 11:05',
+      status: 'warned'
+    }
+  ]);
+
+  const [aiAutoWarningEnabled, setAiAutoWarningEnabled] = useState(true);
+  const [aiAutoFreezeEnabled, setAiAutoFreezeEnabled] = useState(false);
+
+  const handleSendAIWarning = (id: string) => {
+    setAiFraudLogs(prev => prev.map(log => log.id === id ? { ...log, status: 'warned' } : log));
+    alert('運営事務局より該当チャットルームへ「コンプライアンス違反警告メッセージ」を送信しました。');
+  };
+
+  const handleFreezeChat = (id: string) => {
+    setAiFraudLogs(prev => prev.map(log => log.id === id ? { ...log, status: 'frozen' } : log));
+    alert('該当チャットルームのメッセージ送信機能を一時凍結しました。');
+  };
+
+  const handleResolveAILog = (id: string) => {
+    setAiFraudLogs(prev => prev.map(log => log.id === id ? { ...log, status: 'resolved' } : log));
+    alert('該当検知ログを「審査完了・対応済み」へ変更しました。');
+  };
+
 
 
   // Quizzes and Training methods
@@ -1120,6 +1191,7 @@ export function ManagementPage() {
     { id: 'reports', label: '報告・評価', desc: '業務完了報告の確認とスタッフ相互評価', icon: 'rate_review', bg: '#FDF2F8', color: '#DB2777' },
     { id: 'logs', label: '出勤管理', desc: '自社スタッフの出勤予定カレンダーと打刻履歴', icon: 'history', bg: '#EFF6FF', color: '#1D4ED8' },
     { id: 'analytics', label: '分析・ダッシュボード', desc: '利用実績、応募率、成約総額のグラフ可視化', icon: 'analytics', bg: '#F3E8FF', color: '#7E22CE' },
+    { id: 'ai_security', label: 'AI不正監視・コンプライアンス', desc: 'AIによる直取引・抜き行為・不当メッセージのリアルタイム自動判定・保護', icon: 'shield_lock', bg: '#FEE2E2', color: '#DC2626' },
   ] : [
     { id: 'training', label: '研修・クイズ', desc: '動画視聴と理解度テストの受講（準備中 / Coming Soon）', icon: 'school', bg: '#F1F5F9', color: '#94A3B8', disabled: true },
     { id: 'reports', label: '報告・評価', desc: '完了した業務の評価と元請けへの評価送信', icon: 'rate_review', bg: '#FDF2F8', color: '#DB2777' },
@@ -2011,6 +2083,189 @@ export function ManagementPage() {
 
 
       {/* --- OVERLAYS & MODALS --- */}
+
+      {/* (G) AI Security & Anti-Fraud Center Overlay (Admin) */}
+      {isUserAdmin && (
+        <div className={`overlay-view ${subPage === 'ai_security' ? 'show' : ''}`} style={{ zIndex: 1100, display: 'flex', flexDirection: 'column' }}>
+          <header className="solid-header overlay-header" style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <button className="icon-btn-dark" onClick={() => setSubPage('none')}>
+              <span className="material-symbols-outlined">arrow_back_ios_new</span>
+            </button>
+            <h1 style={{ fontSize: '16px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span className="material-symbols-outlined" style={{ color: '#EF4444' }}>shield_lock</span>
+              AI不正監視・コンプライアンス
+            </h1>
+            <div style={{ width: '40px' }}></div>
+          </header>
+
+          <main className="list-area bg-gray" style={{ flex: 1, overflowY: 'auto', padding: '16px', paddingBottom: '90px' }}>
+            {/* Realtime Status Banner */}
+            <div style={{ background: 'linear-gradient(135deg, #1E293B 0%, #0F172A 100%)', borderRadius: '16px', padding: '18px', color: 'white', marginBottom: '16px', boxShadow: '0 4px 14px rgba(0,0,0,0.1)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span className="material-symbols-outlined" style={{ color: '#10B981', fontSize: '24px' }}>verified_user</span>
+                  <div>
+                    <div style={{ fontSize: '15px', fontWeight: 'bold' }}>リアルタイムAIセーフティエンジン</div>
+                    <div style={{ fontSize: '11px', color: '#94A3B8' }}>全商談チャット・メッセージをNLP AIが自動スキャン中</div>
+                  </div>
+                </div>
+                <span style={{ background: '#065F46', color: '#D1FAE5', padding: '4px 10px', borderRadius: '12px', fontSize: '11px', fontWeight: 'bold', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                  <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10B981' }}></span>
+                  正常稼働中
+                </span>
+              </div>
+
+              {/* Security KPI Metrics */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', background: 'rgba(255,255,255,0.05)', padding: '12px', borderRadius: '10px' }}>
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ fontSize: '10px', color: '#94A3B8' }}>本日スキャンメッセージ</div>
+                  <div style={{ fontSize: '18px', fontWeight: 'bold', marginTop: '2px' }}>342 <span style={{ fontSize: '10px', fontWeight: 'normal' }}>件</span></div>
+                </div>
+                <div style={{ textAlign: 'center', borderLeft: '1px solid rgba(255,255,255,0.1)', borderRight: '1px solid rgba(255,255,255,0.1)' }}>
+                  <div style={{ fontSize: '10px', color: '#FCA5A5' }}>未対応リスク検知</div>
+                  <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#EF4444', marginTop: '2px' }}>
+                    {aiFraudLogs.filter(l => l.status === 'unresolved').length} <span style={{ fontSize: '10px', fontWeight: 'normal' }}>件</span>
+                  </div>
+                </div>
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ fontSize: '10px', color: '#94A3B8' }}>直取引・抜き行為防止率</div>
+                  <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#10B981', marginTop: '2px' }}>99.4%</div>
+                </div>
+              </div>
+            </div>
+
+            {/* AI Rules Toggle Panel */}
+            <div style={{ background: 'var(--surface-color)', borderRadius: '12px', padding: '16px', border: '1px solid var(--border-color)', marginBottom: '16px' }}>
+              <h3 className="section-title" style={{ marginTop: 0, marginBottom: '12px', fontSize: '13px' }}>AI自動防壁ルールの設定</h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px' }}>
+                  <div>
+                    <strong style={{ color: 'var(--text-main)' }}>直取引ワード検知時に運営警告バナーを自動挿入</strong>
+                    <div style={{ fontSize: '10px', color: 'var(--text-sub)' }}>「LINE」「直接振込」「手数料を浮かす」等を自動警告</div>
+                  </div>
+                  <input 
+                    type="checkbox" 
+                    checked={aiAutoWarningEnabled} 
+                    onChange={e => setAiAutoWarningEnabled(e.target.checked)} 
+                    style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+                  />
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px', paddingTop: '8px', borderTop: '1px solid #F1F5F9' }}>
+                  <div>
+                    <strong style={{ color: 'var(--text-main)' }}>確信度95%以上の高リスクチャットを即時一時保留</strong>
+                    <div style={{ fontSize: '10px', color: 'var(--text-sub)' }}>悪質な抜き行為が疑われる場合にメッセージ送信を保留</div>
+                  </div>
+                  <input 
+                    type="checkbox" 
+                    checked={aiAutoFreezeEnabled} 
+                    onChange={e => setAiAutoFreezeEnabled(e.target.checked)} 
+                    style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* AI Fraud Detections Log Table */}
+            <h3 className="section-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span>AI判定検知ログ ({aiFraudLogs.length}件)</span>
+              <span style={{ fontSize: '11px', color: 'var(--text-sub)', fontWeight: 'normal' }}>AI確信度スコア順</span>
+            </h3>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {aiFraudLogs.map(log => {
+                const isCritical = log.riskLevel === 'critical';
+                const isWarned = log.status === 'warned';
+                const isFrozen = log.status === 'frozen';
+                const isResolved = log.status === 'resolved';
+
+                return (
+                  <div key={log.id} style={{ background: 'var(--surface-color)', borderRadius: '12px', padding: '16px', border: isCritical ? '1px solid #FCA5A5' : '1px solid var(--border-color)', boxShadow: '0 2px 6px rgba(0,0,0,0.02)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                      <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                        <span style={{ 
+                          background: isCritical ? '#FEE2E2' : '#FEF3C7', 
+                          color: isCritical ? '#991B1B' : '#92400E', 
+                          fontSize: '10px', 
+                          fontWeight: 'bold', 
+                          padding: '2px 8px', 
+                          borderRadius: '10px',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '4px'
+                        }}>
+                          <span className="material-symbols-outlined" style={{ fontSize: '12px' }}>
+                            {isCritical ? 'warning' : 'info'}
+                          </span>
+                          {log.riskCategory}
+                        </span>
+                        <span style={{ background: '#F1F5F9', color: '#475569', fontSize: '10px', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold' }}>
+                          AI確信度 {log.aiConfidence}%
+                        </span>
+                      </div>
+                      <span style={{ fontSize: '11px', color: 'var(--text-sub)' }}>{log.timestamp}</span>
+                    </div>
+
+                    <div style={{ fontSize: '11px', color: 'var(--text-sub)', marginBottom: '6px' }}>
+                      送信者: <strong>{log.senderName}</strong> ➔ 受信者: <strong>{log.receiverName}</strong>
+                    </div>
+
+                    {/* Detected Content */}
+                    <div style={{ background: isCritical ? '#FFF5F5' : '#FFFBEB', padding: '10px 12px', borderRadius: '8px', borderLeft: isCritical ? '4px solid #EF4444' : '4px solid #F59E0B', fontSize: '12px', color: 'var(--text-main)', marginBottom: '12px', lineHeight: '1.5' }}>
+                      {log.detectedText}
+                    </div>
+
+                    {/* Action buttons */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+                      <div style={{ fontSize: '11px', fontWeight: 'bold' }}>
+                        ステータス: {' '}
+                        {isResolved ? (
+                          <span style={{ color: '#10B981' }}>✓ 対応・審査完了</span>
+                        ) : isFrozen ? (
+                          <span style={{ color: '#DC2626' }}>🔒 チャット凍結中</span>
+                        ) : isWarned ? (
+                          <span style={{ color: '#D97706' }}>⚠️ 警告メッセージ送信済み</span>
+                        ) : (
+                          <span style={{ color: '#EF4444' }}>🚨 未対応（要確認）</span>
+                        )}
+                      </div>
+
+                      <div style={{ display: 'flex', gap: '6px' }}>
+                        {!isResolved && !isWarned && (
+                          <button 
+                            onClick={() => handleSendAIWarning(log.id)}
+                            style={{ background: '#FEF3C7', color: '#92400E', border: '1px solid #FCD34D', borderRadius: '6px', padding: '4px 8px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+                          >
+                            <span className="material-symbols-outlined" style={{ fontSize: '13px' }}>warning</span>
+                            警告送信
+                          </button>
+                        )}
+                        {!isResolved && !isFrozen && (
+                          <button 
+                            onClick={() => handleFreezeChat(log.id)}
+                            style={{ background: '#FEE2E2', color: '#991B1B', border: '1px solid #FCA5A5', borderRadius: '6px', padding: '4px 8px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+                          >
+                            <span className="material-symbols-outlined" style={{ fontSize: '13px' }}>block</span>
+                            チャット一時凍結
+                          </button>
+                        )}
+                        {!isResolved && (
+                          <button 
+                            onClick={() => handleResolveAILog(log.id)}
+                            style={{ background: '#D1FAE5', color: '#065F46', border: '1px solid #6EE7B7', borderRadius: '6px', padding: '4px 8px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+                          >
+                            <span className="material-symbols-outlined" style={{ fontSize: '13px' }}>check</span>
+                            対応完了
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </main>
+        </div>
+      )}
 
       {/* 1. Screening/Matching Overlay (Admin) */}
       {screeningJobId && (() => {
