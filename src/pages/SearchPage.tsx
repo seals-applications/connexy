@@ -2023,7 +2023,16 @@ export function SearchPage() {
       ></div>
 
       {viewMode === 'list' && !isSelectingLocationOnMap && (
-        <main className="list-area bg-gray" style={{ flex: 1, overflowY: 'auto', zIndex: 2, paddingBottom: '80px' }}>
+        <main 
+          className="list-area bg-gray" 
+          style={{ flex: 1, overflowY: 'auto', zIndex: 2, paddingBottom: '80px' }}
+          onScroll={(e) => {
+            const target = e.currentTarget;
+            if (target.scrollHeight - target.scrollTop - target.clientHeight < 200) {
+              setVisibleCount(prev => prev + 10);
+            }
+          }}
+        >
           <div style={{ padding: '16px', background: 'var(--surface-color)', borderBottom: '1px solid var(--border-color)', position: 'sticky', top: 0, zIndex: 100 }}>
             <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '4px', flexWrap: 'wrap', alignItems: 'center' }}>
               {!hasActiveFilters ? (
@@ -2279,23 +2288,8 @@ export function SearchPage() {
                   </div>
                 )})}
                 {sortedJobs.length > visibleCount && (
-                  <div style={{ textAlign: 'center', padding: '16px 0' }}>
-                    <button
-                      onClick={() => setVisibleCount(prev => prev + 10)}
-                      style={{
-                        background: 'var(--surface-color)',
-                        border: '1px solid var(--border-color)',
-                        borderRadius: '24px',
-                        padding: '10px 24px',
-                        fontSize: '13px',
-                        fontWeight: 'bold',
-                        color: 'var(--primary)',
-                        cursor: 'pointer',
-                        boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
-                      }}
-                    >
-                      さらに読み込む (全{sortedJobs.length}件中 {visibleCount}件表示)
-                    </button>
+                  <div style={{ textAlign: 'center', padding: '16px 0', fontSize: '12px', color: 'var(--text-sub)' }}>
+                    スクロールしてさらに読み込み中 ({Math.min(visibleCount, sortedJobs.length)} / {sortedJobs.length}件)
                   </div>
                 )}
                 </>
@@ -2386,23 +2380,8 @@ export function SearchPage() {
                   </div>
                 ))}
                 {filteredTalentGroups.length > visibleCount && (
-                  <div style={{ textAlign: 'center', padding: '16px 0' }}>
-                    <button
-                      onClick={() => setVisibleCount(prev => prev + 10)}
-                      style={{
-                        background: 'var(--surface-color)',
-                        border: '1px solid var(--border-color)',
-                        borderRadius: '24px',
-                        padding: '10px 24px',
-                        fontSize: '13px',
-                        fontWeight: 'bold',
-                        color: '#10B981',
-                        cursor: 'pointer',
-                        boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
-                      }}
-                    >
-                      さらに読み込む (全{filteredTalentGroups.length}エリア中 {visibleCount}エリア表示)
-                    </button>
+                  <div style={{ textAlign: 'center', padding: '16px 0', fontSize: '12px', color: 'var(--text-sub)' }}>
+                    スクロールしてさらに読み込み中 ({Math.min(visibleCount, filteredTalentGroups.length)} / {filteredTalentGroups.length}エリア)
                   </div>
                 )}
                 </>
