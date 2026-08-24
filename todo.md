@@ -7,12 +7,15 @@
 ### 🚨 緊急: `.env` の秘密情報がgit管理下で漏洩している
 `.env` が `.gitignore` に含まれておらず、実際の値のままGitHubリポジトリにコミット・pushされている状態(2026-08-24発見、[PR #1](https://github.com/seals-applications/connexy/pull/1) 対応中に発覚)。
 
-- [ ] `.env` を `.gitignore` に追加する
-- [ ] `git rm --cached .env` でgit管理から除外する
+- [x] `.env` を `.gitignore` に追加する
+- [x] `git rm --cached .env` でgit管理から除外する
+- [x] `.env.example`(ダミー値)を追加する
+- [ ] `.env.example` をREADMEからリンクする(PR #1のREADME改修とあわせて対応)
 - [ ] Google Maps APIキー(`VITE_GOOGLE_MAPS_API_KEY`)にHTTPリファラー制限をかける、または新しいキーに差し替える
 - [ ] Supabase anon key(`VITE_SUPABASE_ANON_KEY`)をローテーションし、対象テーブルのRLSポリシーを確認・強化する
 - [ ] 必要であれば過去のcommit履歴からも秘密情報を除去する(`git filter-repo`等)
-- [ ] `.env.example`(ダミー値)を追加し、READMEからリンクする
+
+⚠️ **注意**: 上記のgit管理からの除外は今後のコミットに`.env`が含まれなくなるだけで、**過去のコミット履歴には既に実際のキーが残ったまま**です。GitHub上で既に公開されてしまった鍵そのものを無効化するには、上記のAPIキーのローテーション/制限が別途必須です。
 
 ### 🔐 セキュリティ・情報保護(プライバシーマーク取得準備)
 - [ ] **将来的なプライバシーマーク（Pマーク）の取得対応**
