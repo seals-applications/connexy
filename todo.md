@@ -47,6 +47,10 @@
 ## ✅ 完了済みのタスク
 
 ### 🐛 発見・修正済みのバグ(2026-08-24)
+- [x] **案件応募時のシステムメッセージの発注企業名が、ハードコードされた4社以外だと汎用テキスト「パートナー企業」になり、4社分の名前も実際の登録名と食い違っていた問題を修正**
+  - `handleJobApplication` 内のハードコードされた三項演算子チェーンを、同ファイル内の他箇所と同じ `allUsers.find(u => u.id === selectedJob.authorId)?.name` によるルックアップに置き換え ([src/pages/SearchPage.tsx](src/pages/SearchPage.tsx))。
+- [x] **CSV一括登録(案件・人材)で、フィールド内にカンマが含まれていると列がずれる問題を修正**
+  - クォート・エスケープに対応した簡易CSVラインパーサー `parseCsvLine` を追加し、`line.split(',')` を置き換え ([src/pages/SearchPage.tsx](src/pages/SearchPage.tsx))。Node上でクォート付きカンマ・エスケープ済みダブルクォートの3パターンを検証済み。
 - [x] **「応募状況・履歴」で、同じチャット内の複数応募の応募日が使い回される問題を修正**
   - `evaluations.appliedJobIds` に加えて案件ごとの応募日を保持する `evaluations.appliedJobDates: { [jobId]: dateString }` を新設 ([src/data/mockDb.ts](src/data/mockDb.ts) `saveContractTaskChat`)。
   - 「応募状況・履歴」画面は `t.date`(チャット作成日)ではなく `appliedJobDates[jobId]` を参照するよう修正 ([src/pages/ManagementPage.tsx](src/pages/ManagementPage.tsx) `myApplications`)。

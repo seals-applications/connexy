@@ -17,6 +17,34 @@ export const getStaffGender = (name: string): '男性' | '女性' => {
   return isFemale ? '女性' : '男性';
 };
 
+// Splits one CSV line into fields, honoring double-quoted fields (with "" as an escaped quote)
+// so a comma inside a quoted description/experience field doesn't shift the remaining columns.
+const parseCsvLine = (line: string): string[] => {
+  const result: string[] = [];
+  let cur = '';
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (inQuotes) {
+      if (ch === '"') {
+        if (line[i + 1] === '"') { cur += '"'; i++; }
+        else { inQuotes = false; }
+      } else {
+        cur += ch;
+      }
+    } else if (ch === '"') {
+      inQuotes = true;
+    } else if (ch === ',') {
+      result.push(cur);
+      cur = '';
+    } else {
+      cur += ch;
+    }
+  }
+  result.push(cur);
+  return result;
+};
+
 export function SearchPage() {
   const navigate = useNavigate();
   const mapRef = useRef<any>(null);
@@ -653,7 +681,7 @@ export function SearchPage() {
         for (let i = 1; i < lines.length; i++) {
           const line = lines[i].trim();
           if (!line) continue;
-          const cols = line.split(',');
+          const cols = parseCsvLine(line);
           
           if (mode === 'job' && cols.length >= 5) {
             // Validation
@@ -1784,10 +1812,7 @@ export function SearchPage() {
       
       const updated = [...msgs, appMsg];
       
-      const authorName = selectedJob.authorId === 'alpha' ? '株式会社アルファ通信' :
-                         selectedJob.authorId === 'beta' ? 'ベータエージェンシー' :
-                         selectedJob.authorId === 'gamma' ? 'ガンマモバイル' :
-                         selectedJob.authorId === 'delta' ? 'デルタパートナーズ' : 'パートナー企業';
+      const authorName = allUsers.find(u => u.id === selectedJob.authorId)?.name || 'パートナー企業';
       
       const appliedJobStaffIds = finalStaffId ? { [selectedJob.id]: finalStaffId } : undefined;
       
