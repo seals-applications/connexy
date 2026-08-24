@@ -268,7 +268,7 @@ export function MessagePage() {
   const channels = useMemo(() => {
     if (!currentUser) return [];
 
-    const isStaffUser = !!currentUser.staffId;
+    const isStaffUser = !!currentUser.staffId && currentUser.staffRole !== 'admin';
 
     // 1. Static Group chat channel (Mock compatibility)
     const groupChannel: ChatChannel = {
@@ -384,8 +384,8 @@ export function MessagePage() {
       })
       .filter((c): c is ChatChannel => c !== null);
 
-    // 3. Direct channels with all other companies (Admins only)
-    const directChannels = isStaffUser ? [] : allCompanies
+    // 3. Direct channels with all other companies (Admins only, or Staff if they are assigned/involved)
+    const directChannels = allCompanies
       .filter(c => c.id !== currentUser.id)
       .map(c => {
         const sortedIds = [currentUser.id, c.id].sort();
@@ -468,7 +468,20 @@ export function MessagePage() {
           channel.id === 'chat_beta_sigma' || 
           channel.id === 'chat_gamma_sigma';
         const existsInDb = chatTasks.some(t => t.id === channel.id);
-        return isDefaultMockRoom || existsInDb;
+        const isRequestedActiveChat = channel.id === activeChatId;
+
+        // If it's a regular staff user, restrict direct channels
+        if (isStaffUser) {
+          if (isRequestedActiveChat) return true;
+          const task = chatTasks.find(t => t.id === channel.id);
+          if (task) {
+            const staffIds = Object.values((task.evaluations as any)?.appliedJobStaffIds || {});
+            if (staffIds.includes(currentUser.staffId)) return true;
+          }
+          return false;
+        }
+
+        return isDefaultMockRoom || existsInDb || isRequestedActiveChat;
       });
 
     // For staff users, also allow access to the mock group chat for demonstration if applicable

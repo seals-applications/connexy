@@ -42,7 +42,7 @@ export function BottomNav() {
         setPendingCount(count);
 
         // 2. 未読チャット数のカウント
-        const isStaffUser = !!currentUser.staffId;
+        const isStaffUser = !!currentUser.staffId && currentUser.staffRole !== 'admin';
         let unreadCount = 0;
 
         // 2.1 固定グループチャット 'chat_au_group'

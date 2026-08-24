@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { jsPDF } from 'jspdf';
 import { api } from '../data/mockDb';
 import type { ContractTask, Training, Staff, Job, User } from '../data/mockDb';
@@ -65,11 +66,13 @@ interface ParsedAttendanceLog {
 }
 
 export function ManagementPage() {
+  const navigate = useNavigate();
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [tasks, setTasks] = useState<ContractTask[]>([]);
   const [trainings, setTrainings] = useState<Training[]>([]);
   const [allJobsList, setAllJobsList] = useState<Job[]>([]);
   const [allStaffs, setAllStaffs] = useState<Staff[]>([]);
+  const [allCompanies, setAllCompanies] = useState<User[]>([]);
 
   const pastTradeCompanyIds = useMemo(() => {
     if (!currentUser || !tasks) return new Set<string>();
@@ -89,7 +92,7 @@ export function ManagementPage() {
 
   // Tab/Subpage state
   const isUserAdmin = !currentUser?.staffId || currentUser.staffRole === 'admin';
-  const [subPage, setSubPage] = useState<'none' | 'posts' | 'staffs' | 'reports' | 'logs' | 'training' | 'analytics'>('none');
+  const [subPage, setSubPage] = useState<'none' | 'posts' | 'staffs' | 'reports' | 'logs' | 'training' | 'analytics' | 'applications'>('none');
 
   // プロフィール充実度
   const profileCompletion = useMemo(() => {
@@ -222,6 +225,8 @@ export function ManagementPage() {
     setTrainings(fetchedTrainings);
     const fetchedJobs = await api.getJobs();
     setAllJobsList(fetchedJobs);
+    const fetchedUsers = await api.getUsers();
+    setAllCompanies(fetchedUsers);
     if (user) {
       const fetchedStaffs = await api.getStaffsByUserId(user.id);
       setAllStaffs(fetchedStaffs);
@@ -254,6 +259,66 @@ export function ManagementPage() {
     if (!currentUser) return [];
     return allJobsList.filter(j => j.authorId === currentUser.id);
   }, [allJobsList, currentUser]);
+
+  // Compute my applied jobs (applications)
+  const myApplications = useMemo(() => {
+    if (!currentUser || !tasks) return [];
+    
+    const list: Array<{
+      task: ContractTask;
+      job: Job;
+      opponentCompany: User | undefined;
+      status: string;
+      date: string;
+      price: number;
+    }> = [];
+
+    tasks.forEach(t => {
+      // Direct company chats (applications are direct company chats where jobId is 'chat' or a specific jobId)
+      if (t.id.startsWith('chat_') && !t.id.startsWith('chat_group_')) {
+        const appliedJobIds: string[] = (t.evaluations as any)?.appliedJobIds || [];
+        if (appliedJobIds.length === 0) return;
+
+        appliedJobIds.forEach((jobId) => {
+          const job = allJobsList.find(j => j.id === jobId);
+          if (!job) return;
+
+          // Check if current user is the applicant
+          const isStaff = !!currentUser.staffId;
+          const isUserAdmin = !currentUser.staffId || currentUser.staffRole === 'admin';
+          
+          let isApplicant = false;
+          if (isStaff) {
+            const staffIds = Object.values((t.evaluations as any)?.appliedJobStaffIds || {});
+            if (staffIds.includes(currentUser.staffId)) {
+              isApplicant = true;
+            }
+          } else if (isUserAdmin) {
+            // Admin of company - is applicant if not the author of the job
+            if (job.authorId !== currentUser.id) {
+              isApplicant = true;
+            }
+          }
+
+          if (isApplicant) {
+            const opponentCompanyId = t.id.replace('chat_', '').replace(currentUser.id, '').replace('_', '');
+            const opponentCompany = allCompanies.find(c => c.id === opponentCompanyId);
+            
+            list.push({
+              task: t,
+              job,
+              opponentCompany,
+              status: t.status,
+              date: t.date || new Date().toISOString().split('T')[0],
+              price: job.price || t.price || 0
+            });
+          }
+        });
+      }
+    });
+
+    return list;
+  }, [currentUser, tasks, allJobsList, allCompanies]);
 
   // Compute staff lists
   const companyStaffs = useMemo(() => {
@@ -1117,11 +1182,13 @@ export function ManagementPage() {
   // Dashboard Menu selector
   const menuItems = isUserAdmin ? [
     { id: 'posts', label: '案件管理', desc: '掲載案件の管理・アサイン選考、他社スタッフの出勤予定', icon: 'campaign', bg: '#FEF3C7', color: '#D97706' },
+    { id: 'applications', label: '応募状況・履歴', desc: '他社案件へ応募した進捗・内定の確認・履歴管理', icon: 'list_alt', bg: '#E0F2FE', color: '#0284C7' },
     { id: 'staffs', label: 'スタッフ管理', desc: 'メンバー登録、アカウント追加、権限管理', icon: 'groups', bg: '#ECFDF5', color: '#059669' },
     { id: 'reports', label: '報告・評価', desc: '業務完了報告の確認とスタッフ相互評価', icon: 'rate_review', bg: '#FDF2F8', color: '#DB2777' },
     { id: 'logs', label: '出勤管理', desc: '自社スタッフの出勤予定カレンダーと打刻履歴', icon: 'history', bg: '#EFF6FF', color: '#1D4ED8' },
     { id: 'analytics', label: '分析・ダッシュボード', desc: '自社の取引実績、完了率、対応履歴の可視化', icon: 'analytics', bg: '#F3E8FF', color: '#7E22CE' },
   ] : [
+    { id: 'applications', label: '応募状況・履歴', desc: '自身が応募した案件・マッチング状態の確認・履歴', icon: 'list_alt', bg: '#E0F2FE', color: '#0284C7' },
     { id: 'training', label: '研修・クイズ', desc: '動画視聴と理解度テストの受講（準備中 / Coming Soon）', icon: 'school', bg: '#F1F5F9', color: '#94A3B8', disabled: true },
     { id: 'reports', label: '報告・評価', desc: '完了した業務の評価と元請けへの評価送信', icon: 'rate_review', bg: '#FDF2F8', color: '#DB2777' },
     { id: 'logs', label: '出勤管理', desc: '自身の出勤予定カレンダーと打刻履歴', icon: 'history', bg: '#EFF6FF', color: '#1D4ED8' },
@@ -1896,6 +1963,124 @@ export function ManagementPage() {
                 {tasks.length > 0 ? Math.round((tasks.filter(t => t.status === 'completed').length / tasks.length) * 100) : 100}%
               </div>
             </div>
+          </div>
+        </main>
+      </div>
+
+      {/* (H) Applications Status & History Overlay */}
+      <div className={`overlay-view ${subPage === 'applications' ? 'show' : ''}`} style={{ zIndex: 1100, display: 'flex', flexDirection: 'column' }}>
+        <header className="solid-header overlay-header" style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+          <button className="icon-btn-dark" onClick={() => setSubPage('none')}>
+            <span className="material-symbols-outlined">arrow_back_ios_new</span>
+          </button>
+          <h1 style={{ fontSize: '16px', fontWeight: 'bold' }}>応募状況・履歴</h1>
+          <div style={{ width: '40px' }}></div>
+        </header>
+
+        <main className="list-area bg-gray" style={{ flex: 1, overflowY: 'auto', padding: '16px', paddingBottom: '90px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {myApplications.map((app, idx) => {
+              const statusConfig = (() => {
+                switch (app.status) {
+                  case 'applying':
+                    return { text: '選考中', bg: '#FEF3C7', color: '#D97706' };
+                  case 'offered':
+                    return { text: '内定・承諾待ち', bg: '#F3E8FF', color: '#7E22CE' };
+                  case 'working':
+                  case 'report_pending':
+                    return { text: '契約確定', bg: '#D1FAE5', color: '#065F46' };
+                  case 'completed':
+                    return { text: '稼働完了', bg: '#EFF6FF', color: '#1D4ED8' };
+                  case 'rejected':
+                  case 'declined':
+                    return { text: '見送り/辞退', bg: '#F1F5F9', color: '#475569' };
+                  default:
+                    return { text: app.status, bg: '#E2E8F0', color: '#1E293B' };
+                }
+              })();
+
+              return (
+                <div 
+                  key={idx} 
+                  style={{ 
+                    background: 'var(--surface-color)', 
+                    borderRadius: '16px', 
+                    padding: '16px', 
+                    border: '1px solid var(--border-color)', 
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '10px'
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <span style={{ 
+                      fontSize: '11px', 
+                      fontWeight: 'bold', 
+                      padding: '3px 8px', 
+                      borderRadius: '8px', 
+                      background: statusConfig.bg, 
+                      color: statusConfig.color 
+                    }}>
+                      {statusConfig.text}
+                    </span>
+                    <span style={{ fontSize: '11px', color: 'var(--text-sub)' }}>
+                      応募日: {app.date}
+                    </span>
+                  </div>
+
+                  <h3 style={{ fontSize: '14px', margin: 0, fontWeight: 'bold', color: 'var(--text-main)', lineHeight: '1.4' }}>
+                    {app.job.title}
+                  </h3>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '12px', borderTop: '1px solid #F1F5F9', paddingTop: '8px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span style={{ color: 'var(--text-sub)' }}>発注元企業</span>
+                      <span style={{ fontWeight: 'bold', color: 'var(--text-main)' }}>{app.opponentCompany?.name || '不明'}</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span style={{ color: 'var(--text-sub)' }}>提示単価</span>
+                      <span style={{ fontWeight: 'bold', color: 'var(--primary)' }}>￥{app.price.toLocaleString()}</span>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
+                    <button 
+                      onClick={() => {
+                        localStorage.setItem('connexy_active_chat_id', app.task.id);
+                        navigate('/message');
+                      }}
+                      style={{ 
+                        flex: 1, 
+                        padding: '10px', 
+                        background: 'var(--primary)', 
+                        color: 'white', 
+                        border: 'none', 
+                        borderRadius: '8px', 
+                        fontSize: '12px',
+                        fontWeight: 'bold', 
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '6px',
+                        transition: 'opacity 0.2s'
+                      }}
+                    >
+                      <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>chat</span>
+                      チャットを開く
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+
+            {myApplications.length === 0 && (
+              <div style={{ textAlign: 'center', padding: '40px 20px', background: 'var(--surface-color)', borderRadius: '16px', color: 'var(--text-sub)', border: '1px solid var(--border-color)' }}>
+                <span className="material-symbols-outlined" style={{ fontSize: '48px', color: '#94A3B8', marginBottom: '8px' }}>list_alt</span>
+                <div style={{ fontSize: '13px' }}>応募した案件はまだありません。</div>
+              </div>
+            )}
           </div>
         </main>
       </div>
