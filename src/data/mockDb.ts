@@ -1628,6 +1628,9 @@ export const api = {
     if (newUser.invoiceNumber) {
       localStorage.setItem('company_invoice_' + id, newUser.invoiceNumber);
     }
+    if (newUser.representativeName) {
+      localStorage.setItem('company_rep_' + id, newUser.representativeName);
+    }
 
     return callSupabase(
       async () => {
@@ -1638,7 +1641,8 @@ export const api = {
           login_id: newUser.loginId,
           password: newUser.password,
           status: newUser.status,
-          invoice_number: newUser.invoiceNumber
+          invoice_number: newUser.invoiceNumber,
+          representative_name: newUser.representativeName
         };
         const { error } = await supabase.from('companies').insert([row]);
         if (error) {
@@ -1663,7 +1667,8 @@ export const api = {
           login_id: newUser.loginId,
           password: newUser.password,
           status: newUser.status,
-          invoice_number: newUser.invoiceNumber
+          invoice_number: newUser.invoiceNumber,
+          representative_name: newUser.representativeName
         };
         list.push(row);
         saveOfflineData('companies', list);

@@ -441,6 +441,18 @@ export function SearchPage() {
     }
   }, [commonPrice, isSamePriceAllDates]);
 
+  // 「すべての稼働日で同じ単価を設定する」チェックボックスの切り替え処理
+  // 日程別に入力済みの単価を、未入力のcommonPriceで一律上書きしてしまわないよう、
+  // 既存の日程別単価から代表値を引き継いでからオンにする
+  const handleToggleSamePrice = (checked: boolean) => {
+    if (checked) {
+      const existingValues = Object.values(dailyPrices);
+      const seedPrice = existingValues.length > 0 ? existingValues[0] : commonPrice;
+      setCommonPrice(seedPrice);
+    }
+    setIsSamePriceAllDates(checked);
+  };
+
   // 案件情報複製処理（コピーして新規作成）
   const handleDuplicateJob = (job: Job) => {
     setFormData({
@@ -677,16 +689,35 @@ export function SearchPage() {
         
         let parsedData: any[] = [];
         let errors: { rowIndex: number; message: string }[] = [];
+        // 空行を除いた「表示行番号」。parsedDataへの追加ごとに1つずつ振るため、
+        // errorsのrowIndexとプレビュー表内のインデックス(idx+1)が常に一致する
+        let rowIndex = 0;
 
         for (let i = 1; i < lines.length; i++) {
           const line = lines[i].trim();
           if (!line) continue;
           const cols = parseCsvLine(line);
-          
-          if (mode === 'job' && cols.length >= 5) {
+          rowIndex++;
+
+          if (mode === 'job') {
+            if (cols.length < 5) {
+              errors.push({ rowIndex, message: '列数が不足しています' });
+              parsedData.push({
+                id: 'job_' + Date.now() + '_' + i,
+                authorId: currentUser.id,
+                title: cols[0] || '(不明)',
+                description: cols[1] || '',
+                locationName: cols[2] || '',
+                lat: 35.68,
+                lng: 139.76,
+                price: parseInt(cols[3]) || 0,
+                eventDate: cols[4] || '未定'
+              } as Job);
+              continue;
+            }
             // Validation
-            if (!cols[0]) errors.push({ rowIndex: i, message: 'タイトルが空です' });
-            if (!cols[3] || isNaN(parseInt(cols[3]))) errors.push({ rowIndex: i, message: '単価が不正です' });
+            if (!cols[0]) errors.push({ rowIndex, message: 'タイトルが空です' });
+            if (!cols[3] || isNaN(parseInt(cols[3]))) errors.push({ rowIndex, message: '単価が不正です' });
 
             const newJob: Job = {
               id: 'job_' + Date.now() + '_' + i,
@@ -700,10 +731,29 @@ export function SearchPage() {
               eventDate: cols[4] || '未定'
             };
             parsedData.push(newJob);
-          } else if (mode === 'talent' && cols.length >= 5) {
+          } else if (mode === 'talent') {
+            if (cols.length < 5) {
+              errors.push({ rowIndex, message: '列数が不足しています' });
+              parsedData.push({
+                id: 'talent_' + Date.now() + '_' + i,
+                userId: currentUser.id,
+                companyName: currentUser.name,
+                name: cols[0] || '(不明)',
+                maskedName: (cols[0] || '?').substring(0, 1) + '○',
+                description: 'インポートされたデータ',
+                locationName: cols[2] || '',
+                skills: cols[1] ? [cols[1]] : [],
+                baseLocation: cols[2] || '',
+                lat: 35.68,
+                lng: 139.76,
+                price: parseInt(cols[3]) || 0,
+                experience: cols[4] || '未経験'
+              } as Talent);
+              continue;
+            }
             // Validation
-            if (!cols[0]) errors.push({ rowIndex: i, message: '名前が空です' });
-            if (!cols[3] || isNaN(parseInt(cols[3]))) errors.push({ rowIndex: i, message: '単価が不正です' });
+            if (!cols[0]) errors.push({ rowIndex, message: '名前が空です' });
+            if (!cols[3] || isNaN(parseInt(cols[3]))) errors.push({ rowIndex, message: '単価が不正です' });
 
             const newTalent: Talent = {
               id: 'talent_' + Date.now() + '_' + i,
@@ -723,7 +773,7 @@ export function SearchPage() {
             parsedData.push(newTalent);
           }
         }
-        
+
         setCsvPreviewData({ data: parsedData, errors });
         await handleRefresh();
       } catch (err) {
@@ -860,12 +910,8 @@ export function SearchPage() {
         return;
       }
       
-      // selectedDates (YYYY-MM-DD) を "M/D" のカンマ区切りに変換
-      const sortedDates = [...formData.selectedDates].sort();
-      const formattedDates = sortedDates.map(d => {
-        const [_, month, day] = d.split('-');
-        return `${parseInt(month)}/${parseInt(day)}`;
-      }).join(', ');
+      // selectedDates (YYYY-MM-DD) をソートしてカンマ区切りに変換（表示時にformatJobDatesがM/D表記へ変換する）
+      const formattedDates = [...formData.selectedDates].sort().join(', ');
 
       const newTalent: Omit<Talent, 'id'> = {
         name: selectedStaff.name,
@@ -2624,7 +2670,7 @@ export function SearchPage() {
                     <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>calendar_month</span>
                     希望勤務日
                   </h3>
-                  <p style={{ margin: 0, fontSize: '15px', fontWeight: 'bold', color: 'var(--primary)' }}>{selectedTalent.availableDates}</p>
+                  <p style={{ margin: 0, fontSize: '15px', fontWeight: 'bold', color: 'var(--primary)' }}>{formatJobDates(selectedTalent.availableDates)}</p>
                 </div>
               )}
 
@@ -3463,8 +3509,8 @@ export function SearchPage() {
                     <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold' }}>
                       <input 
                         type="checkbox" 
-                        checked={isSamePriceAllDates} 
-                        onChange={e => setIsSamePriceAllDates(e.target.checked)} 
+                        checked={isSamePriceAllDates}
+                        onChange={e => handleToggleSamePrice(e.target.checked)}
                         disabled={isSubmitting} 
                         style={{ width: '16px', height: '16px' }} 
                       />

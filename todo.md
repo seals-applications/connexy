@@ -60,6 +60,22 @@
   - `maskContactInfo` の電話番号用正規表現に任意の `+81` 国番号プレフィックスを許容するパターンを追加し、国内・国際どちらの表記でもマスキングされることをブラウザで確認済み ([src/pages/MessagePage.tsx](src/pages/MessagePage.tsx))。
 - [x] **分析・ダッシュボードが自社データではなく全社(プラットフォーム全体)のデータを集計していた問題を修正**
   - 未絞り込みの `tasks` ではなく、自社分に絞り込み済みの `relatedTasks` を集計に使うよう修正 ([src/pages/ManagementPage.tsx](src/pages/ManagementPage.tsx))。
+- [x] **設定画面「自社プロフィール編集」で、インボイス登録番号だけ編集内容が保存されない問題を修正**
+  - インボイス番号欄が `defaultValue` の非制御入力で `onChange` も無く、`handleProfileSave` の保存対象にも含まれていなかったため、編集して「保存」を押しても変更が破棄されていた。他の項目と同様に `invoiceNumberInput` state を追加し `value`/`onChange` で制御、保存処理にも追加 ([src/components/SettingsDrawer.tsx](src/components/SettingsDrawer.tsx))。
+- [x] **新規会社登録申請フォームの「代表者名」が、入力しても保存されない問題を修正**
+  - フォーム自体は state・`onChange` を備えていたが、`handleSignupSubmit` が `api.registerCompany` 呼び出し時に `representativeName` を渡していなかった。加えて `registerCompany` 側もこのフィールドをローカルストレージ・DB行のどちらにも保存していなかったため、渡しても永続化されなかった。両方を修正し、代表者名を入力欄の値で送信・保存するよう対応 ([src/pages/LoginPage.tsx](src/pages/LoginPage.tsx), [src/data/mockDb.ts](src/data/mockDb.ts) `registerCompany`)。
+- [x] **マッチング成立後（`working`/`completed`）のチャットで、連絡先の自動マスキングが解除されない問題を修正**
+  - `maskContactInfo` は `status === 'contracted'` のみをマスキング除外対象にしていたが、応募→内定→承諾のフローで成立したチャットは実際には `working`（進行中）や `completed`（完了）ステータスになり、`contracted` には決してならない。同ファイル内の氏名表示ロジック（`isClient || status === 'group' || status === 'contracted' || status === 'working' || status === 'completed'`）と同じ判定基準に合わせ、`working`/`completed` もマスキング除外に追加 ([src/pages/MessagePage.tsx](src/pages/MessagePage.tsx) `maskContactInfo`)。
+- [x] **チャット内の経費申請・手配情報共有・写真送信・精算承認/差戻しで、取引先企業名がハードコードされたalpha/beta/sigma以外だと汎用テキストになっていた問題を修正**
+  - 案件応募時のシステムメッセージで既に修正済みだった「ハードコードされた三項演算子チェーンで企業名を決め打ちする」バグと同種のものが、`handleSendReceipt`・`handleSendArrangement`・`handleSendPhoto`・`handleApproveReceipt`・`handleRejectReceipt` の5箇所に残っていた。チャットIDから相手企業IDを取り出し `allCompanies.find` で解決する方式に統一 ([src/pages/MessagePage.tsx](src/pages/MessagePage.tsx))。
+- [x] **契約書未承認バナー表示中、チャット冒頭のメッセージが固定ヘッダーの下に隠れる問題を修正**
+  - チャットヘッダーは `position: absolute` かつ高さ可変で、メッセージ一覧側は `headerHeight`(見積り値)を`paddingTop`として確保しているが、「契約書が未承認です」バナーの表示条件がこの見積りに含まれていなかった。バナー表示条件と同じ条件でheaderHeightに加算するよう修正 ([src/pages/MessagePage.tsx](src/pages/MessagePage.tsx) `headerHeight`)。
+- [x] **案件投稿フォームで「すべての稼働日で同じ単価を設定する」を一度オフにして日程別単価を入力後、再度オンにすると全日程の単価が未入力状態(0円)の共通単価で上書きされ、入力済みの単価が消える問題を修正**
+  - チェックボックスをオンにする瞬間、既存の日程別単価から代表値を引き継いでから同期するよう変更し、意図せず0円で全日程が上書きされることを防止 ([src/pages/SearchPage.tsx](src/pages/SearchPage.tsx) `handleToggleSamePrice`)。
+- [x] **スタッフ登録時に人材(Talent)としても登録する際の「希望勤務日」が年なし・ゼロ埋めなしの `M/D` 形式で保存され、表示時の日付ソート・連続日程のとりまとめが壊れる問題を修正**
+  - 案件の`eventDate`と異なり、この画面だけ独自に年なし`M/D`形式へ変換してから保存していたため、共通の表示ユーティリティ`formatJobDates`（`YYYY-MM-DD`前提でソート・Date変換する)に渡すと文字列としての辞書順ソートが崩れていた。`eventDate`と同じくISO形式のまま保存し、表示側で`formatJobDates`を通すよう統一 ([src/pages/SearchPage.tsx](src/pages/SearchPage.tsx))。
+- [x] **CSV一括登録のプレビュー画面で、列数不足の行が無言でスキップされ、以降の行のエラー表示がずれて別の行に表示される問題を修正**
+  - エラーの`rowIndex`が元ファイルの行番号(空行や列数不足行を含む)基準、プレビュー表の行番号が実際に取り込めた行の並び順基準と、2つの異なる基準で採番されていたため、一度でも行がスキップされるとズレて無関係な行にエラーメッセージが表示されていた。両者を同じ「表示行番号」カウンタで揃え、列数不足の行もプレースホルダーとしてプレビューに表示してエラー内容を確認できるよう修正 ([src/pages/SearchPage.tsx](src/pages/SearchPage.tsx) `handleCsvFileUpload`)。
 
 ### 🔧 仕様上の不備の解消(2026-08-24)
 - [x] **ログイン画面のデバッグパネルから、全社・全スタッフの平文ログインID/パスワード表示を削除**

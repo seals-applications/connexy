@@ -15,6 +15,7 @@ export function SettingsDrawer({ isOpen, onClose, onLogoutSuccess }: SettingsDra
 
   // Profile fields state
   const [repNameInput, setRepNameInput] = useState('');
+  const [invoiceNumberInput, setInvoiceNumberInput] = useState('');
   const [emailInput, setEmailInput] = useState('');
   const [websiteInput, setWebsiteInput] = useState('');
   const [addressInput, setAddressInput] = useState('');
@@ -31,6 +32,7 @@ export function SettingsDrawer({ isOpen, onClose, onLogoutSuccess }: SettingsDra
         setCurrentUser(user);
         if (user) {
           setRepNameInput(user.representativeName || '');
+          setInvoiceNumberInput(user.invoiceNumber || '');
           setEmailInput(user.email || '');
           setWebsiteInput(user.website || '');
           setAddressInput(user.address || '');
@@ -82,6 +84,7 @@ export function SettingsDrawer({ isOpen, onClose, onLogoutSuccess }: SettingsDra
     setProfileSaving(true);
     if (currentUser) {
       localStorage.setItem('company_rep_' + currentUser.id, repNameInput);
+      localStorage.setItem('company_invoice_' + currentUser.id, invoiceNumberInput);
       localStorage.setItem('company_email_' + currentUser.id, emailInput);
       localStorage.setItem('company_website_' + currentUser.id, websiteInput);
       localStorage.setItem('company_address_' + currentUser.id, addressInput);
@@ -91,6 +94,7 @@ export function SettingsDrawer({ isOpen, onClose, onLogoutSuccess }: SettingsDra
       localStorage.setItem('company_contract_pdf_' + currentUser.id, contractPdfInput);
 
       currentUser.representativeName = repNameInput;
+      currentUser.invoiceNumber = invoiceNumberInput;
       currentUser.email = emailInput;
       currentUser.website = websiteInput;
       currentUser.address = addressInput;
@@ -294,9 +298,9 @@ export function SettingsDrawer({ isOpen, onClose, onLogoutSuccess }: SettingsDra
                   type="text" 
                   className="form-control" 
                   style={{ padding: '10px', borderRadius: '6px', border: '1px solid var(--border-color)' }}
-                  key={currentUser?.invoiceNumber} 
-                  defaultValue={currentUser?.invoiceNumber || ''} 
-                  placeholder="T + 13桁の半角数字" 
+                  value={invoiceNumberInput}
+                  onChange={e => setInvoiceNumberInput(e.target.value)}
+                  placeholder="T + 13桁の半角数字"
                 />
               </div>
               <div className="form-group" style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>

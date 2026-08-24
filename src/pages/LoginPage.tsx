@@ -115,6 +115,7 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
     try {
       await api.registerCompany({
         name: companyName,
+        representativeName: repName || undefined,
         loginId: signupLoginId,
         password: signupPassword,
         invoiceNumber: invoiceNumber || undefined,

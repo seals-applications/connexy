@@ -220,7 +220,7 @@ export function MessagePage() {
   }, []);
 
   const maskContactInfo = (text: string) => {
-    if (activeChat?.status === 'contracted' || activeChat?.status === 'group') return text;
+    if (activeChat?.status === 'contracted' || activeChat?.status === 'working' || (activeChat?.status as any) === 'completed' || activeChat?.status === 'group') return text;
     let masked = text;
     // Email addresses
     masked = masked.replace(/[a-zA-Z0-9_.+-]+[\s　]*@[\s　]*[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+/g, '[連絡先はマッチング完了まで非公開です]');
@@ -1135,8 +1135,11 @@ export function MessagePage() {
     } else if (activeChat?.status === 'offered' && !isClient) {
       height = 160;
     }
+    if (relatedTask && relatedTask.jobId && relatedTask.jobId !== 'chat' && !contractApproved) {
+      height += 48;
+    }
     return `calc(${height}px + env(safe-area-inset-top))`;
-  }, [activeChat, isClient]);
+  }, [activeChat, isClient, relatedTask, contractApproved]);
 
 
   const transportArranged = useMemo(() => {
@@ -1220,11 +1223,13 @@ export function MessagePage() {
       const updated = [...msgs, receiptMsg, systemLogMsg];
       
       const jobTitle = activeChat.title || '商談チャット';
-      const clientName = activeChat.id.includes('sigma') ? '商談相手' : 'クライアント企業';
+      const receiptChatIdParts = activeChat.id.split('_');
+      const receiptOpponentId = receiptChatIdParts[1] === currentUser.id ? receiptChatIdParts[2] : receiptChatIdParts[1];
+      const clientName = allCompanies.find(c => c.id === receiptOpponentId)?.name || 'クライアント企業';
       const workerName = currentUser.name;
-      
+
       await api.saveContractTaskChat(activeChat.id, updated, jobTitle, clientName, workerName);
-      
+
       const updatedTasks = await api.getContractTasks();
       setChatTasks(updatedTasks);
       setShowReceiptModal(false);
@@ -1282,12 +1287,13 @@ export function MessagePage() {
       const updated = [...msgs, arrangementMsg, systemLogMsg];
       
       const jobTitle = activeChat.title || '商談チャット';
+      const arrangementChatIdParts = activeChat.id.split('_');
+      const arrangementOpponentId = arrangementChatIdParts[1] === currentUser.id ? arrangementChatIdParts[2] : arrangementChatIdParts[1];
       const clientName = currentUser.name;
-      const workerName = activeChat.id.includes('alpha') ? '株式会社アルファ通信' : 
-                         activeChat.id.includes('beta') ? 'ベータエージェンシー' : 'パートナー会社';
-      
+      const workerName = allCompanies.find(c => c.id === arrangementOpponentId)?.name || 'パートナー会社';
+
       await api.saveContractTaskChat(activeChat.id, updated, jobTitle, clientName, workerName);
-      
+
       const updatedTasks = await api.getContractTasks();
       setChatTasks(updatedTasks);
       setShowArrangementModal(false);
@@ -1336,7 +1342,9 @@ export function MessagePage() {
       const updated = [...msgs, photoMsg, systemLogMsg];
 
       const jobTitle = activeChat.title || '商談チャット';
-      const clientName = activeChat.id.includes('sigma') ? '商談相手' : 'クライアント企業';
+      const photoChatIdParts = activeChat.id.split('_');
+      const photoOpponentId = photoChatIdParts[1] === currentUser.id ? photoChatIdParts[2] : photoChatIdParts[1];
+      const clientName = allCompanies.find(c => c.id === photoOpponentId)?.name || 'クライアント企業';
       const workerName = currentUser.name;
 
       await api.saveContractTaskChat(activeChat.id, updated, jobTitle, clientName, workerName);
@@ -1387,12 +1395,13 @@ export function MessagePage() {
       const updated = [...msgs, systemLogMsg];
       
       const jobTitle = activeChat.title || '商談チャット';
+      const approveChatIdParts = activeChat.id.split('_');
+      const approveOpponentId = approveChatIdParts[1] === currentUser.id ? approveChatIdParts[2] : approveChatIdParts[1];
       const clientName = currentUser.name;
-      const workerName = activeChat.id.includes('alpha') ? '株式会社アルファ通信' : 
-                         activeChat.id.includes('beta') ? 'ベータエージェンシー' : 'パートナー会社';
-      
+      const workerName = allCompanies.find(c => c.id === approveOpponentId)?.name || 'パートナー会社';
+
       await api.saveContractTaskChat(activeChat.id, updated, jobTitle, clientName, workerName);
-      
+
       const updatedTasks = await api.getContractTasks();
       setChatTasks(updatedTasks);
     } catch (e) {
@@ -1434,12 +1443,13 @@ export function MessagePage() {
       const updated = [...msgs, systemLogMsg];
       
       const jobTitle = activeChat.title || '商談チャット';
+      const rejectChatIdParts = activeChat.id.split('_');
+      const rejectOpponentId = rejectChatIdParts[1] === currentUser.id ? rejectChatIdParts[2] : rejectChatIdParts[1];
       const clientName = currentUser.name;
-      const workerName = activeChat.id.includes('alpha') ? '株式会社アルファ通信' : 
-                         activeChat.id.includes('beta') ? 'ベータエージェンシー' : 'パートナー会社';
-      
+      const workerName = allCompanies.find(c => c.id === rejectOpponentId)?.name || 'パートナー会社';
+
       await api.saveContractTaskChat(activeChat.id, updated, jobTitle, clientName, workerName);
-      
+
       const updatedTasks = await api.getContractTasks();
       setChatTasks(updatedTasks);
     } catch (e) {
