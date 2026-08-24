@@ -4,7 +4,17 @@
 
 ## 📋 将来的な計画・対応予定タスク
 
-### 🔐 セキュリティ・情報保護（プライバシーマーク取得準備）
+### 🚨 緊急: `.env` の秘密情報がgit管理下で漏洩している
+`.env` が `.gitignore` に含まれておらず、実際の値のままGitHubリポジトリにコミット・pushされている状態(2026-08-24発見、[PR #1](https://github.com/seals-applications/connexy/pull/1) 対応中に発覚)。
+
+- [ ] `.env` を `.gitignore` に追加する
+- [ ] `git rm --cached .env` でgit管理から除外する
+- [ ] Google Maps APIキー(`VITE_GOOGLE_MAPS_API_KEY`)にHTTPリファラー制限をかける、または新しいキーに差し替える
+- [ ] Supabase anon key(`VITE_SUPABASE_ANON_KEY`)をローテーションし、対象テーブルのRLSポリシーを確認・強化する
+- [ ] 必要であれば過去のcommit履歴からも秘密情報を除去する(`git filter-repo`等)
+- [ ] `.env.example`(ダミー値)を追加し、READMEからリンクする
+
+### 🔐 セキュリティ・情報保護(プライバシーマーク取得準備)
 - [ ] **将来的なプライバシーマーク（Pマーク）の取得対応**
   - [ ] **位置情報（GPS）取得の明確な同意取得フロー**:
     - [ ] GPS打刻時に、位置情報の取得目的（出勤確認目的のみに使用等）を明記したポップアップ表示と初回同意確認機能の実装。
