@@ -442,7 +442,6 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
                           {statusInfo.label}
                         </span>
                       </div>
-                      <div style={{ fontSize: '11px', color: '#94A3B8' }}>ID: {c.loginId} | PW: {c.password || 'pass'}</div>
                       <div style={{ display: 'flex', gap: '6px', marginTop: '4px' }}>
                         <button
                           onClick={() => handleStatusChange(c.id, 'approved')}
@@ -483,9 +482,6 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                           <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#FFF' }}>{s.name} ({s.role === 'admin' ? '管理者' : '一般'})</div>
                           <span style={{ fontSize: '10px', color: '#94A3B8' }}>{compName}</span>
-                        </div>
-                        <div style={{ fontSize: '11px', color: '#E2E8F0' }}>
-                          ID: <span style={{ fontWeight: 'bold', color: '#60A5FA' }}>{s.loginId || '(未設定)'}</span> | PW: <span style={{ fontWeight: 'bold', color: '#60A5FA' }}>{s.password || 'pass'}</span>
                         </div>
                       </div>
                     );

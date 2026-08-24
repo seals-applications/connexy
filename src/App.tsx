@@ -18,7 +18,12 @@ function App() {
   const checkUser = async () => {
     try {
       const user = await api.getCurrentUser();
-      setCurrentUser(user);
+      if (user && user.status !== 'approved') {
+        await api.logout();
+        setCurrentUser(null);
+      } else {
+        setCurrentUser(user);
+      }
     } catch (e) {
       console.error(e);
     } finally {
