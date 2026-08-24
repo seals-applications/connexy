@@ -7,11 +7,22 @@
 -- 1. companies（企業）テーブル
 ALTER TABLE public.companies ENABLE ROW LEVEL SECURITY;
 
+-- ⚠️ 【重大】2026-08-25 セキュリティレビューで判明した問題:
+-- companiesテーブルには login_id / password カラムが平文で保存されており(src/data/mockDb.ts参照)、
+-- RLSは行単位の制御のためカラムを絞り込めない。つまり下記の USING (true) は
+-- 「anonキーだけを持つ第三者が select('login_id,password') 等で全企業の平文ログイン情報を取得できる」
+-- ことを意味する。詳細と対応方針は todo.md の「🚨 緊急: companiesテーブルのRLSが平文パスワードを
+-- anonキーで全公開している」を参照。本番運用前に、password列を含まない公開ビューへの分離、または
+-- ログイン検証をSECURITY DEFINER関数(RPC)によるサーバーサイド処理へ移行することを強く推奨する。
 -- 企業情報の参照: 誰でも参照可能（プラットフォーム上の公開プロフィールとして扱う場合）
 CREATE POLICY "Allow public read access for companies"
   ON public.companies FOR SELECT
   USING (true);
 
+-- ⚠️ 注意: 本アプリのログイン処理(src/data/mockDb.ts login())はSupabase Authを使わず、
+-- anonキーでcompanies/staffsテーブルへ直接login_id/passwordを問い合わせる自前実装のため、
+-- auth.uid()は常にnullになる。そのため下記のUPDATEポリシーは実質的に誰の更新リクエストも
+-- 通さない(auth.uid() = id が常にfalseになる)。実際の認証方式に合わせて再設計が必要。
 -- 企業情報の更新: 自身の企業レコードのみ更新可能
 -- （ここでは auth.uid() が企業IDと一致するかを確認する想定）
 CREATE POLICY "Allow update for own company profile"
@@ -21,6 +32,10 @@ CREATE POLICY "Allow update for own company profile"
 -- 2. staffs（スタッフ）テーブル
 ALTER TABLE public.staffs ENABLE ROW LEVEL SECURITY;
 
+-- ⚠️ 注意: companiesと同じく auth.uid() 前提のポリシーであり、本アプリの自前ログイン方式では
+-- auth.uid()が常にnullのため、下記2ポリシーは実質的に「誰の参照・更新リクエストも通さない」
+-- 状態になっている(過剰に厳しく機能しない側)。ここは平文流出こそしないが、実運用前に
+-- 実際の認証方式に合わせた再設計が必要な点は他テーブルと同様。
 -- スタッフの参照: 所属企業のユーザーのみ参照可能
 CREATE POLICY "Allow read for own company staffs"
   ON public.staffs FOR SELECT
@@ -47,6 +62,10 @@ CREATE POLICY "Allow all actions for job authors"
 -- 4. talents（人材）テーブル
 ALTER TABLE public.talents ENABLE ROW LEVEL SECURITY;
 
+-- ⚠️ 注意: companiesと同様 USING (true) で全カラムが公開される。talentsテーブルには
+-- 実名(name)が含まれており、アプリのUI上はmaskedNameのみを表示する設計(todo.mdの
+-- 「Talentの実名がUI非表示なのにクライアント側データには含まれている」を参照)だが、
+-- このRLSのままではanonキーで select('name') すれば実名を直接取得できてしまう。
 -- 人材の参照: 誰でも参照可能（マッチング検索用）
 CREATE POLICY "Allow public read access for talents"
   ON public.talents FOR SELECT

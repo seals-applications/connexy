@@ -17,6 +17,28 @@
 
 ⚠️ **注意**: 上記のgit管理からの除外は今後のコミットに`.env`が含まれなくなるだけで、**過去のコミット履歴には既に実際のキーが残ったまま**です。GitHub上で既に公開されてしまった鍵そのものを無効化するには、上記のAPIキーのローテーション/制限が別途必須です。
 
+### 🚨 緊急: `companies`テーブルのRLSが平文パスワードをanonキーで全公開している(2026-08-25 セキュリティレビューで発見)
+`supabase/01_security_rls.sql` の `companies` テーブル向けポリシーを精査した結果、**現状の設計のまま本番Supabaseプロジェクトへ適用すると、企業アカウントの`login_id`・平文`password`が誰でも(公開anonキーだけで)閲覧可能になる**、極めて深刻な認証情報漏洩の脆弱性を確認した。
+
+- **該当ポリシー**: `CREATE POLICY "Allow public read access for companies" ON public.companies FOR SELECT USING (true);`（[supabase/01_security_rls.sql](supabase/01_security_rls.sql) 11-13行目）
+- **なぜ深刻か**:
+  - `companies.password` は暗号化されずDBに平文で保存されている(`src/data/mockDb.ts` `login()`/`registerCompany()` は `password` カラムをそのまま比較・挿入しており、`src/lib/crypto.ts` の `encryptData`/`decryptData`(モック実装のBase64相当)はスタッフのローカルストレージ用途にのみ使われ、`companies`テーブルの`password`カラムには一切適用されていない)。
+  - RLSのSELECTポリシーは行単位の制御であり、`USING (true)` は「どのカラムを問い合わせても全行を返す」ことを意味する。クライアント側コードが`select('*')`しか使っていなくても、**攻撃者は公開anonキーだけを使い、直接 `supabase.from('companies').select('login_id,password')` のようなリクエストを送れば、全企業の平文ログインID・パスワードを取得できる**。
+  - 公開anonキー自体も既にgit履歴上で漏洩済み(上記`.env`問題)であり、悪用のハードルが極めて低い。
+- **根本原因(設計上の問題)**: このRLSスクリプト全体が `auth.uid()`（Supabaseネイティブ認証のユーザーID）を前提に書かれているが、本アプリのログイン処理(`src/data/mockDb.ts` `login()`)は `supabase.auth.signIn`等のSupabase Auth機能を一切使わず、anonキーで直接 `companies`/`staffs` テーブルに対して `login_id`/`password` の一致を問い合わせる自前実装になっている。そのため`auth.uid()`は常に`null`となり、`auth.uid() = id` 等を使う更新系ポリシー（`staffs`・`jobs`・`talents`・`contract_tasks`含む全テーブル）は**実質的に誰の書き込みも通さない**（過剰に厳しい）一方、SELECT系の `USING (true)` ポリシー（`companies`・`jobs`・`talents`）は**行の中身を無条件に全公開する**（過剰に緩い）という、両極端な機能不全に陥っている。
+- [ ] `companies`テーブルの認証情報(`login_id`/`password`)を、パスワード検証を伴わない一般公開プロフィール用の列と分離する(例: `companies_public`ビューを作成し、`password`列を含まない列のみを公開、anonロールには`companies`本体への直接SELECTを許可しない)
+- [ ] ログイン処理をクライアント側の直接パスワード列比較から、`SECURITY DEFINER`のPostgres関数(RPC)経由のサーバーサイド検証に置き換える(anonキーが`password`列を直接参照できないようにする)
+- [ ] 上記の対応と合わせて、`companies.password`をハッシュ化して保存する(現状は平文)
+- [ ] `auth.uid()`前提のRLSポリシー全体を、実際の認証方式(Supabase Authを使わない自前ログイン)に合わせて設計し直す
+
+⚠️ **注意**: このファイルは「Supabase SQLエディタで実行して設定する」ためのスクリプトであり、実際に本番プロジェクトへ適用済みかは本セッションからは確認できていない。ただし、`.env`の秘密情報漏洩と合わせて考えると、**このスクリプトが意図通りに適用されていたとしても、されていなくても、平文パスワードが公開anonキー経由で閲覧できる状態になっている可能性が高い**ため、最優先で確認・対応が必要。
+
+### 🚨 緊急: Supabase接続情報がソースコードにハードコードされたフォールバック値として残っている
+`src/lib/supabase.ts` の3-4行目で、`import.meta.env`の環境変数が未設定の場合のフォールバックとして、実際のSupabaseプロジェクトURLと**anonキーの実値**がソースコードに直接ハードコードされ、gitで追跡されている(コミット`a56b692`で追加)。
+
+- 上記「Supabase anon keyをローテーションする」対応を`.env`/GitHub Secrets側だけで行っても、このハードコードされた値が古いままだと、環境変数が未設定な環境(フォーク先、別のデプロイ環境など)でビルドした場合に**無効化したはずの古いキーがフォールバックとして使われ続けてしまう**。
+- [ ] `VITE_SUPABASE_ANON_KEY`をローテーションする際は、`.env`/GitHub Secretsだけでなく`src/lib/supabase.ts`内のハードコードされたフォールバック値も必ず同時に更新する(あるいはフォールバック自体を削除し、環境変数未設定時はエラーで起動を止める方が安全)
+
 ### 🔐 セキュリティ・情報保護(プライバシーマーク取得準備)
 - [ ] **将来的なプライバシーマーク（Pマーク）の取得対応**
   - [ ] **位置情報（GPS）取得の明確な同意取得フロー**:
@@ -31,7 +53,7 @@
 
 ### 🧩 仕様書作成時に見つかった、対応容易ではない不備・未実装事項
 - [ ] 案件の新規作成・編集・複製フォームの導線が「管理」画面内に見当たらない(別画面がある想定だが要確認)
-- [ ] Talentの実名(`name`)がUI非表示なのにクライアント側データには含まれている(実バックエンド接続時にAPI層でのマスキングが必要)
+- [ ] Talentの実名(`name`)がUI非表示なのにクライアント側データには含まれている(実バックエンド接続時にAPI層でのマスキングが必要)(2026-08-25追記: `supabase/01_security_rls.sql`の`talents`テーブルSELECTポリシーが`USING (true)`で全カラム公開のため、Supabase接続時はanonキーで`name`列を直接取得できてしまう。上記の「🚨 緊急: companiesテーブルのRLSが平文パスワードをanonキーで全公開している」と同根の問題)
 - [ ] Google Maps(表示)とNominatim/OpenStreetMap(ジオコーディング)のプロバイダ混在(利用規約・レート制限リスク)
 - [ ] エリア検索が新宿・渋谷・池袋の3エリア固定で、地図連携があるのに半径検索ができない
 - [ ] 異議あり(`disputed`)を「管理」画面から解消する導線が見当たらない
