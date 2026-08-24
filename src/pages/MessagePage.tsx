@@ -5,7 +5,7 @@ interface ChatChannel {
   id: string;
   name: string;
   title: string;
-  status: 'negotiating' | 'waiting' | 'contracted' | 'group' | 'applying' | 'offered' | 'rejected' | 'working';
+  status: 'negotiating' | 'waiting' | 'contracted' | 'group' | 'applying' | 'offered' | 'rejected' | 'declined' | 'working';
   avatar: string;
   avatarBg: string;
   preview: string;
@@ -224,8 +224,8 @@ export function MessagePage() {
     let masked = text;
     // Email addresses
     masked = masked.replace(/[a-zA-Z0-9_.+-]+[\s　]*@[\s　]*[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+/g, '[連絡先はマッチング完了まで非公開です]');
-    // Phone numbers (with or without hyphens/spaces, matching 10-11 digits)
-    masked = masked.replace(/(?:0\d{1,4}[-\s　]?\d{1,4}[-\s　]?\d{3,4}|0[789]0[-\s　]?\d{4}[-\s　]?\d{4})/g, '[連絡先はマッチング完了まで非公開です]');
+    // Phone numbers (with or without hyphens/spaces, matching 10-11 digits; also matches +81 country-code mobile format)
+    masked = masked.replace(/(?:(?:\+81[-\s　]?)?0?[789]0[-\s　]?\d{4}[-\s　]?\d{4}|0\d{1,4}[-\s　]?\d{1,4}[-\s　]?\d{3,4})/g, '[連絡先はマッチング完了まで非公開です]');
     // LINE ID and Links
     masked = masked.replace(/(?:line\.me\/\S+|(?:LINE|ライン)\s*ID\s*[:：]?\s*[a-zA-Z0-9_.-]+)/gi, '[連絡先はマッチング完了まで非公開です]');
     return masked;
@@ -1087,7 +1087,7 @@ export function MessagePage() {
         (task.evaluations as any)?.appliedJobStaffIds
       );
 
-      await api.updateContractTaskStatus(activeChat.id, 'rejected');
+      await api.updateContractTaskStatus(activeChat.id, 'declined');
 
       alert('内定を辞退しました。');
       const updatedTasks = await api.getContractTasks();
@@ -1106,7 +1106,7 @@ export function MessagePage() {
     return chatTasks.some(t => {
       const jobIds = (t.evaluations as any)?.appliedJobIds || [];
       const hasJob = jobIds.includes(relatedJob.id);
-      const isAppliedStatus = t.status === 'applying' || t.status === 'offered' || t.status === 'working' || t.status === 'rejected';
+      const isAppliedStatus = t.status === 'applying' || t.status === 'offered' || t.status === 'working' || t.status === 'rejected' || t.status === 'declined';
       return hasJob && isAppliedStatus;
     });
   }, [relatedJob, chatTasks]);
@@ -2297,14 +2297,14 @@ export function MessagePage() {
                               channel.status === 'applying' || channel.status === 'negotiating' ? 'badge-negotiating' : 
                               channel.status === 'offered' || channel.status === 'waiting' ? 'badge-waiting' : 
                               channel.status === 'contracted' || channel.status === 'working' ? 'badge-contracted' : 'badge-contracted'
-                            }`} style={channel.status === 'group' ? { backgroundColor: '#FDBA74', color: '#7C2D12' } : 
-                                      channel.status === 'rejected' ? { backgroundColor: '#FEE2E2', color: '#991B1B' } : {}}>
-                              {channel.status === 'applying' ? '選考中' : 
-                               channel.status === 'negotiating' ? '商談中' : 
-                               channel.status === 'offered' ? '内定通知済' : 
-                               channel.status === 'waiting' ? '契約待ち' : 
-                               channel.status === 'working' || channel.status === 'contracted' ? '契約成立' : 
-                               channel.status === 'rejected' ? '辞退/不採用' : '現場グループ'}
+                            }`} style={channel.status === 'group' ? { backgroundColor: '#FDBA74', color: '#7C2D12' } :
+                                      channel.status === 'rejected' || channel.status === 'declined' ? { backgroundColor: '#FEE2E2', color: '#991B1B' } : {}}>
+                              {channel.status === 'applying' ? '選考中' :
+                               channel.status === 'negotiating' ? '商談中' :
+                               channel.status === 'offered' ? '内定通知済' :
+                               channel.status === 'waiting' ? '契約待ち' :
+                               channel.status === 'working' || channel.status === 'contracted' ? '契約成立' :
+                               channel.status === 'rejected' || channel.status === 'declined' ? '辞退/不採用' : '現場グループ'}
                             </span>
                           </div>
                         );
@@ -2738,16 +2738,16 @@ export function MessagePage() {
                   <div className="condition-summary">
                     <span className={`status-badge ${
                       activeChat?.status === 'applying' ? 'badge-negotiating' : 
-                      activeChat?.status === 'offered' ? 'badge-waiting' : 
-                      activeChat?.status === 'rejected' ? 'badge-rejected' : 
-                      activeChat?.status === 'working' ? 'badge-contracted' : 
-                      activeChat?.status === 'negotiating' ? 'badge-negotiating' : 
+                      activeChat?.status === 'offered' ? 'badge-waiting' :
+                      activeChat?.status === 'rejected' || activeChat?.status === 'declined' ? 'badge-rejected' :
+                      activeChat?.status === 'working' ? 'badge-contracted' :
+                      activeChat?.status === 'negotiating' ? 'badge-negotiating' :
                       activeChat?.status === 'waiting' ? 'badge-waiting' : 'badge-contracted'
                     }`} style={{ margin: 0 }}>
-                      {activeChat?.status === 'applying' ? '選考中' : 
-                       activeChat?.status === 'offered' ? '内定提示中' : 
-                       activeChat?.status === 'rejected' ? '辞退/不採用' : 
-                       activeChat?.status === 'working' ? '稼働中' : 
+                      {activeChat?.status === 'applying' ? '選考中' :
+                       activeChat?.status === 'offered' ? '内定提示中' :
+                       activeChat?.status === 'rejected' || activeChat?.status === 'declined' ? '辞退/不採用' :
+                       activeChat?.status === 'working' ? '稼働中' :
                        activeChat?.status === 'negotiating' ? '商談中' : 
                        activeChat?.status === 'waiting' ? '契約待ち' : '契約成立'}
                     </span>
@@ -2838,18 +2838,18 @@ export function MessagePage() {
                 },
                 {
                   id: 'propose',
-                  label: activeChat?.status === 'working' ? '契約確定' : activeChat?.status === 'offered' ? '内定提示中' : activeChat?.status === 'rejected' ? '選考終了' : (proposed ? '提案済' : '条件提案・発注'),
+                  label: activeChat?.status === 'working' ? '契約確定' : activeChat?.status === 'offered' ? '内定提示中' : (activeChat?.status === 'rejected' || activeChat?.status === 'declined') ? '選考終了' : (proposed ? '提案済' : '条件提案・発注'),
                   icon: 'edit_document',
                   color: '#EC4899',
                   bgColor: '#FCE7F3',
-                  enabled: activeChat?.status !== 'group' && activeChat?.status !== 'working' && activeChat?.status !== 'offered' && activeChat?.status !== 'rejected' && !proposed,
+                  enabled: activeChat?.status !== 'group' && activeChat?.status !== 'working' && activeChat?.status !== 'offered' && activeChat?.status !== 'rejected' && activeChat?.status !== 'declined' && !proposed,
                   action: () => {
                     handlePropose();
                     setShowChatMenu(false);
                   },
-                  disabledMessage: activeChat?.status === 'group' 
-                    ? 'グループチャットでは発注提案は行えません。' 
-                    : ['working', 'offered', 'rejected'].includes(activeChat?.status || '')
+                  disabledMessage: activeChat?.status === 'group'
+                    ? 'グループチャットでは発注提案は行えません。'
+                    : ['working', 'offered', 'rejected', 'declined'].includes(activeChat?.status || '')
                       ? 'すでに内定提示中か、契約が成立しているため提案は行えません。'
                       : 'すでに提案が送信されています。'
                 }

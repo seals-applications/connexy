@@ -155,7 +155,7 @@ export interface ContractTask {
   clientName: string;
   price: number;
   date: string;
-  status: 'applying' | 'offered' | 'working' | 'report_pending' | 'completed' | 'disputed' | 'rejected';
+  status: 'applying' | 'offered' | 'working' | 'report_pending' | 'completed' | 'disputed' | 'rejected' | 'declined';
   disputedReason?: string;
   evaluations?: {
     byClient?: Evaluation;
@@ -1280,10 +1280,17 @@ export const api = {
             ...(existingEvals.appliedJobIds || []),
             ...(appliedJobIds || [])
           ]));
+          const existingAppliedJobDates = existingEvals.appliedJobDates || {};
+          const newAppliedJobDates: { [jobId: string]: string } = {};
+          const todayStr = new Date().toISOString().split('T')[0];
+          (appliedJobIds || []).forEach(jobId => {
+            if (!existingAppliedJobDates[jobId]) newAppliedJobDates[jobId] = todayStr;
+          });
           evaluations = {
             ...existingEvals,
             messages,
             appliedJobIds: mergedAppliedJobIds,
+            appliedJobDates: { ...existingAppliedJobDates, ...newAppliedJobDates },
             appliedJobStaffIds: {
               ...(existingEvals.appliedJobStaffIds || {}),
               ...(appliedJobStaffIds || {})
@@ -1292,7 +1299,9 @@ export const api = {
           const { error } = await supabase.from('contract_tasks').update({ evaluations }).eq('id', taskId);
           if (error) throw error;
         } else {
+          const todayStr = new Date().toISOString().split('T')[0];
           evaluations.appliedJobIds = appliedJobIds || [];
+          evaluations.appliedJobDates = Object.fromEntries((appliedJobIds || []).map(jobId => [jobId, todayStr]));
           evaluations.appliedJobStaffIds = appliedJobStaffIds || {};
           const isApplication = appliedJobIds && appliedJobIds.length > 0;
           const row = {
@@ -1320,10 +1329,17 @@ export const api = {
             ...(existingEvals.appliedJobIds || []),
             ...(appliedJobIds || [])
           ]));
+          const existingAppliedJobDates = existingEvals.appliedJobDates || {};
+          const newAppliedJobDates: { [jobId: string]: string } = {};
+          const todayStr = new Date().toISOString().split('T')[0];
+          (appliedJobIds || []).forEach(jobId => {
+            if (!existingAppliedJobDates[jobId]) newAppliedJobDates[jobId] = todayStr;
+          });
           evaluations = {
             ...existingEvals,
             messages,
             appliedJobIds: mergedAppliedJobIds,
+            appliedJobDates: { ...existingAppliedJobDates, ...newAppliedJobDates },
             appliedJobStaffIds: {
               ...(existingEvals.appliedJobStaffIds || {}),
               ...(appliedJobStaffIds || {})
@@ -1331,7 +1347,9 @@ export const api = {
           };
           list[index].evaluations = evaluations;
         } else {
+          const todayStr = new Date().toISOString().split('T')[0];
           evaluations.appliedJobIds = appliedJobIds || [];
+          evaluations.appliedJobDates = Object.fromEntries((appliedJobIds || []).map(jobId => [jobId, todayStr]));
           evaluations.appliedJobStaffIds = appliedJobStaffIds || {};
           const isApplication = appliedJobIds && appliedJobIds.length > 0;
           const row = {
@@ -1394,7 +1412,7 @@ export const api = {
     });
   },
 
-  updateContractTaskStatus: async (taskId: string, status: 'applying' | 'offered' | 'working' | 'report_pending' | 'completed' | 'disputed' | 'rejected', additionalEvals?: any): Promise<void> => {
+  updateContractTaskStatus: async (taskId: string, status: 'applying' | 'offered' | 'working' | 'report_pending' | 'completed' | 'disputed' | 'rejected' | 'declined', additionalEvals?: any): Promise<void> => {
     return callSupabase(
       async () => {
         const { data: taskData } = await supabase.from('contract_tasks').select('evaluations').eq('id', taskId).single();

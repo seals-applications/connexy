@@ -26,9 +26,41 @@
   - [ ] **個人情報保護規定（PMS）関連の文書化支援**:
     - [ ] システム内の個人情報保護管理規定（取扱手順）のドキュメント作成。
 
+### 🧩 仕様書作成時に見つかった、対応容易ではない不備・未実装事項
+- [ ] 案件の新規作成・編集・複製フォームの導線が「管理」画面内に見当たらない(別画面がある想定だが要確認)
+- [ ] Talentの実名(`name`)がUI非表示なのにクライアント側データには含まれている(実バックエンド接続時にAPI層でのマスキングが必要)
+- [ ] Google Maps(表示)とNominatim/OpenStreetMap(ジオコーディング)のプロバイダ混在(利用規約・レート制限リスク)
+- [ ] エリア検索が新宿・渋谷・池袋の3エリア固定で、地図連携があるのに半径検索ができない
+- [ ] 異議あり(`disputed`)を「管理」画面から解消する導線が見当たらない
+- [ ] ダッシュボードの入出金額・手数料内訳が固定値表示で、実際の`price`/手数料率からの計算になっていない
+- [ ] GPS打刻が実測位ではなく「シミュレーターON/OFF」のみ
+- [ ] 分析・ダッシュボードの指標が2つのみで、スタッフ向けメニュー説明にある「獲得報酬総額」「高評価率」が未実装
+- [ ] 決済連携(Stripe)が「デモモードです」アラートのみのスタブ
+- [ ] 出勤管理のNG日設定カレンダーが「2026年7月」に固定、年月選択ができない
+- [ ] 選考時の候補企業スコアリングが4社の固定モックデータで、実際の登録企業を検索していない
+
 ---
 
-## ✅ 完了済みのタスク
+## ✅ 完了済みのタスク
+
+### 🐛 発見・修正済みのバグ(2026-08-24)
+- [x] **「応募状況・履歴」で、同じチャット内の複数応募の応募日が使い回される問題を修正**
+  - `evaluations.appliedJobIds` に加えて案件ごとの応募日を保持する `evaluations.appliedJobDates: { [jobId]: dateString }` を新設 ([src/data/mockDb.ts](src/data/mockDb.ts) `saveContractTaskChat`)。
+  - 「応募状況・履歴」画面は `t.date`(チャット作成日)ではなく `appliedJobDates[jobId]` を参照するよう修正 ([src/pages/ManagementPage.tsx](src/pages/ManagementPage.tsx) `myApplications`)。
+- [x] **完了報告(遅刻なし)提出時に出勤ログの出勤時間が`undefined`になる問題を修正**
+  - 完了報告フローで生成する出勤ログタグを、他の生成箇所と同じ `ATTENDANCE_LOG_<日付>_<時刻>_<OK|LATE>` の3セグメント形式に統一 ([src/pages/ManagementPage.tsx](src/pages/ManagementPage.tsx) `handleReportSubmit`)。
+- [x] **国際表記(+81-90-...)の電話番号がチャットの連絡先マスキングをすり抜ける問題を修正**
+  - `maskContactInfo` の電話番号用正規表現に任意の `+81` 国番号プレフィックスを許容するパターンを追加し、国内・国際どちらの表記でもマスキングされることをブラウザで確認済み ([src/pages/MessagePage.tsx](src/pages/MessagePage.tsx))。
+- [x] **分析・ダッシュボードが自社データではなく全社(プラットフォーム全体)のデータを集計していた問題を修正**
+  - 未絞り込みの `tasks` ではなく、自社分に絞り込み済みの `relatedTasks` を集計に使うよう修正 ([src/pages/ManagementPage.tsx](src/pages/ManagementPage.tsx))。
+
+### 🔧 仕様上の不備の解消(2026-08-24)
+- [x] **ログイン画面のデバッグパネルから、全社・全スタッフの平文ログインID/パスワード表示を削除**
+  - 会社承認(承認/却下/保留)機能自体は他に代替手段がないため維持しつつ、認証情報の平文表示のみを削除([src/pages/LoginPage.tsx](src/pages/LoginPage.tsx))。本番リリース前には、この管理ツール自体を認証済み管理者専用の別画面に移す対応が別途必要。
+- [x] **アカウント承認ステータス(`pending`/`rejected`)のルートガードをアプリ全体に追加**
+  - これまではログイン処理の中でのみ`pending`/`rejected`を弾いており、既にログイン済みのセッションが後から承認取り消しされた場合にアプリ側で検知できていなかった。`App.tsx`の起動時ユーザー確認処理でも`status !== 'approved'`なら強制ログアウトするよう修正([src/App.tsx](src/App.tsx))。
+- [x] **内定「辞退」と「不採用」が同じ`rejected`ステータスで区別できない問題を解消**
+  - `ContractTask.status`に`declined`を追加し、応募者側の辞退操作(`handleDeclineUnofficialOffer`)は`declined`を書き込むよう変更。関連するバッジ表示・ボタン制御箇所を対応([src/data/mockDb.ts](src/data/mockDb.ts), [src/pages/MessagePage.tsx](src/pages/MessagePage.tsx))。「応募状況・履歴」画面は元々`rejected`/`declined`の両方を「見送り/辞退」として表示する実装だったため、表示側の変更は不要だった。
 
 ### 📱 ダッシュボード・入出金管理機能の刷新
 - [x] **「入金予定額」および「振込予定額」カードの追加・実装** (`src/pages/DashboardPage.tsx`)

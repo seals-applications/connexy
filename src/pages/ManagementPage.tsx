@@ -304,12 +304,13 @@ export function ManagementPage() {
             const opponentCompanyId = t.id.replace('chat_', '').replace(currentUser.id, '').replace('_', '');
             const opponentCompany = allCompanies.find(c => c.id === opponentCompanyId);
             
+            const appliedJobDates = (t.evaluations as any)?.appliedJobDates || {};
             list.push({
               task: t,
               job,
               opponentCompany,
               status: t.status,
-              date: t.date || new Date().toISOString().split('T')[0],
+              date: appliedJobDates[jobId] || t.date || new Date().toISOString().split('T')[0],
               price: job.price || t.price || 0
             });
           }
@@ -994,8 +995,9 @@ export function ManagementPage() {
 
       // If worker submitted and has lateness, flag it
       if (evalRole === 'worker' && myStaff) {
-        const flag = evalHasLateness ? '_LATE' : '';
-        const tag = `ATTENDANCE_LOG_${selectedTask.date}${flag}`;
+        const timeStr = new Date().toTimeString().split(' ')[0].substring(0, 5);
+        const statusSuffix = evalHasLateness ? 'LATE' : 'OK';
+        const tag = `ATTENDANCE_LOG_${selectedTask.date}_${timeStr}_${statusSuffix}`;
         await api.completeTraining(myStaff.id, tag); // completeTraining serves as a tag updater
       }
 
@@ -1953,14 +1955,14 @@ export function ManagementPage() {
             <div style={{ background: 'var(--surface-color)', padding: '14px', borderRadius: '12px', border: '1px solid var(--border-color)', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
               <div style={{ fontSize: '12px', color: 'var(--text-sub)', marginBottom: '4px' }}>総案件・対応数</div>
               <div style={{ fontSize: '22px', fontWeight: 'bold', color: 'var(--primary)' }}>
-                {tasks.length} <span style={{ fontSize: '12px', fontWeight: 'normal', color: 'var(--text-sub)' }}>件</span>
+                {relatedTasks.length} <span style={{ fontSize: '12px', fontWeight: 'normal', color: 'var(--text-sub)' }}>件</span>
               </div>
             </div>
 
             <div style={{ background: 'var(--surface-color)', padding: '14px', borderRadius: '12px', border: '1px solid var(--border-color)', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
               <div style={{ fontSize: '12px', color: 'var(--text-sub)', marginBottom: '4px' }}>完了実績率</div>
               <div style={{ fontSize: '22px', fontWeight: 'bold', color: '#10B981' }}>
-                {tasks.length > 0 ? Math.round((tasks.filter(t => t.status === 'completed').length / tasks.length) * 100) : 100}%
+                {relatedTasks.length > 0 ? Math.round((relatedTasks.filter(t => t.status === 'completed').length / relatedTasks.length) * 100) : 100}%
               </div>
             </div>
           </div>
