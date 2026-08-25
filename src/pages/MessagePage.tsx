@@ -1161,7 +1161,7 @@ export function MessagePage() {
       ? `${currentUser.name}_${currentUser.staffName}` 
       : `${currentUser.name}_代表`;
 
-    const categoryText = 
+    const categoryText =
       receiptCategory === 'transport' ? '公共交通機関' :
       receiptCategory === 'accommodation' ? '宿泊費' : '車移動';
 
@@ -1381,14 +1381,16 @@ export function MessagePage() {
       };
       
       // テキスト表記の変更
-      targetMsg.text = `【領収書承認済】${targetMsg.receiptDetails.category === 'transport' ? '交通費' : '宿泊費'}: ¥${targetMsg.receiptDetails.amount?.toLocaleString()} の精算完了`;
+      const approvedCategoryText = targetMsg.receiptDetails.category === 'transport' ? '交通費' :
+        targetMsg.receiptDetails.category === 'accommodation' ? '宿泊費' : '車移動費';
+      targetMsg.text = `【領収書承認済】${approvedCategoryText}: ¥${targetMsg.receiptDetails.amount?.toLocaleString()} の精算完了`;
       msgs[targetIdx] = targetMsg;
       
       const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
       const systemLogMsg = {
         id: 'sys_app_rc_' + Date.now(),
         type: 'system',
-        text: `クライアントによって${targetMsg.receiptDetails.category === 'transport' ? '交通費' : '宿泊費'}の精算（¥${targetMsg.receiptDetails.amount?.toLocaleString()}）が承認されました。`,
+        text: `クライアントによって${approvedCategoryText}の精算（¥${targetMsg.receiptDetails.amount?.toLocaleString()}）が承認されました。`,
         time: timeStr
       };
       
