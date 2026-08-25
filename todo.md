@@ -68,6 +68,10 @@
 
 ## ✅ 完了済みのタスク
 
+### 🐛 発見・修正済みのバグ(2026-08-25)
+- [x] **経費申請の承認時、「車移動(car)」区分が「宿泊費」と誤表示される問題を修正**
+  - `handleApproveReceipt` 内の承認完了メッセージ・システムログで使っていたカテゴリ名の2分岐(`transport`/それ以外)を、`accommodation`/`car`を区別する3分岐に修正 ([src/pages/MessagePage.tsx](src/pages/MessagePage.tsx))。申請時(`handleSendReceipt`)は元々正しい3分岐だった。
+
 ### 🐛 発見・修正済みのバグ(2026-08-24)
 - [x] **案件応募時のシステムメッセージの発注企業名が、ハードコードされた4社以外だと汎用テキスト「パートナー企業」になり、4社分の名前も実際の登録名と食い違っていた問題を修正**
   - `handleJobApplication` 内のハードコードされた三項演算子チェーンを、同ファイル内の他箇所と同じ `allUsers.find(u => u.id === selectedJob.authorId)?.name` によるルックアップに置き換え ([src/pages/SearchPage.tsx](src/pages/SearchPage.tsx))。
