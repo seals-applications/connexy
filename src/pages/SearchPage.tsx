@@ -1863,12 +1863,12 @@ export function SearchPage() {
       const appliedJobStaffIds = finalStaffId ? { [selectedJob.id]: finalStaffId } : undefined;
       
       await api.saveContractTaskChat(
-        roomId, 
-        updated, 
-        selectedJob.title, 
-        currentUser.name, 
-        authorName, 
-        [selectedJob.id], 
+        roomId,
+        updated,
+        selectedJob.title,
+        authorName,
+        currentUser.name,
+        [selectedJob.id],
         appliedJobStaffIds
       );
       

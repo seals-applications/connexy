@@ -86,6 +86,12 @@
   - 修正: `relatedJob`が無い場合は、チャット作成時に記録される`relatedTask.clientName`と`currentUser.name`を比較するフォールバックに置き換え(スカウト開始時に`clientName = currentUser.name`として保存されているため)。案件ID・企業IDに基づくより堅牢な判定にするには、`saveContractTaskChat`側で`client_id`/`agency_id`を全チャット作成経路で保存するスキーマ変更が必要(今回は名前ベースの比較による最小修正に留めた)。
   - 発見日: 2026-09-08(バグ調査中)。
 
+- [x] **案件応募時、`saveContractTaskChat`に渡す`clientName`/`workerName`引数が発注企業と応募企業で入れ違っていた問題を修正**
+  - 発生箇所: [src/pages/SearchPage.tsx](src/pages/SearchPage.tsx) `handleJobApplication`。
+  - `clientName`には応募している自社(`currentUser.name`)、`workerName`には案件の発注企業(`authorName`)を渡していたが、これは意味が逆。同ファイル内の「人材へのスカウト・メッセージ送信」系処理(`handleSendBulkScout`/`handleStartTalentChat`)では、`currentUser`が発注(スカウトする)側なので`clientName = currentUser.name`が正しいが、`handleJobApplication`では逆に`currentUser`が応募する側(受注側)であるため、正しくは`clientName = authorName`(発注企業)・`workerName = currentUser.name`(応募企業)であるべきだった。
+  - 影響: `ManagementPage.tsx`の`relatedTasks`は`t.clientName === currentUser.name`で「自社が発注者かどうか」を判定しているため、この入れ違いにより発注企業側が自社の案件への応募チャットを「報告・評価」等の一覧で正しく拾えなくなる、応募側も同様に正しく拾えなくなる、という不整合が生じていた。`saveContractTaskChat`は既存タスクへの2回目以降の呼び出しでは`client_name`/`worker_name`を更新しない実装のため、この修正は新規に作成されるチャットにのみ効果がある。
+  - 発見日: 2026-09-08(バグ調査中)。
+
 - [x] **候補者への内定オファー送信時、`saveContractTaskChat`に渡す案件名・相手企業名の引数が入れ違っていた問題を修正**
   - 発生箇所: [src/pages/ManagementPage.tsx](src/pages/ManagementPage.tsx) `handleConfirmOrderSubmit`。
   - `saveContractTaskChat(taskId, messages, jobTitle, clientName, workerName, ...)` の呼び出しで、`jobTitle`引数に案件タイトル(`activeScreeningJob.title`)ではなく候補者企業名(`confirmingCandidate.company.name`)を渡し、`workerName`引数には候補者企業名の代わりに発注企業自身の名前(`currentUser?.name`、`clientName`と同じ値)を渡していた。
