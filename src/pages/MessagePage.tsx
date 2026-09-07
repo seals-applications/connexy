@@ -1015,13 +1015,12 @@ export function MessagePage() {
       await api.updateContractTaskStatus(activeChat.id, 'working');
 
       // 3. Automatically reject and notify other candidates for this job
-      const otherChatTasks = chatTasks.filter(t => 
-        t.id !== activeChat.id && 
-        t.id.startsWith('chat_') && 
-        !t.id.startsWith('chat_group_') &&
-        (t.evaluations as any)?.appliedJobIds?.includes(job.id) &&
-        (t.status === 'applying' || t.status === 'offered')
-      );
+      const otherChatTasks = chatTasks.filter(t => {
+        if (t.id === activeChat.id || !t.id.startsWith('chat_') || t.id.startsWith('chat_group_')) return false;
+        const otherEvals = (t.evaluations as any) || {};
+        const isForThisJob = otherEvals.appliedJobIds?.includes(job.id) || otherEvals.offeredJobId === job.id;
+        return isForThisJob && (t.status === 'applying' || t.status === 'offered');
+      });
 
       for (const t of otherChatTasks) {
         const rejectSystemMsg = {
@@ -1113,8 +1112,8 @@ export function MessagePage() {
   const hasApplications = useMemo(() => {
     if (!relatedJob) return false;
     return chatTasks.some(t => {
-      const jobIds = (t.evaluations as any)?.appliedJobIds || [];
-      const hasJob = jobIds.includes(relatedJob.id);
+      const evals = (t.evaluations as any) || {};
+      const hasJob = evals.appliedJobIds?.includes(relatedJob.id) || evals.offeredJobId === relatedJob.id;
       const isAppliedStatus = t.status === 'applying' || t.status === 'offered' || t.status === 'working' || t.status === 'rejected' || t.status === 'declined';
       return hasJob && isAppliedStatus;
     });

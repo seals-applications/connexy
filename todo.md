@@ -88,7 +88,7 @@
   - 実機確認: 新規案件を作成し、管理画面の候補者選考から内定オファーを送信 → 内定通知書に「案件コード: 未発行」「契約単価: 15,000円 / 日」という誤情報が表示され、「承諾する」を押しても状態が`offered`のまま変化しないことを確認。修正後は正しい案件コード・実際の契約単価(30,000円)が表示され、承諾操作で`working`状態への遷移・現場グループチャットの自動作成まで正常に完了することを確認済み。
   - 修正: `relatedJob`・`handleAcceptUnofficialOffer`・`handleDeclineUnofficialOffer` の3箇所で、`appliedJobIds?.[0]` に加えて `offeredJobId` もフォールバックとして参照するよう修正(スタッフIDも同様に `appliedJobStaffIds` に加えて `offeredStaffId` を参照)。
   - 発見日: 2026-09-08(バグ調査中、実機確認済み)。
-  - ⚠️ 関連する未対応箇所: `handleAcceptUnofficialOffer`内の「競合他社の自動不採用」ループ([src/pages/MessagePage.tsx:1022](src/pages/MessagePage.tsx))と`hasApplications`([src/pages/MessagePage.tsx:1116](src/pages/MessagePage.tsx))も、他チャットの`appliedJobIds`のみを見て`offeredJobId`を見ていないため、同根の見落としが残っている可能性がある(影響は今回ほど重大ではないため未修正)。
+  - 追記: 同根の見落としが残っていた `handleAcceptUnofficialOffer`内の「競合他社の自動不採用」ループと`hasApplications`(いずれも他チャットの`appliedJobIds`のみを見て`offeredJobId`を見ていなかった)も、同日中に追加で修正済み。
 
 - [x] **「確定実績・請求データ一括CSV出力」のステータス表示が、`completed`/`working`以外すべて「稼働準備中」と誤表示される問題を修正**
   - 発生箇所: [src/pages/ManagementPage.tsx](src/pages/ManagementPage.tsx) `handleBulkExportCSV`。
