@@ -454,7 +454,7 @@ const unmapStaff = (staff: Partial<Staff>): any => {
   if ('hasCertificate' in staff) { row.has_certificate = staff.hasCertificate; delete row.hasCertificate; }
   if ('role' in staff) { row.role = staff.role; }
   if ('loginId' in staff) { row.login_id = staff.loginId; delete row.loginId; }
-  if ('password' in staff) { row.password = encryptData(staff.password); delete row.password; }
+  if ('password' in staff) { row.password = encryptData(staff.password); }
 
   // Strip custom fields
   delete row.furigana;
