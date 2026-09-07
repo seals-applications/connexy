@@ -79,6 +79,17 @@
 ## ✅ 完了済みのタスク
 
 ### 🐛 発見・修正済みのバグ(2026-09-08)
+- [x] **【最重要・実機確認済み】「管理」画面の候補者選考から送った内定オファーは、相手が「承諾する」を押しても契約が一切成立しない致命的な問題を修正**
+  - 発生箇所: [src/pages/MessagePage.tsx](src/pages/MessagePage.tsx) の `relatedJob`(案件情報解決)、`handleAcceptUnofficialOffer`(内定承諾)、`handleDeclineUnofficialOffer`(内定辞退)。
+  - チャット⇔案件の紐付けには2つの経路がある: ① 案件応募(`handleJobApplication`)経由は `evaluations.appliedJobIds` 配列に案件IDを保存、② 管理画面からの内定オファー送信(`handleConfirmOrderSubmit`)経由は `evaluations.offeredJobId` という別のキーに案件IDを保存する。しかし上記3箇所はいずれも `appliedJobIds[0]` しか見ておらず、`offeredJobId` を一切参照していなかった。
+  - 影響: ②の経路(管理画面の「候補者の選考」→「内定をオファー」)で送られた内定は、`appliedJobIds` が空配列のままなので `relatedJob` が常に`null`になり、
+    - 「内定通知書」モーダルが案件コード「未発行」・契約単価固定「15,000円 / 日」という**実際とは異なる誤った契約条件**を表示する
+    - 相手が「承諾する」を押しても `handleAcceptUnofficialOffer` 内で対象案件が見つからず`alert('対象の案件が見つかりません。')`が出るだけで**契約(ContractTask)もグループチャットも一切作成されない**(サイレントに失敗し、送信側には何も伝わらない)
+  - 実機確認: 新規案件を作成し、管理画面の候補者選考から内定オファーを送信 → 内定通知書に「案件コード: 未発行」「契約単価: 15,000円 / 日」という誤情報が表示され、「承諾する」を押しても状態が`offered`のまま変化しないことを確認。修正後は正しい案件コード・実際の契約単価(30,000円)が表示され、承諾操作で`working`状態への遷移・現場グループチャットの自動作成まで正常に完了することを確認済み。
+  - 修正: `relatedJob`・`handleAcceptUnofficialOffer`・`handleDeclineUnofficialOffer` の3箇所で、`appliedJobIds?.[0]` に加えて `offeredJobId` もフォールバックとして参照するよう修正(スタッフIDも同様に `appliedJobStaffIds` に加えて `offeredStaffId` を参照)。
+  - 発見日: 2026-09-08(バグ調査中、実機確認済み)。
+  - ⚠️ 関連する未対応箇所: `handleAcceptUnofficialOffer`内の「競合他社の自動不採用」ループ([src/pages/MessagePage.tsx:1022](src/pages/MessagePage.tsx))と`hasApplications`([src/pages/MessagePage.tsx:1116](src/pages/MessagePage.tsx))も、他チャットの`appliedJobIds`のみを見て`offeredJobId`を見ていないため、同根の見落としが残っている可能性がある(影響は今回ほど重大ではないため未修正)。
+
 - [x] **「確定実績・請求データ一括CSV出力」のステータス表示が、`completed`/`working`以外すべて「稼働準備中」と誤表示される問題を修正**
   - 発生箇所: [src/pages/ManagementPage.tsx](src/pages/ManagementPage.tsx) `handleBulkExportCSV`。
   - ステータス表示が `completed ? '完了' : working ? '進行中' : '稼働準備中'` という3択のみで、`report_pending`(報告待ち)・`disputed`(異議あり)・`applying`(選考中)・`offered`(内定通知中)・`rejected`/`declined`(不成立)といった実際に発生しうる他のステータスがすべて「稼働準備中」に丸め込まれていた。特に不採用・辞退案件まで「稼働準備中」と表示されるのは実績データとして誤解を招く。
