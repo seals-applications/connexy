@@ -78,6 +78,14 @@
 
 ## ✅ 完了済みのタスク
 
+### 🐛 発見・修正済みのバグ(2026-09-08)
+- [x] **`unmapStaff`が、暗号化したスタッフのパスワードを保存直前に削除してしまい、Supabase本番環境ではスタッフのパスワードが一切永続化されない問題を修正**
+  - 発生箇所: [src/data/mockDb.ts](src/data/mockDb.ts) `unmapStaff`。`row.password = encryptData(staff.password); delete row.password;` という実装になっており、暗号化した値をセットした直後に同じキーを削除していたため、`addStaff`/`updateStaff`がSupabaseへ送信する行データに`password`が一切含まれていなかった。
+  - 他のcamelCase→snake_caseへの変換フィールド(`userId`→`user_id`等)は「新しいキーを設定→古いキーを削除」というパターンだが、`password`はキー名の変更が不要なため、このパターンをそのままコピーしたことで自分自身を削除してしまっていたとみられる。
+  - 影響がこれまで表面化しなかった理由: `addStaff`/`updateStaff`はこの関数呼び出しの直前に`localStorage.setItem('staff_password_' + id, ...)`で平文パスワードを別途キャッシュしており、読み込み時(`mapStaff`)もこのローカルキャッシュを優先して使う(`decryptData(localPassword || row.password)`)ため、同一ブラウザ内で動作確認する限りは問題が隠れていた。実際のSupabase接続環境で別のブラウザ・端末からログインしようとすると、DBの`password`列が空のため認証に失敗する。
+  - 修正: 誤って追加されていた `delete row.password;` を削除。Node上でシミュレートし、修正前は`password`フィールドが行データから消滅すること、修正後は暗号化→復号の往復が正しく元のパスワードに一致することを確認済み。
+  - 発見日: 2026-09-08(バグ調査中)。
+
 ### 🐛 発見・修正済みのバグ(2026-08-25)
 - [x] **経費申請の承認時、「車移動(car)」区分が「宿泊費」と誤表示される問題を修正**
   - `handleApproveReceipt` 内の承認完了メッセージ・システムログで使っていたカテゴリ名の2分岐(`transport`/それ以外)を、`accommodation`/`car`を区別する3分岐に修正 ([src/pages/MessagePage.tsx](src/pages/MessagePage.tsx))。申請時(`handleSendReceipt`)は元々正しい3分岐だった。
