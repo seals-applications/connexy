@@ -13,8 +13,8 @@
 - [ ] 経費申請まわり5ハンドラ(送信・承認・差戻し・手配・写真送信)に重複している「相手企業名の解決」「カテゴリラベルの決定」ロジックを共通関数に切り出す。PR #7の車移動費バグの遠因。
 
 **コード品質**
-- [ ] 自作CSVパーサー(`parseCsvLine`)をライブラリ(papaparse等)に置き換える。
-- [ ] デバッグ用ログインパネル・テストアカウント機能を、ビルド時フラグ(`import.meta.env.DEV`等)で本番ビルドから機械的に排除する。
+- [x] 自作CSVパーサー(`parseCsvLine`)をライブラリ(papaparse)に置き換える。`src/pages/SearchPage.tsx`の`handleCsvFileUpload`をPapa.parseベースに書き換え、`parseCsvLine`は削除。クォート・カンマ・CRLFの扱いをNode上で再検証済み。
+- [x] デバッグ用ログインパネル・テストアカウント機能を、ビルド時フラグ(`import.meta.env.DEV`)で本番ビルドから機械的に排除する。`src/pages/LoginPage.tsx`のパネル全体を`{import.meta.env.DEV && (...)}`でラップ。`npm run build`後、`dist/assets/*.js`に「デバッグ開発用」の文字列が一切含まれないことを確認済み(開発サーバーでは従来通り表示されることも確認済み)。
 
 **UX・運用性**
 - [ ] 未読バッジの2秒間隔ポーリングをイベント駆動(Supabase Realtimeの購読等)に変える。

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { setOptions, importLibrary } from '@googlemaps/js-api-loader';
 import { MarkerClusterer } from '@googlemaps/markerclusterer';
+import Papa from 'papaparse';
 import { api } from '../data/mockDb';
 import type { Job, Talent, Staff, Training, User, ContractTask } from '../data/mockDb';
 import { CalendarPicker } from '../components/CalendarPicker';
@@ -15,34 +16,6 @@ export const getStaffGender = (name: string): '男性' | '女性' => {
   const firstName = name.split(/[\s　]+/)[1] || name;
   const isFemale = femaleNames.includes(firstName) || firstName.endsWith('子') || firstName.endsWith('美');
   return isFemale ? '女性' : '男性';
-};
-
-// Splits one CSV line into fields, honoring double-quoted fields (with "" as an escaped quote)
-// so a comma inside a quoted description/experience field doesn't shift the remaining columns.
-const parseCsvLine = (line: string): string[] => {
-  const result: string[] = [];
-  let cur = '';
-  let inQuotes = false;
-  for (let i = 0; i < line.length; i++) {
-    const ch = line[i];
-    if (inQuotes) {
-      if (ch === '"') {
-        if (line[i + 1] === '"') { cur += '"'; i++; }
-        else { inQuotes = false; }
-      } else {
-        cur += ch;
-      }
-    } else if (ch === '"') {
-      inQuotes = true;
-    } else if (ch === ',') {
-      result.push(cur);
-      cur = '';
-    } else {
-      cur += ch;
-    }
-  }
-  result.push(cur);
-  return result;
 };
 
 export function SearchPage() {
@@ -676,27 +649,27 @@ export function SearchPage() {
     const reader = new FileReader();
     reader.onload = async (evt) => {
       const text = evt.target?.result as string;
-      const lines = text.split('\n');
-      if (lines.length <= 1) {
+      // papaparse handles quoted fields (incl. embedded commas/newlines) and CRLF line endings
+      // correctly, unlike a plain text.split('\n') + split(',').
+      const rows = Papa.parse<string[]>(text, { skipEmptyLines: true }).data;
+      if (rows.length <= 1) {
         alert('CSVデータが空かヘッダーのみです');
         return;
       }
-      
+
       try {
         setIsRefreshing(true);
         const currentUser = await api.getCurrentUser();
         if (!currentUser) throw new Error('未ログイン');
-        
+
         let parsedData: any[] = [];
         let errors: { rowIndex: number; message: string }[] = [];
         // 空行を除いた「表示行番号」。parsedDataへの追加ごとに1つずつ振るため、
         // errorsのrowIndexとプレビュー表内のインデックス(idx+1)が常に一致する
         let rowIndex = 0;
 
-        for (let i = 1; i < lines.length; i++) {
-          const line = lines[i].trim();
-          if (!line) continue;
-          const cols = parseCsvLine(line);
+        for (let i = 1; i < rows.length; i++) {
+          const cols = rows[i];
           rowIndex++;
 
           if (mode === 'job') {
