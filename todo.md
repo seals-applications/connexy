@@ -86,6 +86,13 @@
   - 修正: `relatedJob`が無い場合は、チャット作成時に記録される`relatedTask.clientName`と`currentUser.name`を比較するフォールバックに置き換え(スカウト開始時に`clientName = currentUser.name`として保存されているため)。案件ID・企業IDに基づくより堅牢な判定にするには、`saveContractTaskChat`側で`client_id`/`agency_id`を全チャット作成経路で保存するスキーマ変更が必要(今回は名前ベースの比較による最小修正に留めた)。
   - 発見日: 2026-09-08(バグ調査中)。
 
+- [x] **候補者への内定オファー送信時、`saveContractTaskChat`に渡す案件名・相手企業名の引数が入れ違っていた問題を修正**
+  - 発生箇所: [src/pages/ManagementPage.tsx](src/pages/ManagementPage.tsx) `handleConfirmOrderSubmit`。
+  - `saveContractTaskChat(taskId, messages, jobTitle, clientName, workerName, ...)` の呼び出しで、`jobTitle`引数に案件タイトル(`activeScreeningJob.title`)ではなく候補者企業名(`confirmingCandidate.company.name`)を渡し、`workerName`引数には候補者企業名の代わりに発注企業自身の名前(`currentUser?.name`、`clientName`と同じ値)を渡していた。
+  - 影響: このチャットの`jobTitle`が案件タイトルの代わりに候補者企業名になってしまい(チャット一覧のタイトル表示等に波及)、`workerName`が発注企業自身の名前になるため、スタッフ名との突合(出勤ログ・CSV出力での案件コード解決等、`t.workerName`を参照する箇所)が正しく機能しなくなる。
+  - 修正: `jobTitle`に`activeScreeningJob.title`、`workerName`に`confirmingCandidate.company.name`を渡すよう訂正。
+  - 発見日: 2026-09-08(バグ調査中)。
+
 - [x] **`unmapStaff`が、暗号化したスタッフのパスワードを保存直前に削除してしまい、Supabase本番環境ではスタッフのパスワードが一切永続化されない問題を修正**
   - 発生箇所: [src/data/mockDb.ts](src/data/mockDb.ts) `unmapStaff`。`row.password = encryptData(staff.password); delete row.password;` という実装になっており、暗号化した値をセットした直後に同じキーを削除していたため、`addStaff`/`updateStaff`がSupabaseへ送信する行データに`password`が一切含まれていなかった。
   - 他のcamelCase→snake_caseへの変換フィールド(`userId`→`user_id`等)は「新しいキーを設定→古いキーを削除」というパターンだが、`password`はキー名の変更が不要なため、このパターンをそのままコピーしたことで自分自身を削除してしまっていたとみられる。

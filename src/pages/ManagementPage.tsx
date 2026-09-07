@@ -703,9 +703,9 @@ export function ManagementPage() {
       await api.saveContractTaskChat(
         channelId,
         newMessages,
+        activeScreeningJob.title,
+        currentUser?.name || '',
         confirmingCandidate.company.name,
-        currentUser?.name || '',
-        currentUser?.name || '',
         [],
         {}
       );
