@@ -550,9 +550,11 @@ export function MessagePage() {
   const relatedJob = useMemo(() => {
     if (!activeChat || !chatTasks) return null;
     const task = chatTasks.find(t => t.id === activeChat.id);
-    const jobIds = (task?.evaluations as any)?.appliedJobIds || [];
-    if (jobIds.length === 0) return null;
-    return jobs.find(j => j.id === jobIds[0]) || null;
+    const evals = (task?.evaluations as any) || {};
+    // 応募経由(appliedJobIds)・内定オファー経由(offeredJobId)のどちらでも解決できるようにする
+    const jobId = evals.appliedJobIds?.[0] || evals.offeredJobId;
+    if (!jobId) return null;
+    return jobs.find(j => j.id === jobId) || null;
   }, [activeChat, chatTasks, jobs]);
 
   const relatedTask = useMemo(() => {
@@ -888,14 +890,15 @@ export function MessagePage() {
     if (!task) return;
 
     try {
-      const jobId = (task.evaluations as any)?.appliedJobIds?.[0];
+      // 応募経由(appliedJobIds)・内定オファー経由(offeredJobId)のどちらでも解決できるようにする
+      const jobId = (task.evaluations as any)?.appliedJobIds?.[0] || (task.evaluations as any)?.offeredJobId;
       const job = jobs.find(j => j.id === jobId);
       if (!job) {
         alert('対象の案件が見つかりません。');
         return;
       }
 
-      const staffId = (task.evaluations as any)?.appliedJobStaffIds?.[jobId];
+      const staffId = (task.evaluations as any)?.appliedJobStaffIds?.[jobId] || (task.evaluations as any)?.offeredStaffId;
       const staff = allStaffs.find(s => s.id === staffId);
 
       const now = new Date();
@@ -1058,7 +1061,8 @@ export function MessagePage() {
     if (!skipConfirm && !confirm('本当にこの内定を辞退しますか？')) return;
 
     try {
-      const jobId = (task.evaluations as any)?.appliedJobIds?.[0];
+      // 応募経由(appliedJobIds)・内定オファー経由(offeredJobId)のどちらでも解決できるようにする
+      const jobId = (task.evaluations as any)?.appliedJobIds?.[0] || (task.evaluations as any)?.offeredJobId;
       const job = jobs.find(j => j.id === jobId);
 
       const now = new Date();
