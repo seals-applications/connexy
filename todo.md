@@ -79,6 +79,13 @@
 ## ✅ 完了済みのタスク
 
 ### 🐛 発見・修正済みのバグ(2026-09-08)
+- [x] **案件と紐付かないチャット(人材スカウト等)で、`isClient`(発注企業側かどうかの判定)がデモ企業ID `'sigma'` にハードコードされていた問題を修正**
+  - 発生箇所: [src/pages/MessagePage.tsx:582-588](src/pages/MessagePage.tsx) `isClient`。
+  - `relatedJob`(チャットに紐づく案件)が解決できる場合は正しく`job.authorId`との比較で判定していたが、`relatedJob`が無い場合のフォールバックが `currentUser.id === 'sigma'` という特定のデモアカウントIDの決め打ちになっていた。
+  - `relatedJob`は「案件応募」経由のチャットでのみ設定され、人材への「メッセージを送る」(スカウト)経由のチャット(`handleStartTalentChat`)や、一部のグループチャットでは常に`null`になるため、**sigma以外の全企業にとって、案件と紐付かないチャットでは常に`isClient`が`false`(発注側ではないと誤判定)になり、逆にsigmaでログインしている場合は本来発注側でなくても`isClient`が`true`になってしまう**、頻繁に発生しうるバグだった。`isClient`は「条件を編集」ボタン表示、経費申請の送信/承認可否など複数のUI許可判定に使われている。
+  - 修正: `relatedJob`が無い場合は、チャット作成時に記録される`relatedTask.clientName`と`currentUser.name`を比較するフォールバックに置き換え(スカウト開始時に`clientName = currentUser.name`として保存されているため)。案件ID・企業IDに基づくより堅牢な判定にするには、`saveContractTaskChat`側で`client_id`/`agency_id`を全チャット作成経路で保存するスキーマ変更が必要(今回は名前ベースの比較による最小修正に留めた)。
+  - 発見日: 2026-09-08(バグ調査中)。
+
 - [x] **`unmapStaff`が、暗号化したスタッフのパスワードを保存直前に削除してしまい、Supabase本番環境ではスタッフのパスワードが一切永続化されない問題を修正**
   - 発生箇所: [src/data/mockDb.ts](src/data/mockDb.ts) `unmapStaff`。`row.password = encryptData(staff.password); delete row.password;` という実装になっており、暗号化した値をセットした直後に同じキーを削除していたため、`addStaff`/`updateStaff`がSupabaseへ送信する行データに`password`が一切含まれていなかった。
   - 他のcamelCase→snake_caseへの変換フィールド(`userId`→`user_id`等)は「新しいキーを設定→古いキーを削除」というパターンだが、`password`はキー名の変更が不要なため、このパターンをそのままコピーしたことで自分自身を削除してしまっていたとみられる。

@@ -584,8 +584,13 @@ export function MessagePage() {
     if (relatedJob) {
       return currentUser.id === relatedJob.authorId || currentUser.id === (relatedJob as any).companyId;
     }
-    return currentUser.id === 'sigma';
-  }, [currentUser, relatedJob]);
+    // No linked job (e.g. a talent-scout-initiated chat) — fall back to the
+    // client name recorded when the chat/task was created.
+    if (relatedTask) {
+      return currentUser.name === relatedTask.clientName;
+    }
+    return false;
+  }, [currentUser, relatedJob, relatedTask]);
 
   const clientName = useMemo(() => {
     if (!activeChat || !chatTasks) return '元請け企業';
