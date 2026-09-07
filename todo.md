@@ -79,7 +79,11 @@
 ## ✅ 完了済みのタスク
 
 ### 🐛 発見・修正済みのバグ(2026-09-08)
-- [x] **案件と紐付かないチャット(人材スカウト等)で、`isClient`(発注企業側かどうかの判定)がデモ企業ID `'sigma'` にハードコードされていた問題を修正**
+- [x] **「確定実績・請求データ一括CSV出力」のステータス表示が、`completed`/`working`以外すべて「稼働準備中」と誤表示される問題を修正**
+  - 発生箇所: [src/pages/ManagementPage.tsx](src/pages/ManagementPage.tsx) `handleBulkExportCSV`。
+  - ステータス表示が `completed ? '完了' : working ? '進行中' : '稼働準備中'` という3択のみで、`report_pending`(報告待ち)・`disputed`(異議あり)・`applying`(選考中)・`offered`(内定通知中)・`rejected`/`declined`(不成立)といった実際に発生しうる他のステータスがすべて「稼働準備中」に丸め込まれていた。特に不採用・辞退案件まで「稼働準備中」と表示されるのは実績データとして誤解を招く。
+  - 修正: 実際に存在する全ステータスに対応するラベルを追加。
+  - 発見日: 2026-09-08(バグ調査中)。
   - 発生箇所: [src/pages/MessagePage.tsx:582-588](src/pages/MessagePage.tsx) `isClient`。
   - `relatedJob`(チャットに紐づく案件)が解決できる場合は正しく`job.authorId`との比較で判定していたが、`relatedJob`が無い場合のフォールバックが `currentUser.id === 'sigma'` という特定のデモアカウントIDの決め打ちになっていた。
   - `relatedJob`は「案件応募」経由のチャットでのみ設定され、人材への「メッセージを送る」(スカウト)経由のチャット(`handleStartTalentChat`)や、一部のグループチャットでは常に`null`になるため、**sigma以外の全企業にとって、案件と紐付かないチャットでは常に`isClient`が`false`(発注側ではないと誤判定)になり、逆にsigmaでログインしている場合は本来発注側でなくても`isClient`が`true`になってしまう**、頻繁に発生しうるバグだった。`isClient`は「条件を編集」ボタン表示、経費申請の送信/承認可否など複数のUI許可判定に使われている。

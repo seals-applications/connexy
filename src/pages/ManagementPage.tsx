@@ -1048,7 +1048,13 @@ export function ManagementPage() {
         t.agency_id || '',
         `"${t.jobTitle || '案件'}"`,
         t.price,
-        t.status === 'completed' ? '完了' : t.status === 'working' ? '進行中' : '稼働準備中',
+        t.status === 'completed' ? '完了' :
+        t.status === 'working' ? '進行中' :
+        t.status === 'report_pending' ? '報告待ち' :
+        t.status === 'disputed' ? '異議あり' :
+        t.status === 'offered' ? '内定通知中' :
+        t.status === 'applying' ? '選考中' :
+        t.status === 'rejected' || t.status === 'declined' ? '不成立' : '稼働準備中',
         t.date || new Date().toLocaleDateString()
       ]);
       
