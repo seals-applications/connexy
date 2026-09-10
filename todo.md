@@ -10,7 +10,7 @@
 **設計・アーキテクチャ**
 - [ ] チャット⇔案件の紐付けを`appliedJobIds`/`offeredJobId`の二重管理から単一の構造(例: `linkedJobId`)に統一する。PR #14/#15で修正した重大バグの根本原因。
 - [ ] `ContractTask`型が「チャットスレッド」「応募」「オファー」「実契約」の4つの異なる概念を1レコードで兼務しているのを分離する。上記の根本原因であり、`status`がチャット単位になってしまう未修正バグ(下記参照)の原因でもある。
-- [ ] 経費申請まわり5ハンドラ(送信・承認・差戻し・手配・写真送信)に重複している「相手企業名の解決」「カテゴリラベルの決定」ロジックを共通関数に切り出す。PR #7の車移動費バグの遠因。
+- [x] 経費申請まわりの重複ロジックを共通化(PR #29)。`src/utils/chatParties.ts` の `getOpponentCompanyName()` を送信・承認・差戻し・手配・写真送信の5ハンドラで使用(チャットID分割の重複を集約)。`src/utils/expenseHelpers.ts` の `getExpenseCategoryLabel()` でカテゴリラベルを統一(「公共交通機関/交通費」「車移動/車移動費」の表記ゆれを「交通費」「車移動費」に統一)。
 
 **コード品質**
 - [x] 自作CSVパーサー(`parseCsvLine`)をライブラリ(papaparse)に置き換える。`src/pages/SearchPage.tsx`の`handleCsvFileUpload`をPapa.parseベースに書き換え、`parseCsvLine`は削除。クォート・カンマ・CRLFの扱いをNode上で再検証済み。
