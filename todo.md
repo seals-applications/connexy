@@ -102,6 +102,15 @@
 - [x] 探すリスト上部の「現在の検索条件を保存」バー(プリセット保存/呼び出し)を撤去。フィルターシート内の `saveFilters` / `loadFilters` ボタン・`newMatchesCount` バッジも削除。「フィルター未設定 / 設定時はチップ表示」の行は据え置き。
 - [x] 「緊急募集の案件を表示する」チェックを、リスト上部から「絞り込み・ソート」シート内(案件モードの並び替え直下)へ移動。state・ロジックは不変。
 - [x] (PR #51)緊急案件の**表示/非表示トグルを廃止**。緊急案件は常に一覧・地図に表示し、並び順にかかわらず常に最上部。`includeUrgent` state・`matchesUrgent` フィルタ・シート内チェックを削除。理由: 一度OFFにすると復帰操作をしない限り緊急案件が見えなくなり、見落としリスクがあったため。
+- [x] (PR #52)**絞り込み・ソートシートのリニューアル**。
+  - キーワード欄を大型化(高さ48px)。即時反映(`tempKeyword` 廃止、`searchKeyword` 直バインド)。
+  - 並び替えをアコーディオン廃止・縦リスト単一選択に。案件: 新着/応募締切が近い/開催日が近い/単価高い/単価安い/現在地から近い。人材: 単価安い/単価高い/経験が長い/研修受講数が多い/拠点が近い。「近い順」は位置情報許可時のみ有効(`navigator.geolocation`、`userLocation`)。
+  - 絞り込みは全項目を常時表示。見出しに選択数バッジ(`.fg-count`)。
+  - 日給下限・応募締切・最低経験年数は数値入力をやめクイック選択チップに。諸経費あり/お気に入りのみはトグル。
+  - フッターは「◯件/◯名を表示」(合致件数ライブ表示)＝閉じるだけ。
+  - **都道府県フィルタ**(`src/utils/prefectures.ts`: `PREFECTURE_REGIONS`(8地域47件)/`ALL_PREFECTURES`/`getPrefecture`/`matchesPrefectureFilter`)。地域別・複数選択・検索付きのサブシート(`isPrefPickerOpen`)。案件は `locationName`、人材は `baseLocation` の先頭一致。`filterPrefectures` は案件・人材で共通。
+  - `parseExperienceYears` / `countRealTrainings` ヘルパーを新設。
+  - `activeFiltersCount` / `clearAllFilters` を新フィルタに対応。リスト上部チップに都道府県・諸経費・経験・お気に入りを追加。
 
 ### 🐛 発見済みバグ(未修正・要設計判断)
 

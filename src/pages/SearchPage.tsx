@@ -8,10 +8,25 @@ import type { Job, Talent, Staff, Training, User, ContractTask } from '../data/m
 import { CalendarPicker } from '../components/CalendarPicker';
 import { formatJobDates } from '../utils/dateFormatter';
 import { generateMaskedLocation, extractArea, getCommonAreaName } from '../utils/maskingUtils';
-import { isWithinAreaFilter } from '../utils/areaFilter';
+import { isWithinAreaFilter, distanceKm } from '../utils/areaFilter';
 import { getLinkedJobIds } from '../utils/jobStates';
+import { PREFECTURE_REGIONS, ALL_PREFECTURES, matchesPrefectureFilter } from '../utils/prefectures';
 import Autocomplete from 'react-google-autocomplete';
 import { useSessionState } from '../hooks/useSessionState';
+
+// 「3年以上」「5年」「未経験」などの自由記述から経験年数(概算)を取り出す。
+export const parseExperienceYears = (exp?: string | null): number => {
+  if (!exp) return 0;
+  if (exp.includes('未経験')) return 0;
+  const m = exp.match(/(\d+)/);
+  return m ? Number(m[1]) : 0;
+};
+
+// ATTENDANCE_LOG_ / CHECKIN_STATUS_ を除いた「研修」受講数。
+export const countRealTrainings = (list?: string[] | null): number => {
+  if (!Array.isArray(list)) return 0;
+  return list.filter((t) => !t.startsWith('ATTENDANCE_LOG_') && !t.startsWith('CHECKIN_STATUS_')).length;
+};
 
 export const getStaffGender = (name: string): '男性' | '女性' => {
   const femaleNames = ['舞', '優花', '陽子', '沙織', '美咲', '愛', '結衣', '莉子', '咲良', '葵', 'さくら', 'つばさ'];
@@ -155,30 +170,47 @@ export function SearchPage() {
 
   // フィルター・ソート用State
   const [isFilterSheetOpen, setIsFilterSheetOpen] = useState(false);
+  const [isPrefPickerOpen, setIsPrefPickerOpen] = useState(false);
+  const [prefPickerQuery, setPrefPickerQuery] = useState('');
   const [searchKeyword, setSearchKeyword] = useSessionState<string>('connexy_searchKeyword', '');
-  const [tempKeyword, setTempKeyword] = useState<string>(searchKeyword);
-  
+
+  // 「現在地から近い順」用の位置情報(取得できなければ null)
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+
+  // 都道府県フィルタ(案件・人材で共通)
+  const [filterPrefectures, setFilterPrefectures] = useSessionState<string[]>('connexy_filterPrefectures', []);
+
   // 案件用フィルター & ソート
-  const [jobSortOrder, setJobSortOrder] = useSessionState<'newest' | 'priceHigh' | 'dateNear'>('connexy_jobSortOrder', 'newest');
+  const [jobSortOrder, setJobSortOrder] = useSessionState<'newest' | 'priceHigh' | 'priceLow' | 'deadlineNear' | 'dateNear' | 'nearest'>('connexy_jobSortOrder', 'newest');
   const [filterJobRoles, setFilterJobRoles] = useSessionState<string[]>('connexy_filterJobRoles', []);
   const [filterCarriers, setFilterCarriers] = useSessionState<string[]>('connexy_filterCarriers', []);
   const [filterChannels, setFilterChannels] = useSessionState<string[]>('connexy_filterChannels', []);
   const [filterMinPrice, setFilterMinPrice] = useSessionState<number>('connexy_filterMinPrice', 0);
   const [filterDeadlineDays, setFilterDeadlineDays] = useSessionState<number | null>('connexy_filterDeadlineDays', null);
+  const [filterHasExpenses, setFilterHasExpenses] = useSessionState<boolean>('connexy_filterHasExpenses', false);
   const [showFavoritesOnly, setShowFavoritesOnly] = useSessionState<boolean>('connexy_showFavoritesOnly', false);
 
-  
+
   // 人材用フィルター & ソート
-  const [talentSortOrder, setTalentSortOrder] = useSessionState<'priceLow' | 'priceHigh'>('connexy_talentSortOrder', 'priceLow');
+  const [talentSortOrder, setTalentSortOrder] = useSessionState<'priceLow' | 'priceHigh' | 'expLong' | 'trainingsMany' | 'nearest'>('connexy_talentSortOrder', 'priceLow');
   const [filterTalentSkills, setFilterTalentSkills] = useSessionState<string[]>('connexy_filterTalentSkills', []);
   const [filterTalentCarriers, setFilterTalentCarriers] = useSessionState<string[]>('connexy_filterTalentCarriers', []);
   const [filterTalentTrainings, setFilterTalentTrainings] = useSessionState<string[]>('connexy_filterTalentTrainings', []);
+  const [filterMinExperience, setFilterMinExperience] = useSessionState<number>('connexy_filterMinExperience', 0);
 
+  const requestLocation = () => {
+    if (!navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(
+      (pos) => setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      () => setUserLocation(null),
+      { enableHighAccuracy: false, timeout: 8000, maximumAge: 600000 },
+    );
+  };
+
+  // 位置情報は初回に一度だけ取得(未許可・失敗なら「近い順」は無効表示)
   useEffect(() => {
-    if (isFilterSheetOpen) {
-      setTempKeyword(searchKeyword);
-    }
-  }, [isFilterSheetOpen, searchKeyword]);
+    requestLocation();
+  }, []);
 
   const [isSamePriceAllDates, setIsSamePriceAllDates] = useState(true);
 
@@ -1045,6 +1077,14 @@ export function SearchPage() {
       if (filterTalentTrainings.length > 0 && !(talent.completedTrainings && filterTalentTrainings.every(tid => talent.completedTrainings?.includes(tid)))) {
         return false;
       }
+      // 3.1 都道府県(拠点)
+      if (!matchesPrefectureFilter(filterPrefectures, talent.baseLocation || talent.locationName)) {
+        return false;
+      }
+      // 3.2 最低経験年数
+      if (filterMinExperience > 0 && parseExperienceYears(talent.experience) < filterMinExperience) {
+        return false;
+      }
       // 4. キーワード検索
       if (searchKeyword.trim() !== '') {
         const kw = searchKeyword.toLowerCase();
@@ -1068,16 +1108,23 @@ export function SearchPage() {
     });
 
     // ソート処理
+    const distFor = (t: Talent) =>
+      userLocation && typeof t.lat === 'number' && typeof t.lng === 'number' && t.lat && t.lng
+        ? distanceKm(userLocation.lat, userLocation.lng, t.lat, t.lng)
+        : Number.POSITIVE_INFINITY;
     list.sort((a, b) => {
-      if (talentSortOrder === 'priceLow') {
-        return a.price - b.price;
-      } else {
-        return b.price - a.price;
+      switch (talentSortOrder) {
+        case 'priceHigh': return b.price - a.price;
+        case 'expLong': return parseExperienceYears(b.experience) - parseExperienceYears(a.experience);
+        case 'trainingsMany': return countRealTrainings(b.completedTrainings) - countRealTrainings(a.completedTrainings);
+        case 'nearest': return distFor(a) - distFor(b);
+        case 'priceLow':
+        default: return a.price - b.price;
       }
     });
 
     return list;
-  }, [talents, filterTalentSkills, filterTalentCarriers, filterTalentTrainings, talentSortOrder, searchKeyword, showFavoritesOnly, currentUser]);
+  }, [talents, filterTalentSkills, filterTalentCarriers, filterTalentTrainings, filterPrefectures, filterMinExperience, talentSortOrder, searchKeyword, showFavoritesOnly, currentUser, userLocation]);
 
   // 人材を「市町村・区」エリア単位にグループ化し、正確な位置を丸める（プライバシー保護）
   const groupedTalents = useMemo(() => {
@@ -1156,6 +1203,18 @@ export function SearchPage() {
         return false;
       }
 
+      // 6.1 都道府県
+      if (!matchesPrefectureFilter(filterPrefectures, job.locationName)) {
+        return false;
+      }
+
+      // 6.2 諸経費あり
+      if (filterHasExpenses) {
+        const ex = job.expenses;
+        const hasExpenses = !!ex && (ex.transportType !== 'none' || ex.accommodationType !== 'none');
+        if (!hasExpenses) return false;
+      }
+
       // 7. 日給下限
       if (job.price < filterMinPrice) {
         return false;
@@ -1201,18 +1260,35 @@ export function SearchPage() {
 
       return matchesArea && matchesLimited;
     });
-  }, [jobs, filterArea, currentUser, filterJobRoles, filterCarriers, filterChannels, filterMinPrice, filterDeadlineDays, searchKeyword, appliedJobIds, showFavoritesOnly]);
+  }, [jobs, filterArea, currentUser, filterJobRoles, filterCarriers, filterChannels, filterMinPrice, filterDeadlineDays, filterPrefectures, filterHasExpenses, searchKeyword, appliedJobIds, showFavoritesOnly]);
 
   const sortedJobs = useMemo(() => {
     let list = [...filteredJobs];
+    const deadlineOf = (j: Job) => {
+      const t = j.applicationDeadline ? new Date(j.applicationDeadline.replace(/\//g, '-')).getTime() : NaN;
+      return isNaN(t) ? Number.POSITIVE_INFINITY : t;
+    };
+    const distOf = (j: Job) => {
+      const lat = j.exactLat ?? j.lat;
+      const lng = j.exactLng ?? j.lng;
+      return userLocation && typeof lat === 'number' && typeof lng === 'number' && lat && lng
+        ? distanceKm(userLocation.lat, userLocation.lng, lat, lng)
+        : Number.POSITIVE_INFINITY;
+    };
     if (jobSortOrder === 'priceHigh') {
       list.sort((a, b) => b.price - a.price);
+    } else if (jobSortOrder === 'priceLow') {
+      list.sort((a, b) => a.price - b.price);
+    } else if (jobSortOrder === 'deadlineNear') {
+      list.sort((a, b) => deadlineOf(a) - deadlineOf(b));
     } else if (jobSortOrder === 'dateNear') {
       list.sort((a, b) => {
         const dateA = a.eventDate || '9999-12-31';
         const dateB = b.eventDate || '9999-12-31';
         return dateA.localeCompare(dateB);
       });
+    } else if (jobSortOrder === 'nearest') {
+      list.sort((a, b) => distOf(a) - distOf(b));
     } else {
       // 'newest' (新着順：モックのため配列の逆順)
       list.reverse();
@@ -1222,7 +1298,7 @@ export function SearchPage() {
     const urgents = list.filter(j => j.isUrgent);
     const normals = list.filter(j => !j.isUrgent);
     return [...urgents, ...normals];
-  }, [filteredJobs, jobSortOrder]);
+  }, [filteredJobs, jobSortOrder, userLocation]);
 
   const filteredTalentGroups = useMemo(() => {
     return groupedTalents.filter(group =>
@@ -1534,21 +1610,25 @@ export function SearchPage() {
 
   const activeFiltersCount = useMemo(() => {
     let count = 0;
+    count += filterPrefectures.length;
     if (mode === 'job') {
       count += filterJobRoles.length;
       count += filterCarriers.length;
       count += filterChannels.length;
       if (filterMinPrice > 0) count += 1;
       if (filterDeadlineDays !== null) count += 1;
+      if (filterHasExpenses) count += 1;
       if (searchKeyword.trim() !== '') count += 1;
     } else {
       count += filterTalentSkills.length;
       count += filterTalentCarriers.length;
       count += filterTalentTrainings.length;
+      if (filterMinExperience > 0) count += 1;
       if (searchKeyword.trim() !== '') count += 1;
     }
+    if (showFavoritesOnly) count += 1;
     return count;
-  }, [mode, filterJobRoles, filterCarriers, filterChannels, filterMinPrice, filterDeadlineDays, filterTalentSkills, filterTalentCarriers, filterTalentTrainings, searchKeyword]);
+  }, [mode, filterPrefectures, filterJobRoles, filterCarriers, filterChannels, filterMinPrice, filterDeadlineDays, filterHasExpenses, filterTalentSkills, filterTalentCarriers, filterTalentTrainings, filterMinExperience, showFavoritesOnly, searchKeyword]);
 
   const hasActiveFilters = useMemo(() => {
     if (mode === 'job') {
@@ -1560,7 +1640,8 @@ export function SearchPage() {
 
   const clearAllFilters = () => {
     setSearchKeyword('');
-    setTempKeyword('');
+    setFilterPrefectures([]);
+    setShowFavoritesOnly(false);
     if (mode === 'job') {
       setJobSortOrder('newest');
       setFilterJobRoles([]);
@@ -1568,13 +1649,17 @@ export function SearchPage() {
       setFilterChannels([]);
       setFilterMinPrice(0);
       setFilterDeadlineDays(null);
+      setFilterHasExpenses(false);
     } else {
       setTalentSortOrder('priceLow');
       setFilterTalentSkills([]);
       setFilterTalentCarriers([]);
       setFilterTalentTrainings([]);
+      setFilterMinExperience(0);
     }
   };
+
+  const resultCount = mode === 'job' ? sortedJobs.length : filteredTalents.length;
 
 
   const handleJobApplication = async () => {
@@ -1981,15 +2066,28 @@ export function SearchPage() {
                 <span style={{ fontSize: '13px', color: 'var(--text-sub)' }}>フィルター未設定</span>
               ) : (
                 <>
+                  {filterPrefectures.map(pref => (
+                    <div key={`pref-${pref}`} className="filter-chip">
+                      <span>{pref}</span>
+                      <button onClick={() => setFilterPrefectures(prev => prev.filter(x => x !== pref))}>
+                        <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>close</span>
+                      </button>
+                    </div>
+                  ))}
+                  {showFavoritesOnly && (
+                    <div className="filter-chip">
+                      <span>お気に入りのみ</span>
+                      <button onClick={() => setShowFavoritesOnly(false)}>
+                        <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>close</span>
+                      </button>
+                    </div>
+                  )}
                   {mode === 'job' ? (
                     <>
                       {searchKeyword.trim() !== '' && (
                         <div className="filter-chip">
                           <span>キーワード: "{searchKeyword}"</span>
-                          <button onClick={() => {
-                            setSearchKeyword('');
-                            setTempKeyword('');
-                          }}>
+                          <button onClick={() => setSearchKeyword('')}>
                             <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>close</span>
                           </button>
                         </div>
@@ -2034,16 +2132,21 @@ export function SearchPage() {
                           </button>
                         </div>
                       )}
+                      {filterHasExpenses && (
+                        <div className="filter-chip">
+                          <span>諸経費あり</span>
+                          <button onClick={() => setFilterHasExpenses(false)}>
+                            <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>close</span>
+                          </button>
+                        </div>
+                      )}
                     </>
                   ) : (
                     <>
                       {searchKeyword.trim() !== '' && (
                         <div className="filter-chip">
                           <span>キーワード: "{searchKeyword}"</span>
-                          <button onClick={() => {
-                            setSearchKeyword('');
-                            setTempKeyword('');
-                          }}>
+                          <button onClick={() => setSearchKeyword('')}>
                             <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>close</span>
                           </button>
                         </div>
@@ -2075,6 +2178,14 @@ export function SearchPage() {
                           </div>
                         );
                       })}
+                      {filterMinExperience > 0 && (
+                        <div className="filter-chip">
+                          <span>経験{filterMinExperience}年以上</span>
+                          <button onClick={() => setFilterMinExperience(0)}>
+                            <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>close</span>
+                          </button>
+                        </div>
+                      )}
                     </>
                   )}
                   <button 
@@ -3393,82 +3504,130 @@ export function SearchPage() {
           </div>
           
           <div className="filter-sheet-body">
-            {/* キーワード・地名検索 (共通) */}
+            {/* キーワード・地名検索 (共通・大型) */}
             <div className="filter-group">
               <span className="filter-group-title">キーワード・地名で検索</span>
-              <div className="search-bar" style={{ background: 'var(--bg-gray)', border: '1px solid var(--border-color)', width: '100%' }}>
-                <span className="material-symbols-outlined icon">search</span>
-                <input 
-                  type="text" 
-                  value={tempKeyword} 
-                  onChange={e => setTempKeyword(e.target.value)} 
-                  placeholder="キーワードやエリア名を入力"
+              <div className="filter-kw-big">
+                <span className="material-symbols-outlined">search</span>
+                <input
+                  type="text"
+                  value={searchKeyword}
+                  onChange={e => setSearchKeyword(e.target.value)}
+                  placeholder={mode === 'job' ? '職種・エリア・発注企業名で検索' : '名前・スキル・エリアで検索'}
                 />
+                {searchKeyword && (
+                  <button type="button" aria-label="キーワードをクリア" onClick={() => setSearchKeyword('')}>
+                    <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>close</span>
+                  </button>
+                )}
               </div>
+            </div>
+
+            {/* 並び替え */}
+            <div className="filter-group">
+              <span className="filter-group-title">並び替え</span>
+              <div className="filter-sort-list">
+                {((mode === 'job'
+                  ? [
+                      { v: 'newest', label: '新着順' },
+                      { v: 'deadlineNear', label: '応募締切が近い順' },
+                      { v: 'dateNear', label: '開催日が近い順' },
+                      { v: 'priceHigh', label: '単価が高い順' },
+                      { v: 'priceLow', label: '単価が安い順' },
+                      { v: 'nearest', label: '現在地から近い順', needsLoc: true },
+                    ]
+                  : [
+                      { v: 'priceLow', label: '単価が安い順' },
+                      { v: 'priceHigh', label: '単価が高い順' },
+                      { v: 'expLong', label: '経験が長い順' },
+                      { v: 'trainingsMany', label: '研修受講数が多い順' },
+                      { v: 'nearest', label: '拠点が近い順', needsLoc: true },
+                    ]
+                ) as { v: string; label: string; needsLoc?: boolean }[]).map(opt => {
+                  const current = mode === 'job' ? jobSortOrder : talentSortOrder;
+                  const locked = !!opt.needsLoc && !userLocation;
+                  const active = current === opt.v;
+                  return (
+                    <label
+                      key={opt.v}
+                      className={`filter-sort-row ${active ? 'active' : ''} ${locked ? 'is-disabled' : ''}`}
+                      onClick={locked ? requestLocation : undefined}
+                    >
+                      <input
+                        type="radio"
+                        name="sortOrder"
+                        checked={active}
+                        disabled={locked}
+                        onChange={() => {
+                          if (mode === 'job') setJobSortOrder(opt.v as typeof jobSortOrder);
+                          else setTalentSortOrder(opt.v as typeof talentSortOrder);
+                        }}
+                      />
+                      <span>{opt.label}</span>
+                      {locked
+                        ? <span className="hint">位置情報の許可が必要</span>
+                        : active
+                          ? <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>check</span>
+                          : null}
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+
+            <span className="filter-group-title" style={{ marginBottom: '-8px' }}>絞り込み</span>
+
+            {/* 都道府県 (共通) */}
+            <div className="filter-group">
+              <span className="filter-group-title">
+                都道府県{mode === 'talent' ? '（拠点）' : ''}
+                {filterPrefectures.length > 0 && <span className="fg-count">{filterPrefectures.length}</span>}
+              </span>
+              <button
+                type="button"
+                onClick={() => { setPrefPickerQuery(''); setIsPrefPickerOpen(true); }}
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px', border: '1px solid var(--border-color)', borderRadius: '10px', background: 'var(--surface-color)', fontSize: '14px', color: 'var(--text-main)', fontFamily: 'inherit', cursor: 'pointer', width: '100%' }}
+              >
+                <span>
+                  {filterPrefectures.length === 0
+                    ? '指定なし'
+                    : filterPrefectures.length <= 2
+                      ? filterPrefectures.join('・')
+                      : `${filterPrefectures.slice(0, 2).join('・')} ほか${filterPrefectures.length - 2}`}
+                </span>
+                <span className="material-symbols-outlined" style={{ fontSize: '18px', color: 'var(--text-sub)' }}>chevron_right</span>
+              </button>
+              {filterPrefectures.length > 0 && (
+                <div className="filter-options-flex">
+                  {filterPrefectures.map(p => (
+                    <button
+                      key={p}
+                      type="button"
+                      className="filter-checkbox-label active"
+                      style={{ cursor: 'pointer', fontFamily: 'inherit' }}
+                      onClick={() => setFilterPrefectures(prev => prev.filter(x => x !== p))}
+                    >
+                      {p}
+                      <span className="material-symbols-outlined" style={{ fontSize: '14px', marginLeft: '4px' }}>close</span>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
             {mode === 'job' ? (
               <>
-                {/* ソート順 */}
+                {/* 職種 */}
                 <div className="filter-group">
-                  <span className="filter-group-title">並び替え</span>
-                  <div className="filter-options-grid">
-                    <label className={`filter-radio-label ${jobSortOrder === 'newest' ? 'active' : ''}`}>
-                      <input 
-                        type="radio" 
-                        name="jobSort" 
-                        value="newest" 
-                        checked={jobSortOrder === 'newest'} 
-                        onChange={() => setJobSortOrder('newest')} 
-                      />
-                      新着順
-                    </label>
-                    <label className={`filter-radio-label ${jobSortOrder === 'priceHigh' ? 'active' : ''}`}>
-                      <input 
-                        type="radio" 
-                        name="jobSort" 
-                        value="priceHigh" 
-                        checked={jobSortOrder === 'priceHigh'} 
-                        onChange={() => setJobSortOrder('priceHigh')} 
-                      />
-                      単価の高い順
-                    </label>
-                    <label className={`filter-radio-label ${jobSortOrder === 'dateNear' ? 'active' : ''}`}>
-                      <input 
-                        type="radio" 
-                        name="jobSort" 
-                        value="dateNear" 
-                        checked={jobSortOrder === 'dateNear'} 
-                        onChange={() => setJobSortOrder('dateNear')} 
-                      />
-                      開催日の近い順
-                    </label>
-                  </div>
-                </div>
-
-                <details style={{ background: 'var(--surface-color)', borderRadius: '8px', border: '1px solid var(--border-color)', padding: '0 12px', marginBottom: '16px' }}>
-                  <summary style={{ fontWeight: 'bold', cursor: 'pointer', padding: '12px 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', listStyle: 'none' }}>
-                    <span>詳細条件を設定する</span>
-                    <span className="material-symbols-outlined">expand_more</span>
-                  </summary>
-                  <div style={{ paddingBottom: '12px', paddingTop: '8px', borderTop: '1px solid var(--border-color)' }}>
-                {/* スキル */}
-                <div className="filter-group">
-                  <span className="filter-group-title">スキル</span>
+                  <span className="filter-group-title">
+                    職種{filterJobRoles.length > 0 && <span className="fg-count">{filterJobRoles.length}</span>}
+                  </span>
                   <div className="filter-options-flex">
                     {['キャンペーンクルー', 'クローザー', 'ディレクター'].map(role => {
                       const isChecked = filterJobRoles.includes(role);
                       return (
                         <label key={role} className={`filter-checkbox-label ${isChecked ? 'active' : ''}`}>
-                          <input 
-                            type="checkbox" 
-                            checked={isChecked} 
-                            onChange={() => {
-                              setFilterJobRoles(prev => 
-                                isChecked ? prev.filter(r => r !== role) : [...prev, role]
-                              );
-                            }} 
-                          />
+                          <input type="checkbox" checked={isChecked} onChange={() => setFilterJobRoles(prev => isChecked ? prev.filter(r => r !== role) : [...prev, role])} />
                           {role}
                         </label>
                       );
@@ -3476,23 +3635,17 @@ export function SearchPage() {
                   </div>
                 </div>
 
-                {/* 対応キャリア */}
+                {/* キャリア/回線 */}
                 <div className="filter-group">
-                  <span className="filter-group-title">キャリア/回線</span>
+                  <span className="filter-group-title">
+                    キャリア/回線{filterCarriers.length > 0 && <span className="fg-count">{filterCarriers.length}</span>}
+                  </span>
                   <div className="filter-options-flex">
                     {['docomo', 'au/UQmobile', 'SoftBank/Y!mobile', 'BB'].map(carrier => {
                       const isChecked = filterCarriers.includes(carrier);
                       return (
                         <label key={carrier} className={`filter-checkbox-label ${isChecked ? 'active' : ''}`}>
-                          <input 
-                            type="checkbox" 
-                            checked={isChecked} 
-                            onChange={() => {
-                              setFilterCarriers(prev => 
-                                isChecked ? prev.filter(c => c !== carrier) : [...prev, carrier]
-                              );
-                            }} 
-                          />
+                          <input type="checkbox" checked={isChecked} onChange={() => setFilterCarriers(prev => isChecked ? prev.filter(c => c !== carrier) : [...prev, carrier])} />
                           {carrier}
                         </label>
                       );
@@ -3500,23 +3653,17 @@ export function SearchPage() {
                   </div>
                 </div>
 
-                {/* 販路（店舗種別） */}
+                {/* 販路 */}
                 <div className="filter-group">
-                  <span className="filter-group-title">販路</span>
+                  <span className="filter-group-title">
+                    販路{filterChannels.length > 0 && <span className="fg-count">{filterChannels.length}</span>}
+                  </span>
                   <div className="filter-options-flex">
                     {['ショップ', '量販店'].map(channel => {
                       const isChecked = filterChannels.includes(channel);
                       return (
                         <label key={channel} className={`filter-checkbox-label ${isChecked ? 'active' : ''}`}>
-                          <input 
-                            type="checkbox" 
-                            checked={isChecked} 
-                            onChange={() => {
-                              setFilterChannels(prev => 
-                                isChecked ? prev.filter(c => c !== channel) : [...prev, channel]
-                              );
-                            }} 
-                          />
+                          <input type="checkbox" checked={isChecked} onChange={() => setFilterChannels(prev => isChecked ? prev.filter(c => c !== channel) : [...prev, channel])} />
                           {channel}
                         </label>
                       );
@@ -3527,101 +3674,54 @@ export function SearchPage() {
                 {/* 日給下限 */}
                 <div className="filter-group">
                   <span className="filter-group-title">日給下限</span>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <input 
-                      type="number" 
-                      value={filterMinPrice || ''} 
-                      onChange={e => setFilterMinPrice(Number(e.target.value))} 
-                      placeholder="下限なし"
-                      className="filter-input-price"
-                      style={{
-                        padding: '10px',
-                        borderRadius: '8px',
-                        border: '1px solid var(--border-color)',
-                        width: '120px',
-                        outline: 'none'
-                      }}
-                    />
-                    <span style={{ fontSize: '14px', color: 'var(--text-main)' }}>円以上</span>
+                  <div className="filter-options-flex">
+                    {[{ v: 0, l: '指定なし' }, { v: 10000, l: '1.0万' }, { v: 15000, l: '1.5万' }, { v: 20000, l: '2.0万' }, { v: 25000, l: '2.5万+' }].map(o => (
+                      <label key={o.v} className={`filter-checkbox-label ${filterMinPrice === o.v ? 'active' : ''}`}>
+                        <input type="radio" name="minPrice" checked={filterMinPrice === o.v} onChange={() => setFilterMinPrice(o.v)} />
+                        {o.l}
+                      </label>
+                    ))}
                   </div>
                 </div>
 
-                {/* 締切までの日数 */}
+                {/* 応募締切 */}
                 <div className="filter-group">
                   <span className="filter-group-title">応募締切</span>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <input 
-                      type="number" 
-                      value={filterDeadlineDays !== null ? filterDeadlineDays : ''} 
-                      onChange={e => setFilterDeadlineDays(e.target.value ? Number(e.target.value) : null)} 
-                      placeholder="指定なし"
-                      className="filter-input-price"
-                      style={{
-                        padding: '10px',
-                        borderRadius: '8px',
-                        border: '1px solid var(--border-color)',
-                        width: '120px',
-                        outline: 'none'
-                      }}
-                    />
-                    <span style={{ fontSize: '14px', color: 'var(--text-main)' }}>日以内</span>
+                  <div className="filter-options-flex">
+                    {[{ v: null as number | null, l: '指定なし' }, { v: 3, l: '3日以内' }, { v: 7, l: '1週間以内' }, { v: 14, l: '2週間以内' }].map(o => (
+                      <label key={String(o.v)} className={`filter-checkbox-label ${filterDeadlineDays === o.v ? 'active' : ''}`}>
+                        <input type="radio" name="deadlineDays" checked={filterDeadlineDays === o.v} onChange={() => setFilterDeadlineDays(o.v)} />
+                        {o.l}
+                      </label>
+                    ))}
                   </div>
                 </div>
-                  </div>
-                </details>
+
+                {/* トグル */}
+                <div className="filter-group">
+                  <label className="filter-toggle-row">
+                    <span>諸経費ありの案件のみ</span>
+                    <input type="checkbox" checked={filterHasExpenses} onChange={e => setFilterHasExpenses(e.target.checked)} />
+                  </label>
+                  <label className="filter-toggle-row">
+                    <span>お気に入りのみ</span>
+                    <input type="checkbox" checked={showFavoritesOnly} onChange={e => setShowFavoritesOnly(e.target.checked)} />
+                  </label>
+                </div>
               </>
             ) : (
               <>
-                {/* 人材のソート順 */}
+                {/* 対応スキル */}
                 <div className="filter-group">
-                  <span className="filter-group-title">並び替え</span>
-                  <div className="filter-options-grid">
-                    <label className={`filter-radio-label ${talentSortOrder === 'priceLow' ? 'active' : ''}`}>
-                      <input 
-                        type="radio" 
-                        name="talentSort" 
-                        value="priceLow" 
-                        checked={talentSortOrder === 'priceLow'} 
-                        onChange={() => setTalentSortOrder('priceLow')} 
-                      />
-                      単価の安い順
-                    </label>
-                    <label className={`filter-radio-label ${talentSortOrder === 'priceHigh' ? 'active' : ''}`}>
-                      <input 
-                        type="radio" 
-                        name="talentSort" 
-                        value="priceHigh" 
-                        checked={talentSortOrder === 'priceHigh'} 
-                        onChange={() => setTalentSortOrder('priceHigh')} 
-                      />
-                      単価の高い順
-                    </label>
-                  </div>
-                </div>
-
-                <details style={{ background: 'var(--surface-color)', borderRadius: '8px', border: '1px solid var(--border-color)', padding: '0 12px', marginBottom: '16px' }}>
-                  <summary style={{ fontWeight: 'bold', cursor: 'pointer', padding: '12px 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', listStyle: 'none' }}>
-                    <span>詳細条件を設定する</span>
-                    <span className="material-symbols-outlined">expand_more</span>
-                  </summary>
-                  <div style={{ paddingBottom: '12px', paddingTop: '8px', borderTop: '1px solid var(--border-color)' }}>
-                {/* スキル */}
-                <div className="filter-group">
-                  <span className="filter-group-title">対応スキル</span>
+                  <span className="filter-group-title">
+                    対応スキル{filterTalentSkills.length > 0 && <span className="fg-count">{filterTalentSkills.length}</span>}
+                  </span>
                   <div className="filter-options-flex">
                     {['キャンペーンクルー', 'クローザー', 'ディレクター'].map(skill => {
                       const isChecked = filterTalentSkills.includes(skill);
                       return (
                         <label key={skill} className={`filter-checkbox-label ${isChecked ? 'active' : ''}`}>
-                          <input 
-                            type="checkbox" 
-                            checked={isChecked} 
-                            onChange={() => {
-                              setFilterTalentSkills(prev => 
-                                isChecked ? prev.filter(s => s !== skill) : [...prev, skill]
-                              );
-                            }} 
-                          />
+                          <input type="checkbox" checked={isChecked} onChange={() => setFilterTalentSkills(prev => isChecked ? prev.filter(s => s !== skill) : [...prev, skill])} />
                           {skill}
                         </label>
                       );
@@ -3629,23 +3729,17 @@ export function SearchPage() {
                   </div>
                 </div>
 
-                {/* キャリア */}
+                {/* 対応キャリア */}
                 <div className="filter-group">
-                  <span className="filter-group-title">対応キャリア</span>
+                  <span className="filter-group-title">
+                    対応キャリア{filterTalentCarriers.length > 0 && <span className="fg-count">{filterTalentCarriers.length}</span>}
+                  </span>
                   <div className="filter-options-flex">
                     {['docomo', 'au/UQmobile', 'SoftBank/Y!mobile', 'BB'].map(carrier => {
                       const isChecked = filterTalentCarriers.includes(carrier);
                       return (
                         <label key={carrier} className={`filter-checkbox-label ${isChecked ? 'active' : ''}`}>
-                          <input 
-                            type="checkbox" 
-                            checked={isChecked} 
-                            onChange={() => {
-                              setFilterTalentCarriers(prev => 
-                                isChecked ? prev.filter(c => c !== carrier) : [...prev, carrier]
-                              );
-                            }} 
-                          />
+                          <input type="checkbox" checked={isChecked} onChange={() => setFilterTalentCarriers(prev => isChecked ? prev.filter(c => c !== carrier) : [...prev, carrier])} />
                           {carrier}
                         </label>
                       );
@@ -3653,31 +3747,44 @@ export function SearchPage() {
                   </div>
                 </div>
 
-                {/* 研修実績 */}
+                {/* 受講済み研修 */}
                 <div className="filter-group">
-                  <span className="filter-group-title">受講済み研修</span>
+                  <span className="filter-group-title">
+                    受講済み研修{filterTalentTrainings.length > 0 && <span className="fg-count">{filterTalentTrainings.length}</span>}
+                  </span>
                   <div className="filter-options-flex">
                     {allTrainings.map(tr => {
                       const isChecked = filterTalentTrainings.includes(tr.id);
                       return (
                         <label key={tr.id} className={`filter-checkbox-label ${isChecked ? 'active' : ''}`}>
-                          <input 
-                            type="checkbox" 
-                            checked={isChecked} 
-                            onChange={() => {
-                              setFilterTalentTrainings(prev => 
-                                isChecked ? prev.filter(t => t !== tr.id) : [...prev, tr.id]
-                              );
-                            }} 
-                          />
+                          <input type="checkbox" checked={isChecked} onChange={() => setFilterTalentTrainings(prev => isChecked ? prev.filter(t => t !== tr.id) : [...prev, tr.id])} />
                           {tr.title}
                         </label>
                       );
                     })}
                   </div>
                 </div>
+
+                {/* 最低経験年数 */}
+                <div className="filter-group">
+                  <span className="filter-group-title">最低経験年数</span>
+                  <div className="filter-options-flex">
+                    {[{ v: 0, l: '不問' }, { v: 1, l: '1年+' }, { v: 3, l: '3年+' }, { v: 5, l: '5年+' }].map(o => (
+                      <label key={o.v} className={`filter-checkbox-label ${filterMinExperience === o.v ? 'active' : ''}`}>
+                        <input type="radio" name="minExp" checked={filterMinExperience === o.v} onChange={() => setFilterMinExperience(o.v)} />
+                        {o.l}
+                      </label>
+                    ))}
                   </div>
-                </details>
+                </div>
+
+                {/* お気に入り */}
+                <div className="filter-group">
+                  <label className="filter-toggle-row">
+                    <span>お気に入りのみ</span>
+                    <input type="checkbox" checked={showFavoritesOnly} onChange={e => setShowFavoritesOnly(e.target.checked)} />
+                  </label>
+                </div>
               </>
             )}
           </div>
@@ -3721,13 +3828,119 @@ export function SearchPage() {
                 fontFamily: 'inherit'
               }}
               onClick={() => {
-                setSearchKeyword(tempKeyword);
                 setIsFilterSheetOpen(false);
                 setViewMode('list');
               }}
             >
-              <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>search</span>
-              実行
+              {resultCount}{mode === 'job' ? '件' : '名'}を表示
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* 都道府県ピッカー(絞り込みシートの上に重ねて表示) */}
+      <div
+        className={`filter-sheet-backdrop ${isPrefPickerOpen ? 'show' : ''}`}
+        onClick={() => setIsPrefPickerOpen(false)}
+        style={{ zIndex: 3600 }}
+      >
+        <div className={`filter-sheet ${isPrefPickerOpen ? 'show' : ''}`} onClick={e => e.stopPropagation()} style={{ zIndex: 3601 }}>
+          <div className="filter-sheet-header">
+            <span className="filter-sheet-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <button className="filter-sheet-close" onClick={() => setIsPrefPickerOpen(false)} aria-label="戻る">
+                <span className="material-symbols-outlined">arrow_back</span>
+              </button>
+              都道府県で絞り込み
+            </span>
+            <button className="filter-sheet-close" onClick={() => setIsPrefPickerOpen(false)} aria-label="閉じる">
+              <span className="material-symbols-outlined">close</span>
+            </button>
+          </div>
+
+          <div className="filter-sheet-body">
+            <div className="filter-kw-big">
+              <span className="material-symbols-outlined">search</span>
+              <input
+                type="text"
+                value={prefPickerQuery}
+                onChange={e => setPrefPickerQuery(e.target.value)}
+                placeholder="都道府県名で検索"
+              />
+              {prefPickerQuery && (
+                <button type="button" aria-label="クリア" onClick={() => setPrefPickerQuery('')}>
+                  <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>close</span>
+                </button>
+              )}
+            </div>
+
+            {prefPickerQuery.trim() ? (
+              <div>
+                {ALL_PREFECTURES.filter(p => p.includes(prefPickerQuery.trim())).map(p => {
+                  const on = filterPrefectures.includes(p);
+                  return (
+                    <label key={p} className="pref-picker-row">
+                      <input
+                        type="checkbox"
+                        checked={on}
+                        onChange={() => setFilterPrefectures(prev => on ? prev.filter(x => x !== p) : [...prev, p])}
+                      />
+                      {p}
+                    </label>
+                  );
+                })}
+                {ALL_PREFECTURES.filter(p => p.includes(prefPickerQuery.trim())).length === 0 && (
+                  <div style={{ padding: '16px 2px', fontSize: '13px', color: 'var(--text-sub)' }}>該当する都道府県がありません</div>
+                )}
+              </div>
+            ) : (
+              PREFECTURE_REGIONS.map(region => {
+                const allOn = region.prefectures.every(p => filterPrefectures.includes(p));
+                return (
+                  <div key={region.name}>
+                    <div className="pref-picker-region">
+                      <span>{region.name}</span>
+                      <button
+                        type="button"
+                        onClick={() => setFilterPrefectures(prev =>
+                          allOn
+                            ? prev.filter(x => !region.prefectures.includes(x))
+                            : Array.from(new Set([...prev, ...region.prefectures]))
+                        )}
+                      >
+                        {allOn ? '選択を解除' : 'すべて選択'}
+                      </button>
+                    </div>
+                    {region.prefectures.map(p => {
+                      const on = filterPrefectures.includes(p);
+                      return (
+                        <label key={p} className="pref-picker-row">
+                          <input
+                            type="checkbox"
+                            checked={on}
+                            onChange={() => setFilterPrefectures(prev => on ? prev.filter(x => x !== p) : [...prev, p])}
+                          />
+                          {p}
+                        </label>
+                      );
+                    })}
+                  </div>
+                );
+              })
+            )}
+          </div>
+
+          <div className="filter-sheet-footer" style={{ display: 'flex', gap: '12px', padding: '16px', borderTop: '1px solid var(--border-color)', background: 'var(--surface-color)' }}>
+            <button
+              style={{ flex: 1, margin: 0, padding: '12px', background: 'var(--surface-color)', border: '1px solid var(--border-color)', color: 'var(--text-main)', borderRadius: '10px', fontWeight: 600, fontSize: '14px', cursor: 'pointer', fontFamily: 'inherit' }}
+              onClick={() => setFilterPrefectures([])}
+            >
+              選択をクリア
+            </button>
+            <button
+              style={{ flex: 1, margin: 0, padding: '12px', background: 'var(--primary)', border: 'none', color: 'white', borderRadius: '10px', fontWeight: 700, fontSize: '14px', cursor: 'pointer', fontFamily: 'inherit' }}
+              onClick={() => setIsPrefPickerOpen(false)}
+            >
+              {filterPrefectures.length > 0 ? `${filterPrefectures.length}件を選択` : '完了'}
             </button>
           </div>
         </div>
