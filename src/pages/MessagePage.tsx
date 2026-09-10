@@ -1012,7 +1012,11 @@ export function MessagePage() {
         (task.evaluations as any)?.appliedJobStaffIds
       );
 
-      await api.updateContractTaskStatus(activeChat.id, 'working');
+      // 案件ごとに状態を持たせる(同じチャットの別案件に影響させない)。
+      // 契約書テンプレートがあれば「契約書承認待ち」サブバッジの起点フラグを立てる。
+      await api.updateContractTaskJobStatus(activeChat.id, job.id, 'working', {
+        contractApprovalRequired: !!(clientComp?.contractTemplate || currentUser.contractTemplate),
+      });
 
       // 3. Automatically reject and notify other candidates for this job
       const otherChatTasks = chatTasks.filter(t => {
@@ -1040,7 +1044,9 @@ export function MessagePage() {
           (t.evaluations as any)?.appliedJobIds,
           (t.evaluations as any)?.appliedJobStaffIds
         );
-        await api.updateContractTaskStatus(t.id, 'rejected');
+        // この案件(job.id)への応募だけを見送りにする。
+        // 同じ直接チャットで進行中の別案件は影響を受けない(旧実装のバグ)。
+        await api.updateContractTaskJobStatus(t.id, job.id, 'rejected');
       }
 
       alert('🎉 内定を承諾しました。契約が確定しました！');
@@ -1095,7 +1101,11 @@ export function MessagePage() {
         (task.evaluations as any)?.appliedJobStaffIds
       );
 
-      await api.updateContractTaskStatus(activeChat.id, 'declined');
+      if (jobId) {
+        await api.updateContractTaskJobStatus(activeChat.id, jobId, 'declined');
+      } else {
+        await api.updateContractTaskStatus(activeChat.id, 'declined');
+      }
 
       alert('内定を辞退しました。');
       const updatedTasks = await api.getContractTasks();

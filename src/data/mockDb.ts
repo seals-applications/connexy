@@ -1,7 +1,7 @@
 import { supabase } from '../lib/supabase';
 import { encryptData, decryptData } from '../lib/crypto';
 import { regionalJobs } from './regionalJobs';
-import { applyJobState } from '../utils/jobStates';
+import { applyJobState, seedAppliedJobStates } from '../utils/jobStates';
 import type { EngagementStatusValue } from '../utils/jobStates';
 
 // ユーザーの型定義
@@ -1300,6 +1300,7 @@ export const api = {
               ...(appliedJobStaffIds || {})
             }
           };
+          evaluations = seedAppliedJobStates(evaluations, appliedJobIds);
           const { error } = await supabase.from('contract_tasks').update({ evaluations }).eq('id', taskId);
           if (error) throw error;
         } else {
@@ -1307,6 +1308,7 @@ export const api = {
           evaluations.appliedJobIds = appliedJobIds || [];
           evaluations.appliedJobDates = Object.fromEntries((appliedJobIds || []).map(jobId => [jobId, todayStr]));
           evaluations.appliedJobStaffIds = appliedJobStaffIds || {};
+          evaluations = seedAppliedJobStates(evaluations, appliedJobIds);
           const isApplication = appliedJobIds && appliedJobIds.length > 0;
           const row = {
             id: taskId,
@@ -1349,12 +1351,14 @@ export const api = {
               ...(appliedJobStaffIds || {})
             }
           };
+          evaluations = seedAppliedJobStates(evaluations, appliedJobIds);
           list[index].evaluations = evaluations;
         } else {
           const todayStr = new Date().toISOString().split('T')[0];
           evaluations.appliedJobIds = appliedJobIds || [];
           evaluations.appliedJobDates = Object.fromEntries((appliedJobIds || []).map(jobId => [jobId, todayStr]));
           evaluations.appliedJobStaffIds = appliedJobStaffIds || {};
+          evaluations = seedAppliedJobStates(evaluations, appliedJobIds);
           const isApplication = appliedJobIds && appliedJobIds.length > 0;
           const row = {
             id: taskId,

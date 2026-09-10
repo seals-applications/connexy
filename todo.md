@@ -31,7 +31,14 @@
   - `src/utils/statusLabels.ts` を新設。`getJobListingStatus()`(軸A: 掲載中/締切間近/掲載締切/募集停止)、`getEngagementStatusLabel()`(軸B: 選考中/内定・承諾待ち/稼働待ち・稼働中・稼働終了/評価待ち/完了/内容確認中/見送り/辞退/キャンセル、視点別文言・契約書承認待ちサブバッジ対応)、`isContractApproved()` を提供。`confirmed`(=現行`working`)は稼働日から「稼働待ち/稼働中/稼働終了」を算出。
   - 「応募状況・履歴」「案件管理」の2画面のバッジをこの関数経由に差し替え([src/pages/ManagementPage.tsx](src/pages/ManagementPage.tsx))。保存値・遷移は不変。
   - `npx tsc -b --noEmit` パス。開発サーバーで全ラベル分岐を実データ検証済み。
-- [ ] 第2段階: `evaluations.jobStates: { [jobId]: { status, updatedAt, contractApprovalRequired? } }` マップの導入と書き込み経路の移行(チャット単位`status`との分離)。上記「発見済みバグ(未修正)」の根本解決を兼ねる。
+- [x] **第2段階a: `evaluations.jobStates` 保存レイヤの新設**(PR #20)
+  - `src/utils/jobStates.ts`: `getJobStatus` / `getJobState`(読み出し・チャット単位`status`へフォールバック)、`applyJobState`(純粋更新)、`mostAdvancedStatus`(後方互換値=「最も進んだ案件の状態」)、`seedAppliedJobStates`。
+  - `api.updateContractTaskJobStatus(taskId, jobId, status, options)`。挙動不変。
+- [x] **第2段階b: 書き込み経路の移行**(PR #21)
+  - 応募時に `saveContractTaskChat` が案件ごとに `jobStates[jobId]='applying'` を seed。
+  - 承諾・辞退・オファー送信・完了報告・**競合自動不採用**を `updateContractTaskJobStatus` 経由に移行。競合自動不採用は「その案件のみ」不採用にするようになり、同じ直接チャットの別案件は影響を受けない → 上記「発見済みバグ(未修正)」を解消。
+  - 「応募状況・履歴」「選考」画面の状態参照を `getJobStatus(task, jobId)` に変更。
+  - 承諾時に `contractApprovalRequired` フラグを記録(将来の `contract_review` 独立ステータス化の起点)。
 - [ ] 第3段階: 保存値 `working` → `confirmed` リネーム、`cancelled` 追加。
 - [ ] 第4段階: キャンセルUI。
 - [ ] 第5段階: 異議対応(`respondToDispute`)のUI配線。
@@ -39,7 +46,8 @@
 
 ### 🐛 発見済みバグ(未修正・要設計判断)
 
-- [ ] **内定承諾時の「競合他社の自動不採用」処理が、同じチャットの無関係な別案件への応募まで不採用にしてしまう**
+- [x] **内定承諾時の「競合他社の自動不採用」処理が、同じチャットの無関係な別案件への応募まで不採用にしてしまう** — PR #21 で解消
+  - 解消方法: `evaluations.jobStates` マップ(第2段階)を導入し、自動不採用ループを `api.updateContractTaskJobStatus(t.id, job.id, 'rejected')` に変更。当該案件のみ `rejected` になり、同じ直接チャットの別案件は影響を受けない。チャット単位 `status` には「最も進んだ案件の状態」を書き戻すため、`relatedTasks`/`channels`/`BottomNav` 等の既存参照も後方互換を維持。データ層で再現シナリオを検証済み(jobA=rejected / jobB=applying のまま)。
   - 発生箇所: [src/pages/MessagePage.tsx:1009-1037](src/pages/MessagePage.tsx) `handleAcceptUnofficialOffer` 内。
   - 内定が承諾されると、同じ案件(`job.id`)に応募していた他社の`ContractTask`(直接チャット)を検索し、`api.updateContractTaskStatus(t.id, 'rejected')` で一括不採用にする処理があるが、この`status`は**チャット単位**のフィールドであり、**案件単位**ではない。
   - 一方、応募情報自体は`evaluations.appliedJobIds`という配列で、同じ1つのチャット(直接取引のある2社間)を通じて**複数の異なる案件に同時に応募できる**設計になっている(これは「応募日の使い回し」バグ([todo.md参照](#【発見・修正済みのバグ2026-08-24))で扱ったのと同じデータモデル)。

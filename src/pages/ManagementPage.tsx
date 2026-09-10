@@ -4,6 +4,7 @@ import { jsPDF } from 'jspdf';
 import { api } from '../data/mockDb';
 import type { ContractTask, Training, Staff, Job, User } from '../data/mockDb';
 import { getEngagementStatusLabel, getJobListingStatus, isContractApproved } from '../utils/statusLabels';
+import { getJobStatus } from '../utils/jobStates';
 
 const quizData: Record<string, Array<{ question: string, options: string[], answer: number }>> = {
   tr1: [
@@ -310,7 +311,8 @@ export function ManagementPage() {
               task: t,
               job,
               opponentCompany,
-              status: t.status,
+              // チャット単位の t.status ではなく案件ごとの状態(無ければ t.status にフォールバック)
+              status: getJobStatus(t, jobId),
               date: appliedJobDates[jobId] || t.date || new Date().toISOString().split('T')[0],
               price: job.price || t.price || 0
             });
@@ -711,8 +713,11 @@ export function ManagementPage() {
         {}
       );
 
-      // Force status update to 'offered' and set evaluations explicitly
-      await api.updateContractTaskStatus(channelId, 'offered', mergedEvaluations);
+      // Force status update to 'offered' and set evaluations explicitly.
+      // 案件ごとに状態を持たせる(この案件のみ offered にする)。
+      await api.updateContractTaskJobStatus(channelId, activeScreeningJob.id, 'offered', {
+        additionalEvals: mergedEvaluations,
+      });
 
       alert(`内定オファーを送信しました。商談チャット画面へ移動します。`);
       setShowOrderConfirmModal(false);
@@ -990,8 +995,10 @@ export function ManagementPage() {
       const bothEvaluated = !!updatedEvals.byClient && (!!updatedEvals.byWorker || !!updatedEvals.byStaffToField);
       const nextStatus = bothEvaluated ? 'completed' : 'report_pending';
 
-      await api.updateContractTaskStatus(selectedTask.id, nextStatus, {
-        [evalRole === 'client' ? 'byClient' : 'byWorker']: evaluation
+      await api.updateContractTaskJobStatus(selectedTask.id, selectedTask.jobId, nextStatus, {
+        additionalEvals: {
+          [evalRole === 'client' ? 'byClient' : 'byWorker']: evaluation,
+        },
       });
 
       // If worker submitted and has lateness, flag it
@@ -2154,14 +2161,16 @@ export function ManagementPage() {
             else if (staffLoc.includes('渋谷') && jobLoc.includes('渋谷')) distanceKm = 0.8;
           }
 
-          const isCandidateContractedForThisJob = tasks.some(t => 
-            t.jobId === activeScreeningJob.id && 
+          const chatJobStatus = chatTask ? getJobStatus(chatTask, activeScreeningJob.id) : null;
+
+          const isCandidateContractedForThisJob = tasks.some(t =>
+            t.jobId === activeScreeningJob.id &&
             (t.companyName === p.name || t.id.includes(p.id)) &&
             ['working', 'report_pending', 'completed', 'disputed'].includes(t.status)
-          );
+          ) || ['working', 'report_pending', 'completed', 'disputed'].includes(chatJobStatus || '');
 
-          const isCandidateOfferedForThisJob = chatTask?.status === 'offered' && 
-            (chatTask?.evaluations as any)?.offeredJobId === activeScreeningJob.id;
+          const isCandidateOfferedForThisJob = chatJobStatus === 'offered' ||
+            (chatTask?.status === 'offered' && (chatTask?.evaluations as any)?.offeredJobId === activeScreeningJob.id);
 
           // Score weighting
           let relWeight = 0.30, matchWeight = 0.25, proxWeight = 0.45;

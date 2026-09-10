@@ -90,6 +90,31 @@ export function getJobState(task: TaskLike, jobId: string): JobState | undefined
   return readJobStates(task)[jobId];
 }
 
+/**
+ * 応募時に、まだ jobStates エントリが無い案件へ `applying` を seed する(純粋関数)。
+ * 既存エントリ(offered / working など)は上書きしない。
+ */
+export function seedAppliedJobStates(
+  evaluations: Record<string, unknown> | null | undefined,
+  jobIds: string[] | undefined | null,
+  now: Date = new Date(),
+): Record<string, unknown> {
+  const base = (evaluations && typeof evaluations === 'object' ? evaluations : {}) as Record<string, unknown>;
+  if (!jobIds || jobIds.length === 0) return base;
+
+  const prev = (base.jobStates as JobStatesMap | undefined) || {};
+  const next: JobStatesMap = { ...prev };
+  const iso = now.toISOString();
+  let changed = false;
+  for (const jobId of jobIds) {
+    if (!next[jobId]) {
+      next[jobId] = { status: 'applying', updatedAt: iso };
+      changed = true;
+    }
+  }
+  return changed ? { ...base, jobStates: next } : base;
+}
+
 export interface ApplyJobStateOptions {
   contractApprovalRequired?: boolean;
   /** テスト用。既定は new Date() */
