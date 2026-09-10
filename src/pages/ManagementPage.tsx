@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { jsPDF } from 'jspdf';
 import { api } from '../data/mockDb';
 import type { ContractTask, Training, Staff, Job, User } from '../data/mockDb';
-import { getEngagementStatusLabel, getJobListingStatus, isContractApproved } from '../utils/statusLabels';
+import { getEngagementStatusLabel, getJobListingStatus, getWorkPhase, isContractApproved } from '../utils/statusLabels';
 import { getJobStatus } from '../utils/jobStates';
 
 const quizData: Record<string, Array<{ question: string, options: string[], answer: number }>> = {
@@ -154,6 +154,10 @@ export function ManagementPage() {
   const [showOrderConfirmModal, setShowOrderConfirmModal] = useState(false);
   const [confirmingCandidate, setConfirmingCandidate] = useState<any>(null);
   const [isContractSaving, setIsContractSaving] = useState(false);
+  // 稼働前キャンセル(発注者のみ)。STATUS_MODEL.md §3.2 / §8
+  const [cancellingCandidate, setCancellingCandidate] = useState<any>(null);
+  const [cancelReason, setCancelReason] = useState('');
+  const [isCancelling, setIsCancelling] = useState(false);
 
   // Staff Management States
   const [showAddStaffOverlay, setShowAddStaffOverlay] = useState(false);
@@ -728,6 +732,49 @@ export function ManagementPage() {
       alert('オファー送信中にエラーが発生しました。');
     } finally {
       setIsContractSaving(false);
+    }
+  };
+
+  // 稼働前キャンセル(発注者のみ)。応募中/内定通知済み/稼働待ちの応募を発注者側から中止する。
+  // STATUS_MODEL.md §3.2(applying/offered/confirmed → cancelled)。
+  const handleCancelEngagement = async () => {
+    const c = cancellingCandidate;
+    if (!c || !c.chatTask || !c.jobId) return;
+
+    setIsCancelling(true);
+    try {
+      const now = new Date();
+      const timeStr = now.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
+      const reasonText = cancelReason.trim();
+      const systemMsg = {
+        id: `sys_cancel_${Date.now()}`,
+        type: 'system',
+        text: `【案件キャンセルのお知らせ】\n発注者により「${c.jobTitle}」の本件が稼働前にキャンセルされました。${reasonText ? `\n理由: ${reasonText}` : ''}`,
+        time: timeStr,
+      };
+      const existingMessages = (c.chatTask.evaluations as any)?.messages || [];
+      await api.saveContractTaskChat(
+        c.chatTask.id,
+        [...existingMessages, systemMsg],
+        c.jobTitle,
+        c.chatTask.clientName,
+        c.chatTask.workerName,
+        (c.chatTask.evaluations as any)?.appliedJobIds,
+        (c.chatTask.evaluations as any)?.appliedJobStaffIds
+      );
+      await api.updateContractTaskJobStatus(c.chatTask.id, c.jobId, 'cancelled', {
+        additionalEvals: reasonText ? { cancelReason: reasonText } : undefined,
+      });
+
+      alert('本件をキャンセルしました。相手企業のチャットに通知が送信されました。');
+      setCancellingCandidate(null);
+      setCancelReason('');
+      await loadData();
+    } catch (e) {
+      console.error(e);
+      alert('キャンセル処理中にエラーが発生しました。');
+    } finally {
+      setIsCancelling(false);
     }
   };
 
@@ -2182,6 +2229,18 @@ export function ManagementPage() {
 
           const finalScore = (reliabilityScore * relWeight) + (80 * matchWeight) + ((distanceKm < 3 ? 100 : 70) * proxWeight);
 
+          // 稼働前キャンセル可否(発注者のみ): 応募中 / 内定通知済み / 稼働待ち(稼働開始前の confirmed)
+          const cancellableStatuses = ['applying', 'offered', 'working', 'confirmed'];
+          const canCancel = !!chatTask
+            && !!chatJobStatus
+            && cancellableStatuses.includes(chatJobStatus)
+            && (
+              chatJobStatus === 'applying'
+              || chatJobStatus === 'offered'
+              || getWorkPhase(activeScreeningJob) === 'before'
+              || getWorkPhase(activeScreeningJob) === 'unknown'
+            );
+
           return {
             company: p,
             staff: proposedStaff,
@@ -2189,6 +2248,8 @@ export function ManagementPage() {
             distance: distanceKm,
             score: finalScore,
             chatTask,
+            chatJobStatus,
+            canCancel,
             isCandidateContractedForThisJob,
             isCandidateOfferedForThisJob
           };
@@ -2280,6 +2341,24 @@ export function ManagementPage() {
                         </button>
                       )}
                     </div>
+
+                    {c.canCancel && !c.isCandidateContractedForThisJob && (
+                      <div style={{ marginTop: '8px', textAlign: 'right' }}>
+                        <button
+                          type="button"
+                          onClick={() => setCancellingCandidate({
+                            chatTask: c.chatTask,
+                            jobId: activeScreeningJob.id,
+                            jobTitle: activeScreeningJob.title,
+                            companyName: c.company.name,
+                            statusLabel: c.chatJobStatus === 'offered' ? '内定通知済み' : c.chatJobStatus === 'applying' ? '選考中' : '稼働待ち',
+                          })}
+                          style={{ background: 'none', border: 'none', color: '#B91C1C', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer', textDecoration: 'underline' }}
+                        >
+                          この応募をキャンセル
+                        </button>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -2310,6 +2389,40 @@ export function ManagementPage() {
               </button>
               <button type="button" onClick={handleConfirmOrderSubmit} disabled={isContractSaving} style={{ flex: 1, padding: '10px', borderRadius: '8px', border: 'none', background: 'var(--primary)', color: 'white', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer' }}>
                 {isContractSaving ? '送信中...' : 'オファーを送信'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 2.5 稼働前キャンセルの確認モーダル(発注者のみ) */}
+      {cancellingCandidate && (
+        <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', zIndex: 4000, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+          <div onClick={() => { if (!isCancelling) { setCancellingCandidate(null); setCancelReason(''); } }} style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(15, 23, 42, 0.5)', backdropFilter: 'blur(3px)' }} />
+          <div style={{ position: 'relative', background: 'var(--surface-color)', width: '90%', maxWidth: '380px', borderRadius: '16px', padding: '20px', boxShadow: '0 8px 30px rgba(0,0,0,0.15)', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            <h3 style={{ fontSize: '16px', fontWeight: 'bold', margin: 0, color: '#B91C1C' }}>本件をキャンセルしますか？</h3>
+            <div style={{ fontSize: '12px', color: 'var(--text-sub)', lineHeight: '1.5' }}>
+              <strong>{cancellingCandidate.companyName}</strong>（{cancellingCandidate.statusLabel}）との「{cancellingCandidate.jobTitle}」の本件を稼働前にキャンセルします。<br />
+              相手企業のチャットにキャンセル通知が送信されます。この操作は取り消せません。
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <label style={{ fontSize: '11px', fontWeight: 'bold', color: 'var(--text-sub)' }}>キャンセル理由（任意・相手に通知されます）</label>
+              <textarea
+                value={cancelReason}
+                onChange={e => setCancelReason(e.target.value)}
+                rows={3}
+                placeholder="例: 発注元の都合により募集を取り下げることになりました。"
+                style={{ padding: '8px', borderRadius: '6px', border: '1px solid var(--border-color)', fontSize: '12px', resize: 'vertical', fontFamily: 'inherit' }}
+              />
+            </div>
+
+            <div style={{ display: 'flex', gap: '10px', marginTop: '6px' }}>
+              <button type="button" disabled={isCancelling} onClick={() => { setCancellingCandidate(null); setCancelReason(''); }} style={{ flex: 1, padding: '10px', borderRadius: '8px', border: '1px solid #CBD5E1', background: 'var(--surface-color)', color: '#475569', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer' }}>
+                やめる
+              </button>
+              <button type="button" onClick={handleCancelEngagement} disabled={isCancelling} style={{ flex: 1, padding: '10px', borderRadius: '8px', border: 'none', background: '#B91C1C', color: 'white', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer' }}>
+                {isCancelling ? '処理中...' : 'キャンセルを確定'}
               </button>
             </div>
           </div>

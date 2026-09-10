@@ -157,7 +157,7 @@ export interface ContractTask {
   clientName: string;
   price: number;
   date: string;
-  status: 'applying' | 'offered' | 'working' | 'report_pending' | 'completed' | 'disputed' | 'rejected' | 'declined';
+  status: 'applying' | 'offered' | 'working' | 'report_pending' | 'completed' | 'disputed' | 'rejected' | 'declined' | 'cancelled';
   disputedReason?: string;
   evaluations?: {
     byClient?: Evaluation;
@@ -1420,7 +1420,7 @@ export const api = {
     });
   },
 
-  updateContractTaskStatus: async (taskId: string, status: 'applying' | 'offered' | 'working' | 'report_pending' | 'completed' | 'disputed' | 'rejected' | 'declined', additionalEvals?: any): Promise<void> => {
+  updateContractTaskStatus: async (taskId: string, status: 'applying' | 'offered' | 'working' | 'report_pending' | 'completed' | 'disputed' | 'rejected' | 'declined' | 'cancelled', additionalEvals?: any): Promise<void> => {
     return callSupabase(
       async () => {
         const { data: taskData } = await supabase.from('contract_tasks').select('evaluations').eq('id', taskId).single();

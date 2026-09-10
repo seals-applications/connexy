@@ -164,11 +164,15 @@ export function isContractApproved(
 // helpers
 // ────────────────────────────────────────────────────────────────
 
-type WorkPhase = 'before' | 'during' | 'after' | 'unknown';
+export type WorkPhase = 'before' | 'during' | 'after' | 'unknown';
 
-function getWorkPhase(
+/**
+ * 案件の稼働日と今日から、稼働前(before) / 稼働中(during) / 稼働後(after) / 不明(unknown) を判定。
+ * 「稼働前キャンセル可否」の判定などに使う。
+ */
+export function getWorkPhase(
   job: Pick<Job, 'eventDate' | 'dailyPrices'> | null | undefined,
-  today: Date,
+  today: Date = new Date(),
 ): WorkPhase {
   const dates = getWorkDates(job);
   if (dates.length === 0) return 'unknown';
