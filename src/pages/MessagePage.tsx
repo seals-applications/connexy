@@ -630,15 +630,54 @@ export function MessagePage() {
     return task?.clientName || '元請け企業';
   }, [activeChat, chatTasks]);
 
-  const activeMembers = useMemo(() => {
+  const activeMembers = useMemo<string[]>(() => {
     if (!activeChat) return [];
     if (activeChat.members && activeChat.members.length > 0) {
       return activeChat.members;
     }
-    const myName = currentUser ? (currentUser.staffName ? `${currentUser.name}_${currentUser.staffName}` : `${currentUser.name}_代表`) : '自分';
-    const opponentName = activeChat.name || '対話相手';
-    return [myName, opponentName];
-  }, [activeChat, currentUser]);
+
+    // 直接チャット: `chat_<会社A>_<会社B>` の2社それぞれで、
+    // 「実際にこのチャットに関与している担当者」を割り出す。
+    const parts = activeChat.id.split('_');
+    const compIds = [parts[1], parts[2]].filter(Boolean);
+    const task = chatTasks.find(t => t.id === activeChat.id);
+    const jobId = relatedJob?.id || getPrimaryLinkedJobId(task?.evaluations) || '';
+    const appliedStaffId = task ? getJobStaffId(task.evaluations, jobId) : undefined;
+    const appliedStaff = allStaffs.find(s => s.id === appliedStaffId);
+
+    const out: string[] = [];
+    for (const cid of compIds) {
+      const comp = allCompanies.find(c => c.id === cid);
+      const compName = comp?.name || cid;
+      const people = new Set<string>();
+
+      // 1. このチャットでメッセージを送った担当者(senderName = "会社名_個人名")
+      messages.forEach((m: any) => {
+        const sn = m.senderName ? String(m.senderName) : '';
+        const i = sn.indexOf('_');
+        if (i > 0 && sn.slice(0, i) === compName) {
+          const person = sn.slice(i + 1).trim();
+          if (person && person !== '代表' && person !== '担当者') people.add(person);
+        }
+      });
+      // 2. 応募時に提案されたスタッフ(応募側の会社)
+      if (appliedStaff && appliedStaff.userId === cid) people.add(appliedStaff.name);
+      // 3. ログイン中の自分がこの会社なら、自分の担当者名
+      if (currentUser?.id === cid && currentUser.staffName) people.add(currentUser.staffName);
+      // 4. 誰も特定できなければ会社の代表者
+      if (people.size === 0 && comp?.representativeName) people.add(comp.representativeName);
+
+      if (people.size === 0) out.push(compName);
+      else people.forEach(p => out.push(`${compName} ${p}`));
+    }
+    return out;
+  }, [activeChat, currentUser, messages, chatTasks, allCompanies, allStaffs, relatedJob]);
+
+  // 送信時の senderName と同じ形式("会社名_担当者名")。同じ会社の別担当者と自分を区別するのに使う。
+  const mySenderName = useMemo(() => {
+    if (!currentUser) return '';
+    return currentUser.staffName ? `${currentUser.name}_${currentUser.staffName}` : `${currentUser.name}_代表`;
+  }, [currentUser]);
 
   const mappedMessages = useMemo(() => {
     return messages.map((msg: any) => {
@@ -648,6 +687,9 @@ export function MessagePage() {
       let type = msg.type;
       if (isOffer) {
         type = isClient ? 'sent' : 'received';
+      } else if (typeof msg.senderName === 'string' && msg.senderName.includes('_') && mySenderName) {
+        // "会社名_担当者" 形式なら担当者単位で自分/相手を判定(同じ会社の別担当者を取り違えない)
+        type = msg.senderName === mySenderName ? 'sent' : 'received';
       } else if (msg.senderId) {
         type = (currentUser && msg.senderId === currentUser.id) ? 'sent' : 'received';
       }
@@ -657,7 +699,7 @@ export function MessagePage() {
         isOffer
       };
     });
-  }, [messages, currentUser, isClient]);
+  }, [messages, currentUser, isClient, mySenderName]);
 
   const proposed = useMemo(() => {
     return messages.some((m: any) => m.isProposal);
@@ -1209,15 +1251,32 @@ export function MessagePage() {
 
     const parts = activeChat.id.split('_');
     if (parts.length < 3) return activeChat.name;
-    
+
     const opponentId = parts[1] === currentUser.id ? parts[2] : parts[1];
     const opponent = allCompanies.find(c => c.id === opponentId);
-    if (opponent) {
-      const repName = opponent.representativeName || '';
-      return `${opponent.name} ${repName}`.trim();
+    if (!opponent) return activeChat.name;
+
+    // 相手企業の「実際にこのチャットに関与している担当者」を優先表示。
+    // (会社の代表者とは限らない — 応募したスタッフや、実際に発言している担当者)
+    const task = chatTasks.find(t => t.id === activeChat.id);
+    const jobId = relatedJob?.id || getPrimaryLinkedJobId(task?.evaluations) || '';
+    const appliedStaffId = task ? getJobStaffId(task.evaluations, jobId) : undefined;
+    const appliedStaff = allStaffs.find(s => s.id === appliedStaffId);
+    let personName = appliedStaff && appliedStaff.userId === opponentId ? appliedStaff.name : '';
+    if (!personName) {
+      // 相手企業からの発言者(会社名_個人名)を探す
+      for (const m of messages as any[]) {
+        const sn = m.senderName ? String(m.senderName) : '';
+        const i = sn.indexOf('_');
+        if (i > 0 && sn.slice(0, i) === opponent.name) {
+          const p = sn.slice(i + 1).trim();
+          if (p && p !== '代表' && p !== '担当者') { personName = p; break; }
+        }
+      }
     }
-    return activeChat.name;
-  }, [activeChat, currentUser, allCompanies]);
+    if (!personName) personName = opponent.representativeName || '';
+    return `${opponent.name} ${personName}`.trim();
+  }, [activeChat, currentUser, allCompanies, allStaffs, chatTasks, relatedJob, messages]);
 
   const headerHeight = useMemo(() => {
     let height = 72;
@@ -2608,9 +2667,11 @@ export function MessagePage() {
                     {msg.avatar || activeChat?.avatar}
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', flex: 1, minWidth: 0 }}>
-                    {activeChat?.status === 'group' && msg.senderName && (
+                    {msg.senderName && (
+                      // 直接チャットでも送信者(会社名 担当者)を明示。
+                      // 同じ相手企業の別担当者からの返信を取り違えないため。
                       <div style={{ fontSize: '10px', color: 'var(--text-sub)', marginLeft: '4px', marginBottom: '2px' }}>
-                        {msg.senderName.replace('_', ' ')}
+                        {String(msg.senderName).replace('_', ' ')}
                       </div>
                     )}
                     {msg.isReceipt || msg.isArrangement || msg.isPhoto || msg.isLocation ? (
@@ -3181,7 +3242,9 @@ export function MessagePage() {
             <div style={{ padding: '20px', overflowY: 'auto', maxHeight: '50vh', display: 'flex', flexDirection: 'column', gap: '12px' }}>
               {activeMembers.map((m: string, idx: number) => {
                 const cleanName = m.replace('_', ' ');
-                const isMe = cleanName.includes('(自分)') || cleanName.endsWith('自分') || cleanName.includes(currentUser?.name || '');
+                const myPerson = currentUser?.staffName || currentUser?.representativeName || '';
+                const isMe = cleanName.includes('(自分)') || cleanName.endsWith('自分')
+                  || (!!myPerson && !!currentUser?.name && cleanName.includes(currentUser.name) && cleanName.includes(myPerson));
                 const initial = cleanName.charAt(0);
                 
                 return (
