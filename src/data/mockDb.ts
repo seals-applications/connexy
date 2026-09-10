@@ -917,13 +917,13 @@ const defaultOfflineStaffs = [
   { id: 's_seals_staff1', user_id: 'seals', name: '中嶋 晴希', role: 'staff', login_id: 'seals_s2', password: 'pass', base_location: '神奈川県川崎市', nearest_station: '川崎駅', price: 13000, skills: ['モバイル販売'], completed_trainings: [] },
   { id: 's_seals_staff2', user_id: 'seals', name: '野田 悠斗', role: 'staff', login_id: 'seals_s3', password: 'pass', base_location: '東京都世田谷区', nearest_station: '下北沢駅', price: 13000, skills: ['イベント運営'], completed_trainings: [] },
 
-  { id: 's_freer_admin', user_id: 'freer', name: '林 一郎', role: 'admin', login_id: 'freer_s1', password: 'pass', base_location: '東京都港区', nearest_station: '表参道駅', price: 16000, skills: ['モバイル販売', 'クローザー'], completed_trainings: [] },
-  { id: 's_freer_staff1', user_id: 'freer', name: '林 二郎', role: 'staff', login_id: 'freer_s2', password: 'pass', base_location: '東京都目黒区', nearest_station: '中目黒駅', price: 13000, skills: ['モバイル販売'], completed_trainings: [] },
-  { id: 's_freer_staff2', user_id: 'freer', name: '林 三郎', role: 'staff', login_id: 'freer_s3', password: 'pass', base_location: '神奈川県横浜市', nearest_station: '横浜駅', price: 13000, skills: ['ブース獲得'], completed_trainings: [] },
+  { id: 's_freer_admin', user_id: 'freer', name: '林 克樹', role: 'admin', login_id: 'freer_s1', password: 'pass', base_location: '東京都港区', nearest_station: '表参道駅', price: 16000, skills: ['モバイル販売', 'クローザー'], completed_trainings: [] },
+  { id: 's_freer_staff1', user_id: 'freer', name: '大西 涼太', role: 'staff', login_id: 'freer_s2', password: 'pass', base_location: '東京都目黒区', nearest_station: '中目黒駅', price: 13000, skills: ['モバイル販売'], completed_trainings: [] },
+  { id: 's_freer_staff2', user_id: 'freer', name: '佐々木 遼', role: 'staff', login_id: 'freer_s3', password: 'pass', base_location: '神奈川県横浜市', nearest_station: '横浜駅', price: 13000, skills: ['ブース獲得'], completed_trainings: [] },
 
-  { id: 's_cocolabo_admin', user_id: 'cocolabo', name: '二内 美伊', role: 'admin', login_id: 'cocolabo_s1', password: 'pass', base_location: '大阪府大阪市', nearest_station: '梅田駅', price: 16000, skills: ['ディレクター', 'イベントMC'], completed_trainings: [] },
-  { id: 's_cocolabo_staff1', user_id: 'cocolabo', name: '三内 美伊', role: 'staff', login_id: 'cocolabo_s2', password: 'pass', base_location: '兵庫県神戸市', nearest_station: '三ノ宮駅', price: 13000, skills: ['モバイル販売'], completed_trainings: [] },
-  { id: 's_cocolabo_staff2', user_id: 'cocolabo', name: '四内 美伊', role: 'staff', login_id: 'cocolabo_s3', password: 'pass', base_location: '京都府京都市', nearest_station: '京都駅', price: 13000, skills: ['イベント運営'], completed_trainings: [] }
+  { id: 's_cocolabo_admin', user_id: 'cocolabo', name: '伊内 美伊', role: 'admin', login_id: 'cocolabo_s1', password: 'pass', base_location: '大阪府大阪市', nearest_station: '梅田駅', price: 16000, skills: ['ディレクター', 'イベントMC'], completed_trainings: [] },
+  { id: 's_cocolabo_staff1', user_id: 'cocolabo', name: '川口 彩香', role: 'staff', login_id: 'cocolabo_s2', password: 'pass', base_location: '兵庫県神戸市', nearest_station: '三ノ宮駅', price: 13000, skills: ['モバイル販売'], completed_trainings: [] },
+  { id: 's_cocolabo_staff2', user_id: 'cocolabo', name: '西田 桃子', role: 'staff', login_id: 'cocolabo_s3', password: 'pass', base_location: '京都府京都市', nearest_station: '京都駅', price: 13000, skills: ['イベント運営'], completed_trainings: [] }
 ];
 
 const generate100RandomJobs = (): any[] => {

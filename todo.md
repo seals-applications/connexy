@@ -25,6 +25,13 @@
 - [x] 未読バッジのポーリングをイベント駆動に変更(PR #31 → #35 で修正)。`saveOfflineData` が `connexy:data-changed` イベントを発火。`subscribeToContractTaskChanges()` がイベント + storage + Supabase Realtime + **フォールバックポーリング**(Realtime が SUBSCRIBED になるまで5秒、確認後45秒)を併走。`BottomNav`/`MessagePage` のポーリングを購読 + `visibilitychange` に置換。
   - ⚠️ PR #31 初版は Realtime が未有効の環境で新着メッセージが最大60秒遅延する不具合があった(#35 で短間隔ポーリングを常時併走させて解消)。
 
+### 🚑 Supabase プロジェクト消滅(2026-09-10〜11)
+デプロイ版が参照する Supabase プロジェクト `snoccydfbrbxupembsar` が一時 DNS ごと消滅(無料プランで削除された可能性)。その後復活したが、**復元できたのは 2026-06-05 時点の古いバックアップのみ**(無料プランは日次バックアップの保持が短く、それより新しい復元ポイントが無かった)。
+- 欠損: 会社 `seals` / `freer` / `cocolabo` とそのスタッフ、`announcements` テーブル、6/5 以降の案件・チャット履歴。
+- `staffs` テーブルに `login_id` / `password` / `role` 列が無い(localStorage 生成のログインで代用されていた)。
+- 対応: [db/reseed_missing_data.sql](db/reseed_missing_data.sql) を Supabase SQL Editor で実行(3社・9スタッフの再投入、`announcements` テーブル作成+シード、`working`→`confirmed` 更新、`staffs` への列追加)。冪等。
+- 恒久対策: 本番運用するなら Supabase Pro へ(無料プランは7日放置で pause → 放置継続で削除、バックアップ保持も短い)。
+
 ### 🚑 デプロイ版チャット不具合(2026-09-10 ユーザー報告 → PR #35 で修正)
 デプロイ版(Supabase オンライン)でチャットが機能しない。相手アカウントにメッセージが届かず、トークルームも表示されない。
 - 原因1: `getAnnouncements()`(PR #27)が存在しない `announcements` テーブルを問い合わせ → `callSupabase` の例外ハンドラが `connexy_is_offline='true'` を**永続化**し、アプリ全体が localStorage モードに固定 → 別ブラウザ(=別アカウント)間でデータが同期されなくなる。
