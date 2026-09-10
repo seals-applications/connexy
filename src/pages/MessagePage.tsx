@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { api } from '../data/mockDb';
 import { getEngagementStatusLabel } from '../utils/statusLabels';
+import { getOpponentCompanyName } from '../utils/chatParties';
+import { getExpenseCategoryLabel } from '../utils/expenseHelpers';
 
 // チャットのステータスバッジ。レガシーなチャット状態(商談中/契約待ち等)は個別に、
 // 応募・契約ステータスは getEngagementStatusLabel に委譲する(STATUS_MODEL.md §4)。
@@ -1199,9 +1201,7 @@ export function MessagePage() {
       ? `${currentUser.name}_${currentUser.staffName}` 
       : `${currentUser.name}_代表`;
 
-    const categoryText =
-      receiptCategory === 'transport' ? '公共交通機関' :
-      receiptCategory === 'accommodation' ? '宿泊費' : '車移動';
+    const categoryText = getExpenseCategoryLabel(receiptCategory);
 
     let detailsText = '';
     let detailsObj: any = {
@@ -1261,9 +1261,7 @@ export function MessagePage() {
       const updated = [...msgs, receiptMsg, systemLogMsg];
       
       const jobTitle = activeChat.title || '商談チャット';
-      const receiptChatIdParts = activeChat.id.split('_');
-      const receiptOpponentId = receiptChatIdParts[1] === currentUser.id ? receiptChatIdParts[2] : receiptChatIdParts[1];
-      const clientName = allCompanies.find(c => c.id === receiptOpponentId)?.name || 'クライアント企業';
+      const clientName = getOpponentCompanyName(activeChat.id, currentUser.id, allCompanies, 'クライアント企業');
       const workerName = currentUser.name;
 
       await api.saveContractTaskChat(activeChat.id, updated, jobTitle, clientName, workerName);
@@ -1325,10 +1323,8 @@ export function MessagePage() {
       const updated = [...msgs, arrangementMsg, systemLogMsg];
       
       const jobTitle = activeChat.title || '商談チャット';
-      const arrangementChatIdParts = activeChat.id.split('_');
-      const arrangementOpponentId = arrangementChatIdParts[1] === currentUser.id ? arrangementChatIdParts[2] : arrangementChatIdParts[1];
       const clientName = currentUser.name;
-      const workerName = allCompanies.find(c => c.id === arrangementOpponentId)?.name || 'パートナー会社';
+      const workerName = getOpponentCompanyName(activeChat.id, currentUser.id, allCompanies);
 
       await api.saveContractTaskChat(activeChat.id, updated, jobTitle, clientName, workerName);
 
@@ -1380,9 +1376,7 @@ export function MessagePage() {
       const updated = [...msgs, photoMsg, systemLogMsg];
 
       const jobTitle = activeChat.title || '商談チャット';
-      const photoChatIdParts = activeChat.id.split('_');
-      const photoOpponentId = photoChatIdParts[1] === currentUser.id ? photoChatIdParts[2] : photoChatIdParts[1];
-      const clientName = allCompanies.find(c => c.id === photoOpponentId)?.name || 'クライアント企業';
+      const clientName = getOpponentCompanyName(activeChat.id, currentUser.id, allCompanies, 'クライアント企業');
       const workerName = currentUser.name;
 
       await api.saveContractTaskChat(activeChat.id, updated, jobTitle, clientName, workerName);
@@ -1419,8 +1413,7 @@ export function MessagePage() {
       };
       
       // テキスト表記の変更
-      const approvedCategoryText = targetMsg.receiptDetails.category === 'transport' ? '交通費' :
-        targetMsg.receiptDetails.category === 'accommodation' ? '宿泊費' : '車移動費';
+      const approvedCategoryText = getExpenseCategoryLabel(targetMsg.receiptDetails.category);
       targetMsg.text = `【領収書承認済】${approvedCategoryText}: ¥${targetMsg.receiptDetails.amount?.toLocaleString()} の精算完了`;
       msgs[targetIdx] = targetMsg;
       
@@ -1435,10 +1428,8 @@ export function MessagePage() {
       const updated = [...msgs, systemLogMsg];
       
       const jobTitle = activeChat.title || '商談チャット';
-      const approveChatIdParts = activeChat.id.split('_');
-      const approveOpponentId = approveChatIdParts[1] === currentUser.id ? approveChatIdParts[2] : approveChatIdParts[1];
       const clientName = currentUser.name;
-      const workerName = allCompanies.find(c => c.id === approveOpponentId)?.name || 'パートナー会社';
+      const workerName = getOpponentCompanyName(activeChat.id, currentUser.id, allCompanies);
 
       await api.saveContractTaskChat(activeChat.id, updated, jobTitle, clientName, workerName);
 
@@ -1483,10 +1474,8 @@ export function MessagePage() {
       const updated = [...msgs, systemLogMsg];
       
       const jobTitle = activeChat.title || '商談チャット';
-      const rejectChatIdParts = activeChat.id.split('_');
-      const rejectOpponentId = rejectChatIdParts[1] === currentUser.id ? rejectChatIdParts[2] : rejectChatIdParts[1];
       const clientName = currentUser.name;
-      const workerName = allCompanies.find(c => c.id === rejectOpponentId)?.name || 'パートナー会社';
+      const workerName = getOpponentCompanyName(activeChat.id, currentUser.id, allCompanies);
 
       await api.saveContractTaskChat(activeChat.id, updated, jobTitle, clientName, workerName);
 
@@ -1588,9 +1577,7 @@ export function MessagePage() {
   const renderReceiptCard = (msg: any) => {
     const isApproved = msg.receiptDetails?.status === 'approved';
     const category = msg.receiptDetails?.category || 'transport';
-    const categoryLabel = 
-      category === 'transport' ? '公共交通機関' :
-      category === 'accommodation' ? '宿泊費' : '車移動';
+    const categoryLabel = getExpenseCategoryLabel(category);
     const amount = msg.receiptDetails?.amount || 0;
     const item = msg.receiptDetails?.item || '';
     const route = msg.receiptDetails?.route || '';
@@ -4553,9 +4540,7 @@ export function MessagePage() {
                   messages.filter((m: any) => m.isReceipt).map((msg: any) => {
                     const isApproved = msg.receiptDetails?.status === 'approved';
                     const category = msg.receiptDetails?.category || 'transport';
-                    const categoryLabel = 
-                      category === 'transport' ? '公共交通機関' :
-                      category === 'accommodation' ? '宿泊費' : '車移動';
+                    const categoryLabel = getExpenseCategoryLabel(category);
                     const amount = msg.receiptDetails?.amount || 0;
                     const item = msg.receiptDetails?.item || '未指定';
                     const route = msg.receiptDetails?.route || '';
