@@ -39,8 +39,11 @@
   - 承諾・辞退・オファー送信・完了報告・**競合自動不採用**を `updateContractTaskJobStatus` 経由に移行。競合自動不採用は「その案件のみ」不採用にするようになり、同じ直接チャットの別案件は影響を受けない → 上記「発見済みバグ(未修正)」を解消。
   - 「応募状況・履歴」「選考」画面の状態参照を `getJobStatus(task, jobId)` に変更。
   - 承諾時に `contractApprovalRequired` フラグを記録(将来の `contract_review` 独立ステータス化の起点)。
-- [ ] 第3段階: 保存値 `working` → `confirmed` リネーム、`cancelled` 追加。
-- [ ] 第4段階: キャンセルUI。
+- [ ] 第3段階: 保存値 `working` → `confirmed` リネーム(約85箇所の機械的置換)。
+- [x] **第4段階: 稼働前キャンセルUI(発注者のみ)**(PR #22)
+  - `ContractTask.status` に `cancelled` 追加。`getWorkPhase()` を `statusLabels.ts` から公開。
+  - 「選考」画面の候補者カードに「この応募をキャンセル」を追加(応募中/内定通知済み、または稼働開始前の稼働待ちのみ)。確認モーダルで理由を任意入力。
+  - 確定で `updateContractTaskJobStatus(chatId, jobId, 'cancelled')` + 相手チャットへシステムメッセージ通知。UIフロー検証済み。
 - [ ] 第5段階: 異議対応(`respondToDispute`)のUI配線。
 - [ ] 第6段階: 残りのバッジ・ステータス参照箇所の移行。
 
