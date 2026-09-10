@@ -269,7 +269,21 @@ export function ManagementPage() {
   // Compute my posted jobs
   const myJobs = useMemo(() => {
     if (!currentUser) return [];
-    return allJobsList.filter(j => j.authorId === currentUser.id);
+    const mine = allJobsList.filter(j => j.authorId === currentUser.id);
+    // 掲載中の案件を優先表示する:
+    //  0: 募集中(掲載中 / 締切間近)  1: 掲載締切  2: 過去の案件  3: 募集停止
+    const rank = (j: Job) => {
+      if (j.status === 'cancelled') return 3;
+      if (isJobPast(j)) return 2;
+      const key = getJobListingStatus(j).key;
+      if (key === 'active' || key === 'closing_soon') return 0;
+      return 1; // closed(掲載締切)
+    };
+    const deadlineTime = (j: Job) => {
+      const t = j.applicationDeadline ? new Date(j.applicationDeadline.replace(/\//g, '-')).getTime() : NaN;
+      return isNaN(t) ? Number.POSITIVE_INFINITY : t;
+    };
+    return [...mine].sort((a, b) => rank(a) - rank(b) || deadlineTime(a) - deadlineTime(b));
   }, [allJobsList, currentUser]);
 
   // Compute my applied jobs (applications)
@@ -2728,8 +2742,8 @@ export function ManagementPage() {
             )}
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              <label style={{ fontSize: '12px', fontWeight: 'bold' }}>評価コメント</label>
-              <textarea required value={evalComment} onChange={e => setEvalComment(e.target.value)} rows={3} style={{ padding: '8px', borderRadius: '6px', border: '1px solid var(--border-color)' }} placeholder="業務中の所感、引き継ぎ内容など"></textarea>
+              <label style={{ fontSize: '12px', fontWeight: 'bold' }}>評価コメント（任意）</label>
+              <textarea value={evalComment} onChange={e => setEvalComment(e.target.value)} rows={3} style={{ padding: '8px', borderRadius: '6px', border: '1px solid var(--border-color)' }} placeholder="業務中の所感、引き継ぎ内容など（未入力でも送信できます）"></textarea>
             </div>
 
             <div style={{ display: 'flex', gap: '10px', marginTop: '6px' }}>

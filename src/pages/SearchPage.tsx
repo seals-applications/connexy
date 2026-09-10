@@ -64,66 +64,6 @@ export function SearchPage() {
   // 新規作成フォーム用のState
   const [visibleCount, setVisibleCount] = useState(10);
   
-  // 検索条件の保存用State
-  const [searchPresets, setSearchPresets] = useState<{ id: string, name: string, filters: any }[]>(() => {
-    try {
-      return JSON.parse(localStorage.getItem('connexy_search_presets') || '[]');
-    } catch (e) {
-      return [];
-    }
-  });
-
-  const handleSaveSearchPreset = () => {
-    const presetName = prompt('この検索条件の登録名を入力してください:', `マイ条件_${new Date().toLocaleDateString()}`);
-    if (!presetName) return;
-
-    const newPreset = {
-      id: 'preset_' + Date.now(),
-      name: presetName,
-      filters: {
-        mode,
-        filterArea,
-        searchKeyword,
-        filterJobRoles,
-        filterCarriers,
-        filterChannels,
-        filterMinPrice,
-        filterDeadlineDays,
-        filterTalentSkills,
-        filterTalentCarriers
-      }
-    };
-
-    const updated = [...searchPresets, newPreset];
-    setSearchPresets(updated);
-    localStorage.setItem('connexy_search_presets', JSON.stringify(updated));
-    alert('検索条件を保存しました！');
-  };
-
-  const handleApplyPreset = (preset: any) => {
-    const f = preset.filters;
-    if (f.mode) setMode(f.mode);
-    if (f.filterArea) setFilterArea(f.filterArea);
-    if (f.searchKeyword !== undefined) {
-      setSearchKeyword(f.searchKeyword);
-      setTempKeyword(f.searchKeyword);
-    }
-    if (f.filterJobRoles) setFilterJobRoles(f.filterJobRoles);
-    if (f.filterCarriers) setFilterCarriers(f.filterCarriers);
-    if (f.filterChannels) setFilterChannels(f.filterChannels);
-    if (f.filterMinPrice !== undefined) setFilterMinPrice(f.filterMinPrice);
-    if (f.filterDeadlineDays !== undefined) setFilterDeadlineDays(f.filterDeadlineDays);
-    if (f.filterTalentSkills) setFilterTalentSkills(f.filterTalentSkills);
-    if (f.filterTalentCarriers) setFilterTalentCarriers(f.filterTalentCarriers);
-  };
-
-  const handleDeletePreset = (id: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    const updated = searchPresets.filter(p => p.id !== id);
-    setSearchPresets(updated);
-    localStorage.setItem('connexy_search_presets', JSON.stringify(updated));
-  };
-
   // 一括スカウト用State
   const [selectedTalentIds, setSelectedTalentIds] = useState<string[]>([]);
   const [showBulkScoutModal, setShowBulkScoutModal] = useState(false);
@@ -192,8 +132,6 @@ export function SearchPage() {
   const [isCsvModalOpen, setIsCsvModalOpen] = useState(false);
   const [csvPreviewData, setCsvPreviewData] = useState<{ data: any[]; errors: { rowIndex: number; message: string }[] } | null>(null);
   
-  const [folderModalState, setFolderModalState] = useState<{ id: string, type: 'job' | 'talent', isOpen: boolean } | null>(null);
-  const [newFolderName, setNewFolderName] = useState('');
 
   // ログインユーザーおよび限定公開先の動的管理用State
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -243,102 +181,7 @@ export function SearchPage() {
     }
   }, [isFilterSheetOpen, searchKeyword]);
 
-  const [hasSavedFilters, setHasSavedFilters] = useState(false);
-
-  useEffect(() => {
-    setHasSavedFilters(!!localStorage.getItem('connexy_saved_filters'));
-  }, []);
-
   const [isSamePriceAllDates, setIsSamePriceAllDates] = useState(true);
-
-  // 新着アラートバッジ
-  const [newMatchesCount, setNewMatchesCount] = useState(0);
-
-  useEffect(() => {
-    const saved = localStorage.getItem('connexy_saved_filters');
-    if (saved && jobs.length > 0) {
-      try {
-        const filters = JSON.parse(saved);
-        // 簡易チェック：保存条件でフィルタリング
-        const matches = jobs.filter(job => {
-          const matchesArea = isWithinAreaFilter(filters.filterArea, { lat: job.lat, lng: job.lng, locationName: job.locationName });
-
-          let remainingDays = 999;
-          if (job.applicationDeadline) {
-            const dl = new Date(job.applicationDeadline.replace(/\//g, '-'));
-            if (!isNaN(dl.getTime())) {
-              const today = new Date();
-              dl.setHours(0, 0, 0, 0);
-              today.setHours(0, 0, 0, 0);
-              remainingDays = Math.ceil((dl.getTime() - today.getTime()) / (1000 * 3600 * 24));
-            }
-          }
-          if (remainingDays < 0) return false;
-          if (filters.filterDeadlineDays !== null && remainingDays > filters.filterDeadlineDays) return false;
-
-          return matchesArea;
-        });
-
-        const savedCount = parseInt(localStorage.getItem('connexy_last_seen_saved_count') || '0', 10);
-        if (matches.length > savedCount) {
-          setNewMatchesCount(matches.length - savedCount);
-        } else {
-          setNewMatchesCount(0);
-        }
-      } catch(e) {}
-    }
-  }, [jobs]);
-
-  const saveFilters = () => {
-    const filters = {
-      searchKeyword,
-      filterJobRoles,
-      filterCarriers,
-      filterChannels,
-      filterMinPrice,
-      filterDeadlineDays,
-      filterTalentSkills,
-      filterTalentCarriers,
-      filterTalentTrainings,
-      filterArea,
-      includeUrgent,
-      showFavoritesOnly
-    };
-    localStorage.setItem('connexy_saved_filters', JSON.stringify(filters));
-    setHasSavedFilters(true);
-    alert('現在の検索条件を保存しました');
-  };
-
-  const loadFilters = () => {
-    const saved = localStorage.getItem('connexy_saved_filters');
-    if (saved) {
-      try {
-        const filters = JSON.parse(saved);
-        setSearchKeyword(filters.searchKeyword || '');
-        setTempKeyword(filters.searchKeyword || '');
-        setFilterJobRoles(filters.filterJobRoles || []);
-        setFilterCarriers(filters.filterCarriers || []);
-        setFilterChannels(filters.filterChannels || []);
-        setFilterMinPrice(filters.filterMinPrice || 0);
-        setFilterDeadlineDays(filters.filterDeadlineDays ?? null);
-        setFilterTalentSkills(filters.filterTalentSkills || []);
-        setFilterTalentCarriers(filters.filterTalentCarriers || []);
-        setFilterTalentTrainings(filters.filterTalentTrainings || []);
-        setFilterArea(filters.filterArea || 'all');
-        setIncludeUrgent(filters.includeUrgent ?? false);
-        setShowFavoritesOnly(filters.showFavoritesOnly ?? false);
-        
-        // 更新確認済みにする
-        const matches = jobs.filter(job => {
-          return isWithinAreaFilter(filters.filterArea, { lat: job.lat, lng: job.lng, locationName: job.locationName });
-        });
-        localStorage.setItem('connexy_last_seen_saved_count', matches.length.toString());
-        setNewMatchesCount(0);
-        
-        alert('保存された検索条件を呼び出しました');
-      } catch(e) {}
-    }
-  };
 
   useEffect(() => {
     if (viewMode === 'list') {
@@ -495,56 +338,19 @@ export function SearchPage() {
     setSelectedJob(null);
   };
 
+  // お気に入りはハート押下で即トグル(保存先の選択は行わない)。
   const handleToggleFavoriteJob = async (jobId: string, e: React.MouseEvent) => {
     e.stopPropagation();
     if (!currentUser) return;
-    const isFav = currentUser.favoriteJobIds?.includes(jobId);
     const newFavorites = await api.toggleFavoriteJob(currentUser.id, jobId);
     setCurrentUser({ ...currentUser, favoriteJobIds: newFavorites });
-    
-    if (!isFav) {
-      setFolderModalState({ id: jobId, type: 'job', isOpen: true });
-    }
   };
 
   const handleToggleFavoriteTalent = async (talentId: string, e: React.MouseEvent) => {
     e.stopPropagation();
     if (!currentUser) return;
-    const isFav = currentUser.favoriteTalentIds?.includes(talentId);
     const newFavorites = await api.toggleFavoriteTalent(currentUser.id, talentId);
     setCurrentUser({ ...currentUser, favoriteTalentIds: newFavorites });
-
-    if (!isFav) {
-      setFolderModalState({ id: talentId, type: 'talent', isOpen: true });
-    }
-  };
-
-
-  const handleAddFolder = async () => {
-    if (!newFolderName.trim() || !currentUser || !folderModalState) return;
-    const newFolder = { id: 'folder_' + Date.now(), name: newFolderName, itemIds: [folderModalState.id] };
-    const updatedFolders = [...(currentUser.favoriteFolders || []), newFolder];
-    const updatedUser = { ...currentUser, favoriteFolders: updatedFolders };
-    setCurrentUser(updatedUser);
-    await api.updateUser(updatedUser);
-    setNewFolderName('');
-    setFolderModalState(null);
-  };
-
-  const handleAddToFolder = async (folderId: string) => {
-    if (!currentUser || !folderModalState) return;
-    const updatedFolders = (currentUser.favoriteFolders || []).map(f => {
-      if (f.id === folderId) {
-        if (!f.itemIds.includes(folderModalState.id)) {
-          return { ...f, itemIds: [...f.itemIds, folderModalState.id] };
-        }
-      }
-      return f;
-    });
-    const updatedUser = { ...currentUser, favoriteFolders: updatedFolders };
-    setCurrentUser(updatedUser);
-    await api.updateUser(updatedUser);
-    setFolderModalState(null);
   };
 
   // 一覧表示での単価・総額レンダリング
@@ -2165,26 +1971,6 @@ export function SearchPage() {
                 {activeFiltersCount}
               </span>
             )}
-            {newMatchesCount > 0 && activeFiltersCount === 0 && (
-              <span style={{
-                position: 'absolute',
-                top: '-4px',
-                right: '-4px',
-                background: '#3B82F6',
-                color: 'white',
-                borderRadius: '50%',
-                width: '16px',
-                height: '16px',
-                fontSize: '10px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontWeight: 'bold',
-                boxShadow: '0 2px 4px rgba(59,130,246,0.3)'
-              }}>
-                {newMatchesCount}
-              </span>
-            )}
           </button>
           </div>
         </div>
@@ -2210,33 +1996,6 @@ export function SearchPage() {
           }}
         >
           <div style={{ padding: '16px', background: 'var(--surface-color)', borderBottom: '1px solid var(--border-color)', position: 'sticky', top: 0, zIndex: 100 }}>
-            {/* マイ検索条件バー */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', flexWrap: 'wrap' }}>
-              <button 
-                onClick={handleSaveSearchPreset}
-                style={{ background: 'linear-gradient(135deg, #6366F1 0%, #4F46E5 100%)', color: 'white', border: 'none', borderRadius: '16px', padding: '4px 12px', fontSize: '11px', fontWeight: 'bold', display: 'inline-flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}
-              >
-                <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>bookmark</span>
-                現在の検索条件を保存
-              </button>
-
-              {searchPresets.length > 0 && (
-                <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', alignItems: 'center' }}>
-                  <span style={{ fontSize: '11px', color: 'var(--text-sub)', fontWeight: 'bold' }}>マイ条件:</span>
-                  {searchPresets.map(p => (
-                    <span 
-                      key={p.id} 
-                      onClick={() => handleApplyPreset(p)}
-                      style={{ background: '#EEF2FF', color: '#4338CA', border: '1px solid #C7D2FE', borderRadius: '12px', padding: '2px 8px', fontSize: '11px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px', fontWeight: 'bold' }}
-                    >
-                      {p.name}
-                      <span className="material-symbols-outlined" style={{ fontSize: '12px', color: '#6366F1' }} onClick={(e) => handleDeletePreset(p.id, e)}>close</span>
-                    </span>
-                  ))}
-                </div>
-              )}
-            </div>
-
             <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '4px', flexWrap: 'wrap', alignItems: 'center' }}>
               {!hasActiveFilters ? (
                 <span style={{ fontSize: '13px', color: 'var(--text-sub)' }}>フィルター未設定</span>
@@ -2357,15 +2116,6 @@ export function SearchPage() {
                 </>
               )}
             </div>
-            
-            {mode === 'job' && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '10px', borderTop: '1px solid #f3f4f6', paddingTop: '8px' }}>
-                <label style={{ fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', userSelect: 'none', color: 'var(--text-main)' }}>
-                  <input type="checkbox" checked={includeUrgent} onChange={(e) => setIncludeUrgent(e.target.checked)} style={{ width: '14px', height: '14px' }} />
-                  <strong>緊急募集の案件を表示する</strong>
-                </label>
-              </div>
-            )}
           </div>
 
           <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -3716,6 +3466,19 @@ export function SearchPage() {
                   </div>
                 </div>
 
+                {/* 緊急募集の表示切り替え */}
+                <div className="filter-group">
+                  <span className="filter-group-title">緊急募集</span>
+                  <label className={`filter-checkbox-label ${includeUrgent ? 'active' : ''}`} style={{ display: 'inline-flex' }}>
+                    <input
+                      type="checkbox"
+                      checked={includeUrgent}
+                      onChange={(e) => setIncludeUrgent(e.target.checked)}
+                    />
+                    緊急募集の案件を表示する
+                  </label>
+                </div>
+
                 <details style={{ background: 'var(--surface-color)', borderRadius: '8px', border: '1px solid var(--border-color)', padding: '0 12px', marginBottom: '16px' }}>
                   <summary style={{ fontWeight: 'bold', cursor: 'pointer', padding: '12px 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', listStyle: 'none' }}>
                     <span>詳細条件を設定する</span>
@@ -3951,26 +3714,7 @@ export function SearchPage() {
               </>
             )}
           </div>
-          
-          <div style={{ padding: '0 16px 16px 16px', display: 'flex', gap: '8px', flexDirection: 'column' }}>
-            <button 
-              onClick={saveFilters}
-              style={{ width: '100%', padding: '10px', background: 'var(--bg-gray)', border: '1px solid var(--border-color)', borderRadius: '8px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', fontWeight: 'bold', color: 'var(--text-main)', cursor: 'pointer' }}
-            >
-              <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>save</span>
-              現在の検索条件を保存する
-            </button>
-            {hasSavedFilters && (
-              <button 
-                onClick={loadFilters}
-                style={{ width: '100%', padding: '10px', background: '#DBEAFE', border: '1px solid #BFDBFE', borderRadius: '8px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', fontWeight: 'bold', color: '#1E3A8A', cursor: 'pointer' }}
-              >
-                <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>settings_backup_restore</span>
-                保存した検索条件を呼び出す
-              </button>
-            )}
-          </div>
-          
+
           <div className="filter-sheet-footer" style={{ display: 'flex', gap: '12px', padding: '16px', borderTop: '1px solid var(--border-color)', background: 'var(--surface-color)' }}>
             <button
               style={{
@@ -4339,56 +4083,6 @@ export function SearchPage() {
           </div>
         </div>
       )}
-      {folderModalState && (
-        <div className="modal-overlay" onClick={() => setFolderModalState(null)}>
-          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ padding: '24px', maxWidth: '400px' }}>
-            <h2 style={{ fontSize: '18px', marginBottom: '16px' }}>お気に入りの保存先</h2>
-            
-            <div style={{ marginBottom: '16px' }}>
-              <button 
-                className="btn-outline" 
-                style={{ width: '100%', textAlign: 'left', padding: '12px', marginBottom: '8px' }}
-                onClick={() => setFolderModalState(null)}
-              >
-                📁 すべてのお気に入り (フォルダなし)
-              </button>
-              {currentUser?.favoriteFolders?.map(folder => (
-                <button 
-                  key={folder.id}
-                  className="btn-outline" 
-                  style={{ width: '100%', textAlign: 'left', padding: '12px', marginBottom: '8px', display: 'flex', justifyContent: 'space-between' }}
-                  onClick={() => handleAddToFolder(folder.id)}
-                >
-                  <span>📁 {folder.name}</span>
-                  <span style={{ color: 'var(--text-sub)' }}>{folder.itemIds.length}</span>
-                </button>
-              ))}
-            </div>
-
-            <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '16px', display: 'flex', gap: '8px' }}>
-              <input 
-                type="text" 
-                value={newFolderName}
-                onChange={e => setNewFolderName(e.target.value)}
-                placeholder="新しいフォルダを作成..."
-                style={{ flex: 1, padding: '8px', borderRadius: '4px', border: '1px solid var(--border-color)' }}
-              />
-              <button 
-                className="btn-primary" 
-                onClick={handleAddFolder}
-                disabled={!newFolderName.trim()}
-              >
-                作成
-              </button>
-            </div>
-            
-            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '24px' }}>
-              <button className="btn-outline" onClick={() => setFolderModalState(null)}>閉じる</button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* 一括スカウトフローティングバー */}
       {mode === 'talent' && selectedTalentIds.length > 0 && (
         <div style={{
