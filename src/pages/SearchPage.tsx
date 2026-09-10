@@ -9,6 +9,7 @@ import { CalendarPicker } from '../components/CalendarPicker';
 import { formatJobDates } from '../utils/dateFormatter';
 import { generateMaskedLocation, extractArea, getCommonAreaName } from '../utils/maskingUtils';
 import { isWithinAreaFilter } from '../utils/areaFilter';
+import { getLinkedJobIds } from '../utils/jobStates';
 import Autocomplete from 'react-google-autocomplete';
 import { useSessionState } from '../hooks/useSessionState';
 
@@ -1308,10 +1309,7 @@ export function SearchPage() {
     
     const ids: string[] = [];
     myChatTasks.forEach(t => {
-      const evals = t.evaluations as any;
-      if (evals && Array.isArray(evals.appliedJobIds)) {
-        ids.push(...evals.appliedJobIds);
-      }
+      ids.push(...getLinkedJobIds(t.evaluations));
     });
     return ids;
   }, [contractTasks, currentUser]);
