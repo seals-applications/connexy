@@ -168,17 +168,14 @@ export function BottomNav() {
 
     checkNotificationCounts();
 
-    // 2秒ポーリングをやめ、データ変更イベント駆動に変更(オンライン時は Supabase Realtime)。
+    // データ変更イベント + Realtime + フォールバックポーリング(subscribe 側が間隔を管理)。
     const unsubscribe = subscribeToContractTaskChanges(checkNotificationCounts);
     const onVisible = () => { if (document.visibilityState === 'visible') checkNotificationCounts(); };
     document.addEventListener('visibilitychange', onVisible);
-    // 取りこぼし・時間経過による変化に備えた低頻度フォールバック
-    const fallback = setInterval(checkNotificationCounts, 60000);
 
     return () => {
       unsubscribe();
       document.removeEventListener('visibilitychange', onVisible);
-      clearInterval(fallback);
     };
   }, [location.pathname]);
 
