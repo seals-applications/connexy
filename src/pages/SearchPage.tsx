@@ -2000,7 +2000,8 @@ export function SearchPage() {
             padding: '3px',
             borderRadius: '20px',
             boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.05)',
-            alignItems: 'center'
+            alignItems: 'center',
+            flexShrink: 0
           }}>
             <button
               onClick={() => setViewMode('map')}
@@ -2022,7 +2023,7 @@ export function SearchPage() {
               }}
             >
               <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>map</span>
-              マップ表示
+              マップ
             </button>
             <button
               onClick={() => setViewMode('list')}
@@ -2044,13 +2045,13 @@ export function SearchPage() {
               }}
             >
               <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>format_list_bulleted</span>
-              リスト表示
+              リスト
             </button>
           </div>
 
-          <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
-            <button 
-              className="filter-btn" 
+          <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexShrink: 0, marginLeft: 'auto' }}>
+            <button
+              className="filter-btn"
               onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}
               style={{ 
                 backgroundColor: showFavoritesOnly ? '#FEE2E2' : 'var(--surface-color)',
@@ -2058,7 +2059,7 @@ export function SearchPage() {
                 border: 'none',
                 boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
                 transition: 'all 0.2s ease',
-                marginLeft: '4px'
+                flexShrink: 0
               }}
               title="お気に入りのみ表示"
             >
@@ -2075,7 +2076,7 @@ export function SearchPage() {
               border: 'none',
               boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
               transition: 'all 0.2s ease',
-              marginLeft: '4px'
+              flexShrink: 0
             }}
             title="データを更新"
           >
@@ -2092,7 +2093,7 @@ export function SearchPage() {
               border: 'none',
               boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
               transition: 'all 0.2s ease',
-              marginLeft: '4px',
+              flexShrink: 0,
               position: 'relative'
             }}
             title="詳細フィルター"
