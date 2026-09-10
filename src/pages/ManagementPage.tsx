@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { jsPDF } from 'jspdf';
 import { api } from '../data/mockDb';
 import type { ContractTask, Training, Staff, Job, User } from '../data/mockDb';
+import { getEngagementStatusLabel, getJobListingStatus, isContractApproved } from '../utils/statusLabels';
 
 const quizData: Record<string, Array<{ question: string, options: string[], answer: number }>> = {
   tr1: [
@@ -1429,11 +1430,19 @@ export function ManagementPage() {
                           <div style={{ flex: 1 }}>
                             <div style={{ display: 'flex', gap: '6px', marginBottom: '6px', flexWrap: 'wrap' }}>
                               {(() => {
-                                if (job.status === 'cancelled') return <span style={{ fontSize: '10px', fontWeight: 'bold', padding: '2px 8px', borderRadius: '10px', background: '#FEE2E2', color: '#991B1B' }}>キャンセル済み</span>;
-                                if (isPast) return <span style={{ fontSize: '10px', fontWeight: 'bold', padding: '2px 8px', borderRadius: '10px', background: '#E2E8F0', color: '#64748B' }}>過去の案件</span>;
-                                if (isContracted) return <span style={{ fontSize: '10px', fontWeight: 'bold', padding: '2px 8px', borderRadius: '10px', background: '#D1FAE5', color: '#065F46' }}>確定</span>;
-                                if (isOffered) return <span style={{ fontSize: '10px', fontWeight: 'bold', padding: '2px 8px', borderRadius: '10px', background: '#FEF3C7', color: '#D97706' }}>内定通知済み</span>;
-                                return <span style={{ fontSize: '10px', fontWeight: 'bold', padding: '2px 8px', borderRadius: '10px', background: '#EFF6FF', color: '#1D4ED8' }}>掲載中</span>;
+                                const badgeStyle = { fontSize: '10px', fontWeight: 'bold' as const, padding: '2px 8px', borderRadius: '10px' };
+                                // 軸A: 掲載ステータス。稼働が全て終わっている場合は当面「過去の案件」を優先表示(将来の「募集終了」)
+                                const listing = getJobListingStatus(job);
+                                const primary = isPast && job.status !== 'cancelled'
+                                  ? { label: '過去の案件', bg: '#E2E8F0', color: '#64748B' }
+                                  : { label: listing.label, bg: listing.bg, color: listing.color };
+                                return (
+                                  <>
+                                    <span style={{ ...badgeStyle, background: primary.bg, color: primary.color }}>{primary.label}</span>
+                                    {isContracted && <span style={{ ...badgeStyle, background: '#D1FAE5', color: '#065F46' }}>確定あり</span>}
+                                    {!isContracted && isOffered && <span style={{ ...badgeStyle, background: '#FEF3C7', color: '#D97706' }}>内定通知中</span>}
+                                  </>
+                                );
                               })()}
                             </div>
                             <h4 style={{ margin: 0, fontSize: '14px', fontWeight: 'bold', display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center' }}>
@@ -1988,24 +1997,11 @@ export function ManagementPage() {
         <main className="list-area bg-gray" style={{ flex: 1, overflowY: 'auto', padding: '16px', paddingBottom: '90px' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {myApplications.map((app, idx) => {
-              const statusConfig = (() => {
-                switch (app.status) {
-                  case 'applying':
-                    return { text: '選考中', bg: '#FEF3C7', color: '#D97706' };
-                  case 'offered':
-                    return { text: '内定・承諾待ち', bg: '#F3E8FF', color: '#7E22CE' };
-                  case 'working':
-                  case 'report_pending':
-                    return { text: '契約確定', bg: '#D1FAE5', color: '#065F46' };
-                  case 'completed':
-                    return { text: '稼働完了', bg: '#EFF6FF', color: '#1D4ED8' };
-                  case 'rejected':
-                  case 'declined':
-                    return { text: '見送り/辞退', bg: '#F1F5F9', color: '#475569' };
-                  default:
-                    return { text: app.status, bg: '#E2E8F0', color: '#1E293B' };
-                }
-              })();
+              // 応募状況・履歴は「自社が応募した案件」なので、視点は常に応募者(agency)
+              const engagement = getEngagementStatusLabel(app.status, app.job, {
+                viewer: 'agency',
+                contractApproved: isContractApproved(app.task),
+              });
 
               return (
                 <div 
@@ -2022,15 +2018,29 @@ export function ManagementPage() {
                   }}
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                    <span style={{ 
-                      fontSize: '11px', 
-                      fontWeight: 'bold', 
-                      padding: '3px 8px', 
-                      borderRadius: '8px', 
-                      background: statusConfig.bg, 
-                      color: statusConfig.color 
-                    }}>
-                      {statusConfig.text}
+                    <span style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', alignItems: 'center' }}>
+                      <span style={{
+                        fontSize: '11px',
+                        fontWeight: 'bold',
+                        padding: '3px 8px',
+                        borderRadius: '8px',
+                        background: engagement.bg,
+                        color: engagement.color,
+                      }}>
+                        {engagement.label}
+                      </span>
+                      {engagement.subBadge && (
+                        <span style={{
+                          fontSize: '10px',
+                          fontWeight: 'bold',
+                          padding: '3px 6px',
+                          borderRadius: '8px',
+                          background: '#FEF3C7',
+                          color: '#B45309',
+                        }}>
+                          {engagement.subBadge}
+                        </span>
+                      )}
                     </span>
                     <span style={{ fontSize: '11px', color: 'var(--text-sub)' }}>
                       応募日: {app.date}
