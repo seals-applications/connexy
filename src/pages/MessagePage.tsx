@@ -1647,7 +1647,9 @@ export function MessagePage() {
         border: isApproved ? '2px solid #10B981' : '2px dashed #F59E0B', 
         borderRadius: '12px', 
         padding: '14px', 
-        width: '240px',
+        width: '100%',
+        maxWidth: '240px',
+        boxSizing: 'border-box',
         boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)',
         color: '#1F2937',
         textAlign: 'left'
@@ -2107,7 +2109,9 @@ export function MessagePage() {
         border: '2px solid #3B82F6', 
         borderRadius: '12px', 
         padding: '14px', 
-        width: '240px',
+        width: '100%',
+        maxWidth: '240px',
+        boxSizing: 'border-box',
         boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)',
         color: '#1F2937',
         textAlign: 'left'
@@ -2149,7 +2153,9 @@ export function MessagePage() {
         border: '1px solid #E2E8F0', 
         borderRadius: '12px', 
         overflow: 'hidden',
-        width: '220px',
+        width: '100%',
+        maxWidth: '220px',
+        boxSizing: 'border-box',
         boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)',
         color: '#1F2937',
         textAlign: 'left'
@@ -2178,7 +2184,9 @@ export function MessagePage() {
         border: '2px solid #F59E0B', 
         borderRadius: '12px', 
         padding: '12px', 
-        width: '220px',
+        width: '100%',
+        maxWidth: '220px',
+        boxSizing: 'border-box',
         boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)',
         color: '#1F2937',
         textAlign: 'left'
@@ -2616,7 +2624,7 @@ export function MessagePage() {
                     ) : (
                       <div className="message-bubble">
                         {msg.isProposal ? (
-                          <div className="contract-card" style={{ background: 'var(--surface-color)', border: '1px solid #E2E8F0', borderRadius: '8px', padding: '12px', width: '220px' }}>
+                          <div className="contract-card" style={{ background: 'var(--surface-color)', border: '1px solid #E2E8F0', borderRadius: '8px', padding: '12px', width: '100%', maxWidth: '220px', boxSizing: 'border-box' }}>
                             <div className="contract-header" style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 'bold', color: 'var(--primary-color)', marginBottom: '8px' }}>
                               <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>description</span>
                               <span style={{ fontSize: '13px' }}>電子発注書</span>
@@ -2646,7 +2654,7 @@ export function MessagePage() {
                             )}
                           </div>
                         ) : msg.isOffer ? (
-                          <div style={{ background: 'var(--surface-color)', border: '1px solid #FEF3C7', borderRadius: '12px', padding: '14px', width: '230px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)', boxSizing: 'border-box' }}>
+                          <div style={{ background: 'var(--surface-color)', border: '1px solid #FEF3C7', borderRadius: '12px', padding: '14px', width: '100%', maxWidth: '230px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)', boxSizing: 'border-box' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 'bold', color: '#D97706', marginBottom: '10px' }}>
                               <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>workspace_premium</span>
                               <span style={{ fontSize: '13px' }}>内定通知オファー</span>
@@ -2718,7 +2726,7 @@ export function MessagePage() {
                     ) : (
                       <div className="message-bubble">
                         {msg.isProposal ? (
-                          <div className="contract-card" style={{ background: 'var(--surface-color)', border: '1px solid #E2E8F0', borderRadius: '8px', padding: '12px', width: '220px' }}>
+                          <div className="contract-card" style={{ background: 'var(--surface-color)', border: '1px solid #E2E8F0', borderRadius: '8px', padding: '12px', width: '100%', maxWidth: '220px', boxSizing: 'border-box' }}>
                             <div className="contract-header" style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 'bold', color: 'var(--primary-color)', marginBottom: '8px' }}>
                               <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>description</span>
                               <span style={{ fontSize: '13px' }}>電子発注書</span>
@@ -2739,7 +2747,7 @@ export function MessagePage() {
                             )}
                           </div>
                         ) : msg.isOffer ? (
-                          <div style={{ background: 'var(--surface-color)', border: '1px solid #FEF3C7', borderRadius: '12px', padding: '14px', width: '230px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)', boxSizing: 'border-box' }}>
+                          <div style={{ background: 'var(--surface-color)', border: '1px solid #FEF3C7', borderRadius: '12px', padding: '14px', width: '100%', maxWidth: '230px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)', boxSizing: 'border-box' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 'bold', color: '#D97706', marginBottom: '10px' }}>
                               <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>workspace_premium</span>
                               <span style={{ fontSize: '13px' }}>内定通知オファー</span>
