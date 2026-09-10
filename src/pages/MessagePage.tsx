@@ -1,5 +1,25 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { api } from '../data/mockDb';
+import { getEngagementStatusLabel } from '../utils/statusLabels';
+
+// チャットのステータスバッジ。レガシーなチャット状態(商談中/契約待ち等)は個別に、
+// 応募・契約ステータスは getEngagementStatusLabel に委譲する(STATUS_MODEL.md §4)。
+function getChannelBadge(
+  status: string | undefined,
+  job: Parameters<typeof getEngagementStatusLabel>[1],
+  opts: { viewer?: 'client' | 'agency'; contractApproved?: boolean } = {},
+): { label: string; color: string; bg: string } {
+  switch (status) {
+    case 'group': return { label: '現場グループ', color: '#7C2D12', bg: '#FDBA74' };
+    case 'negotiating': return { label: '商談中', color: '#3730A3', bg: '#E0E7FF' };
+    case 'waiting': return { label: '契約待ち', color: '#9A3412', bg: '#FFEDD5' };
+    case 'contracted': return { label: '契約成立', color: '#065F46', bg: '#D1FAE5' };
+    default: {
+      const e = getEngagementStatusLabel(status || '', job, opts);
+      return { label: e.label, color: e.color, bg: e.bg };
+    }
+  }
+}
 
 interface ChatChannel {
   id: string;
@@ -2323,19 +2343,14 @@ export function MessagePage() {
                               </div>
                               <p className="chat-preview">{channel.preview}</p>
                             </div>
-                            <span className={`status-badge ${
-                              channel.status === 'applying' || channel.status === 'negotiating' ? 'badge-negotiating' : 
-                              channel.status === 'offered' || channel.status === 'waiting' ? 'badge-waiting' : 
-                              channel.status === 'contracted' || channel.status === 'confirmed' ? 'badge-contracted' : 'badge-contracted'
-                            }`} style={channel.status === 'group' ? { backgroundColor: '#FDBA74', color: '#7C2D12' } :
-                                      channel.status === 'rejected' || channel.status === 'declined' ? { backgroundColor: '#FEE2E2', color: '#991B1B' } : {}}>
-                              {channel.status === 'applying' ? '選考中' :
-                               channel.status === 'negotiating' ? '商談中' :
-                               channel.status === 'offered' ? '内定通知済' :
-                               channel.status === 'waiting' ? '契約待ち' :
-                               channel.status === 'confirmed' || channel.status === 'contracted' ? '契約成立' :
-                               channel.status === 'rejected' || channel.status === 'declined' ? '辞退/不採用' : '現場グループ'}
-                            </span>
+                            {(() => {
+                              const b = getChannelBadge(channel.status, null);
+                              return (
+                                <span className="status-badge" style={{ backgroundColor: b.bg, color: b.color }}>
+                                  {b.label}
+                                </span>
+                              );
+                            })()}
                           </div>
                         );
                       })}
@@ -2766,21 +2781,28 @@ export function MessagePage() {
               {activeChat?.status !== 'group' && (
                 <div className="chat-conditions-pin" style={{ gridColumn: 'span 3', background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '8px', padding: '8px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
                   <div className="condition-summary">
-                    <span className={`status-badge ${
-                      activeChat?.status === 'applying' ? 'badge-negotiating' : 
-                      activeChat?.status === 'offered' ? 'badge-waiting' :
-                      activeChat?.status === 'rejected' || activeChat?.status === 'declined' ? 'badge-rejected' :
-                      activeChat?.status === 'confirmed' ? 'badge-contracted' :
-                      activeChat?.status === 'negotiating' ? 'badge-negotiating' :
-                      activeChat?.status === 'waiting' ? 'badge-waiting' : 'badge-contracted'
-                    }`} style={{ margin: 0 }}>
-                      {activeChat?.status === 'applying' ? '選考中' :
-                       activeChat?.status === 'offered' ? '内定提示中' :
-                       activeChat?.status === 'rejected' || activeChat?.status === 'declined' ? '辞退/不採用' :
-                       activeChat?.status === 'confirmed' ? '稼働中' :
-                       activeChat?.status === 'negotiating' ? '商談中' :
-                       activeChat?.status === 'waiting' ? '契約待ち' : '契約成立'}
-                    </span>
+                    {(() => {
+                      const engagement = getEngagementStatusLabel(activeChat?.status || '', relatedJob, {
+                        viewer: isClient ? 'client' : 'agency',
+                        contractApproved,
+                      });
+                      const b = getChannelBadge(activeChat?.status, relatedJob, {
+                        viewer: isClient ? 'client' : 'agency',
+                        contractApproved,
+                      });
+                      return (
+                        <>
+                          <span className="status-badge" style={{ margin: 0, backgroundColor: b.bg, color: b.color }}>
+                            {b.label}
+                          </span>
+                          {engagement.subBadge && (
+                            <span className="status-badge" style={{ margin: '0 0 0 4px', backgroundColor: '#FEF3C7', color: '#B45309' }}>
+                              {engagement.subBadge}
+                            </span>
+                          )}
+                        </>
+                      );
+                    })()}
                     <div className="condition-details">
                       <span className="text-gray text-small">
                         {relatedJob?.jobCode && `案件コード: ${relatedJob.jobCode} / `}

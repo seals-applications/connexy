@@ -52,7 +52,9 @@
   - 完了報告で評価★1のとき `disputed` にし、コメントを確認事項として保存(`handleReportSubmit`)。
   - 「報告・評価」の該当カードに「内容を承認して完了」(→ `completed`)/「認識に相違あり」(理由入力 → `disputed` のまま)の2ボタン。
   - `respondToDispute` を jobStates 対応にし、理由は `evaluations.disputedReason` に統一。UIフロー検証済み(★1→disputed→差戻し→承認→completed)。
-- [ ] 第6段階: 残りのバッジ・ステータス参照箇所の移行。
+- [x] **第6段階: MessagePage のバッジを `getEngagementStatusLabel` 経由に**(PR #25)
+  - `getChannelBadge()` ヘルパーを新設。レガシーなチャット状態(商談中/契約待ち/契約成立/現場グループ)は個別、応募・契約ステータスは `getEngagementStatusLabel` に委譲。
+  - チャット一覧バッジ(視点なし・中立ラベル)とチャットヘッダーの条件ピン(視点・案件・契約書承認状態つき、`subBadge` 対応)を差し替え。
 
 ### 🐛 発見済みバグ(未修正・要設計判断)
 
