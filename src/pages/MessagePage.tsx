@@ -4,7 +4,7 @@ import { getEngagementStatusLabel } from '../utils/statusLabels';
 import { getOpponentCompanyName } from '../utils/chatParties';
 import { getExpenseCategoryLabel } from '../utils/expenseHelpers';
 import { getOfferExpiryState } from '../utils/offerExpiry';
-import { getPrimaryLinkedJobId, isJobLinkedToChat } from '../utils/jobStates';
+import { getPrimaryLinkedJobId, isJobLinkedToChat, getJobStaffId, getLinkedStaffIds } from '../utils/jobStates';
 
 // チャットのステータスバッジ。レガシーなチャット状態(商談中/契約待ち等)は個別に、
 // 応募・契約ステータスは getEngagementStatusLabel に委譲する(STATUS_MODEL.md §4)。
@@ -504,10 +504,7 @@ export function MessagePage() {
         if (isStaffUser) {
           if (isRequestedActiveChat) return true;
           const task = chatTasks.find(t => t.id === channel.id);
-          if (task) {
-            const staffIds = Object.values((task.evaluations as any)?.appliedJobStaffIds || {});
-            if (staffIds.includes(currentUser.staffId)) return true;
-          }
+          if (task && getLinkedStaffIds(task.evaluations).includes(currentUser.staffId)) return true;
           return false;
         }
 
@@ -978,7 +975,7 @@ export function MessagePage() {
         return;
       }
 
-      const staffId = (task.evaluations as any)?.appliedJobStaffIds?.[jobId] || (task.evaluations as any)?.offeredStaffId;
+      const staffId = getJobStaffId(task.evaluations, jobId);
       const staff = allStaffs.find(s => s.id === staffId);
 
       const now = new Date();

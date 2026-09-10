@@ -9,7 +9,12 @@
 
 **設計・アーキテクチャ**
 - [~] チャット⇔案件の紐付けの読み出しを単一アクセサに統一(PR #32)。`src/utils/jobStates.ts` に `getLinkedJobIds()` / `getPrimaryLinkedJobId()` / `isJobLinkedToChat()` を新設し、`appliedJobIds` / `offeredJobId` / `jobStates` を統合。MessagePage の `appliedJobIds?.[0] || offeredJobId` イディオム5箇所 + ManagementPage/SearchPage の該当箇所を差し替え。**残**: 保存側は `appliedJobIds` と `offeredJobId` の両フィールドが残っている(完全な単一化は下記「ContractTask 型の分離」と同時に行う)。
-- [ ] `ContractTask`型が「チャットスレッド」「応募」「オファー」「実契約」の4つの異なる概念を1レコードで兼務しているのを分離する。上記の根本原因であり、`status`がチャット単位になってしまう未修正バグ(下記参照)の原因でもある。
+- [ ] `ContractTask`型が「チャットスレッド」「応募」「オファー」「実契約」の4つの異なる概念を1レコードで兼務しているのを分離する。段階導入:
+  - [x] **段階1: `evaluations` の応募/オファー情報を `jobStates` に統合**(PR #33)。`JobState` に `appliedAt` / `staffId` / `offer` を追加。`seedAppliedJobStates` がスタッフIDと応募日も記録、`applyJobState` がオファー時に条件・スタッフを記録。`getJobAppliedAt()` / `getJobStaffId()` / `getLinkedStaffIds()` / `getJobOfferInfo()` を新設し、`appliedJobDates` / `appliedJobStaffIds` / `offeredStaffId` / `offered*` の**読み出し**を差し替え(旧フィールドにフォールバック)。保存側は旧フィールドも併記(段階4で撤去)。
+  - [ ] 段階2: 型を判別可能ユニオン(`ChatThread` / `Contract`)に。`getContractTasks` の戻り値を分類。
+  - [ ] 段階3: `ct_*`(実契約)を `api.getContracts()` に分離。
+  - [ ] 段階4: 直接チャットの `appliedJobIds` / `offeredJobId` / `appliedJobDates` / `appliedJobStaffIds` / `offered*` フィールドを撤去(`jobStates` に一本化済み)。
+  - [ ] 段階5: 残りの参照箇所・group chat の扱いを整理。
 - [x] 経費申請まわりの重複ロジックを共通化(PR #29)。`src/utils/chatParties.ts` の `getOpponentCompanyName()` を送信・承認・差戻し・手配・写真送信の5ハンドラで使用(チャットID分割の重複を集約)。`src/utils/expenseHelpers.ts` の `getExpenseCategoryLabel()` でカテゴリラベルを統一(「公共交通機関/交通費」「車移動/車移動費」の表記ゆれを「交通費」「車移動費」に統一)。
 
 **コード品質**

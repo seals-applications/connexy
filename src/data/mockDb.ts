@@ -1470,7 +1470,7 @@ export const api = {
               ...(appliedJobStaffIds || {})
             }
           };
-          evaluations = seedAppliedJobStates(evaluations, appliedJobIds);
+          evaluations = seedAppliedJobStates(evaluations, appliedJobIds, (evaluations as any).appliedJobStaffIds);
           const { error } = await supabase.from('contract_tasks').update({ evaluations }).eq('id', taskId);
           if (error) throw error;
         } else {
@@ -1478,7 +1478,7 @@ export const api = {
           evaluations.appliedJobIds = appliedJobIds || [];
           evaluations.appliedJobDates = Object.fromEntries((appliedJobIds || []).map(jobId => [jobId, todayStr]));
           evaluations.appliedJobStaffIds = appliedJobStaffIds || {};
-          evaluations = seedAppliedJobStates(evaluations, appliedJobIds);
+          evaluations = seedAppliedJobStates(evaluations, appliedJobIds, (evaluations as any).appliedJobStaffIds);
           const isApplication = appliedJobIds && appliedJobIds.length > 0;
           const row = {
             id: taskId,
@@ -1521,14 +1521,14 @@ export const api = {
               ...(appliedJobStaffIds || {})
             }
           };
-          evaluations = seedAppliedJobStates(evaluations, appliedJobIds);
+          evaluations = seedAppliedJobStates(evaluations, appliedJobIds, (evaluations as any).appliedJobStaffIds);
           list[index].evaluations = evaluations;
         } else {
           const todayStr = new Date().toISOString().split('T')[0];
           evaluations.appliedJobIds = appliedJobIds || [];
           evaluations.appliedJobDates = Object.fromEntries((appliedJobIds || []).map(jobId => [jobId, todayStr]));
           evaluations.appliedJobStaffIds = appliedJobStaffIds || {};
-          evaluations = seedAppliedJobStates(evaluations, appliedJobIds);
+          evaluations = seedAppliedJobStates(evaluations, appliedJobIds, (evaluations as any).appliedJobStaffIds);
           const isApplication = appliedJobIds && appliedJobIds.length > 0;
           const row = {
             id: taskId,
@@ -1624,13 +1624,15 @@ export const api = {
     taskId: string,
     jobId: string,
     status: EngagementStatusValue,
-    options?: { contractApprovalRequired?: boolean; additionalEvals?: any },
+    options?: { contractApprovalRequired?: boolean; staffId?: string; offer?: any; additionalEvals?: any },
   ): Promise<void> => {
     const applyLocal = (rawEvals: any) => {
       let evals = rawEvals || {};
       if (options?.additionalEvals) evals = { ...evals, ...options.additionalEvals };
       const { evaluations, chatStatus } = applyJobState(evals, jobId, status, {
         contractApprovalRequired: options?.contractApprovalRequired,
+        staffId: options?.staffId,
+        offer: options?.offer,
       });
       return { evaluations, chatStatus };
     };
