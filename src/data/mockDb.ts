@@ -550,9 +550,16 @@ export const DATA_CHANGED_EVENT = 'connexy:data-changed';
  * 末尾に足す。同時送信でメッセージが消えるのを防ぐ。
  */
 const mergeChatMessages = (existing: any[] | undefined, next: any[]): any[] => {
-  const nextIds = new Set((next || []).map((m) => m && m.id).filter(Boolean));
-  const missed = (existing || []).filter((m) => m && m.id && !nextIds.has(m.id));
-  return missed.length ? [...next, ...missed] : next;
+  const ex = existing || [];
+  if (ex.length === 0) return next;
+  const nextById = new Map((next || []).filter((m) => m && m.id).map((m) => [m.id, m]));
+  const existingIds = new Set(ex.map((m) => m && m.id).filter(Boolean));
+  // 既存メッセージは順序を保ったまま(next 側に同一IDの編集版があれば差し替え)。
+  // next にしか無いメッセージ(新規発言・同時送信で届いた相手の発言)を末尾に足す。
+  // ※ next が「過去を非共有で追加された担当者向けにスライスされた一覧」でも順序が崩れない。
+  const merged = ex.map((m) => (m && m.id && nextById.has(m.id) ? nextById.get(m.id) : m));
+  const appended = (next || []).filter((m) => m && (!m.id || !existingIds.has(m.id)));
+  return appended.length ? [...merged, ...appended] : merged;
 };
 
 // Attempt to detect if running in an offline or sandboxed environment
@@ -1693,6 +1700,43 @@ export const api = {
           saveOfflineData('contract_tasks', list);
         }
       }
+    );
+  },
+
+  // 直接チャットへ自社メンバーを追加する。
+  // evaluations.addedMembers に追記し、システムメッセージを1件加える。
+  // 詳細は src/utils/chatMembers.ts。
+  addChatMembers: async (
+    taskId: string,
+    newMembers: any[],
+    systemMessages: any[],
+  ): Promise<void> => {
+    const applyLocal = (rawEvals: any) => {
+      const evals = rawEvals || {};
+      const existing: any[] = Array.isArray(evals.addedMembers) ? evals.addedMembers : [];
+      const byId = new Map<string, any>(existing.map((m: any) => [m.staffId, m]));
+      for (const m of newMembers) byId.set(m.staffId, m);
+      const msgs = Array.isArray(evals.messages) ? evals.messages : [];
+      const existingIds = new Set(msgs.map((x: any) => x && x.id).filter(Boolean));
+      const appended = systemMessages.filter((x) => !x.id || !existingIds.has(x.id));
+      return { ...evals, addedMembers: [...byId.values()], messages: [...msgs, ...appended] };
+    };
+
+    return callSupabase(
+      async () => {
+        const { data } = await supabase.from('contract_tasks').select('evaluations').eq('id', taskId).single();
+        const evaluations = applyLocal(data?.evaluations);
+        const { error } = await supabase.from('contract_tasks').update({ evaluations }).eq('id', taskId);
+        if (error) throw error;
+      },
+      () => {
+        const list = getOfflineData('contract_tasks', defaultOfflineTasks);
+        const index = list.findIndex((t: any) => t.id === taskId);
+        if (index !== -1) {
+          list[index].evaluations = applyLocal(list[index].evaluations);
+          saveOfflineData('contract_tasks', list);
+        }
+      },
     );
   },
 
