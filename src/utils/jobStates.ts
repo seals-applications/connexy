@@ -83,6 +83,41 @@ type TaskLike = Pick<ContractTask, 'status'> & {
   evaluations?: unknown;
 };
 
+interface LinkedJobEvals {
+  appliedJobIds?: string[];
+  offeredJobId?: string;
+  jobStates?: JobStatesMap;
+}
+
+/**
+ * チャットに紐づく案件ID一覧(応募 `appliedJobIds` / オファー `offeredJobId` / `jobStates` を統合、重複排除)。
+ * チャット⇔案件の紐付けを1箇所に集約するための入口。
+ */
+export function getLinkedJobIds(evaluations: unknown): string[] {
+  const e = (evaluations || {}) as LinkedJobEvals;
+  const ids = new Set<string>();
+  if (Array.isArray(e.appliedJobIds)) e.appliedJobIds.forEach((id) => id && ids.add(id));
+  if (e.offeredJobId) ids.add(e.offeredJobId);
+  if (e.jobStates && typeof e.jobStates === 'object') Object.keys(e.jobStates).forEach((id) => ids.add(id));
+  return [...ids];
+}
+
+/** 主たる紐付け案件ID(応募 → オファー → jobStates の順で最初の1件)。 */
+export function getPrimaryLinkedJobId(evaluations: unknown): string | null {
+  const e = (evaluations || {}) as LinkedJobEvals;
+  return (
+    e.appliedJobIds?.[0] ||
+    e.offeredJobId ||
+    (e.jobStates && typeof e.jobStates === 'object' ? Object.keys(e.jobStates)[0] : undefined) ||
+    null
+  );
+}
+
+/** 案件 `jobId` がこのチャットに紐づいているか。 */
+export function isJobLinkedToChat(evaluations: unknown, jobId: string): boolean {
+  return getLinkedJobIds(evaluations).includes(jobId);
+}
+
 function readJobStates(task: TaskLike): JobStatesMap {
   const js = (task.evaluations as { jobStates?: JobStatesMap } | undefined)?.jobStates;
   return js && typeof js === 'object' ? js : {};

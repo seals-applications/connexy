@@ -4,7 +4,7 @@ import { jsPDF } from 'jspdf';
 import { api } from '../data/mockDb';
 import type { ContractTask, Training, Staff, Job, User } from '../data/mockDb';
 import { getEngagementStatusLabel, getJobListingStatus, getWorkPhase, isContractApproved } from '../utils/statusLabels';
-import { getJobStatus } from '../utils/jobStates';
+import { getJobStatus, isJobLinkedToChat } from '../utils/jobStates';
 import { calcOfferExpiresAt } from '../utils/offerExpiry';
 
 const quizData: Record<string, Array<{ question: string, options: string[], answer: number }>> = {
@@ -2265,7 +2265,7 @@ export function ManagementPage() {
           ) || ['confirmed', 'report_pending', 'completed', 'disputed'].includes(chatJobStatus || '');
 
           const isCandidateOfferedForThisJob = chatJobStatus === 'offered' ||
-            (chatTask?.status === 'offered' && (chatTask?.evaluations as any)?.offeredJobId === activeScreeningJob.id);
+            (chatTask?.status === 'offered' && isJobLinkedToChat(chatTask?.evaluations, activeScreeningJob.id));
 
           // Score weighting
           let relWeight = 0.30, matchWeight = 0.25, proxWeight = 0.45;

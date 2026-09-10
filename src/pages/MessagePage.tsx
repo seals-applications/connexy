@@ -4,6 +4,7 @@ import { getEngagementStatusLabel } from '../utils/statusLabels';
 import { getOpponentCompanyName } from '../utils/chatParties';
 import { getExpenseCategoryLabel } from '../utils/expenseHelpers';
 import { getOfferExpiryState } from '../utils/offerExpiry';
+import { getPrimaryLinkedJobId, isJobLinkedToChat } from '../utils/jobStates';
 
 // チャットのステータスバッジ。レガシーなチャット状態(商談中/契約待ち等)は個別に、
 // 応募・契約ステータスは getEngagementStatusLabel に委譲する(STATUS_MODEL.md §4)。
@@ -579,9 +580,7 @@ export function MessagePage() {
   const relatedJob = useMemo(() => {
     if (!activeChat || !chatTasks) return null;
     const task = chatTasks.find(t => t.id === activeChat.id);
-    const evals = (task?.evaluations as any) || {};
-    // 応募経由(appliedJobIds)・内定オファー経由(offeredJobId)のどちらでも解決できるようにする
-    const jobId = evals.appliedJobIds?.[0] || evals.offeredJobId;
+    const jobId = getPrimaryLinkedJobId(task?.evaluations);
     if (!jobId) return null;
     return jobs.find(j => j.id === jobId) || null;
   }, [activeChat, chatTasks, jobs]);
@@ -972,10 +971,9 @@ export function MessagePage() {
     }
 
     try {
-      // 応募経由(appliedJobIds)・内定オファー経由(offeredJobId)のどちらでも解決できるようにする
-      const jobId = (task.evaluations as any)?.appliedJobIds?.[0] || (task.evaluations as any)?.offeredJobId;
-      const job = jobs.find(j => j.id === jobId);
-      if (!job) {
+      const jobId = getPrimaryLinkedJobId(task.evaluations);
+      const job = jobId ? jobs.find(j => j.id === jobId) : undefined;
+      if (!jobId || !job) {
         alert('対象の案件が見つかりません。');
         return;
       }
@@ -1103,8 +1101,7 @@ export function MessagePage() {
       // 3. Automatically reject and notify other candidates for this job
       const otherChatTasks = chatTasks.filter(t => {
         if (t.id === activeChat.id || !t.id.startsWith('chat_') || t.id.startsWith('chat_group_')) return false;
-        const otherEvals = (t.evaluations as any) || {};
-        const isForThisJob = otherEvals.appliedJobIds?.includes(job.id) || otherEvals.offeredJobId === job.id;
+        const isForThisJob = isJobLinkedToChat(t.evaluations, job.id);
         return isForThisJob && (t.status === 'applying' || t.status === 'offered');
       });
 
@@ -1148,8 +1145,7 @@ export function MessagePage() {
     if (!skipConfirm && !confirm('本当にこの内定を辞退しますか？')) return;
 
     try {
-      // 応募経由(appliedJobIds)・内定オファー経由(offeredJobId)のどちらでも解決できるようにする
-      const jobId = (task.evaluations as any)?.appliedJobIds?.[0] || (task.evaluations as any)?.offeredJobId;
+      const jobId = getPrimaryLinkedJobId(task.evaluations);
       const job = jobs.find(j => j.id === jobId);
 
       const now = new Date();
@@ -1204,8 +1200,7 @@ export function MessagePage() {
   const hasApplications = useMemo(() => {
     if (!relatedJob) return false;
     return chatTasks.some(t => {
-      const evals = (t.evaluations as any) || {};
-      const hasJob = evals.appliedJobIds?.includes(relatedJob.id) || evals.offeredJobId === relatedJob.id;
+      const hasJob = isJobLinkedToChat(t.evaluations, relatedJob.id);
       const isAppliedStatus = t.status === 'applying' || t.status === 'offered' || t.status === 'confirmed' || t.status === 'rejected' || t.status === 'declined';
       return hasJob && isAppliedStatus;
     });

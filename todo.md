@@ -8,7 +8,7 @@
 一連のバグ調査を通して見えてきた根本原因・改善余地。すべて採用済みだが、規模の大きいものは別途スコープを決めて着手する。
 
 **設計・アーキテクチャ**
-- [ ] チャット⇔案件の紐付けを`appliedJobIds`/`offeredJobId`の二重管理から単一の構造(例: `linkedJobId`)に統一する。PR #14/#15で修正した重大バグの根本原因。
+- [~] チャット⇔案件の紐付けの読み出しを単一アクセサに統一(PR #32)。`src/utils/jobStates.ts` に `getLinkedJobIds()` / `getPrimaryLinkedJobId()` / `isJobLinkedToChat()` を新設し、`appliedJobIds` / `offeredJobId` / `jobStates` を統合。MessagePage の `appliedJobIds?.[0] || offeredJobId` イディオム5箇所 + ManagementPage/SearchPage の該当箇所を差し替え。**残**: 保存側は `appliedJobIds` と `offeredJobId` の両フィールドが残っている(完全な単一化は下記「ContractTask 型の分離」と同時に行う)。
 - [ ] `ContractTask`型が「チャットスレッド」「応募」「オファー」「実契約」の4つの異なる概念を1レコードで兼務しているのを分離する。上記の根本原因であり、`status`がチャット単位になってしまう未修正バグ(下記参照)の原因でもある。
 - [x] 経費申請まわりの重複ロジックを共通化(PR #29)。`src/utils/chatParties.ts` の `getOpponentCompanyName()` を送信・承認・差戻し・手配・写真送信の5ハンドラで使用(チャットID分割の重複を集約)。`src/utils/expenseHelpers.ts` の `getExpenseCategoryLabel()` でカテゴリラベルを統一(「公共交通機関/交通費」「車移動/車移動費」の表記ゆれを「交通費」「車移動費」に統一)。
 
