@@ -2263,7 +2263,8 @@ export function SearchPage() {
                   >
                     
                     {job.isUrgent && (
-                      <div className="job-card-urgent-ribbon">
+                      <div className="job-card-urgent-badge">
+                        <span className="material-symbols-outlined" style={{ fontSize: '13px' }}>bolt</span>
                         緊急募集
                       </div>
                     )}
