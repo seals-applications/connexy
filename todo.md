@@ -21,7 +21,7 @@
 - [~] 「運営からのお知らせ」をデータソース化(PR #27)。`HomePage.tsx` のハードコード配列を廃止し、`api.getAnnouncements()`(Supabase `announcements` テーブル / オフライン時 localStorage、日付降順)から取得。`api.saveAnnouncement()` / `api.deleteAnnouncement()` も追加。**残**: 運営(プラットフォーム管理者)ロールが未実装のため、投稿・編集UIは未着手。ロール導入後に画面を追加する。
 - [x] マスキング用マスターデータ(エリア名・家電量販店名・キャリア名のパターン)を `src/data/maskingMasters.ts` に分離(PR #26)。パターンは正規表現リテラルでなく「文字列 + 伏せ名」で保持し、将来 DB/管理画面に載せ替え可能に。`maskingUtils.ts` は `compileBrandPatterns()` でコンパイルして使用。出力は従来と同一(検証済み)。
 - [x] エリア検索を緯度経度の半径判定に変更(PR #28)。`src/utils/areaFilter.ts` に中心座標・Haversine・`isWithinAreaFilter()` を新設。SearchPage の4箇所(保存条件チェック×2、案件フィルタ、人材グループフィルタ)を差し替え。半径3km、座標が無いデータは従来の地名一致にフォールバック。
-- [ ] 内定オファーに有効期限・自動リマインドの仕組みを設ける。
+- [x] 内定オファーに有効期限を設ける(PR #30)。`src/utils/offerExpiry.ts`(既定7日、残り2日で「期限間近」)。送信時に `evaluations.offeredAt` / `offerExpiresAt` を記録。内定通知モーダル・オファーカードに有効期限を表示、期限切れは承諾ボタンを無効化し `handleAcceptUnofficialOffer` でもガード。自動リマインドはバックエンド(cron)が無いため、クライアント側に「相手にリマインドを送る」ボタン(システムメッセージ送信)を用意。旧データ(タイムスタンプ無し)は従来通り期限なし。
 
 ### 🏷️ 案件ごとのステータス表示(2026-09-10 設計確定、段階導入中)
 
