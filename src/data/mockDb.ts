@@ -544,6 +544,17 @@ let useOfflineMock = false;
 /** ローカルDBが書き換わったことを通知するイベント名(同一タブ向け)。cross-tab は 'storage' イベントで拾う。 */
 export const DATA_CHANGED_EVENT = 'connexy:data-changed';
 
+/**
+ * チャットメッセージのマージ。呼び出し側の `next` を正とし(既存メッセージの編集を保持)、
+ * 保存済み `existing` にしかない ID のメッセージ(= 呼び出し側がロード後に届いた相手の発言)を
+ * 末尾に足す。同時送信でメッセージが消えるのを防ぐ。
+ */
+const mergeChatMessages = (existing: any[] | undefined, next: any[]): any[] => {
+  const nextIds = new Set((next || []).map((m) => m && m.id).filter(Boolean));
+  const missed = (existing || []).filter((m) => m && m.id && !nextIds.has(m.id));
+  return missed.length ? [...next, ...missed] : next;
+};
+
 // Attempt to detect if running in an offline or sandboxed environment
 if (typeof window !== 'undefined') {
   if (localStorage.getItem('connexy_is_offline') === 'true' || !navigator.onLine) {
@@ -1514,7 +1525,7 @@ export const api = {
           });
           evaluations = {
             ...existingEvals,
-            messages,
+            messages: mergeChatMessages(existingEvals.messages, messages),
             appliedJobIds: mergedAppliedJobIds,
             appliedJobDates: { ...existingAppliedJobDates, ...newAppliedJobDates },
             appliedJobStaffIds: {
@@ -1581,7 +1592,7 @@ export const api = {
           });
           evaluations = {
             ...existingEvals,
-            messages,
+            messages: mergeChatMessages(existingEvals.messages, messages),
             appliedJobIds: mergedAppliedJobIds,
             appliedJobDates: { ...existingAppliedJobDates, ...newAppliedJobDates },
             appliedJobStaffIds: {
