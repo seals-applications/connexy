@@ -1,45 +1,14 @@
 import { useState, useEffect } from 'react';
 import { api } from '../data/mockDb';
-import type { ContractTask } from '../data/mockDb';
+import type { ContractTask, Announcement } from '../data/mockDb';
 
 type DetailType = 'none' | 'income' | 'transfer';
-
-interface Announcement {
-  id: string;
-  date: string;
-  title: string;
-  content: string;
-  isImportant: boolean;
-}
-
-const mockAnnouncements: Announcement[] = [
-  {
-    id: 'ann-1',
-    date: '2026/06/13',
-    title: 'プライバシーマーク（Pマーク）取得に向けた個人情報取扱方針の改定について',
-    content: '平素はConnexyをご利用いただき誠にありがとうございます。Connexyでは、ユーザーの皆様に安全かつ信頼性の高いお仕事管理環境を提供するため、将来的なプライバシーマーク（Pマーク）の取得に向けたシステム監査および個人情報取扱方針の改定を実施いたします。\n\n【主な変更点】\n1. GPSによる位置情報取得時の同意取得フローの厳格化\n2. チャット内の不要な個人情報（電話番号、メールアドレス等）の自動マスキング（伏字化）処理の導入\n3. データベースにおけるRow Level Security（行レベルセキュリティ）ポリシーの適用強化\n\n本改定に伴うユーザー様への操作上の影響はございません。今後とも個人情報の厳重な管理体制を維持し、プライバシー保護に努めてまいりますので、ご理解とご協力のほどよろしくお願い申し上げます。',
-    isImportant: true
-  },
-  {
-    id: 'ann-2',
-    date: '2026/06/10',
-    title: '【重要】システムメンテナンスに伴う一時利用停止のお知らせ（6月18日深夜）',
-    content: 'サーバー性能向上およびインフラ増強のため、下記の日程でシステムメンテナンスを実施いたします。\n\n【メンテナンス日時】\n2026年6月18日（木） 午前1:00 〜 午前5:00\n※作業の進捗状況により、時間が前後する場合がございます。\n\n【影響範囲】\nメンテナンス時間帯は、アプリへのログイン、求人の検索、チャットの送受信、打刻など全ての機能がご利用いただけません。\nご利用の皆様にはご不便をおかけいたしますが、ご理解とご協力を賜りますようお願い申し上げます。',
-    isImportant: true
-  },
-  {
-    id: 'ann-3',
-    date: '2026/06/05',
-    title: 'マッチング手数料（10%）の明細表示機能リリースのお知らせ',
-    content: 'いつもConnexyをご利用いただきありがとうございます。\nこの度、売上・振込予定額の透明性を高めるため、ダッシュボード詳細にてマッチング手数料（10%）および早期出金手数料（7.5%）の具体的な差し引き額を明記するアップデートを反映いたしました。売上予定額と実際の受取予定額がひと目でわかるようになりますので、ぜひご活用ください。',
-    isImportant: false
-  }
-];
 
 export function HomePage() {
   const [tasks, setTasks] = useState<ContractTask[]>([]);
   const [detailType, setDetailType] = useState<DetailType>('none');
   const [hasPendingReports, setHasPendingReports] = useState(false);
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [selectedAnn, setSelectedAnn] = useState<Announcement | null>(null);
 
   // GPS States (fused from TaskPage)
@@ -53,6 +22,12 @@ export function HomePage() {
       const fetchedTasks = await api.getContractTasks();
       setTasks(fetchedTasks);
       setHasPendingReports(fetchedTasks.some(t => t.status === 'report_pending'));
+
+      try {
+        setAnnouncements(await api.getAnnouncements());
+      } catch (e) {
+        console.error('Failed to load announcements:', e);
+      }
 
       // Restore GPS state from storage if any
       const savedCheckin = localStorage.getItem('connexy_checkin_time');
@@ -293,7 +268,10 @@ export function HomePage() {
             <span style={{ fontSize: '14px', fontWeight: 'bold', color: 'var(--text-main)' }}>運営からのお知らせ</span>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            {mockAnnouncements.map(ann => (
+            {announcements.length === 0 && (
+              <div style={{ fontSize: '12px', color: 'var(--text-sub)', padding: '4px 8px' }}>現在お知らせはありません。</div>
+            )}
+            {announcements.map(ann => (
               <div 
                 key={ann.id} 
                 onClick={() => setSelectedAnn(ann)}

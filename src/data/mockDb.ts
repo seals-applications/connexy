@@ -181,6 +181,31 @@ export interface ContractTask {
   agencyContractPdf?: string;
 }
 
+// 運営からのお知らせ
+export interface Announcement {
+  id: string;
+  date: string;      // 表示用の日付文字列(例: "2026/06/13")
+  title: string;
+  content: string;
+  isImportant: boolean;
+}
+
+const mapAnnouncement = (row: any): Announcement => ({
+  id: row.id,
+  date: row.date,
+  title: row.title,
+  content: row.content,
+  isImportant: !!(row.is_important ?? row.isImportant),
+});
+
+const unmapAnnouncement = (a: Announcement): any => ({
+  id: a.id,
+  date: a.date,
+  title: a.title,
+  content: a.content,
+  is_important: a.isImportant,
+});
+
 // 研修マスタ(DBではなく固定データとする)
 const mockTrainings: Training[] = [
   {
@@ -900,6 +925,32 @@ const defaultOfflineTasks = [
   { id: 'task2', job_id: 'j2', job_title: '【新宿駅】au・UQモバイルの乗り換え案内スタッフ募集', worker_name: 'シグマ 次郎', company_name: '株式会社シグマ通信', client_name: '株式会社アルファ', price: 18000, date: '2026-07-22', status: 'applying', agency_id: 'sigma', client_id: 'alpha', evaluations: { messages: [] } }
 ];
 
+// 運営からのお知らせ。ハードコード配列でなくデータソース(Supabase の `announcements` テーブル、
+// オフライン時は localStorage)として扱う。将来的に運営向け管理画面から投稿・編集できるようにする。
+const defaultOfflineAnnouncements = [
+  {
+    id: 'ann-1',
+    date: '2026/06/13',
+    title: 'プライバシーマーク（Pマーク）取得に向けた個人情報取扱方針の改定について',
+    content: '平素はConnexyをご利用いただき誠にありがとうございます。Connexyでは、ユーザーの皆様に安全かつ信頼性の高いお仕事管理環境を提供するため、将来的なプライバシーマーク（Pマーク）の取得に向けたシステム監査および個人情報取扱方針の改定を実施いたします。\n\n【主な変更点】\n1. GPSによる位置情報取得時の同意取得フローの厳格化\n2. チャット内の不要な個人情報（電話番号、メールアドレス等）の自動マスキング（伏字化）処理の導入\n3. データベースにおけるRow Level Security（行レベルセキュリティ）ポリシーの適用強化\n\n本改定に伴うユーザー様への操作上の影響はございません。今後とも個人情報の厳重な管理体制を維持し、プライバシー保護に努めてまいりますので、ご理解とご協力のほどよろしくお願い申し上げます。',
+    is_important: true,
+  },
+  {
+    id: 'ann-2',
+    date: '2026/06/10',
+    title: '【重要】システムメンテナンスに伴う一時利用停止のお知らせ（6月18日深夜）',
+    content: 'サーバー性能向上およびインフラ増強のため、下記の日程でシステムメンテナンスを実施いたします。\n\n【メンテナンス日時】\n2026年6月18日（木） 午前1:00 〜 午前5:00\n※作業の進捗状況により、時間が前後する場合がございます。\n\n【影響範囲】\nメンテナンス時間帯は、アプリへのログイン、求人の検索、チャットの送受信、打刻など全ての機能がご利用いただけません。\nご利用の皆様にはご不便をおかけいたしますが、ご理解とご協力を賜りますようお願い申し上げます。',
+    is_important: true,
+  },
+  {
+    id: 'ann-3',
+    date: '2026/06/05',
+    title: 'マッチング手数料（10%）の明細表示機能リリースのお知らせ',
+    content: 'いつもConnexyをご利用いただきありがとうございます。\nこの度、売上・振込予定額の透明性を高めるため、ダッシュボード詳細にてマッチング手数料（10%）および早期出金手数料（7.5%）の具体的な差し引き額を明記するアップデートを反映いたしました。売上予定額と実際の受取予定額がひと目でわかるようになりますので、ぜひご活用ください。',
+    is_important: false,
+  },
+];
+
 export const api = {
   getJobs: async (limit?: number, offset?: number): Promise<Job[]> => {
     return callSupabase(
@@ -1233,6 +1284,53 @@ export const api = {
 
   getTrainings: async (): Promise<Training[]> => {
     return mockTrainings;
+  },
+
+  // 運営からのお知らせ一覧(日付の新しい順)
+  getAnnouncements: async (): Promise<Announcement[]> => {
+    return callSupabase(
+      async () => {
+        const { data, error } = await supabase.from('announcements').select('*').order('date', { ascending: false });
+        if (error) throw error;
+        return (data || []).map(mapAnnouncement);
+      },
+      () => {
+        const list = getOfflineData('announcements', defaultOfflineAnnouncements).map(mapAnnouncement);
+        return [...list].sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
+      },
+    );
+  },
+
+  // 運営向け: お知らせの作成・更新(id が既存なら更新)
+  saveAnnouncement: async (announcement: Announcement): Promise<void> => {
+    const row = unmapAnnouncement(announcement);
+    return callSupabase(
+      async () => {
+        const { error } = await supabase.from('announcements').upsert(row);
+        if (error) throw error;
+      },
+      () => {
+        const list = getOfflineData('announcements', defaultOfflineAnnouncements);
+        const idx = list.findIndex((a: any) => a.id === announcement.id);
+        if (idx === -1) list.unshift(row);
+        else list[idx] = { ...list[idx], ...row };
+        saveOfflineData('announcements', list);
+      },
+    );
+  },
+
+  // 運営向け: お知らせの削除
+  deleteAnnouncement: async (id: string): Promise<void> => {
+    return callSupabase(
+      async () => {
+        const { error } = await supabase.from('announcements').delete().eq('id', id);
+        if (error) throw error;
+      },
+      () => {
+        const list = getOfflineData('announcements', defaultOfflineAnnouncements).filter((a: any) => a.id !== id);
+        saveOfflineData('announcements', list);
+      },
+    );
   },
 
   completeTraining: async (staffId: string, trainingId: string): Promise<void> => {
