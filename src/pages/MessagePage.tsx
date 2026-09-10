@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
-import { api } from '../data/mockDb';
+import { api, subscribeToContractTaskChanges } from '../data/mockDb';
 import { getEngagementStatusLabel } from '../utils/statusLabels';
 import { getOpponentCompanyName } from '../utils/chatParties';
 import { getExpenseCategoryLabel } from '../utils/expenseHelpers';
@@ -227,20 +227,25 @@ export function MessagePage() {
   }, []);
 
   useEffect(() => {
-    const interval = setInterval(async () => {
+    const refresh = async () => {
       try {
-        const tasks = await api.getContractTasks();
-        setChatTasks(tasks);
-        const fetchedJobs = await api.getJobs();
-        setJobs(fetchedJobs);
-
-        const staffs = await api.getAllStaffs();
-        setAllStaffs(staffs);
+        setChatTasks(await api.getContractTasks());
+        setJobs(await api.getJobs());
+        setAllStaffs(await api.getAllStaffs());
       } catch (err) {
-        console.error('Polling error:', err);
+        console.error('Chat refresh error:', err);
       }
-    }, 3000);
-    return () => clearInterval(interval);
+    };
+    // 3秒ポーリングをやめ、データ変更イベント駆動に変更(オンライン時は Supabase Realtime)。
+    const unsubscribe = subscribeToContractTaskChanges(refresh);
+    const onVisible = () => { if (document.visibilityState === 'visible') refresh(); };
+    document.addEventListener('visibilitychange', onVisible);
+    const fallback = setInterval(refresh, 60000);
+    return () => {
+      unsubscribe();
+      document.removeEventListener('visibilitychange', onVisible);
+      clearInterval(fallback);
+    };
   }, []);
 
   const maskContactInfo = (text: string) => {

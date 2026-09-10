@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { api } from '../data/mockDb';
+import { api, subscribeToContractTaskChanges } from '../data/mockDb';
 
 export function BottomNav() {
   const location = useLocation();
@@ -167,8 +167,19 @@ export function BottomNav() {
     };
 
     checkNotificationCounts();
-    const interval = setInterval(checkNotificationCounts, 2000);
-    return () => clearInterval(interval);
+
+    // 2秒ポーリングをやめ、データ変更イベント駆動に変更(オンライン時は Supabase Realtime)。
+    const unsubscribe = subscribeToContractTaskChanges(checkNotificationCounts);
+    const onVisible = () => { if (document.visibilityState === 'visible') checkNotificationCounts(); };
+    document.addEventListener('visibilitychange', onVisible);
+    // 取りこぼし・時間経過による変化に備えた低頻度フォールバック
+    const fallback = setInterval(checkNotificationCounts, 60000);
+
+    return () => {
+      unsubscribe();
+      document.removeEventListener('visibilitychange', onVisible);
+      clearInterval(fallback);
+    };
   }, [location.pathname]);
 
   return (

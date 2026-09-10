@@ -617,11 +617,55 @@ const getOfflineData = (table: string, defaultData: any[]): any[] => {
   return defaultData;
 };
 
+/** ローカルDBが書き換わったことを通知するイベント名(同一タブ向け)。cross-tab は 'storage' イベントで拾う。 */
+export const DATA_CHANGED_EVENT = 'connexy:data-changed';
+
 const saveOfflineData = (table: string, data: any[]) => {
   if (typeof window !== 'undefined') {
     localStorage.setItem('offline_db_' + table, JSON.stringify(data));
+    try {
+      window.dispatchEvent(new CustomEvent(DATA_CHANGED_EVENT, { detail: { table } }));
+    } catch {
+      /* CustomEvent 非対応環境は無視 */
+    }
   }
 };
+
+/**
+ * `contract_tasks` の変更を購読する。オンライン時は Supabase Realtime、
+ * オフライン時は同一タブのカスタムイベント + 別タブの storage イベントを監視する。
+ * 返り値の関数を呼ぶと購読解除。ポーリングの置き換え用。
+ */
+export function subscribeToContractTaskChanges(onChange: () => void): () => void {
+  if (typeof window === 'undefined') return () => {};
+
+  const handleLocal = () => onChange();
+  const handleStorage = (e: StorageEvent) => {
+    if (!e.key || e.key.startsWith('offline_db_') || e.key.startsWith('connexy_last_read_msg_')) onChange();
+  };
+  window.addEventListener(DATA_CHANGED_EVENT, handleLocal);
+  window.addEventListener('storage', handleStorage);
+
+  let channel: ReturnType<typeof supabase.channel> | null = null;
+  if (!useOfflineMock) {
+    try {
+      channel = supabase
+        .channel('contract_tasks_changes')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'contract_tasks' }, () => onChange())
+        .subscribe();
+    } catch {
+      /* Realtime 未設定でもローカルイベントで動作する */
+    }
+  }
+
+  return () => {
+    window.removeEventListener(DATA_CHANGED_EVENT, handleLocal);
+    window.removeEventListener('storage', handleStorage);
+    if (channel) {
+      try { supabase.removeChannel(channel); } catch { /* noop */ }
+    }
+  };
+}
 
 // Error wrapper that automatically enables local fallback on failures
 async function callSupabase<T>(apiFn: () => Promise<T>, fallbackFn: () => T | Promise<T>): Promise<T> {
