@@ -9,18 +9,31 @@
 
 import type { ContractTask } from '../data/mockDb';
 
-/** 保存する応募・契約ステータス。`working` は将来 `confirmed` にリネーム予定(STATUS_MODEL.md §7.1) */
+/**
+ * 保存する応募・契約ステータス。
+ * `working` は `confirmed` にリネーム済み(STATUS_MODEL.md §7.1)。
+ * 旧データ(localStorage / Supabase)に残る `working` を読めるよう、union には残しつつ
+ * `normalizeEngagementStatus()` で `confirmed` に正規化する。
+ */
 export type EngagementStatusValue =
   | 'applying'
   | 'offered'
-  | 'working'
   | 'confirmed'
+  | 'working'
   | 'report_pending'
   | 'completed'
   | 'disputed'
   | 'rejected'
   | 'declined'
   | 'cancelled';
+
+/** 正規化後の応募・契約ステータス(旧 `working` を含まない) */
+export type NormalizedEngagementStatus = Exclude<EngagementStatusValue, 'working'>;
+
+/** 旧 `working` を `confirmed` に寄せる。それ以外はそのまま。 */
+export function normalizeEngagementStatus(status: string | null | undefined): NormalizedEngagementStatus {
+  return (status === 'working' ? 'confirmed' : status) as NormalizedEngagementStatus;
+}
 
 export interface JobState {
   status: EngagementStatusValue;
@@ -81,8 +94,8 @@ function readJobStates(task: TaskLike): JobStatesMap {
  */
 export function getJobStatus(task: TaskLike, jobId: string): EngagementStatusValue {
   const js = readJobStates(task)[jobId];
-  if (js?.status) return js.status;
-  return task.status as EngagementStatusValue;
+  if (js?.status) return normalizeEngagementStatus(js.status);
+  return normalizeEngagementStatus(task.status);
 }
 
 /** 案件 `jobId` の JobState(無ければ undefined) */

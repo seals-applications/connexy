@@ -39,7 +39,11 @@
   - 承諾・辞退・オファー送信・完了報告・**競合自動不採用**を `updateContractTaskJobStatus` 経由に移行。競合自動不採用は「その案件のみ」不採用にするようになり、同じ直接チャットの別案件は影響を受けない → 上記「発見済みバグ(未修正)」を解消。
   - 「応募状況・履歴」「選考」画面の状態参照を `getJobStatus(task, jobId)` に変更。
   - 承諾時に `contractApprovalRequired` フラグを記録(将来の `contract_review` 独立ステータス化の起点)。
-- [ ] 第3段階: 保存値 `working` → `confirmed` リネーム(約85箇所の機械的置換)。
+- [x] **第3段階: 保存値 `working` → `confirmed` リネーム**(PR #24)
+  - `normalizeEngagementStatus()` を新設し、`mapContractTask` / `getJobStatus` が読み出し時に旧 `working` を `confirmed` に正規化。
+  - 起動時に一度きりのデータ移行(`offline_db_contract_tasks` の `status` と `jobStates` を書き換え、`connexy_migrated_working_to_confirmed` フラグで再実行防止)。
+  - 型・比較・配列・バッジ判定の `'working'` を `'confirmed'` に一括置換(mockDb / MessagePage / ManagementPage / SearchPage)。`getEngagementStatusLabel` と `PROGRESS_RANK` は旧値も受理(防御的)。
+  - ※ Supabase 側の `working` 行の移行は別途必要(運用者タスク)。
 - [x] **第4段階: 稼働前キャンセルUI(発注者のみ)**(PR #22)
   - `ContractTask.status` に `cancelled` 追加。`getWorkPhase()` を `statusLabels.ts` から公開。
   - 「選考」画面の候補者カードに「この応募をキャンセル」を追加(応募中/内定通知済み、または稼働開始前の稼働待ちのみ)。確認モーダルで理由を任意入力。

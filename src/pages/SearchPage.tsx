@@ -1330,8 +1330,8 @@ export function SearchPage() {
         if (appliedJobIds.includes(job.id)) return false;
       }
 
-      // 0.1 契約確定済みの案件（statusが 'working', 'report_pending', 'completed', 'disputed' などのタスクが存在する案件）は非表示にする
-      const isContracted = contractTasks.some(t => t.jobId === job.id && ['working', 'report_pending', 'completed', 'disputed'].includes(t.status));
+      // 0.1 契約確定済みの案件（statusが 'confirmed', 'report_pending', 'completed', 'disputed' などのタスクが存在する案件）は非表示にする
+      const isContracted = contractTasks.some(t => t.jobId === job.id && ['confirmed', 'report_pending', 'completed', 'disputed'].includes(t.status));
       if (isContracted) return false;
 
       // 1. エリアフィルタ
