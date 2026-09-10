@@ -27,6 +27,20 @@ export function getPrefecture(locationName: string | null | undefined): string |
   return ALL_PREFECTURES.find((p) => name.startsWith(p)) || null;
 }
 
+/**
+ * 住所文字列から「市区郡（＋政令市の区）」までを取り出す。都道府県は落とす。
+ * 例: 東京都町田市原町田6丁目 → 町田市 / 神奈川県横浜市西区南幸1丁目 → 横浜市西区
+ */
+export function getCityArea(locationName: string | null | undefined): string {
+  if (!locationName) return '';
+  const name = locationName.trim();
+  const pref = getPrefecture(name);
+  const rest = pref ? name.slice(pref.length) : name;
+  const m = rest.match(/^(.+?[市区郡])(.+?区)?/);
+  if (m) return m[1] + (m[2] || '');
+  return rest || name;
+}
+
 /** 選択中の都道府県セットに、対象地点が該当するか(未選択なら常に true)。 */
 export function matchesPrefectureFilter(
   selected: string[],

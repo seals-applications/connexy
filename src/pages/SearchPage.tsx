@@ -10,7 +10,7 @@ import { formatJobDates } from '../utils/dateFormatter';
 import { generateMaskedLocation, extractArea, getCommonAreaName } from '../utils/maskingUtils';
 import { isWithinAreaFilter, distanceKm } from '../utils/areaFilter';
 import { getLinkedJobIds } from '../utils/jobStates';
-import { PREFECTURE_REGIONS, ALL_PREFECTURES, matchesPrefectureFilter } from '../utils/prefectures';
+import { PREFECTURE_REGIONS, ALL_PREFECTURES, getCityArea, matchesPrefectureFilter } from '../utils/prefectures';
 import Autocomplete from 'react-google-autocomplete';
 import { useSessionState } from '../hooks/useSessionState';
 
@@ -2270,77 +2270,51 @@ export function SearchPage() {
                     )}
 
                     <div className="job-title-row">
-                      <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                        <span>{job.title}</span>
-                        {job.jobCode && (
-                          <span style={{ fontSize: '10px', background: '#F1F5F9', color: '#475569', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold' }}>
-                            {job.jobCode}
+                      <h3><span>{job.title}</span></h3>
+                      {currentUser && (
+                        <button
+                          className="job-fav-btn"
+                          onClick={(e) => handleToggleFavoriteJob(job.id, e)}
+                          aria-label="お気に入り"
+                        >
+                          <span className="material-symbols-outlined" style={{ fontSize: '20px', color: currentUser.favoriteJobIds?.includes(job.id) ? '#EF4444' : '#CBD5E1', fontVariationSettings: currentUser.favoriteJobIds?.includes(job.id) ? "'FILL' 1" : "'FILL' 0" }}>
+                            favorite
                           </span>
-                        )}
-                      </h3>
-                      <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                        {currentUser && (
-                          <button
-                            onClick={(e) => handleToggleFavoriteJob(job.id, e)}
-                            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', display: 'flex', alignItems: 'center' }}
-                          >
-                            <span className="material-symbols-outlined" style={{ fontSize: '20px', color: currentUser.favoriteJobIds?.includes(job.id) ? '#EF4444' : '#CBD5E1', fontVariationSettings: currentUser.favoriteJobIds?.includes(job.id) ? "'FILL' 1" : "'FILL' 0" }}>
-                              favorite
-                            </span>
-                          </button>
-                        )}
-                        {remainingDaysText && (
-                          <span style={{ margin: 0, fontSize: '11px', whiteSpace: 'nowrap', padding: '4px 8px', borderRadius: '8px', color: remainingDaysColor, backgroundColor: remainingDaysBg, fontWeight: 'bold' }}>
-                            {remainingDaysText}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '11px', color: 'var(--text-sub)', marginTop: '-8px', marginBottom: '8px' }}>
-                      <span style={{ fontWeight: 'bold' }}>{allUsers.find(u => u.id === job.authorId)?.name || '掲載企業'}</span>
-                      {pastTradeCompanyIds.has(job.authorId) && (
-                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '2px', background: '#D1FAE5', color: '#065F46', padding: '1px 6px', borderRadius: '4px', fontWeight: 'bold', fontSize: '9px' }}>
-                          <span className="material-symbols-outlined" style={{ fontSize: '11px' }}>handshake</span>
-                          取引実績あり
-                        </span>
+                        </button>
                       )}
                     </div>
 
-                    {job.locationName && (
-                      <div className="job-location">
-                        <span className="material-symbols-outlined" style={{ fontSize: '14px', color: '#EF4444' }}>location_on</span>
-                        {job.locationName.split(' ').pop()} {/* Show only the last part or keep it short. For now keep as is */}
-                      </div>
-                    )}
+                    <div className="job-meta-line">
+                      <span className="job-meta-company">{allUsers.find(u => u.id === job.authorId)?.name || '掲載企業'}</span>
+                      {job.locationName && (
+                        <span className="job-meta-area">
+                          <span className="material-symbols-outlined">location_on</span>{getCityArea(job.locationName) || job.locationName}
+                        </span>
+                      )}
+                      {pastTradeCompanyIds.has(job.authorId) && (
+                        <span className="job-trade-badge">
+                          <span className="material-symbols-outlined">handshake</span>取引実績
+                        </span>
+                      )}
+                    </div>
 
                     <div className="job-tags-container">
                       {job.carrier && <span className="modern-tag tag-carrier">{job.carrier}</span>}
                       {job.salesChannel && <span className="modern-tag tag-channel">{job.salesChannel}</span>}
                       {job.roleType && <span className="modern-tag tag-role">{job.roleType}</span>}
-                      {job.workLocation && <span className="modern-tag tag-location">{job.workLocation}</span>}
                     </div>
 
-                    <p className="job-desc">{job.description}</p>
-                    
-                    <div className="job-stats-row">
-                      <div className="job-stat-item">
-                        <span className="job-stat-label">日程</span>
-                        <span className="job-stat-value">
-                          <span className="material-symbols-outlined" style={{ fontSize: '14px', color: '#2563EB' }}>calendar_today</span>
-                          {job.eventDate ? formatJobDates(job.eventDate) : '未定'}
-                        </span>
-                      </div>
-                      <div className="job-stat-item" style={{ alignItems: 'flex-end' }}>
-                        <span className="job-stat-label">単価</span>
-                        <span className="job-stat-value">
-                          {renderJobPrice(job)}
-                        </span>
-                      </div>
-                    </div>
-                    
-                    <div className="job-card-arrow">
-                      <span className="material-symbols-outlined" style={{ fontSize: '24px' }}>arrow_forward</span>
+                    <div className="job-stat-line">
+                      <span className="job-stat-when">
+                        <span className="material-symbols-outlined">calendar_today</span>
+                        {job.eventDate ? formatJobDates(job.eventDate) : '日程未定'}
+                        {remainingDaysText && (
+                          <span className="job-deadline-pill" style={{ color: remainingDaysColor, backgroundColor: remainingDaysBg }}>
+                            {remainingDaysText === '本日締切' ? '本日締切' : `締切${remainingDaysText}`}
+                          </span>
+                        )}
+                      </span>
+                      <span className="job-price-inline">{renderJobPrice(job)}</span>
                     </div>
                   </div>
                 )})}
