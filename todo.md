@@ -35,6 +35,7 @@
   - 起動時の自己回復: `connexy_is_offline` がセットされていても `navigator.onLine` なら `companies` に軽く疎通確認し、成功したらフラグ解除。
   - `subscribeToContractTaskChanges` に短間隔フォールバックポーリングを常時併走。
   - `saveContractTaskChat` の新規 insert に `client_id`/`agency_id`(チャットIDから推定)を追加、列が無ければ外して再試行。
+- [x] チャットの同時送信でメッセージが消える問題を軽減(PR #36)。`saveContractTaskChat` の更新時、呼び出し側の `messages` を正としつつ、保存済みにしか無いIDのメッセージ(ロード後に届いた相手の発言)を末尾にマージする `mergeChatMessages()` を追加。両アカウントがほぼ同時に送っても双方のメッセージが残ることを検証。
 - [~] 「運営からのお知らせ」をデータソース化(PR #27)。`HomePage.tsx` のハードコード配列を廃止し、`api.getAnnouncements()`(Supabase `announcements` テーブル / オフライン時 localStorage、日付降順)から取得。`api.saveAnnouncement()` / `api.deleteAnnouncement()` も追加。**残**: 運営(プラットフォーム管理者)ロールが未実装のため、投稿・編集UIは未着手。ロール導入後に画面を追加する。
 - [x] マスキング用マスターデータ(エリア名・家電量販店名・キャリア名のパターン)を `src/data/maskingMasters.ts` に分離(PR #26)。パターンは正規表現リテラルでなく「文字列 + 伏せ名」で保持し、将来 DB/管理画面に載せ替え可能に。`maskingUtils.ts` は `compileBrandPatterns()` でコンパイルして使用。出力は従来と同一(検証済み)。
 - [x] エリア検索を緯度経度の半径判定に変更(PR #28)。`src/utils/areaFilter.ts` に中心座標・Haversine・`isWithinAreaFilter()` を新設。SearchPage の4箇所(保存条件チェック×2、案件フィルタ、人材グループフィルタ)を差し替え。半径3km、座標が無いデータは従来の地名一致にフォールバック。
