@@ -648,7 +648,7 @@ export function MessagePage() {
     return task?.clientName || '元請け企業';
   }, [activeChat, chatTasks]);
 
-  interface MemberEntry { label: string; person: string; companyId?: string; removableStaffId?: string; }
+  interface MemberEntry { label: string; person: string; companyId?: string; removableStaffId?: string; role?: 'admin' | 'staff'; isAnchor?: boolean; }
 
   const activeMembers = useMemo<MemberEntry[]>(() => {
     if (!activeChat) return [];
@@ -678,12 +678,13 @@ export function MessagePage() {
       };
 
       // 1. このチャットでメッセージを送った担当者(senderName = "会社名_個人名")
+      const senders: string[] = [];
       messages.forEach((m: any) => {
         const sn = m.senderName ? String(m.senderName) : '';
         const i = sn.indexOf('_');
         if (i > 0 && sn.slice(0, i) === compName) {
           const person = sn.slice(i + 1).trim();
-          if (person && person !== '代表' && person !== '担当者') addName(person);
+          if (person && person !== '代表' && person !== '担当者') { addName(person); senders.push(person); }
         }
       });
       // 2. 応募時に提案されたスタッフ(応募側の会社)
@@ -695,8 +696,28 @@ export function MessagePage() {
       // 5. 誰も特定できなければ会社の代表者
       if (people.size === 0 && comp?.representativeName) addName(comp.representativeName);
 
-      if (people.size === 0) out.push({ label: compName, person: '', companyId: cid });
-      else people.forEach((removableStaffId, p) => out.push({ label: `${compName} ${p}`, person: p, companyId: cid, removableStaffId }));
+      // トークルーム開始時の「各社1名」= だれであっても削除不可(応募スタッフ / 最初の発言者 / 代表者)
+      const anchorName =
+        (appliedStaff && appliedStaff.userId === cid ? appliedStaff.name : '')
+        || senders[0]
+        || comp?.representativeName
+        || '';
+
+      if (people.size === 0) {
+        out.push({ label: compName, person: '', companyId: cid, isAnchor: true });
+      } else {
+        people.forEach((removableStaffId, p) => {
+          const staff = removableStaffId ? allStaffs.find(s => s.id === removableStaffId) : undefined;
+          out.push({
+            label: `${compName} ${p}`,
+            person: p,
+            companyId: cid,
+            removableStaffId,
+            role: staff?.role,
+            isAnchor: p === anchorName,
+          });
+        });
+      }
     }
     return out;
   }, [activeChat, currentUser, messages, chatTasks, allCompanies, allStaffs, relatedJob]);
@@ -3357,8 +3378,17 @@ export function MessagePage() {
                 const myPerson = currentUser?.staffName || currentUser?.representativeName || '';
                 const isMe = !!myPerson && !!currentUser?.name && cleanName.includes(currentUser.name) && cleanName.includes(myPerson);
                 const initial = cleanName.charAt(0);
-                // 「メンバー追加」で入った自社担当者は削除できる
-                const canRemove = !!m.removableStaffId && m.companyId === currentUser?.id && !isMe;
+                // 削除できる条件:
+                //  - 「メンバー追加」で入った自社担当者(removableStaffId あり)
+                //  - トークルーム開始時の各社1名(anchor)は誰でも削除不可
+                //  - 自分自身は不可
+                //  - 一般スタッフは管理者を削除できない(管理者は両方削除可)
+                const iAmAdmin = currentUser?.staffRole === 'admin';
+                const canRemove = !!m.removableStaffId
+                  && m.companyId === currentUser?.id
+                  && !isMe
+                  && !m.isAnchor
+                  && (iAmAdmin || m.role !== 'admin');
 
                 return (
                   <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '8px 12px', background: '#F8FAFC', border: '1px solid #F1F5F9', borderRadius: '10px' }}>
