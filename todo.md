@@ -44,7 +44,10 @@
   - `ContractTask.status` に `cancelled` 追加。`getWorkPhase()` を `statusLabels.ts` から公開。
   - 「選考」画面の候補者カードに「この応募をキャンセル」を追加(応募中/内定通知済み、または稼働開始前の稼働待ちのみ)。確認モーダルで理由を任意入力。
   - 確定で `updateContractTaskJobStatus(chatId, jobId, 'cancelled')` + 相手チャットへシステムメッセージ通知。UIフロー検証済み。
-- [ ] 第5段階: 異議対応(`respondToDispute`)のUI配線。
+- [x] **第5段階: 「内容確認中」(disputed)の解消UI**(PR #23)
+  - 完了報告で評価★1のとき `disputed` にし、コメントを確認事項として保存(`handleReportSubmit`)。
+  - 「報告・評価」の該当カードに「内容を承認して完了」(→ `completed`)/「認識に相違あり」(理由入力 → `disputed` のまま)の2ボタン。
+  - `respondToDispute` を jobStates 対応にし、理由は `evaluations.disputedReason` に統一。UIフロー検証済み(★1→disputed→差戻し→承認→completed)。
 - [ ] 第6段階: 残りのバッジ・ステータス参照箇所の移行。
 
 ### 🐛 発見済みバグ(未修正・要設計判断)

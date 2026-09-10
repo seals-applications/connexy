@@ -158,6 +158,10 @@ export function ManagementPage() {
   const [cancellingCandidate, setCancellingCandidate] = useState<any>(null);
   const [cancelReason, setCancelReason] = useState('');
   const [isCancelling, setIsCancelling] = useState(false);
+  // 「内容確認中」(disputed)の解消。STATUS_MODEL.md §3.2
+  const [disputeRejecting, setDisputeRejecting] = useState<ContractTask | null>(null);
+  const [disputeRejectReason, setDisputeRejectReason] = useState('');
+  const [isDisputeResponding, setIsDisputeResponding] = useState(false);
 
   // Staff Management States
   const [showAddStaffOverlay, setShowAddStaffOverlay] = useState(false);
@@ -778,6 +782,23 @@ export function ManagementPage() {
     }
   };
 
+  // 「内容確認中」(disputed)への応答。承認 → 完了 / 相違あり → disputed のまま理由更新。
+  const handleRespondToDispute = async (task: ContractTask, action: 'approve' | 'reject', reason?: string) => {
+    setIsDisputeResponding(true);
+    try {
+      await api.respondToDispute(task.id, action, reason);
+      alert(action === 'approve' ? '内容を承認し、本件を完了にしました。' : '差戻しました。相手の再確認をお待ちください。');
+      setDisputeRejecting(null);
+      setDisputeRejectReason('');
+      await loadData();
+    } catch (e) {
+      console.error(e);
+      alert('処理中にエラーが発生しました。');
+    } finally {
+      setIsDisputeResponding(false);
+    }
+  };
+
   // Staff Save & Edit actions
 
   const handleStaffSave = async (e: React.FormEvent) => {
@@ -1038,13 +1059,16 @@ export function ManagementPage() {
         [evalRole === 'client' ? 'byClient' : 'byWorker']: evaluation
       };
 
-      // If both evaluated, mark task status as completed
+      // 評価★1は「内容確認中」(disputed)に入れ、双方で内容を確認・調整する(STATUS_MODEL.md §3.1)。
+      // それ以外は、双方評価済みなら completed、片方だけなら report_pending。
       const bothEvaluated = !!updatedEvals.byClient && (!!updatedEvals.byWorker || !!updatedEvals.byStaffToField);
-      const nextStatus = bothEvaluated ? 'completed' : 'report_pending';
+      const isDisputed = evalRating <= 1;
+      const nextStatus = isDisputed ? 'disputed' : bothEvaluated ? 'completed' : 'report_pending';
 
       await api.updateContractTaskJobStatus(selectedTask.id, selectedTask.jobId, nextStatus, {
         additionalEvals: {
           [evalRole === 'client' ? 'byClient' : 'byWorker']: evaluation,
+          ...(isDisputed ? { disputedReason: (evalComment || '').trim() || '評価内容に相違があるため、内容の確認をお願いします。' } : {}),
         },
       });
 
@@ -1106,9 +1130,10 @@ export function ManagementPage() {
         t.status === 'completed' ? '完了' :
         t.status === 'working' ? '進行中' :
         t.status === 'report_pending' ? '報告待ち' :
-        t.status === 'disputed' ? '異議あり' :
+        t.status === 'disputed' ? '内容確認中' :
         t.status === 'offered' ? '内定通知中' :
         t.status === 'applying' ? '選考中' :
+        t.status === 'cancelled' ? 'キャンセル' :
         t.status === 'rejected' || t.status === 'declined' ? '不成立' : '稼働準備中',
         t.date || new Date().toLocaleDateString()
       ]);
@@ -1633,8 +1658,8 @@ export function ManagementPage() {
               {relatedTasks.filter(t => t.status === 'report_pending' || t.status === 'disputed').map(task => (
                 <div key={task.id} style={{ background: 'var(--surface-color)', borderRadius: '12px', padding: '16px', border: task.status === 'disputed' ? '1px solid #FCA5A5' : '1px solid var(--border-color)' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
-                    <span style={{ fontSize: '10px', padding: '2px 8px', borderRadius: '10px', background: task.status === 'disputed' ? '#FEE2E2' : '#FFF7ED', color: task.status === 'disputed' ? '#991B1B' : '#C2410C', fontWeight: 'bold' }}>
-                      {task.status === 'disputed' ? '差戻し対応待ち' : '未報告'}
+                    <span style={{ fontSize: '10px', padding: '2px 8px', borderRadius: '10px', background: task.status === 'disputed' ? '#FFFBEB' : '#FFF7ED', color: task.status === 'disputed' ? '#B45309' : '#C2410C', fontWeight: 'bold' }}>
+                      {task.status === 'disputed' ? '内容確認中' : '未報告'}
                     </span>
                     <span style={{ fontSize: '11px', color: 'var(--text-sub)' }}>{task.date}</span>
                   </div>
@@ -1644,9 +1669,9 @@ export function ManagementPage() {
                     <span>稼働: {task.workerName}</span>
                   </div>
 
-                  {task.status === 'disputed' && task.disputedReason && (
-                    <div style={{ background: '#FEF2F2', borderLeft: '4px solid #EF4444', padding: '8px', borderRadius: '4px', marginTop: '10px', fontSize: '11px', color: '#991B1B' }}>
-                      <strong>差戻し理由:</strong> {task.disputedReason}
+                  {task.status === 'disputed' && (task.disputedReason || (task.evaluations as any)?.disputedReason) && (
+                    <div style={{ background: '#FFFBEB', borderLeft: '4px solid #F59E0B', padding: '8px', borderRadius: '4px', marginTop: '10px', fontSize: '11px', color: '#B45309' }}>
+                      <strong>確認事項:</strong> {task.disputedReason || (task.evaluations as any)?.disputedReason}
                     </div>
                   )}
 
@@ -1654,6 +1679,25 @@ export function ManagementPage() {
                     <button onClick={() => handleOpenReport(task)} style={{ background: 'var(--primary)', color: 'white', border: 'none', width: '100%', padding: '8px', borderRadius: '6px', fontWeight: 'bold', fontSize: '12px', marginTop: '10px', cursor: 'pointer' }}>
                       完了報告と相互評価を登録する
                     </button>
+                  )}
+
+                  {isUserAdmin && task.status === 'disputed' && (
+                    <div style={{ display: 'flex', gap: '8px', marginTop: '10px' }}>
+                      <button
+                        onClick={() => { if (confirm('確認事項の内容で問題なければ、本件を完了にします。よろしいですか？')) handleRespondToDispute(task, 'approve'); }}
+                        disabled={isDisputeResponding}
+                        style={{ flex: 1, background: 'var(--primary)', color: 'white', border: 'none', padding: '8px', borderRadius: '6px', fontWeight: 'bold', fontSize: '12px', cursor: 'pointer' }}
+                      >
+                        内容を承認して完了
+                      </button>
+                      <button
+                        onClick={() => { setDisputeRejecting(task); setDisputeRejectReason(''); }}
+                        disabled={isDisputeResponding}
+                        style={{ flex: 1, background: 'var(--surface-color)', color: '#B45309', border: '1px solid #F59E0B', padding: '8px', borderRadius: '6px', fontWeight: 'bold', fontSize: '12px', cursor: 'pointer' }}
+                      >
+                        認識に相違あり
+                      </button>
+                    </div>
                   )}
                 </div>
               ))}
@@ -2423,6 +2467,34 @@ export function ManagementPage() {
               </button>
               <button type="button" onClick={handleCancelEngagement} disabled={isCancelling} style={{ flex: 1, padding: '10px', borderRadius: '8px', border: 'none', background: '#B91C1C', color: 'white', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer' }}>
                 {isCancelling ? '処理中...' : 'キャンセルを確定'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 2.6 「内容確認中」への差戻し(理由入力)モーダル */}
+      {disputeRejecting && (
+        <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', zIndex: 4000, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+          <div onClick={() => { if (!isDisputeResponding) { setDisputeRejecting(null); setDisputeRejectReason(''); } }} style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(15, 23, 42, 0.5)', backdropFilter: 'blur(3px)' }} />
+          <div style={{ position: 'relative', background: 'var(--surface-color)', width: '90%', maxWidth: '380px', borderRadius: '16px', padding: '20px', boxShadow: '0 8px 30px rgba(0,0,0,0.15)', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            <h3 style={{ fontSize: '16px', fontWeight: 'bold', margin: 0, color: '#B45309' }}>認識の相違を伝える</h3>
+            <div style={{ fontSize: '12px', color: 'var(--text-sub)', lineHeight: '1.5' }}>
+              「{disputeRejecting.jobTitle}」について、相手の確認事項に対する認識の相違点を記入してください。本件は「内容確認中」のままになり、相手が再度確認します。
+            </div>
+            <textarea
+              value={disputeRejectReason}
+              onChange={e => setDisputeRejectReason(e.target.value)}
+              rows={4}
+              placeholder="例: 遅刻の記録がありますが、当日は先方都合の開始遅延で、事前に連絡済みです。"
+              style={{ padding: '8px', borderRadius: '6px', border: '1px solid var(--border-color)', fontSize: '12px', resize: 'vertical', fontFamily: 'inherit' }}
+            />
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button type="button" disabled={isDisputeResponding} onClick={() => { setDisputeRejecting(null); setDisputeRejectReason(''); }} style={{ flex: 1, padding: '10px', borderRadius: '8px', border: '1px solid #CBD5E1', background: 'var(--surface-color)', color: '#475569', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer' }}>
+                やめる
+              </button>
+              <button type="button" disabled={isDisputeResponding || !disputeRejectReason.trim()} onClick={() => handleRespondToDispute(disputeRejecting, 'reject', disputeRejectReason.trim())} style={{ flex: 1, padding: '10px', borderRadius: '8px', border: 'none', background: '#B45309', color: 'white', fontSize: '12px', fontWeight: 'bold', cursor: disputeRejectReason.trim() ? 'pointer' : 'not-allowed', opacity: disputeRejectReason.trim() ? 1 : 0.6 }}>
+                {isDisputeResponding ? '送信中...' : '差戻す'}
               </button>
             </div>
           </div>
