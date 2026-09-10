@@ -6,6 +6,8 @@ import { getExpenseCategoryLabel } from '../utils/expenseHelpers';
 import { getOfferExpiryState } from '../utils/offerExpiry';
 import { getPrimaryLinkedJobId, isJobLinkedToChat, getJobStaffId, getLinkedStaffIds } from '../utils/jobStates';
 import { isGroupChat as isGroupChatTask, isDirectChat as isDirectChatTask } from '../utils/contractTaskKind';
+import { getAddedMembers, getAddedMemberStaffIds, getHistoryCutoffMsgId } from '../utils/chatMembers';
+import type { AddedChatMember } from '../utils/chatMembers';
 
 // チャットのステータスバッジ。レガシーなチャット状態(商談中/契約待ち等)は個別に、
 // 応募・契約ステータスは getEngagementStatusLabel に委譲する(STATUS_MODEL.md §4)。
@@ -90,6 +92,10 @@ export function MessagePage() {
   const [selectedOfferMsg, setSelectedOfferMsg] = useState<any>(null);
   const [confirmingOfferAction, setConfirmingOfferAction] = useState<'accept' | 'decline' | null>(null);
   const [showMembersModal, setShowMembersModal] = useState(false);
+  const [showAddMemberPanel, setShowAddMemberPanel] = useState(false);
+  const [addMemberSelection, setAddMemberSelection] = useState<Set<string>>(new Set());
+  const [addMemberShareHistory, setAddMemberShareHistory] = useState(true);
+  const [addingMembers, setAddingMembers] = useState(false);
 
   const [receiptCategory, setReceiptCategory] = useState<'transport' | 'accommodation' | 'car'>('transport');
   const [receiptAmount, setReceiptAmount] = useState<number>(0);
@@ -504,6 +510,8 @@ export function MessagePage() {
           if (isRequestedActiveChat) return true;
           const task = chatTasks.find(t => t.id === channel.id);
           if (task && getLinkedStaffIds(task.evaluations).includes(currentUser.staffId)) return true;
+          // このチャットに「メンバー追加」で参加している自社スタッフ
+          if (task && getAddedMemberStaffIds(task.evaluations).includes(currentUser.staffId)) return true;
           return false;
         }
 
@@ -566,10 +574,19 @@ export function MessagePage() {
     if (!activeChat) return [];
     const task = chatTasks.find(t => t.id === activeChat.id);
     const taskMessages = (task?.evaluations as any)?.messages;
+    let list: any[];
     if (taskMessages && Array.isArray(taskMessages) && taskMessages.length > 0) {
-      return taskMessages;
+      list = taskMessages;
+    } else {
+      list = getDefaultMessages(activeChat.id);
     }
-    return getDefaultMessages(activeChat.id);
+    // 「過去のトーク非共有」で追加された担当者には、参加時点より前のメッセージを見せない
+    const cutoffId = getHistoryCutoffMsgId(task?.evaluations, currentUser?.staffId);
+    if (cutoffId) {
+      const idx = list.findIndex((m: any) => m && m.id === cutoffId);
+      if (idx >= 0) list = list.slice(idx + 1);
+    }
+    return list;
   }, [activeChat, chatTasks, currentUser]);
 
   // チャットに関連する案件情報の解決
@@ -644,6 +661,7 @@ export function MessagePage() {
     const jobId = relatedJob?.id || getPrimaryLinkedJobId(task?.evaluations) || '';
     const appliedStaffId = task ? getJobStaffId(task.evaluations, jobId) : undefined;
     const appliedStaff = allStaffs.find(s => s.id === appliedStaffId);
+    const added = getAddedMembers(task?.evaluations);
 
     const out: string[] = [];
     for (const cid of compIds) {
@@ -664,7 +682,9 @@ export function MessagePage() {
       if (appliedStaff && appliedStaff.userId === cid) people.add(appliedStaff.name);
       // 3. ログイン中の自分がこの会社なら、自分の担当者名
       if (currentUser?.id === cid && currentUser.staffName) people.add(currentUser.staffName);
-      // 4. 誰も特定できなければ会社の代表者
+      // 4. 「メンバー追加」で参加した自社担当者
+      added.forEach(m => { if (m.companyId === cid && m.name) people.add(m.name); });
+      // 5. 誰も特定できなければ会社の代表者
       if (people.size === 0 && comp?.representativeName) people.add(comp.representativeName);
 
       if (people.size === 0) out.push(compName);
@@ -672,6 +692,20 @@ export function MessagePage() {
     }
     return out;
   }, [activeChat, currentUser, messages, chatTasks, allCompanies, allStaffs, relatedJob]);
+
+  // 自社の人間でまだこのチャットに参加していない担当者(メンバー追加の候補)
+  const addableStaffs = useMemo(() => {
+    if (!activeChat || !currentUser || activeChat.status === 'group') return [];
+    // 直接チャットで、自分がこのチャットの2社のいずれかに属している場合のみ
+    const compIds = activeChat.id.split('_').slice(1, 3);
+    if (!compIds.includes(currentUser.id)) return [];
+    const memberNames = new Set(activeMembers.map(m => m.split(' ').slice(1).join(' ')));
+    return allStaffs.filter(s =>
+      s.userId === currentUser.id
+      && s.id !== currentUser.staffId
+      && !memberNames.has(s.name),
+    );
+  }, [activeChat, currentUser, allStaffs, activeMembers]);
 
   // 送信時の senderName と同じ形式("会社名_担当者名")。同じ会社の別担当者と自分を区別するのに使う。
   const mySenderName = useMemo(() => {
@@ -751,6 +785,49 @@ export function MessagePage() {
       }
     }
   }, [mappedMessages, activeChat, currentUser]);
+
+  const handleAddMembers = async () => {
+    if (!activeChat || !currentUser || addMemberSelection.size === 0) return;
+    setAddingMembers(true);
+    try {
+      const now = new Date();
+      const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+      const lastMsgId = messages.length ? messages[messages.length - 1]?.id ?? null : null;
+      const selected = allStaffs.filter((s: any) => addMemberSelection.has(s.id));
+      if (selected.length === 0) return;
+
+      const newMembers: AddedChatMember[] = selected.map((s: any) => ({
+        staffId: s.id,
+        companyId: currentUser.id,
+        name: s.name,
+        addedByStaffId: currentUser.staffId,
+        addedByName: currentUser.staffName || currentUser.representativeName || '担当者',
+        addedAt: now.toISOString(),
+        historyShared: addMemberShareHistory,
+        joinAfterMsgId: addMemberShareHistory ? null : lastMsgId,
+      }));
+
+      const names = selected.map((s: any) => s.name).join('、');
+      const adder = currentUser.staffName ? `${currentUser.name}（${currentUser.staffName}）` : currentUser.name;
+      const sysMsg = {
+        id: `sys_member_add_${Date.now()}`,
+        type: 'system',
+        text: `${adder}が ${names} をトークに追加しました。${addMemberShareHistory ? '（これまでのトーク内容も共有されます）' : '（これまでのトーク内容は共有されません）'}`,
+        time: timeStr,
+      };
+
+      await api.addChatMembers(activeChat.id, newMembers, [sysMsg]);
+      setChatTasks(await api.getContractTasks());
+      setAddMemberSelection(new Set());
+      setShowAddMemberPanel(false);
+      setAddMemberShareHistory(true);
+    } catch (e) {
+      console.error(e);
+      alert('メンバーの追加に失敗しました。');
+    } finally {
+      setAddingMembers(false);
+    }
+  };
 
   const handleSend = async () => {
     if (!inputText.trim() || !activeChat || !currentUser) return;
@@ -3276,12 +3353,80 @@ export function MessagePage() {
                   </div>
                 );
               })}
+
+              {/* 自社メンバーの追加 */}
+              {activeChat?.status !== 'group' && !showAddMemberPanel && (
+                <button
+                  onClick={() => setShowAddMemberPanel(true)}
+                  disabled={addableStaffs.length === 0}
+                  style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+                    padding: '10px 12px', borderRadius: '10px',
+                    border: '1px dashed var(--primary-color)',
+                    background: 'var(--surface-color)',
+                    color: addableStaffs.length === 0 ? '#94A3B8' : 'var(--primary-color)',
+                    fontSize: '12px', fontWeight: 'bold',
+                    cursor: addableStaffs.length === 0 ? 'not-allowed' : 'pointer',
+                  }}
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>person_add</span>
+                  {addableStaffs.length === 0 ? '追加できる自社メンバーがいません' : '自社メンバーをトークに追加'}
+                </button>
+              )}
+
+              {showAddMemberPanel && (
+                <div style={{ border: '1px solid #E2E8F0', borderRadius: '10px', padding: '12px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#0F172A' }}>追加する自社メンバーを選択</div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '30vh', overflowY: 'auto' }}>
+                    {addableStaffs.map((s: any) => {
+                      const checked = addMemberSelection.has(s.id);
+                      return (
+                        <label key={s.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', cursor: 'pointer', padding: '4px 2px' }}>
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={() => {
+                              const next = new Set(addMemberSelection);
+                              if (checked) next.delete(s.id); else next.add(s.id);
+                              setAddMemberSelection(next);
+                            }}
+                          />
+                          <span>{s.name}{s.role === 'admin' ? '（管理者）' : ''}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', cursor: 'pointer', borderTop: '1px solid #F1F5F9', paddingTop: '8px' }}>
+                    <input
+                      type="checkbox"
+                      checked={addMemberShareHistory}
+                      onChange={() => setAddMemberShareHistory(v => !v)}
+                    />
+                    <span>これまでのトーク内容も共有する</span>
+                  </label>
+                  <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                    <button
+                      onClick={() => { setShowAddMemberPanel(false); setAddMemberSelection(new Set()); }}
+                      style={{ padding: '6px 12px', borderRadius: '8px', border: '1px solid #E2E8F0', background: 'var(--surface-color)', color: '#64748B', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer' }}
+                    >
+                      やめる
+                    </button>
+                    <button
+                      onClick={handleAddMembers}
+                      disabled={addMemberSelection.size === 0 || addingMembers}
+                      style={{ padding: '6px 12px', borderRadius: '8px', border: 'none', background: addMemberSelection.size === 0 ? '#CBD5E1' : 'var(--primary-color)', color: '#fff', fontSize: '12px', fontWeight: 'bold', cursor: addMemberSelection.size === 0 ? 'not-allowed' : 'pointer' }}
+                    >
+                      {addingMembers ? '追加中...' : `追加する${addMemberSelection.size ? `(${addMemberSelection.size})` : ''}`}
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Modal Footer */}
             <div style={{ padding: '16px 20px', borderTop: '1px solid #F1F5F9', display: 'flex', justifyContent: 'flex-end', background: '#F8FAFC' }}>
               <button
-                onClick={() => setShowMembersModal(false)}
+                onClick={() => { setShowMembersModal(false); setShowAddMemberPanel(false); setAddMemberSelection(new Set()); }}
                 style={{
                   padding: '8px 16px',
                   borderRadius: '8px',
