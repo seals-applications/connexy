@@ -116,7 +116,6 @@ export function SearchPage() {
   const [talentPrice, setTalentPrice] = useState<number>(15000);
 
   // フィルタ関連のState
-  const [includeUrgent, setIncludeUrgent] = useState(true);
 
   // マップ上のピンをクリックした際に下部ボトムシートに表示する案件・人材データ
   const [selectedMapJobs, setSelectedMapJobs] = useState<Job[] | null>(null);
@@ -1142,9 +1141,6 @@ export function SearchPage() {
            job.authorId === currentUser.id)
         : true;
 
-      // 3. 緊急募集フィルタ
-      const matchesUrgent = includeUrgent || !job.isUrgent;
-
       // 4. 職種フィルター
       if (filterJobRoles.length > 0 && !filterJobRoles.includes(job.roleType || '')) {
         return false;
@@ -1203,9 +1199,9 @@ export function SearchPage() {
         }
       }
 
-      return matchesArea && matchesLimited && matchesUrgent;
+      return matchesArea && matchesLimited;
     });
-  }, [jobs, filterArea, includeUrgent, currentUser, filterJobRoles, filterCarriers, filterChannels, filterMinPrice, filterDeadlineDays, searchKeyword, appliedJobIds, showFavoritesOnly]);
+  }, [jobs, filterArea, currentUser, filterJobRoles, filterCarriers, filterChannels, filterMinPrice, filterDeadlineDays, searchKeyword, appliedJobIds, showFavoritesOnly]);
 
   const sortedJobs = useMemo(() => {
     let list = [...filteredJobs];
@@ -1222,13 +1218,11 @@ export function SearchPage() {
       list.reverse();
     }
 
-    if (includeUrgent) {
-      const urgents = list.filter(j => j.isUrgent);
-      const normals = list.filter(j => !j.isUrgent);
-      return [...urgents, ...normals];
-    }
-    return list;
-  }, [filteredJobs, jobSortOrder, includeUrgent]);
+    // 緊急案件は並び順にかかわらず常に最上部へ。
+    const urgents = list.filter(j => j.isUrgent);
+    const normals = list.filter(j => !j.isUrgent);
+    return [...urgents, ...normals];
+  }, [filteredJobs, jobSortOrder]);
 
   const filteredTalentGroups = useMemo(() => {
     return groupedTalents.filter(group =>
@@ -3450,19 +3444,6 @@ export function SearchPage() {
                       開催日の近い順
                     </label>
                   </div>
-                </div>
-
-                {/* 緊急募集の表示切り替え */}
-                <div className="filter-group">
-                  <span className="filter-group-title">緊急募集</span>
-                  <label className={`filter-checkbox-label ${includeUrgent ? 'active' : ''}`} style={{ display: 'inline-flex' }}>
-                    <input
-                      type="checkbox"
-                      checked={includeUrgent}
-                      onChange={(e) => setIncludeUrgent(e.target.checked)}
-                    />
-                    緊急募集の案件を表示する
-                  </label>
                 </div>
 
                 <details style={{ background: 'var(--surface-color)', borderRadius: '8px', border: '1px solid var(--border-color)', padding: '0 12px', marginBottom: '16px' }}>
