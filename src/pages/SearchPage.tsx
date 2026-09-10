@@ -8,6 +8,7 @@ import type { Job, Talent, Staff, Training, User, ContractTask } from '../data/m
 import { CalendarPicker } from '../components/CalendarPicker';
 import { formatJobDates } from '../utils/dateFormatter';
 import { generateMaskedLocation, extractArea, getCommonAreaName } from '../utils/maskingUtils';
+import { isWithinAreaFilter } from '../utils/areaFilter';
 import Autocomplete from 'react-google-autocomplete';
 import { useSessionState } from '../hooks/useSessionState';
 
@@ -259,10 +260,7 @@ export function SearchPage() {
         const filters = JSON.parse(saved);
         // 簡易チェック：保存条件でフィルタリング
         const matches = jobs.filter(job => {
-          let matchesArea = true;
-          if (filters.filterArea === 'shinjuku') matchesArea = !!job.locationName?.includes('新宿');
-          else if (filters.filterArea === 'shibuya') matchesArea = !!job.locationName?.includes('渋谷');
-          else if (filters.filterArea === 'ikebukuro') matchesArea = !!job.locationName?.includes('池袋') || !!job.locationName?.includes('豊島');
+          const matchesArea = isWithinAreaFilter(filters.filterArea, { lat: job.lat, lng: job.lng, locationName: job.locationName });
 
           let remainingDays = 999;
           if (job.applicationDeadline) {
@@ -331,11 +329,7 @@ export function SearchPage() {
         
         // 更新確認済みにする
         const matches = jobs.filter(job => {
-          let matchesArea = true;
-          if (filters.filterArea === 'shinjuku') matchesArea = !!job.locationName?.includes('新宿');
-          else if (filters.filterArea === 'shibuya') matchesArea = !!job.locationName?.includes('渋谷');
-          else if (filters.filterArea === 'ikebukuro') matchesArea = !!job.locationName?.includes('池袋') || !!job.locationName?.includes('豊島');
-          return matchesArea;
+          return isWithinAreaFilter(filters.filterArea, { lat: job.lat, lng: job.lng, locationName: job.locationName });
         });
         localStorage.setItem('connexy_last_seen_saved_count', matches.length.toString());
         setNewMatchesCount(0);
@@ -1334,11 +1328,8 @@ export function SearchPage() {
       const isContracted = contractTasks.some(t => t.jobId === job.id && ['confirmed', 'report_pending', 'completed', 'disputed'].includes(t.status));
       if (isContracted) return false;
 
-      // 1. エリアフィルタ
-      let matchesArea = true;
-      if (filterArea === 'shinjuku') matchesArea = !!job.locationName?.includes('新宿');
-      else if (filterArea === 'shibuya') matchesArea = !!job.locationName?.includes('渋谷');
-      else if (filterArea === 'ikebukuro') matchesArea = !!job.locationName?.includes('池袋') || !!job.locationName?.includes('豊島');
+      // 1. エリアフィルタ(中心点からの半径。座標が無ければ地名一致にフォールバック)
+      const matchesArea = isWithinAreaFilter(filterArea, { lat: job.lat, lng: job.lng, locationName: job.locationName });
 
       // 2. 限定公開フィルタ
       const matchesLimited = currentUser
@@ -1436,13 +1427,9 @@ export function SearchPage() {
   }, [filteredJobs, jobSortOrder, includeUrgent]);
 
   const filteredTalentGroups = useMemo(() => {
-    return groupedTalents.filter(group => {
-      if (filterArea === 'all') return true;
-      if (filterArea === 'shinjuku') return group.locationName.includes('新宿');
-      if (filterArea === 'shibuya') return group.locationName.includes('渋谷');
-      if (filterArea === 'ikebukuro') return group.locationName.includes('池袋') || group.locationName.includes('豊島');
-      return true;
-    });
+    return groupedTalents.filter(group =>
+      isWithinAreaFilter(filterArea, { lat: group.lat, lng: group.lng, locationName: group.locationName }),
+    );
   }, [groupedTalents, filterArea]);
 
   // 案件を「市町村・区」エリア単位にグループ化し、正確な位置を丸める（プライバシー保護）
