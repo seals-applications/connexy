@@ -5,6 +5,7 @@ import { api } from '../data/mockDb';
 import type { ContractTask, Training, Staff, Job, User } from '../data/mockDb';
 import { getEngagementStatusLabel, getJobListingStatus, getWorkPhase, isContractApproved } from '../utils/statusLabels';
 import { getJobStatus, isJobLinkedToChat, getJobAppliedAt, getJobStaffId, getLinkedStaffIds } from '../utils/jobStates';
+import { isDirectChat } from '../utils/contractTaskKind';
 import { calcOfferExpiresAt } from '../utils/offerExpiry';
 
 const quizData: Record<string, Array<{ question: string, options: string[], answer: number }>> = {
@@ -286,7 +287,7 @@ export function ManagementPage() {
 
     tasks.forEach(t => {
       // Direct company chats (applications are direct company chats where jobId is 'chat' or a specific jobId)
-      if (t.id.startsWith('chat_') && !t.id.startsWith('chat_group_')) {
+      if (isDirectChat(t)) {
         const appliedJobIds: string[] = (t.evaluations as any)?.appliedJobIds || [];
         if (appliedJobIds.length === 0) return;
 

@@ -5,6 +5,7 @@ import { getOpponentCompanyName } from '../utils/chatParties';
 import { getExpenseCategoryLabel } from '../utils/expenseHelpers';
 import { getOfferExpiryState } from '../utils/offerExpiry';
 import { getPrimaryLinkedJobId, isJobLinkedToChat, getJobStaffId, getLinkedStaffIds } from '../utils/jobStates';
+import { isGroupChat as isGroupChatTask, isDirectChat as isDirectChatTask } from '../utils/contractTaskKind';
 
 // チャットのステータスバッジ。レガシーなチャット状態(商談中/契約待ち等)は個別に、
 // 応募・契約ステータスは getEngagementStatusLabel に委譲する(STATUS_MODEL.md §4)。
@@ -338,7 +339,7 @@ export function MessagePage() {
 
     // 2. Dynamic Group chat channels from Supabase
     const dynamicGroupChannels: ChatChannel[] = chatTasks
-      .filter(t => t.id.startsWith('chat_group_'))
+      .filter(t => t.id.startsWith('chat_group_')) // 動的グループのみ(chat_au_group は別途固定チャンネルで扱う)
       .map(task => {
         const evaluations = task.evaluations || {};
         const assignedStaffIds = evaluations.assignedStaffIds || [];
@@ -534,7 +535,7 @@ export function MessagePage() {
       }
 
       // 2. Chat type filter matching
-      const isGroupChat = c.status === 'group' || c.id.startsWith('chat_group_') || c.id === 'chat_au_group';
+      const isGroupChat = c.status === 'group' || isGroupChatTask(c);
 
       if (chatTypeFilter === 'admin' && isGroupChat) return false;
       if (chatTypeFilter === 'staff' && !isGroupChat) return false;
@@ -1097,7 +1098,7 @@ export function MessagePage() {
 
       // 3. Automatically reject and notify other candidates for this job
       const otherChatTasks = chatTasks.filter(t => {
-        if (t.id === activeChat.id || !t.id.startsWith('chat_') || t.id.startsWith('chat_group_')) return false;
+        if (t.id === activeChat.id || !isDirectChatTask(t)) return false;
         const isForThisJob = isJobLinkedToChat(t.evaluations, job.id);
         return isForThisJob && (t.status === 'applying' || t.status === 'offered');
       });
