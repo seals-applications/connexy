@@ -96,6 +96,7 @@ export function MessagePage() {
   const [addMemberSelection, setAddMemberSelection] = useState<Set<string>>(new Set());
   const [addMemberShareHistory, setAddMemberShareHistory] = useState(true);
   const [addingMembers, setAddingMembers] = useState(false);
+  const [removingStaffId, setRemovingStaffId] = useState<string | null>(null);
 
   const [receiptCategory, setReceiptCategory] = useState<'transport' | 'accommodation' | 'car'>('transport');
   const [receiptAmount, setReceiptAmount] = useState<number>(0);
@@ -647,10 +648,12 @@ export function MessagePage() {
     return task?.clientName || '元請け企業';
   }, [activeChat, chatTasks]);
 
-  const activeMembers = useMemo<string[]>(() => {
+  interface MemberEntry { label: string; person: string; companyId?: string; removableStaffId?: string; }
+
+  const activeMembers = useMemo<MemberEntry[]>(() => {
     if (!activeChat) return [];
     if (activeChat.members && activeChat.members.length > 0) {
-      return activeChat.members;
+      return activeChat.members.map((s: string) => ({ label: s.replace('_', ' '), person: s.split('_').slice(1).join(' ') || s }));
     }
 
     // 直接チャット: `chat_<会社A>_<会社B>` の2社それぞれで、
@@ -663,11 +666,16 @@ export function MessagePage() {
     const appliedStaff = allStaffs.find(s => s.id === appliedStaffId);
     const added = getAddedMembers(task?.evaluations);
 
-    const out: string[] = [];
+    const out: MemberEntry[] = [];
     for (const cid of compIds) {
       const comp = allCompanies.find(c => c.id === cid);
       const compName = comp?.name || cid;
-      const people = new Set<string>();
+      // name -> removableStaffId (「メンバー追加」で参加した担当者のみ removable)
+      const people = new Map<string, string | undefined>();
+      const addName = (name: string, removableStaffId?: string) => {
+        if (!name) return;
+        if (!people.has(name) || (removableStaffId && !people.get(name))) people.set(name, removableStaffId);
+      };
 
       // 1. このチャットでメッセージを送った担当者(senderName = "会社名_個人名")
       messages.forEach((m: any) => {
@@ -675,20 +683,20 @@ export function MessagePage() {
         const i = sn.indexOf('_');
         if (i > 0 && sn.slice(0, i) === compName) {
           const person = sn.slice(i + 1).trim();
-          if (person && person !== '代表' && person !== '担当者') people.add(person);
+          if (person && person !== '代表' && person !== '担当者') addName(person);
         }
       });
       // 2. 応募時に提案されたスタッフ(応募側の会社)
-      if (appliedStaff && appliedStaff.userId === cid) people.add(appliedStaff.name);
+      if (appliedStaff && appliedStaff.userId === cid) addName(appliedStaff.name);
       // 3. ログイン中の自分がこの会社なら、自分の担当者名
-      if (currentUser?.id === cid && currentUser.staffName) people.add(currentUser.staffName);
-      // 4. 「メンバー追加」で参加した自社担当者
-      added.forEach(m => { if (m.companyId === cid && m.name) people.add(m.name); });
+      if (currentUser?.id === cid && currentUser.staffName) addName(currentUser.staffName);
+      // 4. 「メンバー追加」で参加した自社担当者(こちらは削除可能)
+      added.forEach(m => { if (m.companyId === cid && m.name) addName(m.name, m.staffId); });
       // 5. 誰も特定できなければ会社の代表者
-      if (people.size === 0 && comp?.representativeName) people.add(comp.representativeName);
+      if (people.size === 0 && comp?.representativeName) addName(comp.representativeName);
 
-      if (people.size === 0) out.push(compName);
-      else people.forEach(p => out.push(`${compName} ${p}`));
+      if (people.size === 0) out.push({ label: compName, person: '', companyId: cid });
+      else people.forEach((removableStaffId, p) => out.push({ label: `${compName} ${p}`, person: p, companyId: cid, removableStaffId }));
     }
     return out;
   }, [activeChat, currentUser, messages, chatTasks, allCompanies, allStaffs, relatedJob]);
@@ -699,7 +707,7 @@ export function MessagePage() {
     // 直接チャットで、自分がこのチャットの2社のいずれかに属している場合のみ
     const compIds = activeChat.id.split('_').slice(1, 3);
     if (!compIds.includes(currentUser.id)) return [];
-    const memberNames = new Set(activeMembers.map(m => m.split(' ').slice(1).join(' ')));
+    const memberNames = new Set(activeMembers.map(m => m.person).filter(Boolean));
     return allStaffs.filter(s =>
       s.userId === currentUser.id
       && s.id !== currentUser.staffId
@@ -808,11 +816,14 @@ export function MessagePage() {
       }));
 
       const names = selected.map((s: any) => s.name).join('、');
-      const adder = currentUser.staffName ? `${currentUser.name}（${currentUser.staffName}）` : currentUser.name;
+      const adder = currentUser.staffName || currentUser.name;
+      // 履歴を共有した場合のみ追記(要望どおり)
       const sysMsg = {
         id: `sys_member_add_${Date.now()}`,
         type: 'system',
-        text: `${adder}が ${names} をトークに追加しました。${addMemberShareHistory ? '（これまでのトーク内容も共有されます）' : '（これまでのトーク内容は共有されません）'}`,
+        text: addMemberShareHistory
+          ? `${adder}が ${names} を追加し、過去のトークを共有しました。`
+          : `${adder}が ${names} を追加しました。`,
         time: timeStr,
       };
 
@@ -826,6 +837,30 @@ export function MessagePage() {
       alert('メンバーの追加に失敗しました。');
     } finally {
       setAddingMembers(false);
+    }
+  };
+
+  const handleRemoveMember = async (staffId: string, name: string) => {
+    if (!activeChat || !currentUser) return;
+    if (!confirm(`${name} さんをこのトークから削除しますか？`)) return;
+    setRemovingStaffId(staffId);
+    try {
+      const now = new Date();
+      const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+      const remover = currentUser.staffName || currentUser.name;
+      const sysMsg = {
+        id: `sys_member_remove_${Date.now()}`,
+        type: 'system',
+        text: `${remover}が ${name} をトークから削除しました。`,
+        time: timeStr,
+      };
+      await api.removeChatMembers(activeChat.id, [staffId], [sysMsg]);
+      setChatTasks(await api.getContractTasks());
+    } catch (e) {
+      console.error(e);
+      alert('メンバーの削除に失敗しました。');
+    } finally {
+      setRemovingStaffId(null);
     }
   };
 
@@ -2421,7 +2456,7 @@ export function MessagePage() {
                     borderRadius: '18px',
                     border: 'none',
                     background: isSel ? '#FFFFFF' : 'transparent',
-                    color: isSel ? 'var(--primary-color)' : '#64748B',
+                    color: isSel ? 'var(--primary)' : '#64748B',
                     fontSize: '11px',
                     fontWeight: 'bold',
                     boxShadow: isSel ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
@@ -2590,7 +2625,7 @@ export function MessagePage() {
               title="参加メンバー"
               style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
             >
-              <span className="material-symbols-outlined" style={{ color: 'var(--primary-color)' }}>groups</span>
+              <span className="material-symbols-outlined" style={{ color: 'var(--primary)' }}>groups</span>
             </button>
           </div>
 
@@ -2710,7 +2745,7 @@ export function MessagePage() {
                         window.history.pushState({ activeChatId: msg.linkToChatId }, '');
                       }}
                       style={{
-                        background: 'var(--primary-color)',
+                        background: 'var(--primary)',
                         color: 'white',
                         border: 'none',
                         borderRadius: '6px',
@@ -2763,7 +2798,7 @@ export function MessagePage() {
                       <div className="message-bubble">
                         {msg.isProposal ? (
                           <div className="contract-card" style={{ background: 'var(--surface-color)', border: '1px solid #E2E8F0', borderRadius: '8px', padding: '12px', width: '100%', maxWidth: '220px', boxSizing: 'border-box' }}>
-                            <div className="contract-header" style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 'bold', color: 'var(--primary-color)', marginBottom: '8px' }}>
+                            <div className="contract-header" style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 'bold', color: 'var(--primary)', marginBottom: '8px' }}>
                               <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>description</span>
                               <span style={{ fontSize: '13px' }}>電子発注書</span>
                             </div>
@@ -2773,7 +2808,7 @@ export function MessagePage() {
                               <div><strong>期間:</strong> {msg.proposalDetails?.duration || '10/14 - 10/15 (2日間)'}</div>
                             </div>
                             {msg.proposalStatus === 'pending' ? (
-                              <button className="btn-primary btn-small w-full" onClick={() => handleOpenSignatureModal(msg.id)} style={{ background: 'var(--primary-color)', color: '#FFFFFF', border: 'none', fontSize: '11px', padding: '6px', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+                              <button className="btn-primary btn-small w-full" onClick={() => handleOpenSignatureModal(msg.id)} style={{ background: 'var(--primary)', color: '#FFFFFF', border: 'none', fontSize: '11px', padding: '6px', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
                                 <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>draw</span>
                                 手書き電子サインをして同意
                               </button>
@@ -2865,7 +2900,7 @@ export function MessagePage() {
                       <div className="message-bubble">
                         {msg.isProposal ? (
                           <div className="contract-card" style={{ background: 'var(--surface-color)', border: '1px solid #E2E8F0', borderRadius: '8px', padding: '12px', width: '100%', maxWidth: '220px', boxSizing: 'border-box' }}>
-                            <div className="contract-header" style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 'bold', color: 'var(--primary-color)', marginBottom: '8px' }}>
+                            <div className="contract-header" style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 'bold', color: 'var(--primary)', marginBottom: '8px' }}>
                               <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>description</span>
                               <span style={{ fontSize: '13px' }}>電子発注書</span>
                             </div>
@@ -3295,7 +3330,7 @@ export function MessagePage() {
               background: 'linear-gradient(135deg, #EEF2F6 0%, #E2E8F0 100%)'
             }}>
               <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 'bold', color: '#1E293B', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span className="material-symbols-outlined" style={{ color: 'var(--primary-color)' }}>groups</span>
+                <span className="material-symbols-outlined" style={{ color: 'var(--primary)' }}>groups</span>
                 参加メンバー一覧
               </h3>
               <button 
@@ -3317,26 +3352,28 @@ export function MessagePage() {
 
             {/* Modal Content */}
             <div style={{ padding: '20px', overflowY: 'auto', maxHeight: '50vh', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              {activeMembers.map((m: string, idx: number) => {
-                const cleanName = m.replace('_', ' ');
+              {activeMembers.map((m, idx: number) => {
+                const cleanName = m.label;
                 const myPerson = currentUser?.staffName || currentUser?.representativeName || '';
-                const isMe = cleanName.includes('(自分)') || cleanName.endsWith('自分')
-                  || (!!myPerson && !!currentUser?.name && cleanName.includes(currentUser.name) && cleanName.includes(myPerson));
+                const isMe = !!myPerson && !!currentUser?.name && cleanName.includes(currentUser.name) && cleanName.includes(myPerson);
                 const initial = cleanName.charAt(0);
-                
+                // 「メンバー追加」で入った自社担当者は削除できる
+                const canRemove = !!m.removableStaffId && m.companyId === currentUser?.id && !isMe;
+
                 return (
                   <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '8px 12px', background: '#F8FAFC', border: '1px solid #F1F5F9', borderRadius: '10px' }}>
                     <div style={{
                       width: '32px',
                       height: '32px',
                       borderRadius: '50%',
-                      background: isMe ? 'var(--primary-color)' : 'var(--secondary-color, #6366F1)',
+                      background: isMe ? 'var(--primary)' : '#6366F1',
                       color: '#FFFFFF',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
                       fontSize: '13px',
-                      fontWeight: 'bold'
+                      fontWeight: 'bold',
+                      flexShrink: 0
                     }}>
                       {initial}
                     </div>
@@ -3349,7 +3386,22 @@ export function MessagePage() {
                           ログイン中
                         </span>
                       )}
+                      {!isMe && m.removableStaffId && (
+                        <span style={{ alignSelf: 'flex-start', fontSize: '9px', background: '#EEF2FF', color: '#4338CA', padding: '1px 6px', borderRadius: '4px', fontWeight: 'bold', marginTop: '2px' }}>
+                          追加メンバー
+                        </span>
+                      )}
                     </div>
+                    {canRemove && (
+                      <button
+                        onClick={() => handleRemoveMember(m.removableStaffId!, m.person)}
+                        disabled={removingStaffId === m.removableStaffId}
+                        title="このトークから削除"
+                        style={{ flexShrink: 0, background: 'none', border: 'none', cursor: 'pointer', color: '#B91C1C', display: 'flex', alignItems: 'center', padding: '4px' }}
+                      >
+                        <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>person_remove</span>
+                      </button>
+                    )}
                   </div>
                 );
               })}
@@ -3362,9 +3414,9 @@ export function MessagePage() {
                   style={{
                     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
                     padding: '10px 12px', borderRadius: '10px',
-                    border: '1px dashed var(--primary-color)',
+                    border: '1px dashed var(--primary)',
                     background: 'var(--surface-color)',
-                    color: addableStaffs.length === 0 ? '#94A3B8' : 'var(--primary-color)',
+                    color: addableStaffs.length === 0 ? '#94A3B8' : 'var(--primary)',
                     fontSize: '12px', fontWeight: 'bold',
                     cursor: addableStaffs.length === 0 ? 'not-allowed' : 'pointer',
                   }}
@@ -3414,7 +3466,7 @@ export function MessagePage() {
                     <button
                       onClick={handleAddMembers}
                       disabled={addMemberSelection.size === 0 || addingMembers}
-                      style={{ padding: '6px 12px', borderRadius: '8px', border: 'none', background: addMemberSelection.size === 0 ? '#CBD5E1' : 'var(--primary-color)', color: '#fff', fontSize: '12px', fontWeight: 'bold', cursor: addMemberSelection.size === 0 ? 'not-allowed' : 'pointer' }}
+                      style={{ padding: '6px 12px', borderRadius: '8px', border: 'none', background: addMemberSelection.size === 0 ? '#CBD5E1' : 'var(--primary)', color: '#fff', fontSize: '12px', fontWeight: 'bold', cursor: addMemberSelection.size === 0 ? 'not-allowed' : 'pointer' }}
                     >
                       {addingMembers ? '追加中...' : `追加する${addMemberSelection.size ? `(${addMemberSelection.size})` : ''}`}
                     </button>
@@ -3482,7 +3534,7 @@ export function MessagePage() {
               background: 'linear-gradient(135deg, #EEF2F6 0%, #E2E8F0 100%)'
             }}>
               <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 'bold', color: '#1E293B', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span className="material-symbols-outlined" style={{ color: 'var(--primary-color)' }}>verified</span>
+                <span className="material-symbols-outlined" style={{ color: 'var(--primary)' }}>verified</span>
                 内定通知書
               </h3>
               <button 
@@ -3540,7 +3592,7 @@ export function MessagePage() {
                     <hr style={{ border: 0, borderTop: '1px solid #E2E8F0', margin: 0 }} />
                     <div>
                       <strong style={{ color: '#64748B', display: 'block', fontSize: '11px', marginBottom: '2px' }}>契約単価</strong>
-                      <span style={{ fontWeight: 'bold', color: 'var(--primary-color)', fontSize: '14px' }}>
+                      <span style={{ fontWeight: 'bold', color: 'var(--primary)', fontSize: '14px' }}>
                         {relatedJob?.price || '15,000円 / 日'}
                       </span>
                     </div>
@@ -3820,7 +3872,7 @@ export function MessagePage() {
               background: 'linear-gradient(135deg, #EEF2F6 0%, #E2E8F0 100%)'
             }}>
               <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 'bold', color: '#1E293B', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span className="material-symbols-outlined" style={{ color: 'var(--primary-color)' }}>gavel</span>
+                <span className="material-symbols-outlined" style={{ color: 'var(--primary)' }}>gavel</span>
                 業務委託契約の相互承認
               </h3>
               <button 
@@ -3941,7 +3993,7 @@ export function MessagePage() {
                 ) : (
                   <button
                     onClick={handleSignContract}
-                    style={{ padding: '8px 16px', borderRadius: '8px', border: 'none', background: 'var(--primary-color)', color: '#FFFFFF', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 4px 6px -1px rgba(99, 102, 241, 0.2)' }}
+                    style={{ padding: '8px 16px', borderRadius: '8px', border: 'none', background: 'var(--primary)', color: '#FFFFFF', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 4px 6px -1px rgba(99, 102, 241, 0.2)' }}
                   >
                     甲として署名（承認）する
                   </button>
@@ -3954,7 +4006,7 @@ export function MessagePage() {
                 ) : (
                   <button
                     onClick={handleSignContract}
-                    style={{ padding: '8px 16px', borderRadius: '8px', border: 'none', background: 'var(--primary-color)', color: '#FFFFFF', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 4px 6px -1px rgba(99, 102, 241, 0.2)' }}
+                    style={{ padding: '8px 16px', borderRadius: '8px', border: 'none', background: 'var(--primary)', color: '#FFFFFF', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 4px 6px -1px rgba(99, 102, 241, 0.2)' }}
                   >
                     乙として署名（承認）する
                   </button>
@@ -4004,7 +4056,7 @@ export function MessagePage() {
               background: 'linear-gradient(135deg, #EEF2F6 0%, #E2E8F0 100%)'
             }}>
               <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 'bold', color: '#1E293B', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span className="material-symbols-outlined" style={{ color: 'var(--primary-color)' }}>
+                <span className="material-symbols-outlined" style={{ color: 'var(--primary)' }}>
                   {clickedCompanyProfile ? 'business' : 'person'}
                 </span>
                 {clickedCompanyProfile ? '取引先企業情報' : 'パートナーメンバー情報'}
@@ -4040,7 +4092,7 @@ export function MessagePage() {
                     {clickedCompanyProfile.website && (
                       <div>
                         <strong>ホームページ:</strong>{' '}
-                        <a href={clickedCompanyProfile.website} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--primary-color)', textDecoration: 'underline' }}>
+                        <a href={clickedCompanyProfile.website} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--primary)', textDecoration: 'underline' }}>
                           {clickedCompanyProfile.website}
                         </a>
                       </div>
@@ -5043,7 +5095,7 @@ export function MessagePage() {
             }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px', borderBottom: '1px solid #E2E8F0', paddingBottom: '12px' }}>
                 <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 'bold', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span className="material-symbols-outlined" style={{ color: 'var(--primary-color)' }}>edit_note</span>
+                  <span className="material-symbols-outlined" style={{ color: 'var(--primary)' }}>edit_note</span>
                   契約条件の編集
                 </h3>
                 <button 
@@ -5134,7 +5186,7 @@ export function MessagePage() {
                     padding: '12px',
                     borderRadius: '8px',
                     border: 'none',
-                    background: (!editConditionsPrice || editConditionsPrice <= 0 || !editConditionsDate.trim()) ? '#CBD5E1' : 'var(--primary-color)',
+                    background: (!editConditionsPrice || editConditionsPrice <= 0 || !editConditionsDate.trim()) ? '#CBD5E1' : 'var(--primary)',
                     color: '#FFFFFF',
                     fontSize: '14px',
                     fontWeight: 'bold',

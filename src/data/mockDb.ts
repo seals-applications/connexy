@@ -1740,6 +1740,39 @@ export const api = {
     );
   },
 
+  // 直接チャットから「メンバー追加」で参加した担当者を外す。
+  removeChatMembers: async (
+    taskId: string,
+    staffIds: string[],
+    systemMessages: any[],
+  ): Promise<void> => {
+    const applyLocal = (rawEvals: any) => {
+      const evals = rawEvals || {};
+      const remove = new Set(staffIds);
+      const kept = (Array.isArray(evals.addedMembers) ? evals.addedMembers : []).filter((m: any) => !remove.has(m.staffId));
+      const msgs = Array.isArray(evals.messages) ? evals.messages : [];
+      const existingIds = new Set(msgs.map((x: any) => x && x.id).filter(Boolean));
+      const appended = systemMessages.filter((x) => !x.id || !existingIds.has(x.id));
+      return { ...evals, addedMembers: kept, messages: [...msgs, ...appended] };
+    };
+    return callSupabase(
+      async () => {
+        const { data } = await supabase.from('contract_tasks').select('evaluations').eq('id', taskId).single();
+        const evaluations = applyLocal(data?.evaluations);
+        const { error } = await supabase.from('contract_tasks').update({ evaluations }).eq('id', taskId);
+        if (error) throw error;
+      },
+      () => {
+        const list = getOfflineData('contract_tasks', defaultOfflineTasks);
+        const index = list.findIndex((t: any) => t.id === taskId);
+        if (index !== -1) {
+          list[index].evaluations = applyLocal(list[index].evaluations);
+          saveOfflineData('contract_tasks', list);
+        }
+      },
+    );
+  },
+
   // 案件ごとのステータス更新。evaluations.jobStates[jobId] を書き換え、
   // 後方互換のためチャット単位 status には「最も進んだ案件の状態」を書き戻す。
   // 詳細は src/utils/jobStates.ts / STATUS_MODEL.md §7。
