@@ -35,12 +35,27 @@ export function normalizeEngagementStatus(status: string | null | undefined): No
   return (status === 'working' ? 'confirmed' : status) as NormalizedEngagementStatus;
 }
 
+/** オファーの条件。従来は evaluations.offered* に平置きだったのを案件ごとに持つ。 */
+export interface JobOfferInfo {
+  price?: number;
+  dates?: string;
+  details?: string;
+  offeredAt?: string;
+  expiresAt?: string;
+}
+
 export interface JobState {
   status: EngagementStatusValue;
   /** ISO 8601。「最も進んだ状態」が同順位のときの決定と、監査用 */
   updatedAt: string;
   /** 承諾時点で契約書の双方承認が必要だったか。将来 `contract_review` を独立ステータス化する際の起点(STATUS_MODEL.md §6) */
   contractApprovalRequired?: boolean;
+  /** 応募日(ISO)。旧 evaluations.appliedJobDates[jobId] の移設先 */
+  appliedAt?: string;
+  /** この案件に提案されたスタッフID。旧 appliedJobStaffIds[jobId] / offeredStaffId の移設先 */
+  staffId?: string;
+  /** オファー条件。旧 evaluations.offered* の移設先 */
+  offer?: JobOfferInfo;
 }
 
 export type JobStatesMap = Record<string, JobState>;
@@ -138,13 +153,72 @@ export function getJobState(task: TaskLike, jobId: string): JobState | undefined
   return readJobStates(task)[jobId];
 }
 
+interface JobDetailEvals {
+  jobStates?: JobStatesMap;
+  appliedJobDates?: Record<string, string>;
+  appliedJobStaffIds?: Record<string, string>;
+  offeredStaffId?: string;
+  offeredJobId?: string;
+  offeredPrice?: number;
+  offeredDates?: string;
+  offeredDetails?: string;
+  offeredAt?: string;
+  offerExpiresAt?: string;
+}
+
+/** 案件 `jobId` の応募日。jobStates 優先、無ければ旧 appliedJobDates。 */
+export function getJobAppliedAt(evaluations: unknown, jobId: string): string | undefined {
+  const e = (evaluations || {}) as JobDetailEvals;
+  return e.jobStates?.[jobId]?.appliedAt || e.appliedJobDates?.[jobId];
+}
+
+/** 案件 `jobId` に紐づくスタッフID。jobStates 優先、無ければ旧 appliedJobStaffIds / offeredStaffId。 */
+export function getJobStaffId(evaluations: unknown, jobId: string): string | undefined {
+  const e = (evaluations || {}) as JobDetailEvals;
+  return (
+    e.jobStates?.[jobId]?.staffId ||
+    e.appliedJobStaffIds?.[jobId] ||
+    (e.offeredJobId === jobId ? e.offeredStaffId : undefined) ||
+    e.offeredStaffId
+  );
+}
+
+/** チャットに紐づく全スタッフID(重複排除)。「自社スタッフが提案されているか」の判定用。 */
+export function getLinkedStaffIds(evaluations: unknown): string[] {
+  const e = (evaluations || {}) as JobDetailEvals;
+  const ids = new Set<string>();
+  if (e.jobStates) Object.values(e.jobStates).forEach((s) => s?.staffId && ids.add(s.staffId));
+  if (e.appliedJobStaffIds) Object.values(e.appliedJobStaffIds).forEach((id) => id && ids.add(id));
+  if (e.offeredStaffId) ids.add(e.offeredStaffId);
+  return [...ids];
+}
+
+/** 案件 `jobId` のオファー条件。jobStates.offer 優先、無ければ旧 evaluations.offered*。 */
+export function getJobOfferInfo(evaluations: unknown, jobId: string): JobOfferInfo {
+  const e = (evaluations || {}) as JobDetailEvals;
+  const fromState = e.jobStates?.[jobId]?.offer;
+  if (fromState) return fromState;
+  if (e.offeredJobId === jobId) {
+    return {
+      price: e.offeredPrice,
+      dates: e.offeredDates,
+      details: e.offeredDetails,
+      offeredAt: e.offeredAt,
+      expiresAt: e.offerExpiresAt,
+    };
+  }
+  return {};
+}
+
 /**
  * 応募時に、まだ jobStates エントリが無い案件へ `applying` を seed する(純粋関数)。
  * 既存エントリ(offered / working など)は上書きしない。
+ * `staffIds` があれば、その案件の提案スタッフIDも記録する。
  */
 export function seedAppliedJobStates(
   evaluations: Record<string, unknown> | null | undefined,
   jobIds: string[] | undefined | null,
+  staffIds?: Record<string, string> | null,
   now: Date = new Date(),
 ): Record<string, unknown> {
   const base = (evaluations && typeof evaluations === 'object' ? evaluations : {}) as Record<string, unknown>;
@@ -156,7 +230,11 @@ export function seedAppliedJobStates(
   let changed = false;
   for (const jobId of jobIds) {
     if (!next[jobId]) {
-      next[jobId] = { status: 'applying', updatedAt: iso };
+      next[jobId] = { status: 'applying', updatedAt: iso, appliedAt: iso };
+      if (staffIds && staffIds[jobId]) next[jobId].staffId = staffIds[jobId];
+      changed = true;
+    } else if (staffIds && staffIds[jobId] && !next[jobId].staffId) {
+      next[jobId] = { ...next[jobId], staffId: staffIds[jobId] };
       changed = true;
     }
   }
@@ -165,6 +243,10 @@ export function seedAppliedJobStates(
 
 export interface ApplyJobStateOptions {
   contractApprovalRequired?: boolean;
+  /** この案件に紐づくスタッフID(オファー・承諾時に記録) */
+  staffId?: string;
+  /** オファー条件(status='offered' 遷移時に記録) */
+  offer?: JobOfferInfo;
   /** テスト用。既定は new Date() */
   now?: Date;
 }
@@ -186,7 +268,7 @@ export function applyJobState(
   status: EngagementStatusValue,
   options: ApplyJobStateOptions = {},
 ): ApplyJobStateResult {
-  const { contractApprovalRequired, now = new Date() } = options;
+  const { contractApprovalRequired, staffId, offer, now = new Date() } = options;
   const base = (evaluations && typeof evaluations === 'object' ? evaluations : {}) as Record<string, unknown>;
   const prev = (base.jobStates as JobStatesMap | undefined) || {};
 
@@ -198,6 +280,8 @@ export function applyJobState(
   if (contractApprovalRequired !== undefined) {
     nextEntry.contractApprovalRequired = contractApprovalRequired;
   }
+  if (staffId) nextEntry.staffId = staffId;
+  if (offer) nextEntry.offer = { ...nextEntry.offer, ...offer };
 
   const nextJobStates: JobStatesMap = { ...prev, [jobId]: nextEntry };
   const nextEvaluations = { ...base, jobStates: nextJobStates };

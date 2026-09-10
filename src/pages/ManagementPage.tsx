@@ -4,7 +4,7 @@ import { jsPDF } from 'jspdf';
 import { api } from '../data/mockDb';
 import type { ContractTask, Training, Staff, Job, User } from '../data/mockDb';
 import { getEngagementStatusLabel, getJobListingStatus, getWorkPhase, isContractApproved } from '../utils/statusLabels';
-import { getJobStatus, isJobLinkedToChat } from '../utils/jobStates';
+import { getJobStatus, isJobLinkedToChat, getJobAppliedAt, getJobStaffId, getLinkedStaffIds } from '../utils/jobStates';
 import { calcOfferExpiresAt } from '../utils/offerExpiry';
 
 const quizData: Record<string, Array<{ question: string, options: string[], answer: number }>> = {
@@ -300,8 +300,7 @@ export function ManagementPage() {
           
           let isApplicant = false;
           if (isStaff) {
-            const staffIds = Object.values((t.evaluations as any)?.appliedJobStaffIds || {});
-            if (staffIds.includes(currentUser.staffId)) {
+            if (currentUser.staffId && getLinkedStaffIds(t.evaluations).includes(currentUser.staffId)) {
               isApplicant = true;
             }
           } else if (isUserAdmin) {
@@ -315,14 +314,13 @@ export function ManagementPage() {
             const opponentCompanyId = t.id.replace('chat_', '').replace(currentUser.id, '').replace('_', '');
             const opponentCompany = allCompanies.find(c => c.id === opponentCompanyId);
             
-            const appliedJobDates = (t.evaluations as any)?.appliedJobDates || {};
             list.push({
               task: t,
               job,
               opponentCompany,
               // チャット単位の t.status ではなく案件ごとの状態(無ければ t.status にフォールバック)
               status: getJobStatus(t, jobId),
-              date: appliedJobDates[jobId] || t.date || new Date().toISOString().split('T')[0],
+              date: getJobAppliedAt(t.evaluations, jobId) || t.date || new Date().toISOString().split('T')[0],
               price: job.price || t.price || 0
             });
           }
@@ -726,9 +724,17 @@ export function ManagementPage() {
       );
 
       // Force status update to 'offered' and set evaluations explicitly.
-      // 案件ごとに状態を持たせる(この案件のみ offered にする)。
+      // 案件ごとに状態を持たせる(この案件のみ offered にする)。オファー条件・スタッフも jobStates に記録。
       await api.updateContractTaskJobStatus(channelId, activeScreeningJob.id, 'offered', {
         additionalEvals: mergedEvaluations,
+        staffId: confirmingCandidate.staff.id,
+        offer: {
+          price: activeScreeningJob.price,
+          dates: activeScreeningJob.eventDate,
+          details: activeScreeningJob.description,
+          offeredAt,
+          expiresAt: calcOfferExpiresAt(offeredAt),
+        },
       });
 
       alert(`内定オファーを送信しました。商談チャット画面へ移動します。`);
@@ -2222,7 +2228,7 @@ export function ManagementPage() {
           const taskKey = [currentUser?.id || '', p.id].sort().join('_');
           const chatTask = tasks.find(t => t.id === 'chat_' + taskKey);
 
-          let staffId = (chatTask?.evaluations as any)?.appliedJobStaffIds?.[activeScreeningJob.id];
+          const staffId = getJobStaffId(chatTask?.evaluations, activeScreeningJob.id);
           let proposedStaff = allStaffs.find(s => s.id === staffId);
 
           if (!proposedStaff) {
