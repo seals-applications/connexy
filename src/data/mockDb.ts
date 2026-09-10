@@ -761,11 +761,11 @@ const mapUser = (row: any): User => {
   } catch(e) {}
   
   const defaultReps: { [key: string]: string } = {
-    sigma: 'シグマ 太郎',
-    alpha: 'アルファ 健',
-    beta: 'ベータ 拓也',
-    gamma: 'ガンマ 翔',
-    delta: 'デルタ 大介',
+    sigma: '高橋 誠一',
+    alpha: '中村 大輔',
+    beta: '斉藤 隆',
+    gamma: '藤田 健太',
+    delta: '小林 修',
     seals: '佐藤 海人',
     freer: '林 克樹',
     cocolabo: '伊内 美伊'
@@ -892,26 +892,26 @@ const initializeDefaultStaffLogins = (allStaffsData: any[]) => {
 };
 
 const defaultOfflineCompanies = [
-  { id: 'sigma', name: '株式会社シグマ通信', role: 'contractor', login_id: 'sigma', password: 'pass', status: 'approved', representative_name: 'シグマ 太郎', email: 'contact@sigma-comm.co.jp', address: '東京都新宿区西新宿2-8-1', company_type: 'both' },
-  { id: 'alpha', name: '株式会社アルファ', role: 'contractor', login_id: 'alpha', password: 'pass', status: 'approved', representative_name: 'アルファ 健', email: 'info@alpha-agency.com', address: '東京都品川区大崎1-11-1', company_type: 'agency' },
-  { id: 'beta', name: 'ベータ株式会社', role: 'contractor', login_id: 'beta', password: 'pass', status: 'approved', representative_name: 'ベータ 拓也', email: 'support@beta-corp.jp', address: '東京都渋谷区渋谷3-21-3', company_type: 'agency' },
-  { id: 'gamma', name: '合同会社ガンマ', role: 'contractor', login_id: 'gamma', password: 'pass', status: 'approved', representative_name: 'ガンマ 翔', email: 'info@gamma-llc.net', address: '神奈川県横浜市中区港町1-1', company_type: 'both' },
-  { id: 'delta', name: 'デルタ合同会社', role: 'contractor', login_id: 'delta', password: 'pass', status: 'approved', representative_name: 'デルタ 大介', email: 'contact@delta-partners.jp', address: '埼玉県さいたま市吉敷町1-1', company_type: 'client' },
+  { id: 'sigma', name: '株式会社シグマ通信', role: 'contractor', login_id: 'sigma', password: 'pass', status: 'approved', representative_name: '高橋 誠一', email: 'contact@sigma-comm.co.jp', address: '東京都新宿区西新宿2-8-1', company_type: 'both' },
+  { id: 'alpha', name: '株式会社アルファ', role: 'contractor', login_id: 'alpha', password: 'pass', status: 'approved', representative_name: '中村 大輔', email: 'info@alpha-agency.com', address: '東京都品川区大崎1-11-1', company_type: 'agency' },
+  { id: 'beta', name: 'ベータ株式会社', role: 'contractor', login_id: 'beta', password: 'pass', status: 'approved', representative_name: '斉藤 隆', email: 'support@beta-corp.jp', address: '東京都渋谷区渋谷3-21-3', company_type: 'agency' },
+  { id: 'gamma', name: '合同会社ガンマ', role: 'contractor', login_id: 'gamma', password: 'pass', status: 'approved', representative_name: '藤田 健太', email: 'info@gamma-llc.net', address: '神奈川県横浜市中区港町1-1', company_type: 'both' },
+  { id: 'delta', name: 'デルタ合同会社', role: 'contractor', login_id: 'delta', password: 'pass', status: 'approved', representative_name: '小林 修', email: 'contact@delta-partners.jp', address: '埼玉県さいたま市吉敷町1-1', company_type: 'client' },
   { id: 'seals', name: '株式会社SEALs', role: 'contractor', login_id: 'seals', password: 'pass', status: 'approved', representative_name: '佐藤 海人', email: 'info@seals-comm.co.jp', address: '東京都品川区西五反田1-5-1', company_type: 'both' },
   { id: 'freer', name: '株式会社FreeR VisioN', role: 'contractor', login_id: 'freer', password: 'pass', status: 'approved', representative_name: '林 克樹', email: 'contact@freer-vision.net', address: '東京都港区南青山2-2-15', company_type: 'agency' },
   { id: 'cocolabo', name: 'ココラボ・ソリューションズ', role: 'contractor', login_id: 'cocolabo', password: 'pass', status: 'approved', representative_name: '伊内 美伊', email: 'support@cocolabo-solutions.com', address: '大阪府大阪市北区梅田2-2-2', company_type: 'both' }
 ];
 
 const defaultOfflineStaffs = [
-  { id: 's1', user_id: 'sigma', name: 'シグマ 太郎', role: 'admin', login_id: 'sigma_s1', password: 'pass', base_location: '東京都新宿区', nearest_station: '新宿駅', price: 15000, skills: ['イベント運営', 'キャンペーンMC'], completed_trainings: [] },
-  { id: 's2', user_id: 'sigma', name: 'シグマ 次郎', role: 'staff', login_id: 'sigma_s2', password: 'pass', base_location: '東京都渋谷区', nearest_station: '渋谷駅', price: 12000, skills: ['モバイル販売'], completed_trainings: [] },
-  { id: 's3', user_id: 'sigma', name: 'シグマ 三郎', role: 'staff', login_id: 'sigma_s3', password: 'pass', base_location: '神奈川県横浜市', nearest_station: '横浜駅', price: 13000, skills: ['イベント運営'], completed_trainings: [] },
-  { id: 's4', user_id: 'alpha', name: 'アルファ 一郎', role: 'staff', login_id: 'alpha_s1', password: 'pass', base_location: '東京都品川区', nearest_station: '大崎駅', price: 14000, skills: ['モバイル販売'], completed_trainings: [] },
-  { id: 's5', user_id: 'alpha', name: 'アルファ 二郎', role: 'staff', login_id: 'alpha_s2', password: 'pass', base_location: '千葉県船橋市', nearest_station: '船橋駅', price: 12000, skills: ['ブース獲得'], completed_trainings: [] },
-  { id: 's6', user_id: 'alpha', name: 'アルファ 三郎', role: 'staff', login_id: 'alpha_s3', password: 'pass', base_location: '埼玉県さいたま市', nearest_station: '大宮駅', price: 13000, skills: ['イベント運営'], completed_trainings: [] },
-  { id: 's7', user_id: 'beta', name: 'ベータ 一郎', role: 'staff', login_id: 'beta_s1', password: 'pass', base_location: '東京都渋谷区', nearest_station: '渋谷駅', price: 14000, skills: ['モバイル販売'], completed_trainings: [] },
-  { id: 's8', user_id: 'beta', name: 'ベータ 二郎', role: 'staff', login_id: 'beta_s2', password: 'pass', base_location: '神奈川県川崎市', nearest_station: '川崎駅', price: 12000, skills: ['ブース獲得'], completed_trainings: [] },
-  { id: 's9', user_id: 'beta', name: 'ベータ 三郎', role: 'staff', login_id: 'beta_s3', password: 'pass', base_location: '東京都豊島区', nearest_station: '池袋駅', price: 13000, skills: ['イベント運営'], completed_trainings: [] },
+  { id: 's1', user_id: 'sigma', name: '高橋 誠一', role: 'admin', login_id: 'sigma_s1', password: 'pass', base_location: '東京都新宿区', nearest_station: '新宿駅', price: 15000, skills: ['イベント運営', 'キャンペーンMC'], completed_trainings: [] },
+  { id: 's2', user_id: 'sigma', name: '森 健太', role: 'staff', login_id: 'sigma_s2', password: 'pass', base_location: '東京都渋谷区', nearest_station: '渋谷駅', price: 12000, skills: ['モバイル販売'], completed_trainings: [] },
+  { id: 's3', user_id: 'sigma', name: '岡田 直樹', role: 'staff', login_id: 'sigma_s3', password: 'pass', base_location: '神奈川県横浜市', nearest_station: '横浜駅', price: 13000, skills: ['イベント運営'], completed_trainings: [] },
+  { id: 's4', user_id: 'alpha', name: '井上 洋平', role: 'staff', login_id: 'alpha_s1', password: 'pass', base_location: '東京都品川区', nearest_station: '大崎駅', price: 14000, skills: ['モバイル販売'], completed_trainings: [] },
+  { id: 's5', user_id: 'alpha', name: '田村 亮', role: 'staff', login_id: 'alpha_s2', password: 'pass', base_location: '千葉県船橋市', nearest_station: '船橋駅', price: 12000, skills: ['ブース獲得'], completed_trainings: [] },
+  { id: 's6', user_id: 'alpha', name: '松田 涼', role: 'staff', login_id: 'alpha_s3', password: 'pass', base_location: '埼玉県さいたま市', nearest_station: '大宮駅', price: 13000, skills: ['イベント運営'], completed_trainings: [] },
+  { id: 's7', user_id: 'beta', name: '清水 一馬', role: 'staff', login_id: 'beta_s1', password: 'pass', base_location: '東京都渋谷区', nearest_station: '渋谷駅', price: 14000, skills: ['モバイル販売'], completed_trainings: [] },
+  { id: 's8', user_id: 'beta', name: '大野 剛', role: 'staff', login_id: 'beta_s2', password: 'pass', base_location: '神奈川県川崎市', nearest_station: '川崎駅', price: 12000, skills: ['ブース獲得'], completed_trainings: [] },
+  { id: 's9', user_id: 'beta', name: '福田 学', role: 'staff', login_id: 'beta_s3', password: 'pass', base_location: '東京都豊島区', nearest_station: '池袋駅', price: 13000, skills: ['イベント運営'], completed_trainings: [] },
   
   { id: 's_seals_admin', user_id: 'seals', name: '岡田 哲弥', role: 'admin', login_id: 'seals_s1', password: 'pass', base_location: '東京都品川区', nearest_station: '五反田駅', price: 16000, skills: ['イベント運営', 'キャンペーンMC'], completed_trainings: [] },
   { id: 's_seals_staff1', user_id: 'seals', name: '中嶋 晴希', role: 'staff', login_id: 'seals_s2', password: 'pass', base_location: '神奈川県川崎市', nearest_station: '川崎駅', price: 13000, skills: ['モバイル販売'], completed_trainings: [] },
@@ -1019,8 +1019,8 @@ const defaultOfflineTalents = [
 ];
 
 const defaultOfflineTasks = [
-  { id: 'task1', job_id: 'j1', job_title: '【大崎駅】ドコモショップ出張ブース販売イベント要員', worker_name: 'アルファ 一郎', company_name: '株式会社アルファ', client_name: '株式会社シグマ通信', price: 15000, date: '2026-07-20', status: 'completed', agency_id: 'alpha', client_id: 'sigma', evaluations: { messages: [] } },
-  { id: 'task2', job_id: 'j2', job_title: '【新宿駅】au・UQモバイルの乗り換え案内スタッフ募集', worker_name: 'シグマ 次郎', company_name: '株式会社シグマ通信', client_name: '株式会社アルファ', price: 18000, date: '2026-07-22', status: 'applying', agency_id: 'sigma', client_id: 'alpha', evaluations: { messages: [] } }
+  { id: 'task1', job_id: 'j1', job_title: '【大崎駅】ドコモショップ出張ブース販売イベント要員', worker_name: '井上 洋平', company_name: '株式会社アルファ', client_name: '株式会社シグマ通信', price: 15000, date: '2026-07-20', status: 'completed', agency_id: 'alpha', client_id: 'sigma', evaluations: { messages: [] } },
+  { id: 'task2', job_id: 'j2', job_title: '【新宿駅】au・UQモバイルの乗り換え案内スタッフ募集', worker_name: '森 健太', company_name: '株式会社シグマ通信', client_name: '株式会社アルファ', price: 18000, date: '2026-07-22', status: 'applying', agency_id: 'sigma', client_id: 'alpha', evaluations: { messages: [] } }
 ];
 
 // 運営からのお知らせ。ハードコード配列でなくデータソース(Supabase の `announcements` テーブル、
