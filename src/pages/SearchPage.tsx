@@ -1362,18 +1362,16 @@ export function SearchPage() {
       clusteredJobs.forEach((group) => {
         const isCluster = group.jobs.length > 1 && gridSize > 0;
         
-        let circleColor = group.hasUrgent ? '#EF4444' : '#3B82F6';
+        // バッジ色は拡大/縮小で統一(常に濃色)。サイズのみクラスターで拡大。
+        const circleColor = group.hasUrgent ? '#B91C1C' : '#1E3A8A';
+        const shadow = group.hasUrgent ? 'rgba(185, 28, 28, 0.5)' : 'rgba(30, 58, 138, 0.5)';
+        const border = '3px solid #FFFFFF';
         let size = 32;
         let fontSize = 14;
-        let border = '3px solid white';
-        let shadow = group.hasUrgent ? 'rgba(239, 68, 68, 0.4)' : 'rgba(59, 130, 246, 0.4)';
-        
+
         if (isCluster) {
-          circleColor = group.hasUrgent ? '#B91C1C' : '#1E3A8A';
           size = 40;
           fontSize = 15;
-          border = '3px solid #FFFFFF';
-          shadow = group.hasUrgent ? 'rgba(185, 28, 28, 0.5)' : 'rgba(30, 58, 138, 0.5)';
         }
         
         const pinElement = document.createElement('div');
@@ -1431,18 +1429,16 @@ export function SearchPage() {
       clusteredTalents.forEach((group) => {
         const isCluster = group.talents.length > 1 && gridSize > 0;
         
-        let circleColor = '#10B981';
+        // バッジ色は拡大/縮小で統一(常に濃色)。サイズのみクラスターで拡大。
+        const circleColor = '#065F46';
+        const shadow = 'rgba(6, 95, 70, 0.5)';
+        const border = '3px solid #FFFFFF';
         let size = 32;
         let fontSize = 14;
-        let border = '3px solid white';
-        let shadow = 'rgba(16, 185, 129, 0.4)';
-        
+
         if (isCluster) {
-          circleColor = '#065F46';
           size = 40;
           fontSize = 15;
-          border = '3px solid #FFFFFF';
-          shadow = 'rgba(6, 95, 70, 0.5)';
         }
         
         const pinElement = document.createElement('div');
