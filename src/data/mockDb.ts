@@ -541,11 +541,33 @@ const unmapContractTask = (task: Partial<ContractTask>): any => {
 // --- OFFLINE LOCAL DB FALLBACK SYSTEM ---
 let useOfflineMock = false;
 
+/** ローカルDBが書き換わったことを通知するイベント名(同一タブ向け)。cross-tab は 'storage' イベントで拾う。 */
+export const DATA_CHANGED_EVENT = 'connexy:data-changed';
+
 // Attempt to detect if running in an offline or sandboxed environment
 if (typeof window !== 'undefined') {
   if (localStorage.getItem('connexy_is_offline') === 'true' || !navigator.onLine) {
     useOfflineMock = true;
   }
+}
+
+// 自己回復: 一度でも Supabase 呼び出しに失敗すると `connexy_is_offline` が永続化され、
+// リロードしてもオフラインモードのまま(= 別アカウント間でデータが同期されない)。
+// オンラインに戻っている場合、起動時に軽い疎通確認をして成功したらフラグを解除する。
+if (typeof window !== 'undefined' && navigator.onLine && localStorage.getItem('connexy_is_offline') === 'true') {
+  (async () => {
+    try {
+      const { error } = await supabase.from('companies').select('id').limit(1);
+      if (!error) {
+        useOfflineMock = false;
+        localStorage.removeItem('connexy_is_offline');
+        console.info('Supabase reachable again — cleared offline mode.');
+        try { window.dispatchEvent(new CustomEvent(DATA_CHANGED_EVENT, { detail: { table: 'contract_tasks' } })); } catch { /* noop */ }
+      }
+    } catch {
+      /* まだ到達不可 — オフラインモードのまま */
+    }
+  })();
 }
 
 // 一度きりのデータ移行: 保存値 `working` → `confirmed`(STATUS_MODEL.md §7.1)。
@@ -617,9 +639,6 @@ const getOfflineData = (table: string, defaultData: any[]): any[] => {
   return defaultData;
 };
 
-/** ローカルDBが書き換わったことを通知するイベント名(同一タブ向け)。cross-tab は 'storage' イベントで拾う。 */
-export const DATA_CHANGED_EVENT = 'connexy:data-changed';
-
 const saveOfflineData = (table: string, data: any[]) => {
   if (typeof window !== 'undefined') {
     localStorage.setItem('offline_db_' + table, JSON.stringify(data));
@@ -632,9 +651,12 @@ const saveOfflineData = (table: string, data: any[]) => {
 };
 
 /**
- * `contract_tasks` の変更を購読する。オンライン時は Supabase Realtime、
- * オフライン時は同一タブのカスタムイベント + 別タブの storage イベントを監視する。
- * 返り値の関数を呼ぶと購読解除。ポーリングの置き換え用。
+ * `contract_tasks` の変更を購読する。
+ * - オフライン時: 同一タブのカスタムイベント + 別タブの storage イベント(ほぼ即時)。
+ * - オンライン時: Supabase Realtime を試みつつ、**Realtime が有効化されていない場合に備えて
+ *   短い間隔のポーリングも併走させる**(Realtime が SUBSCRIBED になったら間隔を延ばす)。
+ *   ※ Realtime はプロジェクトごとに opt-in のため「購読できた」と決め打ちしない。
+ * 返り値の関数を呼ぶと購読解除。
  */
 export function subscribeToContractTaskChanges(onChange: () => void): () => void {
   if (typeof window === 'undefined') return () => {};
@@ -646,28 +668,49 @@ export function subscribeToContractTaskChanges(onChange: () => void): () => void
   window.addEventListener(DATA_CHANGED_EVENT, handleLocal);
   window.addEventListener('storage', handleStorage);
 
+  // オンライン時は Realtime が確認できるまで短間隔でポーリングする(取りこぼし防止)。
+  const FAST_MS = 5000;
+  const SLOW_MS = 45000;
+  let pollMs = useOfflineMock ? SLOW_MS : FAST_MS;
+  let timer: ReturnType<typeof setInterval> = setInterval(onChange, pollMs);
+  const setPoll = (ms: number) => {
+    if (ms === pollMs) return;
+    pollMs = ms;
+    clearInterval(timer);
+    timer = setInterval(onChange, pollMs);
+  };
+
   let channel: ReturnType<typeof supabase.channel> | null = null;
   if (!useOfflineMock) {
     try {
       channel = supabase
         .channel('contract_tasks_changes')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'contract_tasks' }, () => onChange())
-        .subscribe();
+        .subscribe((status: string) => {
+          // Realtime が確実に動いているときだけポーリング間隔を延ばす。
+          if (status === 'SUBSCRIBED') setPoll(SLOW_MS);
+          else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') setPoll(FAST_MS);
+        });
     } catch {
-      /* Realtime 未設定でもローカルイベントで動作する */
+      /* Realtime 未設定でもポーリングで動作する */
     }
   }
 
   return () => {
     window.removeEventListener(DATA_CHANGED_EVENT, handleLocal);
     window.removeEventListener('storage', handleStorage);
+    clearInterval(timer);
     if (channel) {
       try { supabase.removeChannel(channel); } catch { /* noop */ }
     }
   };
 }
 
-// Error wrapper that automatically enables local fallback on failures
+// Error wrapper that automatically enables local fallback on failures.
+// このセッション中はオフラインにフォールバックするが、`connexy_is_offline` の永続化は
+// 「ブラウザがオフライン」のときだけにする。オンラインなのに一時的に失敗しただけなら、
+// 次回リロードで再度 Supabase を試せるようにする(永続オフラインで別アカウント間の
+// データ同期が止まる事故を防ぐ)。回復用フラグは起動時の疎通確認でも解除される。
 async function callSupabase<T>(apiFn: () => Promise<T>, fallbackFn: () => T | Promise<T>): Promise<T> {
   if (useOfflineMock) {
     return await fallbackFn();
@@ -677,7 +720,7 @@ async function callSupabase<T>(apiFn: () => Promise<T>, fallbackFn: () => T | Pr
   } catch (e) {
     console.warn("Supabase API failed, falling back to local storage offline mock", e);
     useOfflineMock = true;
-    if (typeof window !== 'undefined') {
+    if (typeof window !== 'undefined' && !navigator.onLine) {
       localStorage.setItem('connexy_is_offline', 'true');
     }
     return await fallbackFn();
@@ -1330,51 +1373,60 @@ export const api = {
     return mockTrainings;
   },
 
-  // 運営からのお知らせ一覧(日付の新しい順)
+  // 運営からのお知らせ一覧(日付の新しい順)。
+  // ※ 補助的な機能なので callSupabase は使わない。`announcements` テーブルが無い等で
+  //   失敗してもアプリ全体をオフラインモードに落とさず、ローカル/既定データを返す。
   getAnnouncements: async (): Promise<Announcement[]> => {
-    return callSupabase(
-      async () => {
-        const { data, error } = await supabase.from('announcements').select('*').order('date', { ascending: false });
-        if (error) throw error;
-        return (data || []).map(mapAnnouncement);
-      },
-      () => {
-        const list = getOfflineData('announcements', defaultOfflineAnnouncements).map(mapAnnouncement);
-        return [...list].sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
-      },
-    );
+    const localList = () =>
+      [...getOfflineData('announcements', defaultOfflineAnnouncements).map(mapAnnouncement)]
+        .sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
+
+    if (useOfflineMock) return localList();
+    try {
+      const { data, error } = await supabase.from('announcements').select('*').order('date', { ascending: false });
+      if (error) throw error;
+      if (!data || data.length === 0) return localList();
+      return data.map(mapAnnouncement);
+    } catch (e) {
+      console.warn('getAnnouncements: falling back to local announcements (non-fatal)', e);
+      return localList();
+    }
   },
 
-  // 運営向け: お知らせの作成・更新(id が既存なら更新)
+  // 運営向け: お知らせの作成・更新(id が既存なら更新)。失敗はローカル保存にフォールバック(非致命)。
   saveAnnouncement: async (announcement: Announcement): Promise<void> => {
     const row = unmapAnnouncement(announcement);
-    return callSupabase(
-      async () => {
-        const { error } = await supabase.from('announcements').upsert(row);
-        if (error) throw error;
-      },
-      () => {
-        const list = getOfflineData('announcements', defaultOfflineAnnouncements);
-        const idx = list.findIndex((a: any) => a.id === announcement.id);
-        if (idx === -1) list.unshift(row);
-        else list[idx] = { ...list[idx], ...row };
-        saveOfflineData('announcements', list);
-      },
-    );
+    const saveLocal = () => {
+      const list = getOfflineData('announcements', defaultOfflineAnnouncements);
+      const idx = list.findIndex((a: any) => a.id === announcement.id);
+      if (idx === -1) list.unshift(row);
+      else list[idx] = { ...list[idx], ...row };
+      saveOfflineData('announcements', list);
+    };
+    if (useOfflineMock) return saveLocal();
+    try {
+      const { error } = await supabase.from('announcements').upsert(row);
+      if (error) throw error;
+    } catch (e) {
+      console.warn('saveAnnouncement: falling back to local save (non-fatal)', e);
+      saveLocal();
+    }
   },
 
-  // 運営向け: お知らせの削除
+  // 運営向け: お知らせの削除。失敗はローカル削除にフォールバック(非致命)。
   deleteAnnouncement: async (id: string): Promise<void> => {
-    return callSupabase(
-      async () => {
-        const { error } = await supabase.from('announcements').delete().eq('id', id);
-        if (error) throw error;
-      },
-      () => {
-        const list = getOfflineData('announcements', defaultOfflineAnnouncements).filter((a: any) => a.id !== id);
-        saveOfflineData('announcements', list);
-      },
-    );
+    const deleteLocal = () => {
+      const list = getOfflineData('announcements', defaultOfflineAnnouncements).filter((a: any) => a.id !== id);
+      saveOfflineData('announcements', list);
+    };
+    if (useOfflineMock) return deleteLocal();
+    try {
+      const { error } = await supabase.from('announcements').delete().eq('id', id);
+      if (error) throw error;
+    } catch (e) {
+      console.warn('deleteAnnouncement: falling back to local delete (non-fatal)', e);
+      deleteLocal();
+    }
   },
 
   completeTraining: async (staffId: string, trainingId: string): Promise<void> => {
@@ -1480,7 +1532,11 @@ export const api = {
           evaluations.appliedJobStaffIds = appliedJobStaffIds || {};
           evaluations = seedAppliedJobStates(evaluations, appliedJobIds, (evaluations as any).appliedJobStaffIds);
           const isApplication = appliedJobIds && appliedJobIds.length > 0;
-          const row = {
+          // chat_<会社A>_<会社B> から2社を推定し、NOT NULL 制約対策として両IDを埋める。
+          const chatParts = taskId.split('_');
+          const partyA = chatParts[1];
+          const partyB = chatParts[2];
+          const row: any = {
             id: taskId,
             job_id: 'chat',
             job_title: jobTitle,
@@ -1491,7 +1547,19 @@ export const api = {
             status: isApplication ? 'applying' : 'confirmed',
             evaluations
           };
-          const { error } = await supabase.from('contract_tasks').insert([row]);
+          if (partyA && partyB) {
+            row.client_id = partyA;
+            row.agency_id = partyB;
+          }
+          let { error } = await supabase.from('contract_tasks').insert([row]);
+          if (error && (row.client_id || row.agency_id)) {
+            // 列が存在しない等で失敗したら client_id/agency_id を外して再試行
+            console.warn('contract_tasks insert failed, retrying without client_id/agency_id', error);
+            const fallbackRow = { ...row };
+            delete fallbackRow.client_id;
+            delete fallbackRow.agency_id;
+            ({ error } = await supabase.from('contract_tasks').insert([fallbackRow]));
+          }
           if (error) throw error;
         }
       },

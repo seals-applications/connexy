@@ -238,15 +238,13 @@ export function MessagePage() {
         console.error('Chat refresh error:', err);
       }
     };
-    // 3秒ポーリングをやめ、データ変更イベント駆動に変更(オンライン時は Supabase Realtime)。
+    // データ変更イベント + Realtime + フォールバックポーリング(subscribe 側が間隔を管理)。
     const unsubscribe = subscribeToContractTaskChanges(refresh);
     const onVisible = () => { if (document.visibilityState === 'visible') refresh(); };
     document.addEventListener('visibilitychange', onVisible);
-    const fallback = setInterval(refresh, 60000);
     return () => {
       unsubscribe();
       document.removeEventListener('visibilitychange', onVisible);
-      clearInterval(fallback);
     };
   }, []);
 

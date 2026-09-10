@@ -22,7 +22,19 @@
 - [x] デバッグ用ログインパネル・テストアカウント機能を、ビルド時フラグ(`import.meta.env.DEV`)で本番ビルドから機械的に排除する。`src/pages/LoginPage.tsx`のパネル全体を`{import.meta.env.DEV && (...)}`でラップ。`npm run build`後、`dist/assets/*.js`に「デバッグ開発用」の文字列が一切含まれないことを確認済み(開発サーバーでは従来通り表示されることも確認済み)。
 
 **UX・運用性**
-- [x] 未読バッジのポーリングをイベント駆動に変更(PR #31)。`saveOfflineData` が `connexy:data-changed` イベントを発火。`subscribeToContractTaskChanges()` がオンライン時は Supabase Realtime(`contract_tasks`)、オフライン時は同一タブのカスタムイベント + 別タブの `storage` イベントを購読。`BottomNav`(2秒)と `MessagePage`(3秒)のポーリングを、イベント購読 + `visibilitychange` + 60秒フォールバックに置換。データ変更後〜250msでバッジ更新を確認。
+- [x] 未読バッジのポーリングをイベント駆動に変更(PR #31 → #35 で修正)。`saveOfflineData` が `connexy:data-changed` イベントを発火。`subscribeToContractTaskChanges()` がイベント + storage + Supabase Realtime + **フォールバックポーリング**(Realtime が SUBSCRIBED になるまで5秒、確認後45秒)を併走。`BottomNav`/`MessagePage` のポーリングを購読 + `visibilitychange` に置換。
+  - ⚠️ PR #31 初版は Realtime が未有効の環境で新着メッセージが最大60秒遅延する不具合があった(#35 で短間隔ポーリングを常時併走させて解消)。
+
+### 🚑 デプロイ版チャット不具合(2026-09-10 ユーザー報告 → PR #35 で修正)
+デプロイ版(Supabase オンライン)でチャットが機能しない。相手アカウントにメッセージが届かず、トークルームも表示されない。
+- 原因1: `getAnnouncements()`(PR #27)が存在しない `announcements` テーブルを問い合わせ → `callSupabase` の例外ハンドラが `connexy_is_offline='true'` を**永続化**し、アプリ全体が localStorage モードに固定 → 別ブラウザ(=別アカウント)間でデータが同期されなくなる。
+- 原因2: PR #31 の Realtime 依存で、Realtime 未有効だと新着が反映されない。
+- 修正(PR #35):
+  - `getAnnouncements` / `saveAnnouncement` / `deleteAnnouncement` を `callSupabase` から外し、失敗しても全体をオフラインに落とさず既定データにフォールバック。
+  - `callSupabase` の `connexy_is_offline` 永続化を `!navigator.onLine` のときだけに限定(オンラインなら次回リロードで再試行)。
+  - 起動時の自己回復: `connexy_is_offline` がセットされていても `navigator.onLine` なら `companies` に軽く疎通確認し、成功したらフラグ解除。
+  - `subscribeToContractTaskChanges` に短間隔フォールバックポーリングを常時併走。
+  - `saveContractTaskChat` の新規 insert に `client_id`/`agency_id`(チャットIDから推定)を追加、列が無ければ外して再試行。
 - [~] 「運営からのお知らせ」をデータソース化(PR #27)。`HomePage.tsx` のハードコード配列を廃止し、`api.getAnnouncements()`(Supabase `announcements` テーブル / オフライン時 localStorage、日付降順)から取得。`api.saveAnnouncement()` / `api.deleteAnnouncement()` も追加。**残**: 運営(プラットフォーム管理者)ロールが未実装のため、投稿・編集UIは未着手。ロール導入後に画面を追加する。
 - [x] マスキング用マスターデータ(エリア名・家電量販店名・キャリア名のパターン)を `src/data/maskingMasters.ts` に分離(PR #26)。パターンは正規表現リテラルでなく「文字列 + 伏せ名」で保持し、将来 DB/管理画面に載せ替え可能に。`maskingUtils.ts` は `compileBrandPatterns()` でコンパイルして使用。出力は従来と同一(検証済み)。
 - [x] エリア検索を緯度経度の半径判定に変更(PR #28)。`src/utils/areaFilter.ts` に中心座標・Haversine・`isWithinAreaFilter()` を新設。SearchPage の4箇所(保存条件チェック×2、案件フィルタ、人材グループフィルタ)を差し替え。半径3km、座標が無いデータは従来の地名一致にフォールバック。
