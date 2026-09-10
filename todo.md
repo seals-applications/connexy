@@ -113,6 +113,7 @@
   - **都道府県フィルタ**(`src/utils/prefectures.ts`: `PREFECTURE_REGIONS`(8地域47件)/`ALL_PREFECTURES`/`getPrefecture`/`matchesPrefectureFilter`)。地域別・複数選択・検索付きのサブシート(`isPrefPickerOpen`)。案件は `locationName`、人材は `baseLocation` の先頭一致。`filterPrefectures` は案件・人材で共通。
   - `parseExperienceYears` / `countRealTrainings` ヘルパーを新設。
   - `activeFiltersCount` / `clearAllFilters` を新フィルタに対応。リスト上部チップに都道府県・諸経費・経験・お気に入りを追加。
+- [x] (PR #56)**案件リストカードのコンパクト化**。高さ約270px→約140px。説明文・独立した住所行・jobCode・ホバー矢印を削除。会社名＋エリア(`getCityArea` で市区まで)＋取引実績を1行に統合。タグは3つ(キャリア/販路/職種、勤務形態は省略)。単価パネル(グレー囲み)を廃止し「📅 日程 ・ 締切バッジ / ¥単価」の1行に。padding 20→14px。`getCityArea`(`prefectures.ts`)を新設。
 
 ### 🐛 発見済みバグ(未修正・要設計判断)
 
