@@ -1,6 +1,8 @@
 import { supabase } from '../lib/supabase';
 import { encryptData, decryptData } from '../lib/crypto';
 import { regionalJobs } from './regionalJobs';
+import { applyJobState } from '../utils/jobStates';
+import type { EngagementStatusValue } from '../utils/jobStates';
 
 // ユーザーの型定義
 export interface User {
@@ -163,6 +165,8 @@ export interface ContractTask {
     byStaffToAgency?: Evaluation;
     byAgencyToStaff?: Evaluation;
     byStaffToField?: Evaluation;
+    /** 案件ごとの応募・契約ステータス(軸B)。詳細は src/utils/jobStates.ts / STATUS_MODEL.md §7 */
+    jobStates?: Record<string, { status: string; updatedAt: string; contractApprovalRequired?: boolean }>;
   };
   agency_id?: string;
   client_id?: string;
@@ -1436,6 +1440,47 @@ export const api = {
           saveOfflineData('contract_tasks', list);
         }
       }
+    );
+  },
+
+  // 案件ごとのステータス更新。evaluations.jobStates[jobId] を書き換え、
+  // 後方互換のためチャット単位 status には「最も進んだ案件の状態」を書き戻す。
+  // 詳細は src/utils/jobStates.ts / STATUS_MODEL.md §7。
+  updateContractTaskJobStatus: async (
+    taskId: string,
+    jobId: string,
+    status: EngagementStatusValue,
+    options?: { contractApprovalRequired?: boolean; additionalEvals?: any },
+  ): Promise<void> => {
+    const applyLocal = (rawEvals: any) => {
+      let evals = rawEvals || {};
+      if (options?.additionalEvals) evals = { ...evals, ...options.additionalEvals };
+      const { evaluations, chatStatus } = applyJobState(evals, jobId, status, {
+        contractApprovalRequired: options?.contractApprovalRequired,
+      });
+      return { evaluations, chatStatus };
+    };
+
+    return callSupabase(
+      async () => {
+        const { data: taskData } = await supabase.from('contract_tasks').select('evaluations').eq('id', taskId).single();
+        const { evaluations, chatStatus } = applyLocal(taskData?.evaluations);
+        const { error } = await supabase
+          .from('contract_tasks')
+          .update({ status: chatStatus, evaluations })
+          .eq('id', taskId);
+        if (error) throw error;
+      },
+      () => {
+        const list = getOfflineData('contract_tasks', defaultOfflineTasks);
+        const index = list.findIndex((t: any) => t.id === taskId);
+        if (index !== -1) {
+          const { evaluations, chatStatus } = applyLocal(list[index].evaluations);
+          list[index].status = chatStatus;
+          list[index].evaluations = evaluations;
+          saveOfflineData('contract_tasks', list);
+        }
+      },
     );
   },
 
