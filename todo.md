@@ -108,7 +108,7 @@
   - 絞り込みは全項目を常時表示。見出しに選択数バッジ(`.fg-count`)。
   - 応募締切・最低経験年数はクイック選択チップに。諸経費あり/お気に入りのみはトグル。
   - (PR #53) 単価は**2ハンドルのレンジスライダー**(下限・上限を1本で。`filterMinPrice`/`filterMaxPrice`、0〜50000円/1000刻み、上限50000は「上限なし」扱い)。名称は「単価」。`.price-range` CSS。
-  - (PR #54) 案件カードの「緊急募集」を回転リボン→**左上のフラットなピル**に変更(`.job-card-urgent-badge`)。お気に入り♡・締切バッジとの重なりを解消。
+  - (PR #54 → #55) 案件カードの「緊急募集」を回転リボン→**カード上部フルワイドの赤帯**に変更(`.job-card-urgent-badge`、`margin: -20px -20px 14px` で padding を打ち消し)。お気に入り♡・締切バッジと非干渉。
   - フッターは「◯件/◯名を表示」(合致件数ライブ表示)＝閉じるだけ。
   - **都道府県フィルタ**(`src/utils/prefectures.ts`: `PREFECTURE_REGIONS`(8地域47件)/`ALL_PREFECTURES`/`getPrefecture`/`matchesPrefectureFilter`)。地域別・複数選択・検索付きのサブシート(`isPrefPickerOpen`)。案件は `locationName`、人材は `baseLocation` の先頭一致。`filterPrefectures` は案件・人材で共通。
   - `parseExperienceYears` / `countRealTrainings` ヘルパーを新設。
