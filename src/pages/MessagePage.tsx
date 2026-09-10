@@ -3,6 +3,7 @@ import { api } from '../data/mockDb';
 import { getEngagementStatusLabel } from '../utils/statusLabels';
 import { getOpponentCompanyName } from '../utils/chatParties';
 import { getExpenseCategoryLabel } from '../utils/expenseHelpers';
+import { getOfferExpiryState } from '../utils/offerExpiry';
 
 // チャットのステータスバッジ。レガシーなチャット状態(商談中/契約待ち等)は個別に、
 // 応募・契約ステータスは getEngagementStatusLabel に委譲する(STATUS_MODEL.md §4)。
@@ -96,6 +97,7 @@ export function MessagePage() {
   const [showReceiptsListModal, setShowReceiptsListModal] = useState(false);
   const [arrangementCategory, setArrangementCategory] = useState<'transport' | 'accommodation'>('transport');
   const [arrangementInfo, setArrangementInfo] = useState('');
+  const [sendingOfferReminder, setSendingOfferReminder] = useState(false);
 
   // カテゴリーごとの追加フィールド用のState
   const [receiptHotelName, setReceiptHotelName] = useState('');
@@ -584,6 +586,12 @@ export function MessagePage() {
     return chatTasks.find(t => t.id === activeChat.id) || null;
   }, [activeChat, chatTasks]);
 
+  // 内定オファーの有効期限。offered 状態のときのみ意味を持つ。
+  const offerExpiry = useMemo(
+    () => getOfferExpiryState((relatedTask?.evaluations as any) || null),
+    [relatedTask],
+  );
+
   const contractApproved = useMemo(() => {
     if (!relatedTask) return true;
     const isJobMatch = relatedTask.jobId && relatedTask.jobId !== 'chat';
@@ -906,10 +914,57 @@ export function MessagePage() {
     }
   };
 
+  // 内定オファーのリマインド(バックエンドの自動リマインドが無いため手動送信)。
+  // 相手チャットにシステムメッセージを1件追加する。
+  const handleSendOfferReminder = async () => {
+    if (!activeChat || !currentUser || !chatTasks) return;
+    const task = chatTasks.find(t => t.id === activeChat.id);
+    if (!task) return;
+    const expiry = getOfferExpiryState((task.evaluations as any) || null);
+    if (expiry.isExpired) {
+      alert('このオファーは有効期限が切れています。');
+      return;
+    }
+
+    setSendingOfferReminder(true);
+    try {
+      const now = new Date();
+      const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+      const reminderMsg = {
+        id: `sys_offer_reminder_${Date.now()}`,
+        type: 'system',
+        text: `【内定オファーのリマインド】${relatedJob?.title || activeChat.title} の内定オファーが承諾待ちです。${expiry.hasExpiry ? `${expiry.label} までにご回答ください。` : 'ご確認をお願いいたします。'}`,
+        time: timeStr,
+      };
+      const msgs = (task.evaluations as any)?.messages || getDefaultMessages(activeChat.id);
+      await api.saveContractTaskChat(
+        activeChat.id,
+        [...msgs, reminderMsg],
+        activeChat.title || '商談チャット',
+        currentUser.name,
+        getOpponentCompanyName(activeChat.id, currentUser.id, allCompanies),
+        (task.evaluations as any)?.appliedJobIds,
+        (task.evaluations as any)?.appliedJobStaffIds,
+      );
+      setChatTasks(await api.getContractTasks());
+      alert('リマインドを送信しました。');
+    } catch (e) {
+      console.error(e);
+      alert('リマインドの送信に失敗しました。');
+    } finally {
+      setSendingOfferReminder(false);
+    }
+  };
+
   const handleAcceptUnofficialOffer = async () => {
     if (!activeChat || !currentUser || !chatTasks) return;
     const task = chatTasks.find(t => t.id === activeChat.id);
     if (!task) return;
+
+    if (getOfferExpiryState((task.evaluations as any) || null).isExpired) {
+      alert('このオファーは有効期限が切れているため承諾できません。クライアント企業に再オファーを依頼してください。');
+      return;
+    }
 
     try {
       // 応募経由(appliedJobIds)・内定オファー経由(offeredJobId)のどちらでも解決できるようにする
@@ -2703,6 +2758,11 @@ export function MessagePage() {
                               <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}><strong>案件名:</strong> <span style={{ color: '#0F172A', fontWeight: 'bold' }}>{relatedJob?.title || activeChat?.title}</span></div>
                               <div><strong>契約金額:</strong> <span style={{ color: '#D97706', fontWeight: 'bold' }}>{relatedJob?.price || '15,000円 / 日'}</span></div>
                               <div><strong>日程:</strong> <span style={{ color: '#0F172A' }}>{relatedJob?.eventDate || '調整中'}</span></div>
+                              {offerExpiry.hasExpiry && (
+                                <div style={{ color: offerExpiry.isExpired ? '#B91C1C' : offerExpiry.isSoon ? '#D97706' : '#64748B', fontWeight: 'bold' }}>
+                                  {offerExpiry.label}
+                                </div>
+                              )}
                             </div>
 
                             <button
@@ -2730,6 +2790,25 @@ export function MessagePage() {
                               <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>visibility</span>
                               条件を確認する
                             </button>
+                            {isClient && activeChat?.status === 'offered' && !offerExpiry.isExpired && (
+                              <button
+                                onClick={handleSendOfferReminder}
+                                disabled={sendingOfferReminder}
+                                style={{
+                                  marginTop: '6px',
+                                  background: 'none',
+                                  color: '#D97706',
+                                  border: 'none',
+                                  fontSize: '11px',
+                                  fontWeight: 'bold',
+                                  cursor: 'pointer',
+                                  width: '100%',
+                                  textDecoration: 'underline',
+                                }}
+                              >
+                                {sendingOfferReminder ? '送信中...' : '相手にリマインドを送る'}
+                              </button>
+                            )}
                           </div>
                         ) : (
                           <p style={{ whiteSpace: 'pre-wrap' }}>{maskContactInfo(msg.text)}</p>
@@ -3263,6 +3342,17 @@ export function MessagePage() {
                       <strong style={{ color: '#64748B', display: 'block', fontSize: '11px', marginBottom: '2px' }}>勤務地</strong>
                       <span>{relatedJob?.workLocation || '未定'}</span>
                     </div>
+                    {offerExpiry.hasExpiry && (
+                      <>
+                        <hr style={{ border: 0, borderTop: '1px solid #E2E8F0', margin: 0 }} />
+                        <div>
+                          <strong style={{ color: '#64748B', display: 'block', fontSize: '11px', marginBottom: '2px' }}>オファーの有効期限</strong>
+                          <span style={{ fontWeight: 'bold', color: offerExpiry.isExpired ? '#B91C1C' : offerExpiry.isSoon ? '#D97706' : '#0F172A' }}>
+                            {offerExpiry.label}
+                          </span>
+                        </div>
+                      </>
+                    )}
                     {relatedJob?.description && (
                       <>
                         <hr style={{ border: 0, borderTop: '1px solid #E2E8F0', margin: 0 }} />
@@ -3276,7 +3366,11 @@ export function MessagePage() {
 
                   {/* Actions */}
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    {!isClient ? (
+                    {!isClient && offerExpiry.isExpired ? (
+                      <div style={{ textAlign: 'center', fontSize: '12px', color: '#B91C1C', background: '#FEF2F2', border: '1px solid #FEE2E2', padding: '10px', borderRadius: '8px' }}>
+                        このオファーは有効期限が切れています。承諾するにはクライアント企業に再オファーを依頼してください。
+                      </div>
+                    ) : !isClient ? (
                       <div style={{ display: 'flex', gap: '10px' }}>
                         <button
                           onClick={() => setConfirmingOfferAction('decline')}

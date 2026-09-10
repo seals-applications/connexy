@@ -5,6 +5,7 @@ import { api } from '../data/mockDb';
 import type { ContractTask, Training, Staff, Job, User } from '../data/mockDb';
 import { getEngagementStatusLabel, getJobListingStatus, getWorkPhase, isContractApproved } from '../utils/statusLabels';
 import { getJobStatus } from '../utils/jobStates';
+import { calcOfferExpiresAt } from '../utils/offerExpiry';
 
 const quizData: Record<string, Array<{ question: string, options: string[], answer: number }>> = {
   tr1: [
@@ -701,6 +702,7 @@ export function ManagementPage() {
       const { data: currentTaskData } = await api.getContractTasks().then(tasks => ({ data: tasks.filter(t => t.id === channelId) }));
       const existingEvals = currentTaskData && currentTaskData.length > 0 ? currentTaskData[0].evaluations || {} : {};
 
+      const offeredAt = new Date().toISOString();
       const mergedEvaluations = {
         ...existingEvals,
         messages: newMessages,
@@ -708,7 +710,9 @@ export function ManagementPage() {
         offeredStaffId: confirmingCandidate.staff.id,
         offeredPrice: activeScreeningJob.price,
         offeredDates: activeScreeningJob.eventDate,
-        offeredDetails: activeScreeningJob.description
+        offeredDetails: activeScreeningJob.description,
+        offeredAt,
+        offerExpiresAt: calcOfferExpiresAt(offeredAt),
       };
 
       await api.saveContractTaskChat(
