@@ -28,6 +28,11 @@ export const countRealTrainings = (list?: string[] | null): number => {
   return list.filter((t) => !t.startsWith('ATTENDANCE_LOG_') && !t.startsWith('CHECKIN_STATUS_')).length;
 };
 
+// 単価スライダーの範囲(円/日)。上限に張り付いた状態は「上限なし」扱い。
+export const PRICE_SLIDER_MIN = 0;
+export const PRICE_SLIDER_MAX = 50000;
+export const PRICE_SLIDER_STEP = 1000;
+
 export const getStaffGender = (name: string): '男性' | '女性' => {
   const femaleNames = ['舞', '優花', '陽子', '沙織', '美咲', '愛', '結衣', '莉子', '咲良', '葵', 'さくら', 'つばさ'];
   const firstName = name.split(/[\s　]+/)[1] || name;
@@ -186,6 +191,7 @@ export function SearchPage() {
   const [filterCarriers, setFilterCarriers] = useSessionState<string[]>('connexy_filterCarriers', []);
   const [filterChannels, setFilterChannels] = useSessionState<string[]>('connexy_filterChannels', []);
   const [filterMinPrice, setFilterMinPrice] = useSessionState<number>('connexy_filterMinPrice', 0);
+  const [filterMaxPrice, setFilterMaxPrice] = useSessionState<number>('connexy_filterMaxPrice', PRICE_SLIDER_MAX);
   const [filterDeadlineDays, setFilterDeadlineDays] = useSessionState<number | null>('connexy_filterDeadlineDays', null);
   const [filterHasExpenses, setFilterHasExpenses] = useSessionState<boolean>('connexy_filterHasExpenses', false);
   const [showFavoritesOnly, setShowFavoritesOnly] = useSessionState<boolean>('connexy_showFavoritesOnly', false);
@@ -1215,8 +1221,11 @@ export function SearchPage() {
         if (!hasExpenses) return false;
       }
 
-      // 7. 日給下限
+      // 7. 単価(下限・上限)
       if (job.price < filterMinPrice) {
+        return false;
+      }
+      if (filterMaxPrice < PRICE_SLIDER_MAX && job.price > filterMaxPrice) {
         return false;
       }
 
@@ -1260,7 +1269,7 @@ export function SearchPage() {
 
       return matchesArea && matchesLimited;
     });
-  }, [jobs, filterArea, currentUser, filterJobRoles, filterCarriers, filterChannels, filterMinPrice, filterDeadlineDays, filterPrefectures, filterHasExpenses, searchKeyword, appliedJobIds, showFavoritesOnly]);
+  }, [jobs, filterArea, currentUser, filterJobRoles, filterCarriers, filterChannels, filterMinPrice, filterMaxPrice, filterDeadlineDays, filterPrefectures, filterHasExpenses, searchKeyword, appliedJobIds, showFavoritesOnly]);
 
   const sortedJobs = useMemo(() => {
     let list = [...filteredJobs];
@@ -1615,7 +1624,7 @@ export function SearchPage() {
       count += filterJobRoles.length;
       count += filterCarriers.length;
       count += filterChannels.length;
-      if (filterMinPrice > 0) count += 1;
+      if (filterMinPrice > 0 || filterMaxPrice < PRICE_SLIDER_MAX) count += 1;
       if (filterDeadlineDays !== null) count += 1;
       if (filterHasExpenses) count += 1;
       if (searchKeyword.trim() !== '') count += 1;
@@ -1628,7 +1637,7 @@ export function SearchPage() {
     }
     if (showFavoritesOnly) count += 1;
     return count;
-  }, [mode, filterPrefectures, filterJobRoles, filterCarriers, filterChannels, filterMinPrice, filterDeadlineDays, filterHasExpenses, filterTalentSkills, filterTalentCarriers, filterTalentTrainings, filterMinExperience, showFavoritesOnly, searchKeyword]);
+  }, [mode, filterPrefectures, filterJobRoles, filterCarriers, filterChannels, filterMinPrice, filterMaxPrice, filterDeadlineDays, filterHasExpenses, filterTalentSkills, filterTalentCarriers, filterTalentTrainings, filterMinExperience, showFavoritesOnly, searchKeyword]);
 
   const hasActiveFilters = useMemo(() => {
     if (mode === 'job') {
@@ -1648,6 +1657,7 @@ export function SearchPage() {
       setFilterCarriers([]);
       setFilterChannels([]);
       setFilterMinPrice(0);
+      setFilterMaxPrice(PRICE_SLIDER_MAX);
       setFilterDeadlineDays(null);
       setFilterHasExpenses(false);
     } else {
@@ -2116,10 +2126,12 @@ export function SearchPage() {
                           </button>
                         </div>
                       ))}
-                      {filterMinPrice > 0 && (
+                      {(filterMinPrice > 0 || filterMaxPrice < PRICE_SLIDER_MAX) && (
                         <div className="filter-chip">
-                          <span>¥{filterMinPrice?.toLocaleString()}以上</span>
-                          <button onClick={() => setFilterMinPrice(0)}>
+                          <span>
+                            単価 ¥{filterMinPrice.toLocaleString()}〜{filterMaxPrice >= PRICE_SLIDER_MAX ? '' : `¥${filterMaxPrice.toLocaleString()}`}
+                          </span>
+                          <button onClick={() => { setFilterMinPrice(0); setFilterMaxPrice(PRICE_SLIDER_MAX); }}>
                             <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>close</span>
                           </button>
                         </div>
@@ -3671,16 +3683,49 @@ export function SearchPage() {
                   </div>
                 </div>
 
-                {/* 日給下限 */}
+                {/* 単価(下限・上限) */}
                 <div className="filter-group">
-                  <span className="filter-group-title">日給下限</span>
-                  <div className="filter-options-flex">
-                    {[{ v: 0, l: '指定なし' }, { v: 10000, l: '1.0万' }, { v: 15000, l: '1.5万' }, { v: 20000, l: '2.0万' }, { v: 25000, l: '2.5万+' }].map(o => (
-                      <label key={o.v} className={`filter-checkbox-label ${filterMinPrice === o.v ? 'active' : ''}`}>
-                        <input type="radio" name="minPrice" checked={filterMinPrice === o.v} onChange={() => setFilterMinPrice(o.v)} />
-                        {o.l}
-                      </label>
-                    ))}
+                  <span className="filter-group-title">
+                    単価（円/日）
+                    <span style={{ float: 'right', fontWeight: 700, color: 'var(--primary)', textTransform: 'none', letterSpacing: 0 }}>
+                      ¥{filterMinPrice.toLocaleString()} 〜 {filterMaxPrice >= PRICE_SLIDER_MAX ? '上限なし' : `¥${filterMaxPrice.toLocaleString()}`}
+                    </span>
+                  </span>
+                  <div className="price-range">
+                    <div className="track" />
+                    <div
+                      className="track-fill"
+                      style={{
+                        left: `${(filterMinPrice / PRICE_SLIDER_MAX) * 100}%`,
+                        right: `${100 - (filterMaxPrice / PRICE_SLIDER_MAX) * 100}%`,
+                      }}
+                    />
+                    <input
+                      type="range"
+                      min={PRICE_SLIDER_MIN}
+                      max={PRICE_SLIDER_MAX}
+                      step={PRICE_SLIDER_STEP}
+                      value={filterMinPrice}
+                      onChange={e => {
+                        const v = Math.min(Number(e.target.value), filterMaxPrice - PRICE_SLIDER_STEP);
+                        setFilterMinPrice(Math.max(PRICE_SLIDER_MIN, v));
+                      }}
+                    />
+                    <input
+                      type="range"
+                      min={PRICE_SLIDER_MIN}
+                      max={PRICE_SLIDER_MAX}
+                      step={PRICE_SLIDER_STEP}
+                      value={filterMaxPrice}
+                      onChange={e => {
+                        const v = Math.max(Number(e.target.value), filterMinPrice + PRICE_SLIDER_STEP);
+                        setFilterMaxPrice(Math.min(PRICE_SLIDER_MAX, v));
+                      }}
+                    />
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: 'var(--text-sub)', marginTop: '2px' }}>
+                    <span>¥0</span>
+                    <span>¥{(PRICE_SLIDER_MAX).toLocaleString()}+</span>
                   </div>
                 </div>
 

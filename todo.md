@@ -106,7 +106,8 @@
   - キーワード欄を大型化(高さ48px)。即時反映(`tempKeyword` 廃止、`searchKeyword` 直バインド)。
   - 並び替えをアコーディオン廃止・縦リスト単一選択に。案件: 新着/応募締切が近い/開催日が近い/単価高い/単価安い/現在地から近い。人材: 単価安い/単価高い/経験が長い/研修受講数が多い/拠点が近い。「近い順」は位置情報許可時のみ有効(`navigator.geolocation`、`userLocation`)。
   - 絞り込みは全項目を常時表示。見出しに選択数バッジ(`.fg-count`)。
-  - 日給下限・応募締切・最低経験年数は数値入力をやめクイック選択チップに。諸経費あり/お気に入りのみはトグル。
+  - 応募締切・最低経験年数はクイック選択チップに。諸経費あり/お気に入りのみはトグル。
+  - (PR #53) 単価は**2ハンドルのレンジスライダー**(下限・上限を1本で。`filterMinPrice`/`filterMaxPrice`、0〜50000円/1000刻み、上限50000は「上限なし」扱い)。名称は「単価」。`.price-range` CSS。
   - フッターは「◯件/◯名を表示」(合致件数ライブ表示)＝閉じるだけ。
   - **都道府県フィルタ**(`src/utils/prefectures.ts`: `PREFECTURE_REGIONS`(8地域47件)/`ALL_PREFECTURES`/`getPrefecture`/`matchesPrefectureFilter`)。地域別・複数選択・検索付きのサブシート(`isPrefPickerOpen`)。案件は `locationName`、人材は `baseLocation` の先頭一致。`filterPrefectures` は案件・人材で共通。
   - `parseExperienceYears` / `countRealTrainings` ヘルパーを新設。
