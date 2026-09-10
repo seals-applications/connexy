@@ -1549,6 +1549,8 @@ export function SearchPage() {
 
     const AdvancedMarkerElement = advancedMarkerClassRef.current;
     const newMarkers: any[] = [];
+    // 100件以上は「99+」表記
+    const fmtCount = (n: number) => (n > 99 ? '99+' : String(n));
 
     if (mode === 'job') {
       clusteredJobs.forEach((group) => {
@@ -1586,7 +1588,7 @@ export function SearchPage() {
             font-size: ${fontSize}px;
             transition: transform 0.15s ease;
           ">
-            ${group.jobs.length}
+            ${fmtCount(group.jobs.length)}
           </div>
         `;
 
@@ -1605,6 +1607,8 @@ export function SearchPage() {
           content: pinElement,
           title: isCluster ? `案件クラスター: ${group.jobs.length}件` : `案件: ${group.jobs.length}件`,
         });
+        (marker as any).__count = group.jobs.length;
+        (marker as any).__hasUrgent = group.hasUrgent;
 
         marker.addListener('gmp-click', () => {
           if (isCluster) {
@@ -1653,7 +1657,7 @@ export function SearchPage() {
             font-size: ${fontSize}px;
             transition: transform 0.15s ease;
           ">
-            ${group.talents.length}
+            ${fmtCount(group.talents.length)}
           </div>
         `;
 
@@ -1672,6 +1676,7 @@ export function SearchPage() {
           content: pinElement,
           title: isCluster ? `人材クラスター: ${group.talents.length}名` : `人材: ${group.talents.length}名`,
         });
+        (marker as any).__count = group.talents.length;
 
         marker.addListener('gmp-click', () => {
           if (isCluster) {
@@ -1690,9 +1695,48 @@ export function SearchPage() {
 
     if (mapRef.current && newMarkers.length > 0) {
       try {
+        const isTalent = mode !== 'job';
+        // ライブラリ既定の濃い青グラデーションバッジは使わず、
+        // 案件/人材の合計数を表示するフラットな円バッジに差し替える。
+        const clusterRenderer = {
+          render: ({ markers, position }: any) => {
+            const total = (markers || []).reduce(
+              (sum: number, mk: any) => sum + (mk.__count || 1),
+              0
+            );
+            const hasUrgent = !isTalent && (markers || []).some((mk: any) => mk.__hasUrgent);
+            const color = isTalent ? '#065F46' : hasUrgent ? '#B91C1C' : '#1E3A8A';
+            const shadow = isTalent
+              ? 'rgba(6, 95, 70, 0.5)'
+              : hasUrgent
+              ? 'rgba(185, 28, 28, 0.5)'
+              : 'rgba(30, 58, 138, 0.5)';
+            const label = fmtCount(total);
+            const el = document.createElement('div');
+            el.style.cursor = 'pointer';
+            el.innerHTML = `
+              <div style="
+                width: 40px;
+                height: 40px;
+                background-color: ${color};
+                border: 3px solid #FFFFFF;
+                border-radius: 50%;
+                box-shadow: 0 4px 6px ${shadow};
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: white;
+                font-weight: bold;
+                font-size: ${label.length >= 3 ? 13 : 15}px;
+              ">${label}</div>
+            `;
+            return new AdvancedMarkerElement({ position, content: el });
+          },
+        };
         clustererRef.current = new MarkerClusterer({
           map: mapRef.current,
-          markers: newMarkers
+          markers: newMarkers,
+          renderer: clusterRenderer,
         });
       } catch (e) {
         console.warn('MarkerClusterer init warning:', e);
