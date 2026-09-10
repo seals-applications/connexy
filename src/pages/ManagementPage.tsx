@@ -2219,10 +2219,10 @@ export function ManagementPage() {
 
         // Base matching profiles list
         const baseProfiles = [
-          { id: 'alpha', name: '株式会社アルファ', rep: 'アルファ 健', prText: '光回線・モバイル獲得に特化した営業支援代理店。', avgRating: 4.8, regMonths: 12, attendanceRate: 99.2 },
-          { id: 'beta', name: 'ベータ株式会社', rep: 'ベータ 拓也', prText: 'イベントクルー手配から運営までワンストップで受託。', avgRating: 4.6, regMonths: 6, attendanceRate: 98.5 },
-          { id: 'gamma', name: '合同会社ガンマ', rep: 'ガンマ 翔', prText: '地域密着型ブース販売。登録1.5ヶ月の新規代理店！', avgRating: 4.1, regMonths: 1.5, attendanceRate: 92.1 },
-          { id: 'delta', name: 'デルタ合同会社', rep: 'デルタ 大介', prText: '緊急アサイン対応力に強み。週末ショップ応援多数。', avgRating: 4.4, regMonths: 14, attendanceRate: 96.0 }
+          { id: 'alpha', name: '株式会社アルファ', rep: '中村 大輔', prText: '光回線・モバイル獲得に特化した営業支援代理店。', avgRating: 4.8, regMonths: 12, attendanceRate: 99.2 },
+          { id: 'beta', name: 'ベータ株式会社', rep: '斉藤 隆', prText: 'イベントクルー手配から運営までワンストップで受託。', avgRating: 4.6, regMonths: 6, attendanceRate: 98.5 },
+          { id: 'gamma', name: '合同会社ガンマ', rep: '藤田 健太', prText: '地域密着型ブース販売。登録1.5ヶ月の新規代理店！', avgRating: 4.1, regMonths: 1.5, attendanceRate: 92.1 },
+          { id: 'delta', name: 'デルタ合同会社', rep: '小林 修', prText: '緊急アサイン対応力に強み。週末ショップ応援多数。', avgRating: 4.4, regMonths: 14, attendanceRate: 96.0 }
         ].filter(p => p.id !== currentUser?.id);
 
         const screeningCandidates = baseProfiles.map(p => {
