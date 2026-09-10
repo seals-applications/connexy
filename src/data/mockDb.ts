@@ -1,7 +1,7 @@
 import { supabase } from '../lib/supabase';
 import { encryptData, decryptData } from '../lib/crypto';
 import { regionalJobs } from './regionalJobs';
-import { applyJobState, seedAppliedJobStates } from '../utils/jobStates';
+import { applyJobState, seedAppliedJobStates, normalizeEngagementStatus } from '../utils/jobStates';
 import type { EngagementStatusValue } from '../utils/jobStates';
 
 // ユーザーの型定義
@@ -157,7 +157,8 @@ export interface ContractTask {
   clientName: string;
   price: number;
   date: string;
-  status: 'applying' | 'offered' | 'working' | 'report_pending' | 'completed' | 'disputed' | 'rejected' | 'declined' | 'cancelled';
+  // `confirmed` は旧 `working`(STATUS_MODEL.md §7.1)。読み出しは mapContractTask で正規化。
+  status: 'applying' | 'offered' | 'confirmed' | 'report_pending' | 'completed' | 'disputed' | 'rejected' | 'declined' | 'cancelled';
   disputedReason?: string;
   evaluations?: {
     byClient?: Evaluation;
@@ -478,7 +479,7 @@ const mapContractTask = (row: any): ContractTask => ({
   clientName: row.client_name,
   price: row.price,
   date: row.date,
-  status: row.status,
+  status: normalizeEngagementStatus(row.status),
   disputedReason: row.disputed_reason,
   evaluations: row.evaluations || {},
   agency_id: row.agency_id,
@@ -519,6 +520,33 @@ let useOfflineMock = false;
 if (typeof window !== 'undefined') {
   if (localStorage.getItem('connexy_is_offline') === 'true' || !navigator.onLine) {
     useOfflineMock = true;
+  }
+}
+
+// 一度きりのデータ移行: 保存値 `working` → `confirmed`(STATUS_MODEL.md §7.1)。
+// 読み出しは mapContractTask で正規化するが、保存済みデータも揃えておく。
+if (typeof window !== 'undefined' && localStorage.getItem('connexy_migrated_working_to_confirmed') !== '1') {
+  try {
+    const rawTasks = localStorage.getItem('offline_db_contract_tasks');
+    if (rawTasks) {
+      const list = JSON.parse(rawTasks);
+      if (Array.isArray(list)) {
+        let changed = false;
+        for (const row of list) {
+          if (row && row.status === 'working') { row.status = 'confirmed'; changed = true; }
+          const js = row?.evaluations?.jobStates;
+          if (js && typeof js === 'object') {
+            for (const k of Object.keys(js)) {
+              if (js[k]?.status === 'working') { js[k].status = 'confirmed'; changed = true; }
+            }
+          }
+        }
+        if (changed) localStorage.setItem('offline_db_contract_tasks', JSON.stringify(list));
+      }
+    }
+    localStorage.setItem('connexy_migrated_working_to_confirmed', '1');
+  } catch {
+    /* 移行に失敗しても致命的ではない(読み出し時に正規化される) */
   }
 }
 
@@ -1318,7 +1346,7 @@ export const api = {
             worker_name: workerName,
             price: 0,
             date: new Date().toISOString().split('T')[0],
-            status: isApplication ? 'applying' : 'working',
+            status: isApplication ? 'applying' : 'confirmed',
             evaluations
           };
           const { error } = await supabase.from('contract_tasks').insert([row]);
@@ -1368,7 +1396,7 @@ export const api = {
             worker_name: workerName,
             price: 0,
             date: new Date().toISOString().split('T')[0],
-            status: isApplication ? 'applying' : 'working',
+            status: isApplication ? 'applying' : 'confirmed',
             evaluations
           };
           list.push(row);
@@ -1420,7 +1448,7 @@ export const api = {
     });
   },
 
-  updateContractTaskStatus: async (taskId: string, status: 'applying' | 'offered' | 'working' | 'report_pending' | 'completed' | 'disputed' | 'rejected' | 'declined' | 'cancelled', additionalEvals?: any): Promise<void> => {
+  updateContractTaskStatus: async (taskId: string, status: 'applying' | 'offered' | 'confirmed' | 'report_pending' | 'completed' | 'disputed' | 'rejected' | 'declined' | 'cancelled', additionalEvals?: any): Promise<void> => {
     return callSupabase(
       async () => {
         const { data: taskData } = await supabase.from('contract_tasks').select('evaluations').eq('id', taskId).single();

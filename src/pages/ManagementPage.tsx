@@ -370,7 +370,7 @@ export function ManagementPage() {
 
   const getTasksForDate = (dateStr: string, calendarType: 'own_staff' | 'other_staff' = 'own_staff') => {
     return tasks.filter(t => {
-      if (!['working', 'report_pending', 'completed'].includes(t.status)) return false;
+      if (!['confirmed', 'report_pending', 'completed'].includes(t.status)) return false;
       const isDateMatch = t.date === dateStr;
       if (!isDateMatch) return false;
       
@@ -1128,7 +1128,7 @@ export function ManagementPage() {
         `"${t.jobTitle || '案件'}"`,
         t.price,
         t.status === 'completed' ? '完了' :
-        t.status === 'working' ? '進行中' :
+        t.status === 'confirmed' ? '進行中' :
         t.status === 'report_pending' ? '報告待ち' :
         t.status === 'disputed' ? '内容確認中' :
         t.status === 'offered' ? '内定通知中' :
@@ -1500,7 +1500,7 @@ export function ManagementPage() {
                   {myJobs.map(job => {
                     const isExpanded = expandedJobId === job.id;
                     const isPast = isJobPast(job);
-                    const isContracted = tasks.some(t => t.jobId === job.id && ['working', 'report_pending', 'completed', 'disputed'].includes(t.status));
+                    const isContracted = tasks.some(t => t.jobId === job.id && ['confirmed', 'report_pending', 'completed', 'disputed'].includes(t.status));
                     const isOffered = tasks.some(t => t.jobId === job.id && t.status === 'offered');
                     
                     return (
@@ -2257,8 +2257,8 @@ export function ManagementPage() {
           const isCandidateContractedForThisJob = tasks.some(t =>
             t.jobId === activeScreeningJob.id &&
             (t.companyName === p.name || t.id.includes(p.id)) &&
-            ['working', 'report_pending', 'completed', 'disputed'].includes(t.status)
-          ) || ['working', 'report_pending', 'completed', 'disputed'].includes(chatJobStatus || '');
+            ['confirmed', 'report_pending', 'completed', 'disputed'].includes(t.status)
+          ) || ['confirmed', 'report_pending', 'completed', 'disputed'].includes(chatJobStatus || '');
 
           const isCandidateOfferedForThisJob = chatJobStatus === 'offered' ||
             (chatTask?.status === 'offered' && (chatTask?.evaluations as any)?.offeredJobId === activeScreeningJob.id);
@@ -2274,7 +2274,7 @@ export function ManagementPage() {
           const finalScore = (reliabilityScore * relWeight) + (80 * matchWeight) + ((distanceKm < 3 ? 100 : 70) * proxWeight);
 
           // 稼働前キャンセル可否(発注者のみ): 応募中 / 内定通知済み / 稼働待ち(稼働開始前の confirmed)
-          const cancellableStatuses = ['applying', 'offered', 'working', 'confirmed'];
+          const cancellableStatuses = ['applying', 'offered', 'confirmed'];
           const canCancel = !!chatTask
             && !!chatJobStatus
             && cancellableStatuses.includes(chatJobStatus)
@@ -2299,7 +2299,7 @@ export function ManagementPage() {
           };
         }).sort((a, b) => b.score - a.score);
 
-        const isJobContracted = tasks.some(t => t.jobId === activeScreeningJob.id && ['working', 'report_pending', 'completed', 'disputed'].includes(t.status));
+        const isJobContracted = tasks.some(t => t.jobId === activeScreeningJob.id && ['confirmed', 'report_pending', 'completed', 'disputed'].includes(t.status));
 
         return (
           <div className="overlay-view show" style={{ zIndex: 3100, display: 'flex', flexDirection: 'column' }}>
