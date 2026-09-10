@@ -1613,44 +1613,46 @@ export const api = {
     );
   },
 
+  // 「内容確認中」(disputed)の解消。approve → completed / reject → disputed のまま理由更新。
+  // STATUS_MODEL.md §3.2。案件ごとの jobStates も更新し、理由は evaluations.disputedReason に持つ。
   respondToDispute: async (taskId: string, action: 'approve' | 'reject', reason?: string): Promise<ContractTask> => {
+    const nextStatus: EngagementStatusValue = action === 'approve' ? 'completed' : 'disputed';
+    const rejectReason = reason || '内容が事実と異なります。';
+
+    const buildEvals = (rawEvals: any, jobId: string | undefined) => {
+      let evals = rawEvals || {};
+      if (action === 'reject') evals = { ...evals, disputedReason: rejectReason };
+      if (jobId && jobId !== 'chat') {
+        const { evaluations, chatStatus } = applyJobState(evals, jobId, nextStatus);
+        return { evaluations, chatStatus };
+      }
+      return { evaluations: evals, chatStatus: nextStatus };
+    };
+
     return callSupabase(
       async () => {
         const { data: taskData, error: taskError } = await supabase.from('contract_tasks').select('*').eq('id', taskId).single();
         if (taskError || !taskData) throw new Error('Task not found');
-        const task = mapContractTask(taskData);
-
-        if (action === 'approve') {
-          task.status = 'completed';
-        } else {
-          task.status = 'disputed';
-          task.disputedReason = reason || '内容が事実と異なります。';
-        }
-
+        const { evaluations, chatStatus } = buildEvals(taskData.evaluations, taskData.job_id);
         const { error: updateError } = await supabase
           .from('contract_tasks')
-          .update(unmapContractTask({ status: task.status, disputedReason: task.disputedReason }))
+          .update({ status: chatStatus, evaluations })
           .eq('id', taskId);
-          
         if (updateError) throw updateError;
+        const task = mapContractTask({ ...taskData, status: chatStatus, evaluations });
+        if (action === 'reject') task.disputedReason = rejectReason;
         return task;
       },
       async () => {
         const list = getOfflineData('contract_tasks', defaultOfflineTasks);
         const index = list.findIndex((t: any) => t.id === taskId);
         if (index === -1) throw new Error('Task not found');
-        const task = mapContractTask(list[index]);
-
-        if (action === 'approve') {
-          task.status = 'completed';
-        } else {
-          task.status = 'disputed';
-          task.disputedReason = reason || '内容が事実と異なります。';
-        }
-
-        list[index].status = task.status;
-        list[index].disputed_reason = task.disputedReason;
+        const { evaluations, chatStatus } = buildEvals(list[index].evaluations, list[index].job_id || list[index].jobId);
+        list[index].status = chatStatus;
+        list[index].evaluations = evaluations;
         saveOfflineData('contract_tasks', list);
+        const task = mapContractTask(list[index]);
+        if (action === 'reject') task.disputedReason = rejectReason;
         return task;
       }
     );
