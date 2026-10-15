@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { ANTISOCIAL_STATEMENT, ANTISOCIAL_VERSION } from '../utils/subcontractAgreement';
 import { api } from '../data/mockDb';
 import type { User, Staff } from '../data/mockDb';
 
@@ -13,6 +14,7 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [agreed, setAgreed] = useState(false);
+  const [antisocialAgreed, setAntisocialAgreed] = useState(false);
 
   // Signup fields
   const [companyName, setCompanyName] = useState('');
@@ -103,6 +105,11 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
       return;
     }
 
+    if (!antisocialAgreed) {
+      setError('反社会的勢力に関する表明・保証への同意が必要です。');
+      return;
+    }
+
     if (invoiceNumber && !/^T\d{13}$/.test(invoiceNumber)) {
       setError('インボイス登録番号はTから始まる13桁の数字で入力してください。');
       return;
@@ -119,6 +126,8 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
         loginId: signupLoginId,
         password: signupPassword,
         invoiceNumber: invoiceNumber || undefined,
+        antisocialAgreedAt: new Date().toISOString(),
+        antisocialVersion: ANTISOCIAL_VERSION,
         role: 'contractor'
       });
       setSignupSuccess('新規会社アカウントの申請を受理しました。運営による審査・承認をお待ちください。');
@@ -130,6 +139,7 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
       setSignupLoginId('');
       setSignupPassword('');
       setMockFile(null);
+      setAntisocialAgreed(false);
       
       setActiveTab('login');
       loadCompanies();
@@ -400,7 +410,23 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
                 </label>
               </div>
 
-              <button type="submit" disabled={loading || !agreed} style={styles.button(agreed)}>
+              <div style={{ ...styles.agreementGroup, marginTop: '8px' }}>
+                <label style={styles.checkboxLabel}>
+                  <div style={{ display: 'flex', alignItems: 'flex-start' }}>
+                    <input
+                      type="checkbox"
+                      checked={antisocialAgreed}
+                      onChange={(e) => setAntisocialAgreed(e.target.checked)}
+                      style={{ ...styles.checkbox, marginTop: '3px' }}
+                      disabled={loading}
+                    />
+                    <span>反社会的勢力に関する表明・保証に同意する</span>
+                  </div>
+                  <div style={styles.agreementNotice}>{ANTISOCIAL_STATEMENT}</div>
+                </label>
+              </div>
+
+              <button type="submit" disabled={loading || !agreed || !antisocialAgreed} style={styles.button(agreed && antisocialAgreed)}>
                 {loading ? '申請送信中...' : '会社アカウント開設の審査申請をする'}
               </button>
             </form>
