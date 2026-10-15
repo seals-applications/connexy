@@ -1158,6 +1158,7 @@ export function ManagementPage() {
         t.status === 'disputed' ? '内容確認中' :
         t.status === 'offered' ? '内定通知中' :
         t.status === 'applying' ? '選考中' :
+        t.status === 'awaiting_approval' ? '元請け承諾待ち' :
         t.status === 'cancelled' ? 'キャンセル' :
         t.status === 'rejected' || t.status === 'declined' ? '不成立' : '稼働準備中',
         t.date || new Date().toLocaleDateString()
@@ -1526,7 +1527,13 @@ export function ManagementPage() {
                     const isExpanded = expandedJobId === job.id;
                     const isPast = isJobPast(job);
                     const isContracted = tasks.some(t => t.jobId === job.id && ['confirmed', 'report_pending', 'completed', 'disputed'].includes(t.status));
-                    const isOffered = tasks.some(t => t.jobId === job.id && t.status === 'offered');
+                    // 直接チャットの jobId は 'chat' のため、案件との紐付けは jobStates(isJobLinkedToChat)経由で判定する
+                    const hasEngagementStatus = (st: string) => tasks.some(t =>
+                      (t.jobId === job.id && t.status === st) ||
+                      (isJobLinkedToChat(t.evaluations, job.id) && getJobStatus(t, job.id) === st)
+                    );
+                    const isOffered = hasEngagementStatus('offered');
+                    const isAwaitingApproval = hasEngagementStatus('awaiting_approval');
                     
                     return (
                       <div key={job.id} style={{ background: 'var(--surface-color)', borderRadius: '12px', border: '1px solid var(--border-color)', boxShadow: '0 2px 6px rgba(0,0,0,0.02)', overflow: 'hidden' }}>
@@ -1545,6 +1552,7 @@ export function ManagementPage() {
                                     <span style={{ ...badgeStyle, background: primary.bg, color: primary.color }}>{primary.label}</span>
                                     {isContracted && <span style={{ ...badgeStyle, background: '#D1FAE5', color: '#065F46' }}>確定あり</span>}
                                     {!isContracted && isOffered && <span style={{ ...badgeStyle, background: '#FEF3C7', color: '#D97706' }}>内定通知中</span>}
+                                    {!isContracted && isAwaitingApproval && <span style={{ ...badgeStyle, background: '#E0F2FE', color: '#0369A1' }}>元請け承諾待ち</span>}
                                   </>
                                 );
                               })()}
@@ -2285,6 +2293,8 @@ export function ManagementPage() {
             ['confirmed', 'report_pending', 'completed', 'disputed'].includes(t.status)
           ) || ['confirmed', 'report_pending', 'completed', 'disputed'].includes(chatJobStatus || '');
 
+          const isCandidateAwaitingForThisJob = chatJobStatus === 'awaiting_approval';
+
           const isCandidateOfferedForThisJob = chatJobStatus === 'offered' ||
             (chatTask?.status === 'offered' && isJobLinkedToChat(chatTask?.evaluations, activeScreeningJob.id));
 
@@ -2299,13 +2309,14 @@ export function ManagementPage() {
           const finalScore = (reliabilityScore * relWeight) + (80 * matchWeight) + ((distanceKm < 3 ? 100 : 70) * proxWeight);
 
           // 稼働前キャンセル可否(発注者のみ): 応募中 / 内定通知済み / 稼働待ち(稼働開始前の confirmed)
-          const cancellableStatuses = ['applying', 'offered', 'confirmed'];
+          const cancellableStatuses = ['applying', 'offered', 'awaiting_approval', 'confirmed'];
           const canCancel = !!chatTask
             && !!chatJobStatus
             && cancellableStatuses.includes(chatJobStatus)
             && (
               chatJobStatus === 'applying'
               || chatJobStatus === 'offered'
+              || chatJobStatus === 'awaiting_approval'
               || getWorkPhase(activeScreeningJob) === 'before'
               || getWorkPhase(activeScreeningJob) === 'unknown'
             );
@@ -2320,7 +2331,8 @@ export function ManagementPage() {
             chatJobStatus,
             canCancel,
             isCandidateContractedForThisJob,
-            isCandidateOfferedForThisJob
+            isCandidateOfferedForThisJob,
+            isCandidateAwaitingForThisJob
           };
         }).sort((a, b) => b.score - a.score);
 
@@ -2400,6 +2412,10 @@ export function ManagementPage() {
                         <button type="button" disabled style={{ flex: 1, padding: '8px', borderRadius: '6px', border: 'none', background: '#F1F5F9', color: '#94A3B8', fontSize: '11px', fontWeight: 'bold', cursor: 'not-allowed' }}>
                           他社で確定済
                         </button>
+                      ) : c.isCandidateAwaitingForThisJob ? (
+                        <button type="button" onClick={() => handleStartScreeningChat(c.chatTask, c.company.id)} style={{ flex: 1, padding: '8px', borderRadius: '6px', border: 'none', background: '#E0F2FE', color: '#0369A1', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}>
+                          元請け承諾待ち（手続きへ）
+                        </button>
                       ) : c.isCandidateOfferedForThisJob ? (
                         <button type="button" disabled style={{ flex: 1, padding: '8px', borderRadius: '6px', border: 'none', background: '#FEF3C7', color: '#D97706', fontSize: '11px', fontWeight: 'bold', cursor: 'not-allowed' }}>
                           内定通知済み
@@ -2420,7 +2436,7 @@ export function ManagementPage() {
                             jobId: activeScreeningJob.id,
                             jobTitle: activeScreeningJob.title,
                             companyName: c.company.name,
-                            statusLabel: c.chatJobStatus === 'offered' ? '内定通知済み' : c.chatJobStatus === 'applying' ? '選考中' : '稼働待ち',
+                            statusLabel: c.chatJobStatus === 'offered' ? '内定通知済み' : c.chatJobStatus === 'awaiting_approval' ? '元請け承諾待ち' : c.chatJobStatus === 'applying' ? '選考中' : '稼働待ち',
                           })}
                           style={{ background: 'none', border: 'none', color: '#B91C1C', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer', textDecoration: 'underline' }}
                         >

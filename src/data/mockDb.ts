@@ -158,7 +158,7 @@ export interface ContractTask {
   price: number;
   date: string;
   // `confirmed` は旧 `working`(STATUS_MODEL.md §7.1)。読み出しは mapContractTask で正規化。
-  status: 'applying' | 'offered' | 'confirmed' | 'report_pending' | 'completed' | 'disputed' | 'rejected' | 'declined' | 'cancelled';
+  status: 'applying' | 'offered' | 'awaiting_approval' | 'confirmed' | 'report_pending' | 'completed' | 'disputed' | 'rejected' | 'declined' | 'cancelled';
   disputedReason?: string;
   evaluations?: {
     byClient?: Evaluation;
@@ -1676,7 +1676,7 @@ export const api = {
     });
   },
 
-  updateContractTaskStatus: async (taskId: string, status: 'applying' | 'offered' | 'confirmed' | 'report_pending' | 'completed' | 'disputed' | 'rejected' | 'declined' | 'cancelled', additionalEvals?: any): Promise<void> => {
+  updateContractTaskStatus: async (taskId: string, status: 'applying' | 'offered' | 'awaiting_approval' | 'confirmed' | 'report_pending' | 'completed' | 'disputed' | 'rejected' | 'declined' | 'cancelled', additionalEvals?: any): Promise<void> => {
     return callSupabase(
       async () => {
         const { data: taskData } = await supabase.from('contract_tasks').select('evaluations').eq('id', taskId).single();
@@ -1780,7 +1780,7 @@ export const api = {
     taskId: string,
     jobId: string,
     status: EngagementStatusValue,
-    options?: { contractApprovalRequired?: boolean; staffId?: string; offer?: any; additionalEvals?: any },
+    options?: { contractApprovalRequired?: boolean; staffId?: string; offer?: any; approval?: any; additionalEvals?: any },
   ): Promise<void> => {
     const applyLocal = (rawEvals: any) => {
       let evals = rawEvals || {};
@@ -1789,6 +1789,7 @@ export const api = {
         contractApprovalRequired: options?.contractApprovalRequired,
         staffId: options?.staffId,
         offer: options?.offer,
+        approval: options?.approval,
       });
       return { evaluations, chatStatus };
     };

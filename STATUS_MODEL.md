@@ -60,6 +60,7 @@
 |---|---|---|---|
 | `applying` | 選考中 | 応募済み。発注者が選考中 | 変更なし |
 | `offered` | 内定・承諾待ち | 発注者がオファーを送信。応募者の承諾/辞退待ち | 変更なし |
+| `awaiting_approval` | **元請け承諾待ち** | 応募者が内定を承諾済み。元請けの二次委託の事前承諾(書面等)が登録されるまで契約を確定しない | **新規追加**(§3.5) |
 | `confirmed` | 契約確定 | 応募者が承諾。稼働待ち/稼働中/稼働終了はここから日付計算 | **`working` からリネーム** |
 | `report_pending` | 評価待ち | 一方が完了報告+評価を提出。もう一方の評価待ち | 変更なし |
 | `completed` | 完了 | 双方の評価が完了 | 変更なし |
@@ -80,10 +81,13 @@ stateDiagram-v2
     applying --> rejected: 発注者が見送り
     applying --> cancelled: 案件中止
 
-    offered --> confirmed: 応募者が承諾
+    offered --> awaiting_approval: 応募者が内定を承諾
     offered --> declined: 応募者が辞退
     offered --> rejected: 発注者がオファー取消
     offered --> cancelled: 案件中止
+
+    awaiting_approval --> confirmed: 発注者が元請けの承諾を登録
+    awaiting_approval --> cancelled: 不承諾 / 承諾期限切れ / 発注者が中止
 
     confirmed --> report_pending: 一方が完了報告＋評価
     confirmed --> disputed: 完了報告＋評価(★2以下)
@@ -115,6 +119,17 @@ stateDiagram-v2
 - 稼働日が単日なら「最初=最終」。
 - 稼働日が未設定のときは「稼働待ち」を既定とする。
 - 「稼働終了(報告待ち)」= 稼働は終わったが、まだ誰も完了報告を出していない状態。完了報告が出た瞬間に保存値が `report_pending` に変わる。
+
+### 3.5 元請け承諾(二次委託の事前承諾)
+
+元請けとの契約では、再委託は事前の書面承諾を得た場合に限られる。そのため応募者が内定を承諾しても**契約は確定せず**、`awaiting_approval` で止める。
+
+- 内定承諾 → `awaiting_approval`(承諾期限 = 最初の稼働日の3日前。`APPROVAL_DEADLINE_DAYS_BEFORE_WORK`)。この間は契約タスク・現場グループチャットを作らず、詳細情報も開示しない。
+- 発注者が「二次委託申請書」を出力して元請けへ提出(アプリ外)。出力日時・注文書番号を記録。
+- 承諾を得たら発注者が**承諾日・承諾者・書面の参照**を登録 → `confirmed`。ここで契約タスク作成・現場グループチャット開設・他候補の見送りを行う。
+- 不承諾、または期限超過(発注側の画面で自動検知)→ `cancelled`(理由を記録、相手に通知)。
+- 記録は `evaluations.jobStates[jobId].approval`(`JobApprovalInfo`)。証憑ファイル自体は保管せず参照情報のみ(ファイル保管は認証・ストレージ整備後)。
+- 元請けの名称はUIに出さない(「元請け」と表記)。実装: `src/utils/subcontractApproval.ts` / `src/components/SubcontractApprovalModal.tsx`。
 
 ### 3.4 契約書承認(稼働待ちのサブフラグ)
 

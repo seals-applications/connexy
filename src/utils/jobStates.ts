@@ -18,6 +18,8 @@ import type { ContractTask } from '../data/mockDb';
 export type EngagementStatusValue =
   | 'applying'
   | 'offered'
+  /** 内定承諾済み・元請けの二次委託承諾(事前の書面承諾)待ち。承諾が登録されるまで契約は確定せず、詳細情報も開示しない */
+  | 'awaiting_approval'
   | 'confirmed'
   | 'working'
   | 'report_pending'
@@ -44,6 +46,35 @@ export interface JobOfferInfo {
   expiresAt?: string;
 }
 
+/**
+ * 二次委託の元請け承諾(事前の書面承諾)の記録。
+ * 承諾そのものは元請けからアプリ外で書面等により得る。ここには「得た」事実と参照情報だけを残す
+ * (証憑の原本は乙が保管する。ファイル保管は認証・ストレージ整備後に別途対応)。
+ */
+export interface JobApprovalInfo {
+  /** 内定承諾により承諾待ちに入った日時(ISO) */
+  startedAt?: string;
+  /** 承諾期限(YYYY-MM-DD)。稼働開始日の N 日前。超過した承諾待ちは自動キャンセル対象 */
+  deadline?: string;
+  /** 二次委託申請書を出力した最終日時(ISO) */
+  requestedAt?: string;
+  /** 元請け注文書番号など、申請書に記載する個別契約の参照(任意入力) */
+  orderRef?: string;
+  /** 承諾を登録した日時(ISO) */
+  approvedAt?: string;
+  /** 元請けが承諾した日(YYYY-MM-DD) */
+  approvalDate?: string;
+  /** 承諾した元請け側の担当者名 */
+  approverName?: string;
+  /** 承諾書面の参照(書面番号・メール件名など) */
+  evidenceRef?: string;
+  /** 承諾の範囲・条件メモ */
+  scopeNote?: string;
+  /** 不承諾を登録した日時(ISO) */
+  rejectedAt?: string;
+  rejectedReason?: string;
+}
+
 export interface JobState {
   status: EngagementStatusValue;
   /** ISO 8601。「最も進んだ状態」が同順位のときの決定と、監査用 */
@@ -56,6 +87,8 @@ export interface JobState {
   staffId?: string;
   /** オファー条件。旧 evaluations.offered* の移設先 */
   offer?: JobOfferInfo;
+  /** 二次委託の元請け承諾の記録(`awaiting_approval` を経由した案件のみ) */
+  approval?: JobApprovalInfo;
 }
 
 export type JobStatesMap = Record<string, JobState>;
@@ -71,11 +104,12 @@ const PROGRESS_RANK: Record<EngagementStatusValue, number> = {
   cancelled: 0,
   applying: 1,
   offered: 2,
-  working: 3,
-  confirmed: 3,
-  report_pending: 4,
-  disputed: 5,
-  completed: 6,
+  awaiting_approval: 3,
+  working: 4,
+  confirmed: 4,
+  report_pending: 5,
+  disputed: 6,
+  completed: 7,
 };
 
 /**
@@ -193,6 +227,12 @@ export function getLinkedStaffIds(evaluations: unknown): string[] {
   return [...ids];
 }
 
+/** 案件 `jobId` の元請け承諾の記録(無ければ空オブジェクト)。 */
+export function getJobApproval(evaluations: unknown, jobId: string): JobApprovalInfo {
+  const e = (evaluations || {}) as { jobStates?: JobStatesMap };
+  return e.jobStates?.[jobId]?.approval || {};
+}
+
 /** 案件 `jobId` のオファー条件。jobStates.offer 優先、無ければ旧 evaluations.offered*。 */
 export function getJobOfferInfo(evaluations: unknown, jobId: string): JobOfferInfo {
   const e = (evaluations || {}) as JobDetailEvals;
@@ -247,6 +287,8 @@ export interface ApplyJobStateOptions {
   staffId?: string;
   /** オファー条件(status='offered' 遷移時に記録) */
   offer?: JobOfferInfo;
+  /** 元請け承諾の記録。既存の記録にマージされる */
+  approval?: JobApprovalInfo;
   /** テスト用。既定は new Date() */
   now?: Date;
 }
@@ -268,7 +310,7 @@ export function applyJobState(
   status: EngagementStatusValue,
   options: ApplyJobStateOptions = {},
 ): ApplyJobStateResult {
-  const { contractApprovalRequired, staffId, offer, now = new Date() } = options;
+  const { contractApprovalRequired, staffId, offer, approval, now = new Date() } = options;
   const base = (evaluations && typeof evaluations === 'object' ? evaluations : {}) as Record<string, unknown>;
   const prev = (base.jobStates as JobStatesMap | undefined) || {};
 
@@ -282,6 +324,7 @@ export function applyJobState(
   }
   if (staffId) nextEntry.staffId = staffId;
   if (offer) nextEntry.offer = { ...nextEntry.offer, ...offer };
+  if (approval) nextEntry.approval = { ...nextEntry.approval, ...approval };
 
   const nextJobStates: JobStatesMap = { ...prev, [jobId]: nextEntry };
   const nextEvaluations = { ...base, jobStates: nextJobStates };

@@ -95,6 +95,16 @@ export function getEngagementStatusLabel(
         color: '#7E22CE', bg: '#F3E8FF',
       };
 
+    case 'awaiting_approval':
+      return {
+        key: 'awaiting_approval',
+        label:
+          viewer === 'client' ? '元請け承諾待ち(要手続き)' :
+          viewer === 'agency' ? '元請け承諾待ち' :
+          '元請け承諾待ち',
+        color: '#0369A1', bg: '#E0F2FE',
+      };
+
     case 'confirmed':
     case 'working': {
       const phase = getWorkPhase(job, today);
@@ -182,6 +192,12 @@ export function getWorkPhase(
   if (t0 < first) return 'before';
   if (t0 > last) return 'after';
   return 'during';
+}
+
+/** 案件の最初の稼働日(無ければ null) */
+export function getFirstWorkDate(job: Pick<Job, 'eventDate' | 'dailyPrices'> | null | undefined): Date | null {
+  const dates = getWorkDates(job);
+  return dates.length > 0 ? dates[0] : null;
 }
 
 /** 案件の稼働日を昇順の Date 配列で返す(eventDate と dailyPrices のキーの両方から) */
