@@ -131,6 +131,15 @@ const anon = clientFor(null);
   check('B: 他社案件の権限付与は不可', !!forgeGrant.error, 'no error');
 }
 
+// --- 契約確定時の契約タスク作成(finalizeSubcontract と同じ形)
+{
+  const row = { id: 'ct_e2e', job_id: 'jE2E', job_title: 'E2E案件', worker_name: 'B担当', company_name: '会社B', client_name: '会社A', price: 20000, date: '2026-11-03', status: 'confirmed', agency_id: 'cB', client_id: 'cA', evaluations: { messages: [] } };
+  const ins = await A.from('contract_tasks').insert([row]);
+  check('A: 掲載者は契約タスクを作れる', !ins.error, JSON.stringify(ins.error));
+  const forged = await B.from('contract_tasks').insert([{ ...row, id: 'ct_forged' }]);
+  check('B: 受注側は契約タスクを作れない', !!forged.error, 'no error');
+}
+
 // --- talents
 {
   const own = await B.from('talents').select('*');
