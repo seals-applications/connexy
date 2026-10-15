@@ -2,6 +2,7 @@ import { supabase } from '../lib/supabase';
 import { encryptData, decryptData } from '../lib/crypto';
 import { regionalJobs } from './regionalJobs';
 import { applyJobState, seedAppliedJobStates, normalizeEngagementStatus } from '../utils/jobStates';
+import { maskJobsForViewer } from '../utils/jobMasking';
 import type { EngagementStatusValue } from '../utils/jobStates';
 
 // ユーザーの型定義
@@ -86,6 +87,8 @@ export interface Job {
   };
   status?: 'active' | 'cancelled';
   jobCode?: string;
+  /** 実行時のみ使う表示用フラグ。true = 詳細情報(店舗名・詳細住所・業務内容等)を伏せた公開版。保存しない */
+  masked?: boolean;
 }
 
 // Hashing function to get consistent job codes for legacy seed jobs
@@ -323,6 +326,7 @@ const unmapJob = (job: Partial<Job>): any => {
   const row: any = { ...job };
   if ('status' in row) delete row.status;
   if ('jobCode' in row) delete row.jobCode;
+  if ('masked' in row) delete row.masked;
   if ('authorId' in job) { row.author_id = job.authorId; delete row.authorId; }
   if ('locationName' in job) { row.location_name = job.locationName; delete row.locationName; }
   if ('workHours' in job) { row.work_hours = job.workHours; delete row.workHours; }
@@ -1076,6 +1080,17 @@ export const api = {
         return list;
       }
     );
+  },
+
+  // ログインユーザー視点の案件一覧。詳細情報(店舗名・詳細住所・業務内容等)は、
+  // 自社案件と、二次委託が確定した案件にだけ含める(それ以外は公開用に伏せる)。
+  getJobsForViewer: async (limit?: number, offset?: number): Promise<Job[]> => {
+    const [jobs, tasks, user] = await Promise.all([
+      api.getJobs(limit, offset),
+      api.getContractTasks(),
+      api.getCurrentUser(),
+    ]);
+    return maskJobsForViewer(jobs, tasks, user);
   },
 
   getTalents: async (limit?: number, offset?: number): Promise<Talent[]> => {

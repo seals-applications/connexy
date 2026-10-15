@@ -5,6 +5,7 @@ import { api } from '../data/mockDb';
 import type { ContractTask, Training, Staff, Job, User } from '../data/mockDb';
 import { getEngagementStatusLabel, getJobListingStatus, getWorkPhase, isContractApproved } from '../utils/statusLabels';
 import { getJobStatus, isJobLinkedToChat, getJobAppliedAt, getJobStaffId, getLinkedStaffIds } from '../utils/jobStates';
+import { getPublicJobTitle, getCarrierLabel, OFFER_DETAILS_PLACEHOLDER } from '../utils/jobMasking';
 import { isDirectChat } from '../utils/contractTaskKind';
 import { calcOfferExpiresAt } from '../utils/offerExpiry';
 
@@ -235,7 +236,7 @@ export function ManagementPage() {
     setTasks(fetchedTasks);
     const fetchedTrainings = await api.getTrainings();
     setTrainings(fetchedTrainings);
-    const fetchedJobs = await api.getJobs();
+    const fetchedJobs = await api.getJobsForViewer();
     setAllJobsList(fetchedJobs);
     const fetchedUsers = await api.getUsers();
     setAllCompanies(fetchedUsers);
@@ -705,7 +706,7 @@ export function ManagementPage() {
       const systemMsg = {
         id: `sys_offer_${Date.now()}`,
         type: 'system',
-        text: `【内定通知】${activeScreeningJob.title} のご契約オファーが送信されました。内容をご確認いただき、承諾または辞退を選択してください。`,
+        text: `【内定通知】${getPublicJobTitle(activeScreeningJob)} のご契約オファーが送信されました。内容をご確認いただき、承諾または辞退を選択してください。`,
         time: new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })
       };
 
@@ -723,7 +724,7 @@ export function ManagementPage() {
         offeredStaffId: confirmingCandidate.staff.id,
         offeredPrice: activeScreeningJob.price,
         offeredDates: activeScreeningJob.eventDate,
-        offeredDetails: activeScreeningJob.description,
+        offeredDetails: OFFER_DETAILS_PLACEHOLDER,
         offeredAt,
         offerExpiresAt: calcOfferExpiresAt(offeredAt),
       };
@@ -731,7 +732,7 @@ export function ManagementPage() {
       await api.saveContractTaskChat(
         channelId,
         newMessages,
-        activeScreeningJob.title,
+        getPublicJobTitle(activeScreeningJob),
         currentUser?.name || '',
         confirmingCandidate.company.name,
         [],
@@ -746,7 +747,7 @@ export function ManagementPage() {
         offer: {
           price: activeScreeningJob.price,
           dates: activeScreeningJob.eventDate,
-          details: activeScreeningJob.description,
+          details: OFFER_DETAILS_PLACEHOLDER,
           offeredAt,
           expiresAt: calcOfferExpiresAt(offeredAt),
         },
@@ -1588,7 +1589,7 @@ export function ManagementPage() {
                           <div style={{ padding: '14px', borderTop: '1px solid #F3F4F6', background: '#F8FAFC', fontSize: '12px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
                             <div><strong>📍 勤務エリア:</strong> {job.locationName || '未指定'} ({job.exactLocation || '住所詳細なし'})</div>
                             <div><strong>📅 開催日日程:</strong> {(job.eventDate ? job.eventDate.split(', ') : []).join(', ')}</div>
-                            <div><strong>💼 条件:</strong> {job.roleType} / {job.carrier} / {job.salesChannel}</div>
+                            <div><strong>💼 条件:</strong> {job.roleType} / {getCarrierLabel(job.carrier)} / {job.salesChannel}</div>
                             {job.detailedDescription && <div><strong>📝 詳細内容:</strong> <div style={{ background: 'var(--surface-color)', padding: '8px', borderRadius: '6px', border: '1px solid #E2E8F0', marginTop: '4px', whiteSpace: 'pre-wrap' }}>{job.detailedDescription}</div></div>}
                             
                             {job.status !== 'cancelled' && !isPast && !isContracted && (
