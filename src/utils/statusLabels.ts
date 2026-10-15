@@ -200,6 +200,16 @@ export function getFirstWorkDate(job: Pick<Job, 'eventDate' | 'dailyPrices'> | n
   return dates.length > 0 ? dates[0] : null;
 }
 
+/** 案件の稼働日を昇順の YYYY-MM-DD 文字列で返す(重複は除く) */
+export function getWorkDateStrings(job: Pick<Job, 'eventDate' | 'dailyPrices'> | null | undefined): string[] {
+  const out: string[] = [];
+  getWorkDates(job).forEach((d) => {
+    const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    if (!out.includes(iso)) out.push(iso);
+  });
+  return out;
+}
+
 /** 案件の稼働日を昇順の Date 配列で返す(eventDate と dailyPrices のキーの両方から) */
 function getWorkDates(job: Pick<Job, 'eventDate' | 'dailyPrices'> | null | undefined): Date[] {
   if (!job) return [];
