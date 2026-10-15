@@ -20,7 +20,7 @@ export function SettingsDrawer({ isOpen, onClose, onLogoutSuccess }: SettingsDra
   const [websiteInput, setWebsiteInput] = useState('');
   const [addressInput, setAddressInput] = useState('');
   const [prInput, setPrInput] = useState('');
-  const [genderInput, setGenderInput] = useState<'男性' | '女性' | 'その他' | '無回答'>('男性');
+  const [genderInput, setGenderInput] = useState<'男性' | '女性' | 'その他' | '無回答'>('無回答');
   const [contractTemplateInput, setContractTemplateInput] = useState('');
   const [contractPdfInput, setContractPdfInput] = useState('');
   const [pdfName, setPdfName] = useState('');
@@ -37,7 +37,7 @@ export function SettingsDrawer({ isOpen, onClose, onLogoutSuccess }: SettingsDra
           setWebsiteInput(user.website || '');
           setAddressInput(user.address || '');
           setPrInput(user.prText || '');
-          setGenderInput((user.gender as any) || '男性');
+          setGenderInput((user.gender as any) || '無回答');
           setContractTemplateInput(user.contractTemplate || '');
           setContractPdfInput(user.contractPdf || '');
           const localPdfName = localStorage.getItem('company_contract_pdf_name_' + user.id) || '';
@@ -348,7 +348,7 @@ export function SettingsDrawer({ isOpen, onClose, onLogoutSuccess }: SettingsDra
                 />
               </div>
               <div className="form-group" style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                <label style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--text-sub)' }}>代表者・担当者の性別</label>
+                <label style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--text-sub)' }}>代表者・担当者の性別(任意)</label>
                 <select 
                   className="form-control" 
                   style={{ padding: '10px', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'var(--surface-color)' }}

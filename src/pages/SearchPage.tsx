@@ -7,6 +7,7 @@ import { api } from '../data/mockDb';
 import type { Job, Talent, Staff, Training, User, ContractTask } from '../data/mockDb';
 import { CalendarPicker } from '../components/CalendarPicker';
 import { formatJobDates } from '../utils/dateFormatter';
+import { hasCurrentConsent } from '../utils/personalData';
 import { extractArea, getCommonAreaName } from '../utils/maskingUtils';
 import { isWithinAreaFilter, distanceKm } from '../utils/areaFilter';
 import { getLinkedJobIds } from '../utils/jobStates';
@@ -34,13 +35,6 @@ export const countRealTrainings = (list?: string[] | null): number => {
 export const PRICE_SLIDER_MIN = 0;
 export const PRICE_SLIDER_MAX = 50000;
 export const PRICE_SLIDER_STEP = 1000;
-
-export const getStaffGender = (name: string): '男性' | '女性' => {
-  const femaleNames = ['舞', '優花', '陽子', '沙織', '美咲', '愛', '結衣', '莉子', '咲良', '葵', 'さくら', 'つばさ'];
-  const firstName = name.split(/[\s　]+/)[1] || name;
-  const isFemale = femaleNames.includes(firstName) || firstName.endsWith('子') || firstName.endsWith('美');
-  return isFemale ? '女性' : '男性';
-};
 
 export function SearchPage() {
   const navigate = useNavigate();
@@ -744,6 +738,11 @@ export function SearchPage() {
       const selectedStaff = myStaffs.find(s => s.id === selectedStaffId);
       if (!selectedStaff) {
         alert('スタッフを選択してください');
+        setIsSubmitting(false);
+        return;
+      }
+      if (!hasCurrentConsent(selectedStaff)) {
+        alert('このスタッフは、個人情報の取扱いについて本人の同意が未確認です。設定のスタッフ管理から同意を記録してください。');
         setIsSubmitting(false);
         return;
       }
@@ -1708,6 +1707,11 @@ export function SearchPage() {
 
   const handleJobApplication = async () => {
     if (!currentUser || !selectedJob) return;
+    const applyingStaff = myStaffs.find(s => s.id === selectedStaffId);
+    if (applyingStaff && !hasCurrentConsent(applyingStaff)) {
+      alert('このスタッフは、個人情報の取扱いについて本人の同意が未確認です。設定のスタッフ管理から同意を記録してください。');
+      return;
+    }
     
     const sortedIds = [currentUser.id, selectedJob.authorId].sort();
     const roomId = `chat_${sortedIds[0]}_${sortedIds[1]}`;
@@ -2870,7 +2874,7 @@ export function SearchPage() {
                     >
                       {myStaffs.map(staff => (
                         <option key={staff.id} value={staff.id}>
-                          {staff.name} ({staff.carriers.map(getCarrierLabel).join(', ') || 'キャリア未指定'})
+                          {staff.name} ({staff.carriers.map(getCarrierLabel).join(', ') || 'キャリア未指定'}){hasCurrentConsent(staff) ? '' : ' ※個人情報の同意未確認'}
                         </option>
                       ))}
                     </select>
@@ -2918,10 +2922,12 @@ export function SearchPage() {
                               <span style={{ color: 'var(--text-sub)', fontSize: '10px', display: 'block' }}>拠点 / 最寄り駅</span>
                               <strong>{selectedStaff.baseLocation}</strong> ({selectedStaff.nearestStation || '未指定'})
                             </div>
-                            <div>
-                              <span style={{ color: 'var(--text-sub)', fontSize: '10px', display: 'block' }}>性別</span>
-                              <strong>{getStaffGender(selectedStaff.name)}</strong>
-                            </div>
+                            {selectedStaff.gender && (
+                              <div>
+                                <span style={{ color: 'var(--text-sub)', fontSize: '10px', display: 'block' }}>性別(登録情報)</span>
+                                <strong>{selectedStaff.gender}</strong>
+                              </div>
+                            )}
                             <div>
                               <span style={{ color: 'var(--text-sub)', fontSize: '10px', display: 'block' }}>対応スキル</span>
                               <strong>{selectedStaff.skills.join(', ') || '一般'}</strong>
@@ -2977,9 +2983,9 @@ export function SearchPage() {
               <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
                 <button onClick={() => { setIsNdaModalOpen(false); setNdaAgreed(false); }} style={{ flex: 1, padding: '12px', background: '#F1F5F9', border: 'none', borderRadius: '8px', fontWeight: 'bold', color: '#475569', cursor: 'pointer' }}>キャンセル</button>
                 <button 
-                  disabled={!ndaAgreed} 
+                  disabled={!ndaAgreed || (!!myStaffs.find(s => s.id === selectedStaffId) && !hasCurrentConsent(myStaffs.find(s => s.id === selectedStaffId)))} 
                   onClick={handleJobApplication}
-                  style={{ flex: 1, padding: '12px', background: ndaAgreed ? 'var(--primary)' : '#94A3B8', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: ndaAgreed ? 'pointer' : 'not-allowed', transition: 'all 0.2s' }}
+                  style={{ flex: 1, padding: '12px', background: ndaAgreed && !(myStaffs.find(s => s.id === selectedStaffId) && !hasCurrentConsent(myStaffs.find(s => s.id === selectedStaffId))) ? 'var(--primary)' : '#94A3B8', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: ndaAgreed ? 'pointer' : 'not-allowed', transition: 'all 0.2s' }}
                 >
                   同意して応募
                 </button>
@@ -3430,7 +3436,7 @@ export function SearchPage() {
                       style={{ padding: '12px', borderRadius: '8px', border: '1px solid #ccc', background: 'var(--surface-color)', fontSize: '15px' }}
                     >
                       {myStaffs.map(staff => (
-                        <option key={staff.id} value={staff.id}>{staff.name} ({staff.maskedName}) - {staff.baseLocation}</option>
+                        <option key={staff.id} value={staff.id}>{staff.name} ({staff.maskedName}) - {staff.baseLocation}{hasCurrentConsent(staff) ? '' : ' ※個人情報の同意未確認'}</option>
                       ))}
                     </select>
                   ) : (

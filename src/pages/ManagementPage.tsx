@@ -7,6 +7,9 @@ import { getEngagementStatusLabel, getJobListingStatus, getWorkPhase, isContract
 import { getJobStatus, isJobLinkedToChat, getJobAppliedAt, getJobStaffId, getLinkedStaffIds } from '../utils/jobStates';
 import { getPublicJobTitle, getCarrierLabel, OFFER_DETAILS_PLACEHOLDER } from '../utils/jobMasking';
 import { isDirectChat } from '../utils/contractTaskKind';
+import { hasCurrentConsent, newConsent } from '../utils/personalData';
+import { PersonalDataConsentBox } from '../components/PersonalDataConsentBox';
+import { AUTH_MODE } from '../lib/supabase';
 import { calcOfferExpiresAt } from '../utils/offerExpiry';
 
 const quizData: Record<string, Array<{ question: string, options: string[], answer: number }>> = {
@@ -187,8 +190,9 @@ export function ManagementPage() {
     password: '',
     furigana: '',
     commuteMethod: '公共交通機関' as '公共交通機関' | '自家用車',
-    gender: '男性' as '男性' | '女性',
-    birthday: ''
+    gender: '' as '' | '男性' | '女性' | 'その他',
+    birthday: '',
+    consent: false
   });
 
   const [editFormData, setEditFormData] = useState({
@@ -201,8 +205,9 @@ export function ManagementPage() {
     password: '',
     furigana: '',
     commuteMethod: '公共交通機関' as '公共交通機関' | '自家用車',
-    gender: '男性' as '男性' | '女性',
-    birthday: ''
+    gender: '' as '' | '男性' | '女性' | 'その他',
+    birthday: '',
+    consent: false
   });
 
 
@@ -850,8 +855,9 @@ export function ManagementPage() {
         password: formData.password,
         furigana: formData.furigana,
         commuteMethod: formData.commuteMethod,
-        gender: formData.gender,
-        birthday: formData.birthday
+        gender: formData.gender || undefined,
+        birthday: formData.birthday,
+        personalDataConsent: formData.consent ? newConsent() : undefined
       };
 
       await api.addStaff(newStaff);
@@ -867,8 +873,9 @@ export function ManagementPage() {
         password: '',
         furigana: '',
         commuteMethod: '公共交通機関',
-        gender: '男性',
-        birthday: ''
+        gender: '',
+        birthday: '',
+        consent: false
       });
 
       setShowAddStaffOverlay(false);
@@ -900,8 +907,9 @@ export function ManagementPage() {
       password: staff.password || '',
       furigana: staff.furigana || '',
       commuteMethod: staff.commuteMethod || '公共交通機関',
-      gender: staff.gender || '男性',
-      birthday: staff.birthday || ''
+      gender: staff.gender || '',
+      birthday: staff.birthday || '',
+      consent: false
     });
     setShowEditStaffOverlay(true);
   };
@@ -928,8 +936,9 @@ export function ManagementPage() {
         password: editFormData.password,
         furigana: editFormData.furigana,
         commuteMethod: editFormData.commuteMethod,
-        gender: editFormData.gender,
-        birthday: editFormData.birthday
+        gender: editFormData.gender || undefined,
+        birthday: editFormData.birthday,
+        ...(editFormData.consent ? { personalDataConsent: newConsent() } : {})
       };
 
       await api.updateStaff(editingStaff.id, updatedFields);
@@ -1655,13 +1664,16 @@ export function ManagementPage() {
                         <span style={{ background: s.role === 'admin' ? '#E0F2FE' : '#F1F5F9', color: s.role === 'admin' ? '#0369A1' : '#475569', padding: '1px 5px', borderRadius: '4px', fontSize: '9px', fontWeight: 'bold' }}>
                           {s.role === 'admin' ? '管理者' : '一般'}
                         </span>
+                        {!hasCurrentConsent(s) && (
+                          <span title="従事者の個人情報の取扱いについて、本人の同意が未確認です。編集から記録してください。" style={{ background: '#FEF3C7', color: '#B45309', padding: '1px 5px', borderRadius: '4px', fontSize: '9px', fontWeight: 'bold' }}>個人情報の同意 未確認</span>
+                        )}
                       </div>
                       <div style={{ fontSize: '11px', color: 'var(--text-sub)', marginTop: '4px' }}>
                         拠点: {s.baseLocation} / スキル: {s.skills.join(', ')}
                       </div>
                       {s.loginId && (
                         <div style={{ fontSize: '10px', color: '#64748B', marginTop: '4px', background: '#F8FAFC', padding: '2px 6px', borderRadius: '4px', display: 'inline-block' }}>
-                          ID: <strong>{s.loginId}</strong> / PW: <strong>{s.password}</strong>
+                          ID: <strong>{s.loginId}</strong>{s.password ? <> / PW: <strong>{s.password}</strong></> : null}
                         </div>
                       )}
                     </div>
@@ -2578,10 +2590,12 @@ export function ManagementPage() {
 
               <div style={{ display: 'flex', gap: '10px' }}>
                 <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                  <label style={{ fontSize: '12px', fontWeight: 'bold' }}>性別 *</label>
-                  <select value={formData.gender} onChange={e => setFormData({ ...formData, gender: e.target.value as '男性' | '女性' })} style={{ padding: '8px', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'var(--surface-color)' }}>
+                  <label style={{ fontSize: '12px', fontWeight: 'bold' }}>性別(任意)</label>
+                  <select value={formData.gender} onChange={e => setFormData({ ...formData, gender: e.target.value as '' | '男性' | '女性' | 'その他' })} style={{ padding: '8px', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'var(--surface-color)' }}>
+                    <option value="">回答しない</option>
                     <option value="男性">男性</option>
                     <option value="女性">女性</option>
+                    <option value="その他">その他</option>
                   </select>
                 </div>
                 <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
@@ -2607,6 +2621,8 @@ export function ManagementPage() {
                   <option value="自家用車">自家用車</option>
                 </select>
               </div>
+
+              <PersonalDataConsentBox required checked={formData.consent} onChange={(v) => setFormData({ ...formData, consent: v })} />
 
               <button type="submit" disabled={staffSaving} style={{ padding: '12px', border: 'none', borderRadius: '8px', background: 'var(--primary)', color: 'white', fontWeight: 'bold', fontSize: '14px', cursor: 'pointer', marginTop: '10px' }}>
                 {staffSaving ? '登録中...' : '登録を完了する'}
@@ -2635,7 +2651,7 @@ export function ManagementPage() {
                 </div>
                 <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
                   <label style={{ fontSize: '12px', fontWeight: 'bold' }}>パスワード *</label>
-                  <input type="password" required value={editFormData.password} onChange={e => setEditFormData({ ...editFormData, password: e.target.value })} style={{ padding: '8px', borderRadius: '6px', border: '1px solid var(--border-color)' }} />
+                  <input type="password" required={!AUTH_MODE} placeholder={AUTH_MODE ? '変更する場合のみ入力' : undefined} value={editFormData.password} onChange={e => setEditFormData({ ...editFormData, password: e.target.value })} style={{ padding: '8px', borderRadius: '6px', border: '1px solid var(--border-color)' }} />
                 </div>
               </div>
 
@@ -2653,6 +2669,18 @@ export function ManagementPage() {
                 <label style={{ fontSize: '12px', fontWeight: 'bold' }}>拠点住所 *</label>
                 <input type="text" required value={editFormData.baseLocation} onChange={e => setEditFormData({ ...editFormData, baseLocation: e.target.value })} style={{ padding: '8px', borderRadius: '6px', border: '1px solid var(--border-color)' }} />
               </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <label style={{ fontSize: '12px', fontWeight: 'bold' }}>性別(任意)</label>
+                <select value={editFormData.gender} onChange={e => setEditFormData({ ...editFormData, gender: e.target.value as '' | '男性' | '女性' | 'その他' })} style={{ padding: '8px', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'var(--surface-color)' }}>
+                  <option value="">回答しない</option>
+                  <option value="男性">男性</option>
+                  <option value="女性">女性</option>
+                  <option value="その他">その他</option>
+                </select>
+              </div>
+
+              <PersonalDataConsentBox existing={editingStaff.personalDataConsent} checked={editFormData.consent} onChange={(v) => setEditFormData({ ...editFormData, consent: v })} />
 
               <button type="submit" disabled={staffSaving} style={{ padding: '12px', border: 'none', borderRadius: '8px', background: 'var(--primary)', color: 'white', fontWeight: 'bold', fontSize: '14px', cursor: 'pointer', marginTop: '10px' }}>
                 {staffSaving ? '保存中...' : '変更を保存する'}

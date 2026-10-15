@@ -4411,7 +4411,7 @@ export function MessagePage() {
                   </div>
                   
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '12px', borderTop: '1px solid #F1F5F9', paddingTop: '12px' }}>
-                    <div><strong>代表者/担当者:</strong> {clickedCompanyProfile.representativeName || '未登録'} ({clickedCompanyProfile.gender || '男性'})</div>
+                    <div><strong>代表者/担当者:</strong> {clickedCompanyProfile.representativeName || '未登録'}</div>
                     {clickedCompanyProfile.email && <div><strong>メールアドレス:</strong> {clickedCompanyProfile.email}</div>}
                     <div><strong>電話番号:</strong> {clickedCompanyProfile.phone || '090-1234-5678'}</div>
                     {clickedCompanyProfile.website && (
@@ -4447,10 +4447,13 @@ export function MessagePage() {
                           : (clickedStaffProfile.maskedName || 'パートナー登録メンバー')}
                       </h4>
                       <div style={{ display: 'flex', gap: '4px', marginTop: '4px' }}>
-                        <span style={{ fontSize: '10px', background: '#F1F5F9', color: '#475569', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold' }}>
-                          {clickedStaffProfile.gender || '男性'}
-                        </span>
-                        {clickedStaffProfile.birthday && (
+                        {/* 性別・年齢は自社のスタッフにだけ表示する(他社には出さない。推測表示もしない) */}
+                        {clickedStaffProfile.userId === currentUser?.id && clickedStaffProfile.gender && (
+                          <span style={{ fontSize: '10px', background: '#F1F5F9', color: '#475569', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold' }}>
+                            {clickedStaffProfile.gender}
+                          </span>
+                        )}
+                        {clickedStaffProfile.userId === currentUser?.id && clickedStaffProfile.birthday && (
                           <span style={{ fontSize: '10px', background: '#F1F5F9', color: '#475569', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold' }}>
                             {new Date().getFullYear() - new Date(clickedStaffProfile.birthday).getFullYear()}歳
                           </span>
