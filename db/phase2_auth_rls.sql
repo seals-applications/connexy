@@ -37,6 +37,33 @@ alter table public.companies add column if not exists antisocial_version   text;
 
 alter table public.staffs add column if not exists role text not null default 'staff';
 alter table public.staffs add column if not exists login_id text;  -- 移行スクリプトが読む。移行後に phase2_drop_plaintext.sql で削除
+alter table public.staffs  add column if not exists has_certificate boolean;
+alter table public.talents add column if not exists has_certificate boolean;
+
+-- 契約タスク(チャット含む)の当事者ID。本番にはこの列が無かった(アプリは会社名で推定していた)。RLS はこの列で当事者を判定する。
+alter table public.contract_tasks add column if not exists client_id    text;
+alter table public.contract_tasks add column if not exists agency_id    text;
+alter table public.contract_tasks add column if not exists company_name text;
+
+-- 既存行の補完(null のものだけ)
+--   直接チャット chat_<A>_<B>: 発注側=A / 受注側=B(アプリが作成時に使う規則と同じ)
+update public.contract_tasks t
+   set client_id = coalesce(t.client_id, split_part(t.id, '_', 2)),
+       agency_id = coalesce(t.agency_id, split_part(t.id, '_', 3))
+ where t.id like 'chat\_%' and t.id not like 'chat\_group\_%' and (t.client_id is null or t.agency_id is null);
+--   現場グループ chat_group_<案件ID>_<受注会社ID>: 発注側=案件の掲載者
+update public.contract_tasks t
+   set client_id = coalesce(t.client_id, j.author_id),
+       agency_id = coalesce(t.agency_id, (regexp_match(t.id, '_([^_]+)$'))[1])
+  from public.jobs j
+ where t.id like 'chat\_group\_%'
+   and j.id = (regexp_match(t.id, '^chat_group_(.+)_[^_]+$'))[1]
+   and (t.client_id is null or t.agency_id is null);
+--   契約タスク(task_* / ct_*): 会社名から会社IDを引く
+update public.contract_tasks t
+   set client_id = coalesce(t.client_id, (select c.id from public.companies c where c.name = t.client_name  limit 1)),
+       agency_id = coalesce(t.agency_id, (select c.id from public.companies c where c.name = t.company_name limit 1))
+ where t.id not like 'chat\_%' and (t.client_id is null or t.agency_id is null);
 
 -- ----------------------------------------------------------------------------
 -- 1. アカウント(auth.users ⇔ 会社/スタッフ)

@@ -66,6 +66,10 @@ select t.eq('migrate: j1 の秘密が移行された', (select detailed_descript
 select t.eq('migrate: job_access (j1,cB) が作られた', (select count(*) from public.job_access where job_id = 'j1' and company_id = 'cB')::int, 1);
 select t.eq('migrate: グループチャットの担当 sB2 が移行', (select staff_ids from public.job_access where job_id = 'j1' and company_id = 'cB'), array['sB2']);
 
+select t.eq('migrate: 旧チャットの当事者IDが補完された', (select client_id || '>' || agency_id from public.contract_tasks where id = 'chat_cA_cB'), 'cA>cB');
+select t.eq('migrate: 旧グループの当事者IDが補完された', (select client_id || '>' || agency_id from public.contract_tasks where id = 'chat_group_j1_cB'), 'cA>cB');
+select t.eq('migrate: 旧契約タスクは会社名から補完された', (select client_id || '>' || agency_id from public.contract_tasks where id = 'ct1'), 'cA>cB');
+
 -- ---- anon: 何も不可 ----
 select t.as_anon();
 select t.throws('anon: companies 読めない', 'select id from public.companies');

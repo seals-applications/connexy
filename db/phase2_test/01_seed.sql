@@ -20,10 +20,10 @@ insert into public.talents (id, name, user_id, masked_name, company_name, price)
   ('tB', '山田太郎', 'cB', 'Y.T', '会社B', 20000);
 
 -- j1 は B に二次委託確定(B担当 sB2 が割当、旧データ: 誓約なし)。直接チャット cA-cB、cC は無関係。
-insert into public.contract_tasks (id, job_id, client_id, agency_id, client_name, worker_name, status, evaluations) values
-  ('ct1', 'j1', 'cA', 'cB', '会社A', 'B担当', 'confirmed', '{}'),
-  ('chat_cA_cB', 'chat', 'cA', 'cB', '会社A', '会社B', 'chatting', '{"jobStates":{"j1":{"status":"confirmed","staffId":"sB2"}}}'),
-  ('chat_cA_cC', 'chat', 'cA', 'cC', '会社A', '会社C', 'chatting', '{}'),
-  ('chat_group_j1_cB', 'chat', 'cA', 'cB', '会社A', '現場', 'confirmed', '{"assignedStaffIds":["sB2"]}');
+insert into public.contract_tasks (id, job_id, client_name, worker_name, company_name, status, evaluations) values
+  ('ct1', 'j1', '会社A', 'B担当', '会社B', 'confirmed', '{}'),
+  ('chat_cA_cB', 'chat', '会社A', '会社B', null, 'chatting', '{"jobStates":{"j1":{"status":"confirmed","staffId":"sB2"}}}'),
+  ('chat_cA_cC', 'chat', '会社A', '会社C', null, 'chatting', '{}'),
+  ('chat_group_j1_cB', 'chat', '会社A', '現場', null, 'confirmed', '{"assignedStaffIds":["sB2"]}');
 
 insert into public.announcements (id, title) values ('n1', 'お知らせ');

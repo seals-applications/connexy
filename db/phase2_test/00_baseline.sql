@@ -23,7 +23,7 @@ create table public.companies (
 create table public.staffs (
   id text primary key, user_id text references public.companies(id), name text, phone text,
   masked_name text, base_location text, nearest_station text, preferred_area text, price numeric,
-  skills text[], carriers text[], experience text, pr_text text, has_certificate boolean,
+  skills text[], carriers text[], experience text, pr_text text,
   completed_trainings text[], login_id text, password text, role text
 );
 create table public.jobs (
@@ -38,10 +38,10 @@ create table public.talents (
   id text primary key, name text, description text, lat double precision, lng double precision,
   user_id text references public.companies(id), price numeric, skills text[], pr_text text, experience text,
   preferred_area text, location_name text, company_name text, masked_name text, base_location text,
-  nearest_station text, carriers text[], available_dates text, completed_trainings text[], has_certificate boolean
+  nearest_station text, carriers text[], available_dates text, completed_trainings text[]
 );
 create table public.contract_tasks (
-  id text primary key, job_id text, client_id text, agency_id text, client_name text, worker_name text,
+  id text primary key, job_id text, job_title text, client_name text, worker_name text, company_name text, price numeric, date text,
   status text, evaluations jsonb
 );
 create table public.announcements (id text primary key, title text, body text);
