@@ -7,9 +7,10 @@ import { api } from '../data/mockDb';
 import type { Job, Talent, Staff, Training, User, ContractTask } from '../data/mockDb';
 import { CalendarPicker } from '../components/CalendarPicker';
 import { formatJobDates } from '../utils/dateFormatter';
-import { generateMaskedLocation, extractArea, getCommonAreaName } from '../utils/maskingUtils';
+import { extractArea, getCommonAreaName } from '../utils/maskingUtils';
 import { isWithinAreaFilter, distanceKm } from '../utils/areaFilter';
 import { getLinkedJobIds } from '../utils/jobStates';
+import { maskJobsForViewer, getCarrierLabel, generateJobTitle, getPublicLocationName, containsBrandName, findBrandNames, SECRET_DETAIL_NOTICE } from '../utils/jobMasking';
 import { PREFECTURE_REGIONS, ALL_PREFECTURES, getCityArea, matchesPrefectureFilter } from '../utils/prefectures';
 import Autocomplete from 'react-google-autocomplete';
 import { useSessionState } from '../hooks/useSessionState';
@@ -127,7 +128,7 @@ export function SearchPage() {
   const [isCreateFormOpen, setIsCreateFormOpen] = useState(false);
   const [createFormType, setCreateFormType] = useState<'job' | 'talent'>('job');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isEditingLocationName, setIsEditingLocationName] = useState(false);
+  const [, setIsEditingLocationName] = useState(false);
   const [mapSelectionKey, setMapSelectionKey] = useState(0);
   
   // スタッフ関連のState
@@ -440,7 +441,7 @@ export function SearchPage() {
         api.getUsers(),
         api.getContractTasks()
       ]);
-      setJobs(fetchedJobs);
+      setJobs(maskJobsForViewer(fetchedJobs, fetchedContractTasks, user));
       setTalents(fetchedTalents);
       setAllTrainings(fetchedTrainings);
       setCurrentUser(user);
@@ -468,7 +469,7 @@ export function SearchPage() {
 
   const downloadCsvTemplate = () => {
     const header = mode === 'job' 
-      ? 'title,description,locationName,price,eventDate\n案件タイトル,案件詳細,東京都新宿区...,15000,2024-12-01'
+      ? 'title,description,locationName,price,eventDate\n(自動生成のため空欄可),案件詳細(キャリア名は書かない),東京都新宿区...,15000,2024-12-01'
       : 'name,skills,baseLocation,price,experience\n人材 太郎,営業,東京都新宿区,15000,3年';
     const blob = new Blob([new Uint8Array([0xEF, 0xBB, 0xBF]), header], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
@@ -516,9 +517,10 @@ export function SearchPage() {
               parsedData.push({
                 id: 'job_' + Date.now() + '_' + i,
                 authorId: currentUser.id,
-                title: cols[0] || '(不明)',
+                title: generateJobTitle({ locationName: getPublicLocationName(cols[2]), eventDate: cols[4] }),
                 description: cols[1] || '',
-                locationName: cols[2] || '',
+                locationName: getPublicLocationName(cols[2] || ''),
+                exactLocation: cols[2] || '',
                 lat: 35.68,
                 lng: 139.76,
                 price: parseInt(cols[3]) || 0,
@@ -527,15 +529,17 @@ export function SearchPage() {
               continue;
             }
             // Validation
-            if (!cols[0]) errors.push({ rowIndex, message: 'タイトルが空です' });
             if (!cols[3] || isNaN(parseInt(cols[3]))) errors.push({ rowIndex, message: '単価が不正です' });
+            if (containsBrandName(cols[1])) errors.push({ rowIndex, message: '業務内容にキャリア・元請けの名称（' + findBrandNames(cols[1]).join('、') + '）が含まれています' });
 
             const newJob: Job = {
               id: 'job_' + Date.now() + '_' + i,
               authorId: currentUser.id,
-              title: cols[0],
+              // タイトルは自動生成(店舗名などを公開しない)
+              title: generateJobTitle({ locationName: getPublicLocationName(cols[2]), eventDate: cols[4] }),
               description: cols[1],
-              locationName: cols[2],
+              locationName: getPublicLocationName(cols[2]),
+              exactLocation: cols[2],
               lat: 35.68 + (Math.random() * 0.1), // モック処理
               lng: 139.76 + (Math.random() * 0.1),
               price: parseInt(cols[3]) || 0,
@@ -646,6 +650,12 @@ export function SearchPage() {
       return;
     }
 
+    if (createFormType === 'job' && containsBrandName(formData.description)) {
+      alert('業務内容にキャリア・元請けの名称（' + findBrandNames(formData.description).join('、') + '）が含まれています。名称を除いて記載してください。');
+      setIsSubmitting(false);
+      return;
+    }
+
     let ambiguousCoords = { lat: 35.6812, lng: 139.7671 };
     let exactCoords = tempSelectedLocation || { lat: 35.6812, lng: 139.7671 };
 
@@ -664,10 +674,11 @@ export function SearchPage() {
       const totalPrice = Object.values(dailyPrices).reduce((sum, val) => sum + val, 0);
 
       const newJob: Omit<Job, 'id'> = {
-        title: formData.title,
+        // タイトルは自動生成(店舗名などを公開しない)。公開地名も住所から市区までを再生成して確実に伏せる
+        title: generateJobTitle({ locationName: getPublicLocationName(formData.exactLocation || formData.locationName), roleType: formData.roleType, eventDate: [...selectedJobDates].sort().join(', ') }),
         description: formData.description,
         price: totalPrice,
-        locationName: formData.locationName,
+        locationName: getPublicLocationName(formData.exactLocation || formData.locationName),
         exactLocation: formData.exactLocation,
         lat: ambiguousCoords.lat,
         lng: ambiguousCoords.lng,
@@ -882,7 +893,7 @@ export function SearchPage() {
           api.getUsers(),
           api.getContractTasks()
         ]);
-        setJobs(fetchedJobs);
+        setJobs(maskJobsForViewer(fetchedJobs, fetchedContractTasks, user));
         setTalents(fetchedTalents);
         setAllTrainings(fetchedTrainings);
         setCurrentUser(user);
@@ -992,7 +1003,7 @@ export function SearchPage() {
         setFormData(prev => ({ 
           ...prev, 
           exactLocation: addressText,
-          locationName: generateMaskedLocation(addressText, addressText, prev.salesChannel, prev.carrier, prev.workLocation)
+          locationName: getPublicLocationName(addressText)
         }));
         setTempSelectedLocation({ lat, lng });
         setMapSelectionKey(k => k + 1);
@@ -1002,7 +1013,7 @@ export function SearchPage() {
         setFormData(prev => ({ 
           ...prev, 
           exactLocation: fallbackText,
-          locationName: generateMaskedLocation(fallbackText, fallbackText, prev.salesChannel, prev.carrier, prev.workLocation)
+          locationName: getPublicLocationName(fallbackText)
         }));
         setTempSelectedLocation({ lat, lng });
         setMapSelectionKey(k => k + 1);
@@ -2112,7 +2123,7 @@ export function SearchPage() {
                       ))}
                       {filterCarriers.map(carrier => (
                         <div key={carrier} className="filter-chip">
-                          <span>{carrier}</span>
+                          <span>{getCarrierLabel(carrier)}</span>
                           <button onClick={() => setFilterCarriers(prev => prev.filter(c => c !== carrier))}>
                             <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>close</span>
                           </button>
@@ -2173,7 +2184,7 @@ export function SearchPage() {
                       ))}
                       {filterTalentCarriers.map(carrier => (
                         <div key={carrier} className="filter-chip">
-                          <span>{carrier}</span>
+                          <span>{getCarrierLabel(carrier)}</span>
                           <button onClick={() => setFilterTalentCarriers(prev => prev.filter(c => c !== carrier))}>
                             <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>close</span>
                           </button>
@@ -2299,7 +2310,7 @@ export function SearchPage() {
                     </div>
 
                     <div className="job-tags-container">
-                      {job.carrier && <span className="modern-tag tag-carrier">{job.carrier}</span>}
+                      {job.carrier && <span className="modern-tag tag-carrier">{getCarrierLabel(job.carrier)}</span>}
                       {job.salesChannel && <span className="modern-tag tag-channel">{job.salesChannel}</span>}
                       {job.roleType && <span className="modern-tag tag-role">{job.roleType}</span>}
                     </div>
@@ -2392,7 +2403,7 @@ export function SearchPage() {
 
                           <div className="job-tags-container" style={{ marginTop: '8px' }}>
                             {talent.carriers?.map(carrier => (
-                              <span key={carrier} className="modern-tag tag-carrier">{carrier}</span>
+                              <span key={carrier} className="modern-tag tag-carrier">{getCarrierLabel(carrier)}</span>
                             ))}
                             {talent.skills.map(skill => (
                               <span key={skill} className="modern-tag tag-location">{skill}</span>
@@ -2486,7 +2497,7 @@ export function SearchPage() {
                 
                 <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap' }}>
                   {selectedTalent.carriers?.map(carrier => (
-                    <span key={carrier} style={{ fontSize: '12px', padding: '4px 10px', background: '#E0E7FF', color: '#4338CA', borderRadius: '4px', fontWeight: 'bold' }}>{carrier}</span>
+                    <span key={carrier} style={{ fontSize: '12px', padding: '4px 10px', background: '#E0E7FF', color: '#4338CA', borderRadius: '4px', fontWeight: 'bold' }}>{getCarrierLabel(carrier)}</span>
                   ))}
                   {selectedTalent.skills.map(skill => (
                     <span key={skill} style={{ fontSize: '12px', padding: '4px 10px', background: '#F3F4F6', color: '#4B5563', borderRadius: '16px' }}>{skill}</span>
@@ -2613,7 +2624,7 @@ export function SearchPage() {
             <>
               <div style={{ background: 'var(--surface-color)', padding: '24px 16px', borderBottom: '1px solid var(--border-color)' }}>
                 <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '12px' }}>
-                  {selectedJob.carrier && <span style={{ fontSize: '12px', padding: '4px 10px', background: '#E0E7FF', color: '#4338CA', borderRadius: '16px', fontWeight: 'bold' }}>{selectedJob.carrier}</span>}
+                  {selectedJob.carrier && <span style={{ fontSize: '12px', padding: '4px 10px', background: '#E0E7FF', color: '#4338CA', borderRadius: '16px', fontWeight: 'bold' }}>{getCarrierLabel(selectedJob.carrier)}</span>}
                   {selectedJob.salesChannel && <span style={{ fontSize: '12px', padding: '4px 10px', background: '#FEF3C7', color: '#D97706', borderRadius: '16px', fontWeight: 'bold' }}>{selectedJob.salesChannel}</span>}
                   {selectedJob.roleType && <span style={{ fontSize: '12px', padding: '4px 10px', background: '#DCFCE7', color: '#15803D', borderRadius: '16px', fontWeight: 'bold' }}>{selectedJob.roleType}</span>}
                   {selectedJob.workLocation && <span style={{ fontSize: '12px', padding: '4px 10px', background: '#F3F4F6', color: '#374151', borderRadius: '16px' }}>{selectedJob.workLocation}</span>}
@@ -2717,6 +2728,11 @@ export function SearchPage() {
                   勤務エリア
                 </h3>
                 <p style={{ margin: 0, fontSize: '15px' }}>{selectedJob.locationName || '記載なし'}</p>
+                {selectedJob.masked ? (
+                  <p style={{ margin: '6px 0 0 0', fontSize: '12px', color: 'var(--text-sub)' }}>店舗名・詳細住所は二次委託の確定後に開示されます。</p>
+                ) : selectedJob.exactLocation ? (
+                  <p style={{ margin: '8px 0 0 0', fontSize: '13px', color: '#334155' }}><strong>店舗名・住所:</strong> {selectedJob.exactLocation}</p>
+                ) : null}
               </div>
 
               <div style={{ background: 'var(--surface-color)', padding: '16px', marginTop: '8px', borderTop: '1px solid var(--border-color)', borderBottom: '1px solid var(--border-color)' }}>
@@ -2750,7 +2766,14 @@ export function SearchPage() {
                   <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>description</span>
                   業務内容の詳細
                 </h3>
-                <p style={{ margin: 0, fontSize: '14px', lineHeight: '1.6', whiteSpace: 'pre-line' }}>{selectedJob.detailedDescription || selectedJob.description}</p>
+                {selectedJob.masked ? (
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', background: '#F0F9FF', border: '1px solid #BAE6FD', borderRadius: '8px', padding: '12px', fontSize: '13px', color: '#075985', lineHeight: '1.6' }}>
+                    <span className="material-symbols-outlined" style={{ fontSize: '18px', color: '#0284C7' }}>lock</span>
+                    <span>{SECRET_DETAIL_NOTICE}</span>
+                  </div>
+                ) : (
+                  <p style={{ margin: 0, fontSize: '14px', lineHeight: '1.6', whiteSpace: 'pre-line' }}>{selectedJob.detailedDescription || selectedJob.description}</p>
+                )}
               </div>
             </>
           )}
@@ -2796,7 +2819,7 @@ export function SearchPage() {
                 応募の確認と秘密保持
               </h3>
               <p style={{ fontSize: '13px', color: '#64748B', margin: 0, lineHeight: '1.5' }}>
-                マッチング成立後、正確な店舗情報・連絡先等がアプリ上で開示されます。情報漏洩には十分ご注意ください。
+                元請けの承諾により二次委託が確定した後に、正確な店舗情報・連絡先等がアプリ上で開示されます。それまでは公開されている範囲の情報のみです。情報漏洩には十分ご注意ください。
               </p>
               
               {/* 提案スタッフの選択 */}
@@ -2824,7 +2847,7 @@ export function SearchPage() {
                     >
                       {myStaffs.map(staff => (
                         <option key={staff.id} value={staff.id}>
-                          {staff.name} ({staff.carriers.join(', ') || 'キャリア未指定'})
+                          {staff.name} ({staff.carriers.map(getCarrierLabel).join(', ') || 'キャリア未指定'})
                         </option>
                       ))}
                     </select>
@@ -2882,7 +2905,7 @@ export function SearchPage() {
                             </div>
                             <div>
                               <span style={{ color: 'var(--text-sub)', fontSize: '10px', display: 'block' }}>対応キャリア</span>
-                              <strong>{selectedStaff.carriers.join(', ') || 'キャリア未指定'}</strong>
+                              <strong>{selectedStaff.carriers.map(getCarrierLabel).join(', ') || 'キャリア未指定'}</strong>
                             </div>
                           </div>
 
@@ -2983,18 +3006,31 @@ export function SearchPage() {
                   </div>
 
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                    <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)' }}>案件タイトル *</label>
-                    <input type="text" required value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} disabled={isSubmitting} style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }} placeholder="例: auショップ新宿 イベントスタッフ" />
+                    <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)' }}>案件タイトル（自動生成）</label>
+                    <div style={{ padding: '10px', borderRadius: '4px', border: '1px dashed #CBD5E1', background: '#F8FAFC', fontSize: '13px', color: '#334155' }}>
+                      {generateJobTitle({ locationName: formData.locationName, roleType: formData.roleType, eventDate: [...selectedJobDates].sort().join(', ') })}
+                    </div>
+                    <span style={{ fontSize: '11px', color: 'var(--text-sub)' }}>
+                      店舗名などが公開されないよう、タイトルは「エリア・職種・日程」から自動で付きます。
+                    </span>
                   </div>
 
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                    <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)' }}>業務内容の詳細 *</label>
-                    <textarea required rows={4} value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} disabled={isSubmitting} style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }} placeholder="具体的な仕事内容を記載してください"></textarea>
+                    <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)' }}>業務内容の詳細（元請けの承諾後に開示） *</label>
+                    <textarea required rows={4} value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} disabled={isSubmitting} style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }} placeholder="具体的な仕事内容を記載してください。キャリア・元請けの名称は書かないでください"></textarea>
+                    {containsBrandName(formData.description) && (
+                      <span style={{ fontSize: '11px', color: '#B91C1C', fontWeight: 'bold' }}>
+                        キャリア・元請けの名称（{findBrandNames(formData.description).join('、')}）は記載できません。名称を除いて記載してください。
+                      </span>
+                    )}
+                    <span style={{ fontSize: '11px', color: 'var(--text-sub)' }}>
+                      この内容は公開されません。二次委託が確定した担当者にだけ開示されます。
+                    </span>
                   </div>
 
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                     <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)' }}>稼働場所のタイプ *</label>
-                    <select required value={formData.workLocation} onChange={e => setFormData({...formData, workLocation: e.target.value as any, locationName: formData.exactLocation ? generateMaskedLocation(formData.exactLocation, formData.exactLocation, formData.salesChannel, formData.carrier, e.target.value) : formData.locationName})} disabled={isSubmitting} style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc', background: 'var(--surface-color)' }}>
+                    <select required value={formData.workLocation} onChange={e => setFormData({...formData, workLocation: e.target.value as any, locationName: formData.exactLocation ? getPublicLocationName(formData.exactLocation) : formData.locationName})} disabled={isSubmitting} style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc', background: 'var(--surface-color)' }}>
                       <option value="店内">店内</option>
                       <option value="外販（複合施設など）">外販（複合施設など）</option>
                       <option value="外販（スーパーなど）">外販（スーパーなど）</option>
@@ -3003,7 +3039,7 @@ export function SearchPage() {
                   </div>
 
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                    <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)' }}>正確な店舗名・住所 (非公開) *</label>
+                    <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)' }}>正確な店舗名・住所（元請けの承諾後に開示） *</label>
                     <div style={{ display: 'flex', gap: '8px' }}>
                       {import.meta.env.VITE_GOOGLE_MAPS_API_KEY ? (
                         <Autocomplete
@@ -3019,7 +3055,7 @@ export function SearchPage() {
                               setFormData(prev => ({
                                 ...prev,
                                 exactLocation: address,
-                                locationName: generateMaskedLocation(fullAddress, address, prev.salesChannel, prev.carrier, prev.workLocation)
+                                locationName: getPublicLocationName(fullAddress)
                               }));
                               setMapSelectionKey(k => k + 1);
                               
@@ -3052,7 +3088,7 @@ export function SearchPage() {
                           defaultValue={formData.exactLocation}
                           onChange={(e: any) => {
                             const newExact = e.target.value;
-                            setFormData({...formData, exactLocation: newExact, locationName: generateMaskedLocation(newExact, newExact, formData.salesChannel, formData.carrier, formData.workLocation)});
+                            setFormData({...formData, exactLocation: newExact, locationName: getPublicLocationName(newExact)});
                           }}
                           disabled={isSubmitting} 
                           style={{ flex: 1, padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }} 
@@ -3066,7 +3102,7 @@ export function SearchPage() {
                           value={formData.exactLocation} 
                           onChange={e => {
                             const newExact = e.target.value;
-                            setFormData({...formData, exactLocation: newExact, locationName: generateMaskedLocation(newExact, newExact, formData.salesChannel, formData.carrier, formData.workLocation)});
+                            setFormData({...formData, exactLocation: newExact, locationName: getPublicLocationName(newExact)});
                           }} 
                           disabled={isSubmitting} 
                           style={{ flex: 1, padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }} 
@@ -3112,90 +3148,38 @@ export function SearchPage() {
                       borderRadius: '6px',
                       border: '1px solid #E2E8F0'
                     }}>
-                      <span style={{ fontSize: '12px', color: 'var(--text-sub)', fontWeight: 'bold' }}>求職者への公開名:</span>
-                      {isEditingLocationName ? (
-                        <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flex: 1, minWidth: '200px' }}>
-                          <input 
-                            type="text" 
-                            required 
-                            value={formData.locationName} 
-                            onChange={e => setFormData({...formData, locationName: e.target.value})} 
-                            disabled={isSubmitting} 
-                            style={{ flex: 1, padding: '4px 8px', fontSize: '12px', borderRadius: '4px', border: '1px solid #CBD5E1', background: 'var(--surface-color)' }} 
-                            placeholder="例: 新宿区の量販店" 
-                          />
-                          <button
-                            type="button"
-                            onClick={() => setIsEditingLocationName(false)}
-                            style={{
-                              padding: '4px 8px',
-                              background: 'var(--primary)',
-                              color: 'white',
-                              border: 'none',
-                              borderRadius: '4px',
-                              fontSize: '11px',
-                              cursor: 'pointer',
-                              fontWeight: 'bold'
-                            }}
-                          >
-                            確定
-                          </button>
-                        </div>
-                      ) : (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <span style={{ 
-                            display: 'inline-flex', 
-                            alignItems: 'center', 
-                            padding: '3px 8px', 
-                            background: '#EFF6FF', 
-                            color: '#1E40AF', 
-                            borderRadius: '12px', 
-                            border: '1px solid #BFDBFE', 
-                            fontSize: '12px', 
-                            fontWeight: 'bold' 
-                          }}>
-                            <span className="material-symbols-outlined" style={{ fontSize: '14px', marginRight: '4px', color: '#3B82F6' }}>visibility</span>
-                            {formData.locationName || '(正確な店舗名を入力すると自動生成されます)'}
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => setIsEditingLocationName(true)}
-                            style={{
-                              padding: '2px 6px',
-                              background: 'none',
-                              border: '1px solid #CBD5E1',
-                              borderRadius: '4px',
-                              fontSize: '10px',
-                              color: 'var(--primary)',
-                              cursor: 'pointer',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '2px',
-                              fontWeight: 'bold'
-                            }}
-                          >
-                            <span className="material-symbols-outlined" style={{ fontSize: '11px' }}>edit</span>
-                            編集
-                          </button>
-                        </div>
-                      )}
+                      <span style={{ fontSize: '12px', color: 'var(--text-sub)', fontWeight: 'bold' }}>公開される地名（市区まで）:</span>
+                      <span style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        padding: '3px 8px',
+                        background: '#EFF6FF',
+                        color: '#1E40AF',
+                        borderRadius: '12px',
+                        border: '1px solid #BFDBFE',
+                        fontSize: '12px',
+                        fontWeight: 'bold'
+                      }}>
+                        <span className="material-symbols-outlined" style={{ fontSize: '14px', marginRight: '4px', color: '#3B82F6' }}>visibility</span>
+                        {formData.locationName || '(住所を入力すると自動生成されます)'}
+                      </span>
                     </div>
                   </div>
 
                   <div style={{ display: 'flex', gap: '12px' }}>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: 1 }}>
                       <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)' }}>キャリア/回線 *</label>
-                      <select required value={formData.carrier} onChange={e => setFormData({...formData, carrier: e.target.value as any, locationName: formData.exactLocation ? generateMaskedLocation(formData.exactLocation, formData.exactLocation, formData.salesChannel, e.target.value, formData.workLocation) : formData.locationName})} disabled={isSubmitting} style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc', background: 'var(--surface-color)' }}>
+                      <select required value={formData.carrier} onChange={e => setFormData({...formData, carrier: e.target.value as any, locationName: formData.exactLocation ? getPublicLocationName(formData.exactLocation) : formData.locationName})} disabled={isSubmitting} style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc', background: 'var(--surface-color)' }}>
                         <option value="" disabled>選択</option>
-                        <option value="docomo">docomo</option>
-                        <option value="au/UQmobile">au/UQmobile</option>
-                        <option value="SoftBank/Y!mobile">SoftBank/Y!mobile</option>
-                        <option value="BB">BB</option>
+                        <option value="docomo">{getCarrierLabel("docomo")}</option>
+                        <option value="au/UQmobile">{getCarrierLabel("au/UQmobile")}</option>
+                        <option value="SoftBank/Y!mobile">{getCarrierLabel("SoftBank/Y!mobile")}</option>
+                        <option value="BB">{getCarrierLabel("BB")}</option>
                       </select>
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: 1 }}>
                       <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)' }}>販路 *</label>
-                      <select required value={formData.salesChannel} onChange={e => setFormData({...formData, salesChannel: e.target.value as any, locationName: formData.exactLocation ? generateMaskedLocation(formData.exactLocation, formData.exactLocation, e.target.value, formData.carrier, formData.workLocation) : formData.locationName})} disabled={isSubmitting} style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc', background: 'var(--surface-color)' }}>
+                      <select required value={formData.salesChannel} onChange={e => setFormData({...formData, salesChannel: e.target.value as any, locationName: formData.exactLocation ? getPublicLocationName(formData.exactLocation) : formData.locationName})} disabled={isSubmitting} style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc', background: 'var(--surface-color)' }}>
                         <option value="" disabled>選択</option>
                         <option value="量販店">量販店</option>
                         <option value="ショップ">ショップ</option>
@@ -3633,7 +3617,7 @@ export function SearchPage() {
                       return (
                         <label key={carrier} className={`filter-checkbox-label ${isChecked ? 'active' : ''}`}>
                           <input type="checkbox" checked={isChecked} onChange={() => setFilterCarriers(prev => isChecked ? prev.filter(c => c !== carrier) : [...prev, carrier])} />
-                          {carrier}
+                          {getCarrierLabel(carrier)}
                         </label>
                       );
                     })}
@@ -3760,7 +3744,7 @@ export function SearchPage() {
                       return (
                         <label key={carrier} className={`filter-checkbox-label ${isChecked ? 'active' : ''}`}>
                           <input type="checkbox" checked={isChecked} onChange={() => setFilterTalentCarriers(prev => isChecked ? prev.filter(c => c !== carrier) : [...prev, carrier])} />
-                          {carrier}
+                          {getCarrierLabel(carrier)}
                         </label>
                       );
                     })}
@@ -4056,7 +4040,7 @@ export function SearchPage() {
                     {job.carrier && (
                       <span style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
                         <span className="material-symbols-outlined" style={{ fontSize: '13px' }}>phone_android</span>
-                        {job.carrier}
+                        {getCarrierLabel(job.carrier)}
                       </span>
                     )}
                     {job.salesChannel && (

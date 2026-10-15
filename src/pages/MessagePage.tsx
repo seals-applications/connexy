@@ -8,6 +8,7 @@ import { getPrimaryLinkedJobId, isJobLinkedToChat, getJobStaffId, getLinkedStaff
 import type { JobApprovalInfo } from '../utils/jobStates';
 import { calcApprovalDeadline, getApprovalDeadlineState } from '../utils/subcontractApproval';
 import { SubcontractApprovalModal } from '../components/SubcontractApprovalModal';
+import { OFFER_DETAILS_PLACEHOLDER } from '../utils/jobMasking';
 import { isGroupChat as isGroupChatTask, isDirectChat as isDirectChatTask } from '../utils/contractTaskKind';
 import { getAddedMembers, getAddedMemberStaffIds, getHistoryCutoffMsgId } from '../utils/chatMembers';
 import type { AddedChatMember } from '../utils/chatMembers';
@@ -188,7 +189,7 @@ export function MessagePage() {
     try {
       const tasks = await api.getContractTasks();
       setChatTasks(tasks);
-      const fetchedJobs = await api.getJobs();
+      const fetchedJobs = await api.getJobsForViewer();
       setJobs(fetchedJobs);
     } catch (err) {
       console.error('Manual sync failed:', err);
@@ -206,7 +207,7 @@ export function MessagePage() {
       const tasks = await api.getContractTasks();
       setChatTasks(tasks);
 
-      const fetchedJobs = await api.getJobs();
+      const fetchedJobs = await api.getJobsForViewer();
       setJobs(fetchedJobs);
 
       const staffs = await api.getAllStaffs();
@@ -243,7 +244,7 @@ export function MessagePage() {
     const refresh = async () => {
       try {
         setChatTasks(await api.getContractTasks());
-        setJobs(await api.getJobs());
+        setJobs(await api.getJobsForViewer());
         setAllStaffs(await api.getAllStaffs());
       } catch (err) {
         console.error('Chat refresh error:', err);
@@ -3845,7 +3846,7 @@ export function MessagePage() {
                     <hr style={{ border: 0, borderTop: '1px solid #E2E8F0', margin: 0 }} />
                     <div>
                       <strong style={{ color: '#64748B', display: 'block', fontSize: '11px', marginBottom: '2px' }}>勤務地</strong>
-                      <span>{relatedJob?.workLocation || '未定'}</span>
+                      <span>{[relatedJob?.locationName, relatedJob?.workLocation].filter(Boolean).join(' / ') || '未定'}</span>
                     </div>
                     {offerExpiry.hasExpiry && (
                       <>
@@ -3858,12 +3859,12 @@ export function MessagePage() {
                         </div>
                       </>
                     )}
-                    {relatedJob?.description && (
+                    {relatedJob && (relatedJob.masked || relatedJob.description) && (
                       <>
                         <hr style={{ border: 0, borderTop: '1px solid #E2E8F0', margin: 0 }} />
                         <div>
                           <strong style={{ color: '#64748B', display: 'block', fontSize: '11px', marginBottom: '2px' }}>詳細内容</strong>
-                          <span style={{ fontSize: '12px', whiteSpace: 'pre-wrap', color: '#475569' }}>{relatedJob.description}</span>
+                          <span style={{ fontSize: '12px', whiteSpace: 'pre-wrap', color: '#475569' }}>{relatedJob.masked ? OFFER_DETAILS_PLACEHOLDER : relatedJob.description}</span>
                         </div>
                       </>
                     )}
