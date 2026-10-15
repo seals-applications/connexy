@@ -4,7 +4,10 @@ import { getEngagementStatusLabel } from '../utils/statusLabels';
 import { getOpponentCompanyName } from '../utils/chatParties';
 import { getExpenseCategoryLabel } from '../utils/expenseHelpers';
 import { getOfferExpiryState } from '../utils/offerExpiry';
-import { getPrimaryLinkedJobId, isJobLinkedToChat, getJobStaffId, getLinkedStaffIds } from '../utils/jobStates';
+import { getPrimaryLinkedJobId, isJobLinkedToChat, getJobStaffId, getLinkedStaffIds, getLinkedJobIds, getJobApproval, getJobState } from '../utils/jobStates';
+import type { JobApprovalInfo } from '../utils/jobStates';
+import { calcApprovalDeadline, getApprovalDeadlineState } from '../utils/subcontractApproval';
+import { SubcontractApprovalModal } from '../components/SubcontractApprovalModal';
 import { isGroupChat as isGroupChatTask, isDirectChat as isDirectChatTask } from '../utils/contractTaskKind';
 import { getAddedMembers, getAddedMemberStaffIds, getHistoryCutoffMsgId } from '../utils/chatMembers';
 import type { AddedChatMember } from '../utils/chatMembers';
@@ -32,7 +35,7 @@ interface ChatChannel {
   id: string;
   name: string;
   title: string;
-  status: 'negotiating' | 'waiting' | 'contracted' | 'group' | 'applying' | 'offered' | 'rejected' | 'declined' | 'confirmed' | 'report_pending' | 'completed' | 'disputed' | 'cancelled';
+  status: 'negotiating' | 'waiting' | 'contracted' | 'group' | 'applying' | 'offered' | 'awaiting_approval' | 'rejected' | 'declined' | 'confirmed' | 'report_pending' | 'completed' | 'disputed' | 'cancelled';
   avatar: string;
   avatarBg: string;
   preview: string;
@@ -89,6 +92,7 @@ export function MessagePage() {
 
   // 内定通知表示用のState
   const [showOfferModal, setShowOfferModal] = useState(false);
+  const [showApprovalModal, setShowApprovalModal] = useState(false);
   const [selectedOfferMsg, setSelectedOfferMsg] = useState<any>(null);
   const [confirmingOfferAction, setConfirmingOfferAction] = useState<'accept' | 'decline' | null>(null);
   const [showMembersModal, setShowMembersModal] = useState(false);
@@ -619,6 +623,19 @@ export function MessagePage() {
     return !!(clientOk && agencyOk);
   }, [relatedTask]);
 
+  // 元請け承諾(二次委託の事前承諾)まわりの派生値
+  const approvalAgencyId = useMemo(() => {
+    if (!activeChat || !relatedJob) return '';
+    const parts = activeChat.id.split('_'); // chat_<会社A>_<会社B>
+    return parts.slice(1).find(p => p !== relatedJob.authorId) || '';
+  }, [activeChat, relatedJob]);
+
+  const approvalInfo = useMemo<JobApprovalInfo>(
+    () => (relatedJob && relatedTask ? getJobApproval(relatedTask.evaluations, relatedJob.id) : {}),
+    [relatedJob, relatedTask],
+  );
+  const approvalDeadline = useMemo(() => getApprovalDeadlineState(approvalInfo), [approvalInfo]);
+
   const workDateNear = useMemo(() => {
     if (!relatedTask || !relatedTask.date) return false;
     const workDate = new Date(relatedTask.date);
@@ -1131,6 +1148,9 @@ export function MessagePage() {
     }
   };
 
+  // 内定の承諾(受注側)。
+  // 再委託には元請けの事前の書面承諾が必要なため、ここでは契約を確定しない。
+  // 「元請け承諾待ち」に進め、承諾が登録されたとき(finalizeSubcontract)に初めて契約を確定する。
   const handleAcceptUnofficialOffer = async () => {
     if (!activeChat || !currentUser || !chatTasks) return;
     const task = chatTasks.find(t => t.id === activeChat.id);
@@ -1150,112 +1170,19 @@ export function MessagePage() {
       }
 
       const staffId = getJobStaffId(task.evaluations, jobId);
-      const staff = allStaffs.find(s => s.id === staffId);
-
       const now = new Date();
       const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
 
-      const clientComp = allCompanies.find(c => c.id === job.authorId);
-      // 1. Create a ContractTask for the actual job assignment (status = 'confirmed')
-      const newContractTask = {
-        id: `ct_${Date.now()}`,
-        jobId: job.id,
-        jobTitle: job.title,
-        workerName: staff ? staff.name : currentUser.name,
-        companyName: currentUser.name,
-        clientName: task.clientName,
-        price: job.price,
-        date: (job.eventDate ? job.eventDate.split(', ')[0] : '') || new Date().toISOString().split('T')[0],
-        status: 'confirmed' as const,
-        evaluations: {
-          messages: [
-            { id: `sys_c_${Date.now()}`, type: 'system', text: 'マッチングが成立しました。業務完了後、実績報告と相互評価を行ってください。', time: '現在' }
-          ]
-        },
-        agency_id: currentUser.id,
-        client_id: job.authorId,
-        clientContractText: clientComp?.contractTemplate || '',
-        clientContractPdf: clientComp?.contractPdf || '',
-        clientContractApprovedByClient: false,
-        clientContractApprovedByAgency: false,
-        agencyContractText: currentUser.contractTemplate || '',
-        agencyContractPdf: currentUser.contractPdf || '',
-        agencyContractApprovedByClient: false,
-        agencyContractApprovedByAgency: false
-      };
-
-      await api.createContractTask(newContractTask as any);
-
-      // 1.1 Dynamically create or integrate to Company-isolated Group Chat
-      const groupChatId = `chat_group_${job.id}_${currentUser.id}`;
-      const existingGroupTask = chatTasks.find(t => t.id === groupChatId);
-      const staffName = staff ? staff.name : currentUser.name;
-
-      if (existingGroupTask) {
-        // If dynamic group chat already exists, append the new staff member
-        const existingEvals = existingGroupTask.evaluations || {};
-        const assignedStaffIds = [...(existingEvals.assignedStaffIds || [])];
-        if (staffId && !assignedStaffIds.includes(staffId)) {
-          assignedStaffIds.push(staffId);
-        }
-        
-        const systemAddMsg = {
-          id: `sys_add_${Date.now()}`,
-          type: 'system',
-          text: `(システム) 新しいアサインメンバー ${staffName} がグループに参加しました。`,
-          time: timeStr
-        };
-
-        const groupMessages = existingEvals.messages || [];
-        const updatedGroupMsgs = [...groupMessages, systemAddMsg];
-
-        const newEvals = {
-          ...existingEvals,
-          assignedStaffIds,
-          messages: updatedGroupMsgs
-        };
-
-        await api.updateContractTaskStatus(groupChatId, 'confirmed', newEvals);
-      } else {
-        // Create new company-isolated group chat
-        const welcomeMsg = {
-          id: `sys_welcome_${Date.now()}`,
-          type: 'system',
-          text: `現場連絡グループチャットが開設されました。\n【メンバー】: 元請け担当者、下請け担当者、${staffName}`,
-          time: timeStr
-        };
-        const initEvals = {
-          assignedStaffIds: staffId ? [staffId] : [],
-          messages: [welcomeMsg]
-        };
-
-        await api.saveContractTaskChat(
-          groupChatId,
-          [welcomeMsg],
-          job.title,
-          task.clientName,
-          currentUser.name,
-          [job.id],
-          (task.evaluations as any)?.appliedJobStaffIds
-        );
-        await api.updateContractTaskStatus(groupChatId, 'confirmed', initEvals);
-      }
-
-      // 2. Append system message (with transition link to group chat) to the admin chat room
       const acceptSystemMsg = {
         id: 'sys_accept_' + Date.now(),
         type: 'system',
-        text: `内定が承諾されました`,
+        text: '内定が承諾されました。\n元請けの二次委託の承諾（事前の書面承諾）が確認できるまで、契約は確定せず、現場の詳細情報も開示されません。',
         time: timeStr,
-        linkToChatId: groupChatId
       };
-
       const taskMessages = (task.evaluations as any)?.messages || [];
-      const updatedMsgs = [...taskMessages, acceptSystemMsg];
-
       await api.saveContractTaskChat(
         activeChat.id,
-        updatedMsgs,
+        [...taskMessages, acceptSystemMsg],
         job.title,
         task.clientName,
         currentUser.name,
@@ -1263,50 +1190,262 @@ export function MessagePage() {
         (task.evaluations as any)?.appliedJobStaffIds
       );
 
-      // 案件ごとに状態を持たせる(同じチャットの別案件に影響させない)。
-      // 契約書テンプレートがあれば「契約書承認待ち」サブバッジの起点フラグを立てる。
-      await api.updateContractTaskJobStatus(activeChat.id, job.id, 'confirmed', {
-        contractApprovalRequired: !!(clientComp?.contractTemplate || currentUser.contractTemplate),
+      await api.updateContractTaskJobStatus(activeChat.id, job.id, 'awaiting_approval', {
+        staffId,
+        approval: {
+          startedAt: now.toISOString(),
+          deadline: calcApprovalDeadline(job),
+        },
       });
 
-      // 3. Automatically reject and notify other candidates for this job
-      const otherChatTasks = chatTasks.filter(t => {
-        if (t.id === activeChat.id || !isDirectChatTask(t)) return false;
-        const isForThisJob = isJobLinkedToChat(t.evaluations, job.id);
-        return isForThisJob && (t.status === 'applying' || t.status === 'offered');
-      });
-
-      for (const t of otherChatTasks) {
-        const rejectSystemMsg = {
-          id: 'sys_reject_auto_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9),
-          type: 'system',
-          text: `【選考結果のお知らせ】\nご提案いただき誠にありがとうございました。\n厳正なる選考の結果、大変恐縮ながら今回は採用を見送らせていただくこととなりました。\nまたの機会がございましたら何卒よろしくお願い申し上げます。`,
-          time: timeStr
-        };
-        const taskMessages = (t.evaluations as any)?.messages || [];
-        const updatedMsgsForOther = [...taskMessages, rejectSystemMsg];
-        await api.saveContractTaskChat(
-          t.id,
-          updatedMsgsForOther,
-          t.jobTitle,
-          t.clientName,
-          t.workerName,
-          (t.evaluations as any)?.appliedJobIds,
-          (t.evaluations as any)?.appliedJobStaffIds
-        );
-        // この案件(job.id)への応募だけを見送りにする。
-        // 同じ直接チャットで進行中の別案件は影響を受けない(旧実装のバグ)。
-        await api.updateContractTaskJobStatus(t.id, job.id, 'rejected');
-      }
-
-      alert('🎉 内定を承諾しました。契約が確定しました！');
-      const updatedTasks = await api.getContractTasks();
-      setChatTasks(updatedTasks);
+      alert('内定を承諾しました。元請けの承諾が確認でき次第、契約が確定します。');
+      setChatTasks(await api.getContractTasks());
     } catch (err) {
       console.error('Failed to accept unofficial offer:', err);
       alert('承諾処理中にエラーが発生しました。');
     }
   };
+
+  // 元請けの承諾が登録されたときの契約確定処理(発注側が実行)。
+  // 従来は内定承諾時に行っていた「契約タスクの作成・現場グループチャットの開設・他候補の見送り」をここで行う。
+  const finalizeSubcontract = async (approvalPatch: JobApprovalInfo) => {
+    if (!activeChat || !currentUser || !chatTasks) throw new Error('chat not ready');
+    const task = chatTasks.find(t => t.id === activeChat.id);
+    const job = relatedJob;
+    if (!task || !job) throw new Error('task or job not found');
+
+    const agency = allCompanies.find(c => c.id === approvalAgencyId);
+    if (!agency) throw new Error('agency not found');
+
+    const staffId = getJobStaffId(task.evaluations, job.id);
+    const staff = allStaffs.find(s => s.id === staffId);
+
+    const now = new Date();
+    const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+    const clientComp = allCompanies.find(c => c.id === job.authorId);
+
+    // 1. 実際のアサインに対応する ContractTask(status = 'confirmed')を作成
+    const newContractTask = {
+      id: `ct_${Date.now()}`,
+      jobId: job.id,
+      jobTitle: job.title,
+      workerName: staff ? staff.name : agency.name,
+      companyName: agency.name,
+      clientName: task.clientName,
+      price: job.price,
+      date: (job.eventDate ? job.eventDate.split(', ')[0] : '') || new Date().toISOString().split('T')[0],
+      status: 'confirmed' as const,
+      evaluations: {
+        messages: [
+          { id: `sys_c_${Date.now()}`, type: 'system', text: 'マッチングが成立しました。業務完了後、実績報告と相互評価を行ってください。', time: '現在' }
+        ]
+      },
+      agency_id: agency.id,
+      client_id: job.authorId,
+      clientContractText: clientComp?.contractTemplate || '',
+      clientContractPdf: clientComp?.contractPdf || '',
+      clientContractApprovedByClient: false,
+      clientContractApprovedByAgency: false,
+      agencyContractText: agency.contractTemplate || '',
+      agencyContractPdf: agency.contractPdf || '',
+      agencyContractApprovedByClient: false,
+      agencyContractApprovedByAgency: false
+    };
+    await api.createContractTask(newContractTask as any);
+
+    // 1.1 現場連絡グループチャット(会社単位で分離)を新規作成、または既存へメンバーを追加
+    const groupChatId = `chat_group_${job.id}_${agency.id}`;
+    const existingGroupTask = chatTasks.find(t => t.id === groupChatId);
+    const staffName = staff ? staff.name : agency.name;
+
+    if (existingGroupTask) {
+      const existingEvals = existingGroupTask.evaluations || {};
+      const assignedStaffIds = [...(existingEvals.assignedStaffIds || [])];
+      if (staffId && !assignedStaffIds.includes(staffId)) assignedStaffIds.push(staffId);
+      const systemAddMsg = {
+        id: `sys_add_${Date.now()}`,
+        type: 'system',
+        text: `(システム) 新しいアサインメンバー ${staffName} がグループに参加しました。`,
+        time: timeStr
+      };
+      await api.updateContractTaskStatus(groupChatId, 'confirmed', {
+        ...existingEvals,
+        assignedStaffIds,
+        messages: [...(existingEvals.messages || []), systemAddMsg]
+      });
+    } else {
+      const welcomeMsg = {
+        id: `sys_welcome_${Date.now()}`,
+        type: 'system',
+        text: `現場連絡グループチャットが開設されました。\n【メンバー】: 元請け担当者、下請け担当者、${staffName}`,
+        time: timeStr
+      };
+      await api.saveContractTaskChat(
+        groupChatId,
+        [welcomeMsg],
+        job.title,
+        task.clientName,
+        agency.name,
+        [job.id],
+        (task.evaluations as any)?.appliedJobStaffIds
+      );
+      await api.updateContractTaskStatus(groupChatId, 'confirmed', {
+        assignedStaffIds: staffId ? [staffId] : [],
+        messages: [welcomeMsg]
+      });
+    }
+
+    // 2. 承諾の登録をこの直接チャットに記録(リンク付き)
+    const approvedSystemMsg = {
+      id: 'sys_approved_' + Date.now(),
+      type: 'system',
+      text: '元請けの承諾が登録されました。契約が確定しました。',
+      time: timeStr,
+      linkToChatId: groupChatId
+    };
+    await api.saveContractTaskChat(
+      activeChat.id,
+      [...((task.evaluations as any)?.messages || []), approvedSystemMsg],
+      job.title,
+      task.clientName,
+      agency.name,
+      [job.id],
+      (task.evaluations as any)?.appliedJobStaffIds
+    );
+
+    // 案件ごとに状態を持たせる。承諾の記録もここに残す。
+    await api.updateContractTaskJobStatus(activeChat.id, job.id, 'confirmed', {
+      contractApprovalRequired: !!(clientComp?.contractTemplate || agency.contractTemplate),
+      approval: approvalPatch,
+    });
+
+    // 3. この案件の他の候補(応募中・内定中・承諾待ち)を自動で見送りにする
+    const otherChatTasks = chatTasks.filter(t => {
+      if (t.id === activeChat.id || !isDirectChatTask(t)) return false;
+      return isJobLinkedToChat(t.evaluations, job.id)
+        && (t.status === 'applying' || t.status === 'offered' || t.status === 'awaiting_approval');
+    });
+    for (const t of otherChatTasks) {
+      const rejectSystemMsg = {
+        id: 'sys_reject_auto_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9),
+        type: 'system',
+        text: `【選考結果のお知らせ】\nご提案いただき誠にありがとうございました。\n厳正なる選考の結果、大変恐縮ながら今回は採用を見送らせていただくこととなりました。\nまたの機会がございましたら何卒よろしくお願い申し上げます。`,
+        time: timeStr
+      };
+      await api.saveContractTaskChat(
+        t.id,
+        [...((t.evaluations as any)?.messages || []), rejectSystemMsg],
+        t.jobTitle,
+        t.clientName,
+        t.workerName,
+        (t.evaluations as any)?.appliedJobIds,
+        (t.evaluations as any)?.appliedJobStaffIds
+      );
+      // この案件(job.id)への応募だけを見送りにする(同じチャットの別案件には影響させない)
+      await api.updateContractTaskJobStatus(t.id, job.id, 'rejected');
+    }
+
+    setChatTasks(await api.getContractTasks());
+  };
+
+  // 申請書を出力した事実(と注文書番号)を記録する
+  const handleApprovalRecordRequest = async (orderRef: string) => {
+    if (!activeChat || !relatedJob) return;
+    await api.updateContractTaskJobStatus(activeChat.id, relatedJob.id, 'awaiting_approval', {
+      approval: { requestedAt: new Date().toISOString(), orderRef: orderRef || undefined },
+    });
+    setChatTasks(await api.getContractTasks());
+  };
+
+  const handleApprovalApprove = async (data: { approvalDate: string; approverName: string; evidenceRef: string; scopeNote: string }) => {
+    await finalizeSubcontract({
+      approvedAt: new Date().toISOString(),
+      approvalDate: data.approvalDate,
+      approverName: data.approverName,
+      evidenceRef: data.evidenceRef,
+      scopeNote: data.scopeNote || undefined,
+    });
+    setShowApprovalModal(false);
+    alert('元請けの承諾を登録しました。契約が確定し、現場連絡グループチャットを開設しました。');
+  };
+
+  // 承諾が得られなかった(または期限切れ)ときに、この二次委託を成立させない
+  const cancelAwaitingApproval = async (
+    taskId: string,
+    jobId: string,
+    reason: string,
+    notice: string,
+  ) => {
+    const task = chatTasks.find(t => t.id === taskId);
+    const job = jobs.find(j => j.id === jobId);
+    if (!task || !job) return;
+    const now = new Date();
+    const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    const msg = {
+      id: 'sys_apprej_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
+      type: 'system',
+      text: reason ? `${notice}\n理由: ${reason}` : notice,
+      time: timeStr,
+    };
+    await api.saveContractTaskChat(
+      taskId,
+      [...((task.evaluations as any)?.messages || []), msg],
+      job.title,
+      task.clientName,
+      task.workerName,
+      (task.evaluations as any)?.appliedJobIds,
+      (task.evaluations as any)?.appliedJobStaffIds
+    );
+    await api.updateContractTaskJobStatus(taskId, jobId, 'cancelled', {
+      approval: { rejectedAt: now.toISOString(), rejectedReason: reason || undefined },
+    });
+  };
+
+  const handleApprovalReject = async (reason: string) => {
+    if (!activeChat || !relatedJob) return;
+    await cancelAwaitingApproval(
+      activeChat.id,
+      relatedJob.id,
+      reason,
+      '元請けの承諾が得られなかったため、今回の二次委託は成立しませんでした。',
+    );
+    setChatTasks(await api.getContractTasks());
+    setShowApprovalModal(false);
+  };
+
+  // 承諾期限を過ぎた承諾待ちは、発注側の画面で自動的にキャンセルする
+  const sweptApprovalsRef = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    if (!currentUser || chatTasks.length === 0 || jobs.length === 0) return;
+    let cancelled = false;
+    (async () => {
+      let changed = false;
+      for (const t of chatTasks) {
+        if (cancelled) return;
+        if (!isDirectChatTask(t) || t.status !== 'awaiting_approval') continue;
+        for (const jobId of getLinkedJobIds(t.evaluations)) {
+          const state = getJobState(t, jobId);
+          if (state?.status !== 'awaiting_approval') continue;
+          const job = jobs.find(j => j.id === jobId);
+          if (!job || job.authorId !== currentUser.id) continue; // 発注側のみ実行
+          const key = `${t.id}:${jobId}`;
+          if (sweptApprovalsRef.current.has(key)) continue;
+          if (!getApprovalDeadlineState(state.approval).isExpired) continue;
+          sweptApprovalsRef.current.add(key);
+          try {
+            await cancelAwaitingApproval(t.id, jobId, '承諾期限切れ', '元請けの承諾が期限までに登録されなかったため、今回の二次委託は成立しませんでした。');
+            changed = true;
+          } catch (e) {
+            console.error('sweep expired approval failed', e);
+          }
+        }
+      }
+      if (changed && !cancelled) setChatTasks(await api.getContractTasks());
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chatTasks, jobs, currentUser]);
 
   const handleDeclineUnofficialOffer = async (skipConfirm: boolean = false) => {
     if (!activeChat || !currentUser || !chatTasks) return;
@@ -1372,7 +1511,7 @@ export function MessagePage() {
     if (!relatedJob) return false;
     return chatTasks.some(t => {
       const hasJob = isJobLinkedToChat(t.evaluations, relatedJob.id);
-      const isAppliedStatus = t.status === 'applying' || t.status === 'offered' || t.status === 'confirmed' || t.status === 'rejected' || t.status === 'declined';
+      const isAppliedStatus = t.status === 'applying' || t.status === 'offered' || t.status === 'awaiting_approval' || t.status === 'confirmed' || t.status === 'rejected' || t.status === 'declined';
       return hasJob && isAppliedStatus;
     });
   }, [relatedJob, chatTasks]);
@@ -1417,6 +1556,8 @@ export function MessagePage() {
       height = 140;
     } else if (activeChat?.status === 'offered' && !isClient) {
       height = 160;
+    } else if (activeChat?.status === 'awaiting_approval') {
+      height = isClient ? 190 : 162;
     }
     if (relatedTask && relatedTask.jobId && relatedTask.jobId !== 'chat' && !contractApproved) {
       height += 48;
@@ -2751,6 +2892,50 @@ export function MessagePage() {
               </div>
             </div>
           )}
+
+          {activeChat?.status === 'awaiting_approval' && relatedJob && (
+            <div style={{
+              background: '#F0F9FF',
+              border: '1px solid #BAE6FD',
+              borderRadius: '8px',
+              padding: '10px 12px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '6px',
+              marginTop: '8px'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '6px', fontSize: '11px', fontWeight: 'bold', color: '#075985', textAlign: 'left', width: '100%' }}>
+                <span className="material-symbols-outlined" style={{ color: '#0284C7', fontSize: '18px' }}>hourglass_top</span>
+                <span>
+                  {isClient
+                    ? '元請けの承諾待ちです。承諾を得て登録すると契約が確定します。'
+                    : '元請けの承諾待ちです。承諾が確認できるまで契約は確定せず、現場の詳細情報も開示されません。'}
+                </span>
+              </div>
+              <div style={{ fontSize: '10.5px', color: approvalDeadline.isExpired ? '#B91C1C' : '#0369A1', textAlign: 'left', fontWeight: 'bold' }}>
+                {approvalDeadline.label}
+              </div>
+              {isClient && (
+                <button
+                  onClick={() => setShowApprovalModal(true)}
+                  style={{
+                    padding: '8px 0',
+                    borderRadius: '6px',
+                    border: 'none',
+                    background: '#0284C7',
+                    color: 'white',
+                    fontSize: '11.5px',
+                    fontWeight: 'bold',
+                    cursor: 'pointer',
+                    width: '100%',
+                    boxShadow: '0 2px 4px rgba(2, 132, 199, 0.2)'
+                  }}
+                >
+                  【承諾の手続きを開く】
+                </button>
+              )}
+            </div>
+          )}
         </header>
 
         <main className="list-area bg-gray p-16 chat-timeline" ref={chatTimelineRef} style={{ paddingTop: headerHeight }}>
@@ -3154,18 +3339,18 @@ export function MessagePage() {
                 },
                 {
                   id: 'propose',
-                  label: activeChat?.status === 'confirmed' ? '契約確定' : activeChat?.status === 'offered' ? '内定提示中' : (activeChat?.status === 'rejected' || activeChat?.status === 'declined') ? '選考終了' : (proposed ? '提案済' : '条件提案・発注'),
+                  label: activeChat?.status === 'confirmed' ? '契約確定' : activeChat?.status === 'awaiting_approval' ? '元請け承諾待ち' : activeChat?.status === 'offered' ? '内定提示中' : (activeChat?.status === 'rejected' || activeChat?.status === 'declined') ? '選考終了' : (proposed ? '提案済' : '条件提案・発注'),
                   icon: 'edit_document',
                   color: '#EC4899',
                   bgColor: '#FCE7F3',
-                  enabled: activeChat?.status !== 'group' && activeChat?.status !== 'confirmed' && activeChat?.status !== 'offered' && activeChat?.status !== 'rejected' && activeChat?.status !== 'declined' && !proposed,
+                  enabled: activeChat?.status !== 'group' && activeChat?.status !== 'confirmed' && activeChat?.status !== 'awaiting_approval' && activeChat?.status !== 'offered' && activeChat?.status !== 'rejected' && activeChat?.status !== 'declined' && !proposed,
                   action: () => {
                     handlePropose();
                     setShowChatMenu(false);
                   },
                   disabledMessage: activeChat?.status === 'group'
                     ? 'グループチャットでは発注提案は行えません。'
-                    : ['confirmed', 'offered', 'rejected', 'declined'].includes(activeChat?.status || '')
+                    : ['confirmed', 'awaiting_approval', 'offered', 'rejected', 'declined'].includes(activeChat?.status || '')
                       ? 'すでに内定提示中か、契約が成立しているため提案は行えません。'
                       : 'すでに提案が送信されています。'
                 }
@@ -3527,6 +3712,32 @@ export function MessagePage() {
         </div>
       )}
 
+      {/* 元請け承諾(二次委託の事前承諾)モーダル。発注側のみ操作 */}
+      {isClient && relatedJob && (
+        <SubcontractApprovalModal
+          open={showApprovalModal}
+          onClose={() => setShowApprovalModal(false)}
+          job={relatedJob}
+          client={(() => {
+            const c = allCompanies.find(x => x.id === relatedJob.authorId);
+            return { name: c?.name || clientName, address: c?.address, representative: c?.representativeName, contactPerson: currentUser?.staffName || c?.representativeName };
+          })()}
+          agency={(() => {
+            const c = allCompanies.find(x => x.id === approvalAgencyId);
+            return { name: c?.name || '', address: c?.address, representative: c?.representativeName, contactPerson: c?.representativeName };
+          })()}
+          staffNames={(() => {
+            const sid = relatedTask ? getJobStaffId(relatedTask.evaluations, relatedJob.id) : undefined;
+            const st = allStaffs.find(x => x.id === sid);
+            return st ? [st.name] : [];
+          })()}
+          approval={approvalInfo}
+          onRecordRequest={handleApprovalRecordRequest}
+          onApprove={handleApprovalApprove}
+          onReject={handleApprovalReject}
+        />
+      )}
+
       {/* 内定通知詳細モーダル */}
       {showOfferModal && (
         <div style={{
@@ -3752,7 +3963,7 @@ export function MessagePage() {
                     <h4 style={{ margin: '0 0 8px 0', fontSize: '16px', fontWeight: 'bold', color: '#0F172A' }}>内定の承諾確認</h4>
                     <p style={{ margin: 0, fontSize: '13px', color: '#475569', lineHeight: '1.6', textAlign: 'left' }}>
                       本当にこの内定を<strong>承諾</strong>しますか？<br />
-                      承諾すると契約が確定し、案件ステータスが「契約成立」となります。また、現場連絡用のグループチャットが開設されます。
+                      承諾すると「元請け承諾待ち」になります。再委託には元請けの事前承諾が必要なため、承諾が確認されるまで契約は確定せず、現場の詳細情報も開示されません。承諾が得られなかった場合、この二次委託は成立しません。
                     </p>
                   </div>
 
@@ -3792,7 +4003,7 @@ export function MessagePage() {
                         boxShadow: '0 4px 6px -1px rgba(16, 185, 129, 0.2)'
                       }}
                     >
-                      承諾を確定する
+                      内定を承諾する
                     </button>
                   </div>
                 </div>
