@@ -1,5 +1,7 @@
 import { supabase, AUTH_MODE, loginIdToEmail, createEphemeralClient } from '../lib/supabase';
 import { COMPANY_SELECT, STAFF_SELECT, JOB_SELECT } from '../lib/dbColumns';
+import { buildConsentTag, parseConsentTag, CONSENT_TAG_PREFIX } from '../utils/personalData';
+import type { PersonalDataConsent } from '../utils/personalData';
 import { encryptData, decryptData } from '../lib/crypto';
 import { regionalJobs } from './regionalJobs';
 import { applyJobState, seedAppliedJobStates, normalizeEngagementStatus } from '../utils/jobStates';
@@ -152,8 +154,11 @@ export interface Staff {
   password?: string;
   furigana?: string;
   commuteMethod?: '公共交通機関' | '自家用車';
-  gender?: '男性' | '女性';
+  /** 性別は任意(未登録なら表示しない。名前からの推測表示はしない) */
+  gender?: '男性' | '女性' | 'その他';
   birthday?: string;
+  /** 従事者の個人情報の取扱いについて、本人の同意を会社の管理者が確認・記録したもの */
+  personalDataConsent?: PersonalDataConsent;
 }
 
 // 契約タスク(ContractTask)の型定義
@@ -450,8 +455,9 @@ const mapStaff = (row: any): Staff => {
   const completedTrainings = row.completed_trainings || [];
   let furigana = '';
   let commuteMethod: '公共交通機関' | '自家用車' | undefined = undefined;
-  let gender: '男性' | '女性' | undefined = undefined;
+  let gender: '男性' | '女性' | 'その他' | undefined = undefined;
   let birthday = '';
+  let personalDataConsent: PersonalDataConsent | undefined = undefined;
 
   completedTrainings.forEach((t: string) => {
     if (t.startsWith('STAFF_FURIGANA_')) {
@@ -463,11 +469,13 @@ const mapStaff = (row: any): Staff => {
       }
     } else if (t.startsWith('STAFF_GENDER_')) {
       const val = t.replace('STAFF_GENDER_', '');
-      if (val === '男性' || val === '女性') {
+      if (val === '男性' || val === '女性' || val === 'その他') {
         gender = val;
       }
     } else if (t.startsWith('STAFF_BIRTHDAY_')) {
       birthday = t.replace('STAFF_BIRTHDAY_', '');
+    } else if (t.startsWith(CONSENT_TAG_PREFIX)) {
+      personalDataConsent = parseConsentTag(t) || personalDataConsent;
     }
   });
 
@@ -492,7 +500,8 @@ const mapStaff = (row: any): Staff => {
     furigana,
     commuteMethod,
     gender,
-    birthday
+    birthday,
+    personalDataConsent
   };
 };
 
@@ -515,6 +524,7 @@ const unmapStaff = (staff: Partial<Staff>): any => {
   delete row.commuteMethod;
   delete row.gender;
   delete row.birthday;
+  delete row.personalDataConsent;
 
   return row;
 };
@@ -893,7 +903,7 @@ const mapUser = (row: any): User => {
     address: localAddress || row.address || defaultAddresses[row.id] || '',
     prText: localPr || row.pr_text || defaultPrs[row.id] || '',
     companyType: localType || row.company_type || defaultTypes[row.id] || 'both',
-    gender: localGender || '男性',
+    gender: localGender || '無回答',
     contractTemplate: localContractTemplate || defaultContractTemplate,
     contractPdf: localContractPdf || undefined,
     favoriteJobIds,
@@ -1542,6 +1552,7 @@ export const api = {
     if (staff.commuteMethod) extraTags.push('STAFF_COMMUTE_' + staff.commuteMethod);
     if (staff.gender) extraTags.push('STAFF_GENDER_' + staff.gender);
     if (staff.birthday) extraTags.push('STAFF_BIRTHDAY_' + staff.birthday);
+    if (staff.personalDataConsent) extraTags.push(buildConsentTag(staff.personalDataConsent));
 
     const newStaff = { ...staff, id, completedTrainings: extraTags };
     if (!AUTH_MODE) {
@@ -2436,6 +2447,10 @@ export const api = {
           completedTrainings = completedTrainings.filter((t: any) => !t.startsWith('STAFF_BIRTHDAY_'));
           if (staff.birthday) completedTrainings.push('STAFF_BIRTHDAY_' + staff.birthday);
         }
+        if (staff.personalDataConsent) {
+          completedTrainings = completedTrainings.filter((t: any) => !t.startsWith(CONSENT_TAG_PREFIX));
+          completedTrainings.push(buildConsentTag(staff.personalDataConsent));
+        }
 
         const updatedStaff: Partial<Staff> = { ...staff, completedTrainings };
         const row = unmapStaff(updatedStaff);
@@ -2474,6 +2489,10 @@ export const api = {
         if ('birthday' in staff) {
           completedTrainings = completedTrainings.filter((t: any) => !t.startsWith('STAFF_BIRTHDAY_'));
           if (staff.birthday) completedTrainings.push('STAFF_BIRTHDAY_' + staff.birthday);
+        }
+        if (staff.personalDataConsent) {
+          completedTrainings = completedTrainings.filter((t: any) => !t.startsWith(CONSENT_TAG_PREFIX));
+          completedTrainings.push(buildConsentTag(staff.personalDataConsent));
         }
 
         const updatedStaff: Partial<Staff> = { ...staff, completedTrainings };
