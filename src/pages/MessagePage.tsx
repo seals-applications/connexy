@@ -1,6 +1,9 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { api, subscribeToContractTaskChanges } from '../data/mockDb';
-import { getEngagementStatusLabel } from '../utils/statusLabels';
+import { getEngagementStatusLabel, getWorkDateStrings } from '../utils/statusLabels';
+import { buildRosterHtml, buildWorkReportHtml, openHtmlDocument, calcAge, attendanceMap } from '../utils/workforceDocs';
+import type { DocContext } from '../utils/workforceDocs';
+import { hasCurrentConsent } from '../utils/personalData';
 import { getOpponentCompanyName } from '../utils/chatParties';
 import { getExpenseCategoryLabel } from '../utils/expenseHelpers';
 import { getOfferExpiryState } from '../utils/offerExpiry';
@@ -1409,6 +1412,58 @@ export function MessagePage() {
     }
 
     setChatTasks(await api.getContractTasks());
+  };
+
+  // 現場グループチャット: 従事者名簿・作業報告書に差し込む情報を集める
+  const buildGroupDocContext = (): DocContext | null => {
+    if (!activeChat || activeChat.status !== 'group') return null;
+    const m = /^chat_group_(.+)_([^_]+)$/.exec(activeChat.id);
+    if (!m) return null;
+    const [, jobId, companyId] = m;
+    const job = jobs.find(j => j.id === jobId);
+    const groupTask = chatTasks.find(t => t.id === activeChat.id);
+    if (!job || !groupTask) return null;
+    const clientCompany = allCompanies.find(c => c.id === job.authorId);
+    const agencyCompany = allCompanies.find(c => c.id === companyId);
+    const assignedIds: string[] = (groupTask.evaluations as any)?.assignedStaffIds || [];
+    const directTask = chatTasks.find(t => t.id === `chat_${[job.authorId, companyId].sort().join('_')}`);
+    return {
+      client: { name: clientCompany?.name || groupTask.clientName || '', address: clientCompany?.address, representative: clientCompany?.representativeName },
+      agency: { name: agencyCompany?.name || groupTask.workerName, address: agencyCompany?.address, representative: agencyCompany?.representativeName },
+      job: {
+        title: job.title,
+        jobCode: job.jobCode,
+        roleType: job.roleType,
+        dates: getWorkDateStrings(job),
+        place: job.exactLocation || getPublicLocationName(job.locationName || ''),
+        price: job.price,
+      },
+      approval: directTask ? getJobApproval(directTask.evaluations, jobId) : undefined,
+      staff: allStaffs
+        .filter(st => assignedIds.includes(st.id))
+        .map(st => ({ name: st.name, furigana: st.furigana, age: calcAge(st.birthday), attendance: attendanceMap(st.completedTrainings) })),
+    };
+  };
+
+  const handleExportRoster = () => {
+    const ctx = buildGroupDocContext();
+    if (!ctx) { alert('名簿に必要な情報を取得できませんでした。'); return; }
+    const m = /^chat_group_(.+)_([^_]+)$/.exec(activeChat!.id);
+    const assigned: string[] = ((chatTasks.find(t => t.id === activeChat!.id)?.evaluations as any)?.assignedStaffIds) || [];
+    const noConsent = allStaffs.filter(st => assigned.includes(st.id) && !hasCurrentConsent(st));
+    if (m && noConsent.length > 0) {
+      alert(`個人情報の同意が未確認のスタッフがいるため、名簿を出力できません。
+未確認: ${noConsent.map(st => st.name).join('、')}
+(設定のスタッフ管理から同意を記録してください)`);
+      return;
+    }
+    if (!openHtmlDocument(buildRosterHtml(ctx))) alert('ポップアップがブロックされました。許可してからもう一度お試しください。');
+  };
+
+  const handleExportWorkReport = () => {
+    const ctx = buildGroupDocContext();
+    if (!ctx) { alert('報告書に必要な情報を取得できませんでした。'); return; }
+    if (!openHtmlDocument(buildWorkReportHtml(ctx))) alert('ポップアップがブロックされました。許可してからもう一度お試しください。');
   };
 
   const handlePledgeAccept = async () => {
@@ -2922,6 +2977,23 @@ export function MessagePage() {
                 </span>
               </div>
             )
+          )}
+
+          {activeChat?.status === 'group' && !pledgeGate && currentUser && (currentUser.staffRole === 'admin' || !currentUser.staffId) && (
+            <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+              <button
+                onClick={handleExportRoster}
+                style={{ flex: 1, padding: '8px 0', borderRadius: '8px', border: '1px solid #BFDBFE', background: '#EFF6FF', color: '#1D4ED8', fontSize: '11.5px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>groups</span>従事者名簿を出力
+              </button>
+              <button
+                onClick={handleExportWorkReport}
+                style={{ flex: 1, padding: '8px 0', borderRadius: '8px', border: '1px solid #BFDBFE', background: '#EFF6FF', color: '#1D4ED8', fontSize: '11.5px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>description</span>作業報告書を出力
+              </button>
+            </div>
           )}
 
           {activeChat?.status === 'offered' && !isClient && (
