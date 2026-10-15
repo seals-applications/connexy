@@ -1,4 +1,5 @@
-import { supabase } from '../lib/supabase';
+import { supabase, AUTH_MODE, loginIdToEmail, createEphemeralClient } from '../lib/supabase';
+import { COMPANY_SELECT, STAFF_SELECT, JOB_SELECT } from '../lib/dbColumns';
 import { encryptData, decryptData } from '../lib/crypto';
 import { regionalJobs } from './regionalJobs';
 import { applyJobState, seedAppliedJobStates, normalizeEngagementStatus } from '../utils/jobStates';
@@ -442,9 +443,9 @@ const unmapTalent = (talent: Partial<Talent>): any => {
 };
 
 const mapStaff = (row: any): Staff => {
-  const localRole = localStorage.getItem('staff_role_' + row.id) as 'admin' | 'staff' | null;
-  const localLogin = localStorage.getItem('staff_login_' + row.id);
-  const localPassword = localStorage.getItem('staff_password_' + row.id);
+  const localRole = AUTH_MODE ? null : localStorage.getItem('staff_role_' + row.id) as 'admin' | 'staff' | null;
+  const localLogin = AUTH_MODE ? null : localStorage.getItem('staff_login_' + row.id);
+  const localPassword = AUTH_MODE ? null : localStorage.getItem('staff_password_' + row.id);
 
   const completedTrainings = row.completed_trainings || [];
   let furigana = '';
@@ -586,7 +587,7 @@ const mergeChatMessages = (existing: any[] | undefined, next: any[]): any[] => {
 };
 
 // Attempt to detect if running in an offline or sandboxed environment
-if (typeof window !== 'undefined') {
+if (typeof window !== 'undefined' && !AUTH_MODE) {
   if (localStorage.getItem('connexy_is_offline') === 'true' || !navigator.onLine) {
     useOfflineMock = true;
   }
@@ -595,7 +596,7 @@ if (typeof window !== 'undefined') {
 // 自己回復: 一度でも Supabase 呼び出しに失敗すると `connexy_is_offline` が永続化され、
 // リロードしてもオフラインモードのまま(= 別アカウント間でデータが同期されない)。
 // オンラインに戻っている場合、起動時に軽い疎通確認をして成功したらフラグを解除する。
-if (typeof window !== 'undefined' && navigator.onLine && localStorage.getItem('connexy_is_offline') === 'true') {
+if (typeof window !== 'undefined' && !AUTH_MODE && navigator.onLine && localStorage.getItem('connexy_is_offline') === 'true') {
   (async () => {
     try {
       const { error } = await supabase.from('companies').select('id').limit(1);
@@ -753,6 +754,8 @@ export function subscribeToContractTaskChanges(onChange: () => void): () => void
 // 次回リロードで再度 Supabase を試せるようにする(永続オフラインで別アカウント間の
 // データ同期が止まる事故を防ぐ)。回復用フラグは起動時の疎通確認でも解除される。
 async function callSupabase<T>(apiFn: () => Promise<T>, fallbackFn: () => T | Promise<T>): Promise<T> {
+  // 認証モード: ローカルのデモデータへは絶対にフォールバックしない(デモ口座でのログインを防ぐ)。
+  if (AUTH_MODE) return await apiFn();
   if (useOfflineMock) {
     return await fallbackFn();
   }
@@ -769,7 +772,8 @@ async function callSupabase<T>(apiFn: () => Promise<T>, fallbackFn: () => T | Pr
 }
 
 const mapUser = (row: any): User => {
-  const localStatus = localStorage.getItem('company_status_' + row.id) as 'pending' | 'approved' | 'rejected' | null;
+  // 認証モードの審査状況はサーバー(companies.status)が正。端末内の値で上書きさせない。
+  const localStatus = AUTH_MODE ? null : localStorage.getItem('company_status_' + row.id) as 'pending' | 'approved' | 'rejected' | null;
   const localInvoice = localStorage.getItem('company_invoice_' + row.id);
   const localRep = localStorage.getItem('company_rep_' + row.id);
   const localEmail = localStorage.getItem('company_email_' + row.id);
@@ -899,6 +903,7 @@ const mapUser = (row: any): User => {
 };
 
 const initializeDefaultStaffLogins = (allStaffsData: any[]) => {
+  if (AUTH_MODE) return;
   const companyGroups: { [key: string]: any[] } = {};
   allStaffsData.forEach((row: any) => {
     if (!companyGroups[row.user_id]) companyGroups[row.user_id] = [];
@@ -1079,16 +1084,98 @@ const defaultOfflineAnnouncements = [
   },
 ];
 
+// 認証モード: ログイン中のユーザー(accounts → 会社 → スタッフ)を読み込む。セッションが無ければ null。
+let authUserCache: { uid: string; at: number; user: User } | null = null;
+const clearAuthUserCache = () => { authUserCache = null; };
+
+const loadAuthenticatedUser = async (): Promise<User | null> => {
+  const { data: sessionData } = await supabase.auth.getSession();
+  const uid = sessionData.session?.user.id;
+  if (!uid) return null;
+  if (authUserCache && authUserCache.uid === uid && Date.now() - authUserCache.at < 4000) {
+    return { ...authUserCache.user };
+  }
+
+  const { data: account, error: accountError } = await supabase
+    .from('accounts').select('company_id, staff_id, role').eq('user_id', uid).maybeSingle();
+  if (accountError) throw accountError;
+  if (!account || !account.company_id) return null;
+
+  const { data: companyData, error: companyError } = await supabase
+    .from('companies').select(COMPANY_SELECT).eq('id', account.company_id).maybeSingle();
+  if (companyError) throw companyError;
+  if (!companyData) return null;
+
+  const user = mapUser(companyData);
+  if (account.staff_id) {
+    const { data: staffData } = await supabase
+      .from('staffs').select(STAFF_SELECT).eq('id', account.staff_id).maybeSingle();
+    if (staffData) {
+      const staff = mapStaff(staffData);
+      user.staffId = staff.id;
+      user.staffName = staff.name;
+      user.staffRole = staff.role || 'staff';
+    }
+  } else {
+    user.staffName = user.representativeName;
+    user.staffRole = 'admin';
+  }
+  localStorage.setItem('connexy_current_user_id', user.id);
+  if (user.staffId) localStorage.setItem('connexy_current_staff_id', user.staffId);
+  else localStorage.removeItem('connexy_current_staff_id');
+  authUserCache = { uid, at: Date.now(), user };
+  return { ...user };
+};
+
+// 認証モード: 自分に開示してよい案件の秘匿項目(自社案件 + 二次委託確定・誓約済み)。サーバー側(RPC)で判定・監査記録される。
+const fetchVisibleJobSecrets = async (): Promise<Map<string, any>> => {
+  const { data, error } = await supabase.rpc('get_visible_job_secrets');
+  if (error) throw error;
+  return new Map(((data as any[]) || []).map((r) => [r.job_id, r]));
+};
+
+// 認証モード: 案件の秘匿項目を job_secrets へ保存する(掲載者の管理者のみ書き込める)。
+const saveJobSecrets = async (jobId: string, row: any): Promise<void> => {
+  const secrets: any = {};
+  for (const key of ['description', 'detailed_description', 'exact_location']) {
+    if (key in row) secrets[key] = row[key] ?? null;
+  }
+  if (Object.keys(secrets).length === 0) return;
+  const { error } = await supabase
+    .from('job_secrets')
+    .upsert({ job_id: jobId, ...secrets, updated_at: new Date().toISOString() });
+  if (error) throw error;
+};
+
+// 現場グループチャットの id (chat_group_<jobId>_<companyId>) から案件IDを取り出す。
+const jobIdFromGroupChatId = (taskId: string): string | null => {
+  const m = /^chat_group_(.+)_([^_]+)$/.exec(taskId);
+  return m ? m[1] : null;
+};
+
 export const api = {
   getJobs: async (limit?: number, offset?: number): Promise<Job[]> => {
     return callSupabase(
       async () => {
-        let query = supabase.from('jobs').select('*');
+        let query = supabase.from('jobs').select(JOB_SELECT);
         if (typeof limit === 'number' && typeof offset === 'number') {
           query = query.range(offset, offset + limit - 1);
         }
         const { data, error } = await query;
         if (error) throw error;
+        if (AUTH_MODE) {
+          // 業務内容・店舗名・詳細住所は jobs には無い。開示してよい案件の分だけ RPC で受け取って合わせる。
+          const secrets = await fetchVisibleJobSecrets();
+          return (data as any[]).map((row) => {
+            const sec = secrets.get(row.id);
+            return mapJob({
+              ...row,
+              description: sec?.description ?? '',
+              detailed_description: sec?.detailed_description ?? '',
+              exact_location: sec?.exact_location ?? undefined,
+            });
+          });
+        }
         return data.map(mapJob);
       },
       () => {
@@ -1115,6 +1202,22 @@ export const api = {
   getTalents: async (limit?: number, offset?: number): Promise<Talent[]> => {
     return callSupabase(
       async () => {
+        if (AUTH_MODE) {
+          // 自社の人材は全項目、他社の人材は実名を除いた公開ビュー(talents_public)から取得する。
+          const [own, pub] = await Promise.all([
+            supabase.from('talents').select('*'),
+            supabase.from('talents_public').select('*'),
+          ]);
+          if (own.error) throw own.error;
+          if (pub.error) throw pub.error;
+          const ownIds = new Set((own.data || []).map((r: any) => r.id));
+          const rows = [
+            ...(own.data || []),
+            ...(pub.data || []).filter((r: any) => !ownIds.has(r.id)).map((r: any) => ({ ...r, name: r.masked_name || '' })),
+          ];
+          const list = rows.map(mapTalent);
+          return typeof limit === 'number' && typeof offset === 'number' ? list.slice(offset, offset + limit) : list;
+        }
         let query = supabase.from('talents').select('*');
         if (typeof limit === 'number' && typeof offset === 'number') {
           query = query.range(offset, offset + limit - 1);
@@ -1136,7 +1239,7 @@ export const api = {
   getUserById: async (id: string): Promise<User | undefined> => {
     return callSupabase(
       async () => {
-        const { data, error } = await supabase.from('companies').select('*').eq('id', id).single();
+        const { data, error } = await supabase.from('companies').select(COMPANY_SELECT).eq('id', id).single();
         if (error || !data) return undefined;
         return mapUser(data);
       },
@@ -1149,18 +1252,26 @@ export const api = {
   },
 
   getCurrentUser: async (): Promise<User | null> => {
+    if (AUTH_MODE) {
+      const user = await loadAuthenticatedUser();
+      if (!user) {
+        localStorage.removeItem('connexy_current_user_id');
+        localStorage.removeItem('connexy_current_staff_id');
+      }
+      return user;
+    }
     const userId = localStorage.getItem('connexy_current_user_id');
     if (!userId) return null;
 
     return callSupabase(
       async () => {
-        const { data, error } = await supabase.from('companies').select('*').eq('id', userId).single();
+        const { data, error } = await supabase.from('companies').select(COMPANY_SELECT).eq('id', userId).single();
         if (error || !data) return null;
         
         const companyUser = mapUser(data);
         const staffId = localStorage.getItem('connexy_current_staff_id');
         if (staffId) {
-          const { data: staffData } = await supabase.from('staffs').select('*').eq('id', staffId).single();
+          const { data: staffData } = await supabase.from('staffs').select(STAFF_SELECT).eq('id', staffId).single();
           if (staffData) {
             const staff = mapStaff(staffData);
             companyUser.staffId = staff.id;
@@ -1199,6 +1310,18 @@ export const api = {
   },
 
   login: async (loginId: string, password: string): Promise<User | null> => {
+    if (AUTH_MODE) {
+      clearAuthUserCache();
+      const { error } = await supabase.auth.signInWithPassword({ email: loginIdToEmail(loginId), password });
+      if (error) {
+        // 通信エラーは「IDまたはパスワードが違う」とは区別する
+        if (error.status === undefined || error.status >= 500) throw error;
+        return null;
+      }
+      const user = await loadAuthenticatedUser();
+      if (!user) await supabase.auth.signOut();
+      return user;
+    }
     return callSupabase(
       async () => {
         // 1. Try to authenticate against companies table
@@ -1216,7 +1339,7 @@ export const api = {
         }
         
         // 2. Try to authenticate against staffs table
-        const { data: allStaffsData } = await supabase.from('staffs').select('*');
+        const { data: allStaffsData } = await supabase.from('staffs').select(STAFF_SELECT);
         if (allStaffsData) {
           initializeDefaultStaffLogins(allStaffsData);
           for (const sRow of allStaffsData) {
@@ -1225,7 +1348,7 @@ export const api = {
               localStorage.setItem('connexy_current_user_id', staff.userId);
               localStorage.setItem('connexy_current_staff_id', staff.id);
               
-              const { data: companyData2 } = await supabase.from('companies').select('*').eq('id', staff.userId).single();
+              const { data: companyData2 } = await supabase.from('companies').select(COMPANY_SELECT).eq('id', staff.userId).single();
               if (companyData2) {
                 const user = mapUser(companyData2);
                 user.staffId = staff.id;
@@ -1271,6 +1394,10 @@ export const api = {
   },
 
   logout: async (): Promise<void> => {
+    if (AUTH_MODE) {
+      clearAuthUserCache();
+      try { await supabase.auth.signOut(); } catch { /* 端末側の状態は下で消す */ }
+    }
     localStorage.removeItem('connexy_current_user_id');
     localStorage.removeItem('connexy_current_staff_id');
   },
@@ -1278,10 +1405,10 @@ export const api = {
   getStaffsByUserId: async (userId: string): Promise<Staff[]> => {
     return callSupabase(
       async () => {
-        const { data, error } = await supabase.from('staffs').select('*').eq('user_id', userId);
+        const { data, error } = await supabase.from('staffs').select(STAFF_SELECT).eq('user_id', userId);
         if (error) throw error;
         
-        const { data: allStaffsData } = await supabase.from('staffs').select('*');
+        const { data: allStaffsData } = await supabase.from('staffs').select(STAFF_SELECT);
         if (allStaffsData) {
           initializeDefaultStaffLogins(allStaffsData);
         }
@@ -1298,7 +1425,7 @@ export const api = {
   getAllStaffs: async (): Promise<Staff[]> => {
     return callSupabase(
       async () => {
-        const { data, error } = await supabase.from('staffs').select('*');
+        const { data, error } = await supabase.from('staffs').select(STAFF_SELECT);
         if (error) throw error;
         if (data) {
           initializeDefaultStaffLogins(data);
@@ -1321,6 +1448,21 @@ export const api = {
     return callSupabase(
       async () => {
         const row = unmapJob(newJob);
+        if (AUTH_MODE) {
+          // 秘匿項目は jobs に入れない(description が NOT NULL の可能性に備えて空文字だけ入れる)
+          const secretRow: any = {
+            description: row.description,
+            detailed_description: row.detailed_description,
+            exact_location: row.exact_location,
+          };
+          row.description = '';
+          delete row.detailed_description;
+          delete row.exact_location;
+          const { error: jobError } = await supabase.from('jobs').insert([row]);
+          if (jobError) throw jobError;
+          await saveJobSecrets(newJob.id, secretRow);
+          return newJob;
+        }
         const { error } = await supabase.from('jobs').insert([row]);
         if (error) throw error;
         return newJob;
@@ -1340,6 +1482,22 @@ export const api = {
       async () => {
         const row = unmapJob(updates);
         delete row.id;
+        if (AUTH_MODE) {
+          const secretRow: any = {};
+          for (const key of ['description', 'detailed_description', 'exact_location']) {
+            if (key in row) { secretRow[key] = row[key]; delete row[key]; }
+          }
+          // unmapJob は requirements を常に作る。updates に requirements が無いときに空配列で上書きしない。
+          if (!('requirements' in updates) && !updates.dailyPrices && !updates.expenses && !updates.jobCode && !updates.declaration && updates.status !== 'cancelled') {
+            delete row.requirements;
+          }
+          if (Object.keys(row).length > 0) {
+            const { error: jobError } = await supabase.from('jobs').update(row).eq('id', jobId);
+            if (jobError) throw jobError;
+          }
+          await saveJobSecrets(jobId, secretRow);
+          return;
+        }
         const { error } = await supabase.from('jobs').update(row).eq('id', jobId);
         if (error) throw error;
       },
@@ -1386,14 +1544,47 @@ export const api = {
     if (staff.birthday) extraTags.push('STAFF_BIRTHDAY_' + staff.birthday);
 
     const newStaff = { ...staff, id, completedTrainings: extraTags };
-    if (newStaff.role) {
-      localStorage.setItem('staff_role_' + id, newStaff.role);
+    if (!AUTH_MODE) {
+      if (newStaff.role) {
+        localStorage.setItem('staff_role_' + id, newStaff.role);
+      }
+      if (newStaff.loginId) {
+        localStorage.setItem('staff_login_' + id, newStaff.loginId);
+      }
+      if (newStaff.password) {
+        localStorage.setItem('staff_password_' + id, newStaff.password);
+      }
     }
-    if (newStaff.loginId) {
-      localStorage.setItem('staff_login_' + id, newStaff.loginId);
-    }
-    if (newStaff.password) {
-      localStorage.setItem('staff_password_' + id, newStaff.password);
+
+    if (AUTH_MODE) {
+      // 認証モード: スタッフ行を作り、ログイン用アカウントを Supabase Auth に作って紐づける。
+      // パスワードは DB(staffs)には保存しない。
+      const row = unmapStaff(newStaff);
+      delete row.login_id;
+      delete row.password;
+      const { error: insertError } = await supabase.from('staffs').insert([row]);
+      if (insertError) throw insertError;
+      if (staff.loginId && staff.password) {
+        try {
+          const ephemeral = createEphemeralClient();
+          const { data: signUp, error: signUpError } = await ephemeral.auth.signUp({
+            email: loginIdToEmail(staff.loginId),
+            password: staff.password,
+          });
+          if (signUpError || !signUp.user) throw signUpError || new Error('アカウントを作成できませんでした');
+          const { error: attachError } = await supabase.rpc('attach_staff_account', {
+            p_staff_id: id,
+            p_login_id: staff.loginId,
+            p_user_id: signUp.user.id,
+          });
+          if (attachError) throw attachError;
+        } catch (e) {
+          // ログインできないスタッフ行が残らないように取り消す
+          await supabase.from('staffs').delete().eq('id', id);
+          throw e;
+        }
+      }
+      return newStaff;
     }
 
     return callSupabase(
@@ -1484,7 +1675,7 @@ export const api = {
   completeTraining: async (staffId: string, trainingId: string): Promise<void> => {
     return callSupabase(
       async () => {
-        const { data: staffData, error: staffError } = await supabase.from('staffs').select('*').eq('id', staffId).single();
+        const { data: staffData, error: staffError } = await supabase.from('staffs').select(STAFF_SELECT).eq('id', staffId).single();
         if (staffError || !staffData) return;
         const staff = mapStaff(staffData);
 
@@ -1807,6 +1998,25 @@ export const api = {
     );
   },
 
+  // 認証モード: 二次委託が確定した受注側に、案件の詳細情報の閲覧権限を付与する(案件の掲載者の管理者のみ)。
+  // レガシーモードでは何もしない(開示の制御はクライアント側のマスキングのみ)。
+  grantJobAccess: async (
+    jobId: string,
+    companyId: string,
+    staffIds: string[],
+    approval?: unknown,
+  ): Promise<void> => {
+    if (!AUTH_MODE) return;
+    const { error } = await supabase.rpc('grant_job_access', {
+      p_job_id: jobId,
+      p_company_id: companyId,
+      p_staff_ids: staffIds,
+      p_pledge_required: true,
+      p_approval: approval ?? null,
+    });
+    if (error) throw error;
+  },
+
   // 従事者誓約書への同意を、現場グループチャットのタスクに記録する(evaluations.pledges[staffId])。
   recordStaffPledge: async (
     taskId: string,
@@ -1819,6 +2029,18 @@ export const api = {
     };
     return callSupabase(
       async () => {
+        if (AUTH_MODE) {
+          // 詳細情報の開示可否はサーバーが判定する。先にサーバー側へ誓約を記録する(割当外なら拒否される)。
+          const jobId = jobIdFromGroupChatId(taskId);
+          if (jobId) {
+            const { error: pledgeError } = await supabase.rpc('record_staff_pledge', {
+              p_job_id: jobId,
+              p_version: pledge.version,
+              p_name: pledge.name,
+            });
+            if (pledgeError) throw pledgeError;
+          }
+        }
         const { data } = await supabase.from('contract_tasks').select('evaluations').eq('id', taskId).single();
         const evaluations = applyLocal(data?.evaluations);
         const { error } = await supabase.from('contract_tasks').update({ evaluations }).eq('id', taskId);
@@ -1938,7 +2160,7 @@ export const api = {
 
         if (target === 'byClient' && hasLateness !== undefined) {
           try {
-            const { data: staffsData } = await supabase.from('staffs').select('*');
+            const { data: staffsData } = await supabase.from('staffs').select(STAFF_SELECT);
             if (staffsData) {
               const staffRow = staffsData.find((s: any) => s.name === task.workerName);
               if (staffRow) {
@@ -2052,7 +2274,7 @@ export const api = {
   getUsers: async (): Promise<User[]> => {
     return callSupabase(
       async () => {
-        const { data, error } = await supabase.from('companies').select('*');
+        const { data, error } = await supabase.from('companies').select(COMPANY_SELECT);
         if (error) throw error;
         return data.map(mapUser);
       },
@@ -2064,6 +2286,30 @@ export const api = {
   },
 
   registerCompany: async (company: Omit<User, 'id'>): Promise<User> => {
+    if (AUTH_MODE) {
+      // 認証モード: Supabase Auth にアカウントを作り、RPC で会社(審査中)を登録する。パスワードは DB に保存しない。
+      const loginId = company.loginId || '';
+      const { data: signUp, error: signUpError } = await supabase.auth.signUp({
+        email: loginIdToEmail(loginId),
+        password: company.password || '',
+      });
+      if (signUpError || !signUp.session) {
+        throw signUpError || new Error('アカウントを作成できませんでした。しばらくしてからもう一度お試しください。');
+      }
+      const { data: newId, error: rpcError } = await supabase.rpc('register_company', {
+        p_name: company.name,
+        p_representative: company.representativeName || null,
+        p_invoice_number: company.invoiceNumber || null,
+        p_login_id: loginId,
+        p_antisocial_at: company.antisocialAgreedAt || null,
+        p_antisocial_version: company.antisocialVersion || null,
+      });
+      // 審査が終わるまでは使えないので、登録直後のセッションは閉じる
+      await supabase.auth.signOut();
+      clearAuthUserCache();
+      if (rpcError) throw rpcError;
+      return { ...company, id: newId as string, status: 'pending', role: 'contractor' };
+    }
     const id = 'c' + Date.now();
     const newUser: User = { ...company, id, status: 'pending', role: 'contractor' };
     localStorage.setItem('company_status_' + id, 'pending');
@@ -2127,10 +2373,11 @@ export const api = {
   },
 
   updateStaffRole: async (staffId: string, role: 'admin' | 'staff'): Promise<void> => {
-    localStorage.setItem('staff_role_' + staffId, role);
+    if (!AUTH_MODE) localStorage.setItem('staff_role_' + staffId, role);
     return callSupabase(
       async () => {
-        await supabase.from('staffs').update({ role }).eq('id', staffId);
+        const { error } = await supabase.from('staffs').update({ role }).eq('id', staffId);
+        if (AUTH_MODE && error) throw error;
       },
       () => {
         const list = getOfflineData('staffs', defaultOfflineStaffs);
@@ -2144,18 +2391,29 @@ export const api = {
   },
 
   updateStaff: async (staffId: string, staff: Partial<Staff>): Promise<void> => {
-    if (staff.role) {
-      localStorage.setItem('staff_role_' + staffId, staff.role);
-    }
-    if (staff.loginId) {
-      localStorage.setItem('staff_login_' + staffId, staff.loginId);
-    }
-    if (staff.password) {
-      localStorage.setItem('staff_password_' + staffId, staff.password);
+    if (!AUTH_MODE) {
+      if (staff.role) {
+        localStorage.setItem('staff_role_' + staffId, staff.role);
+      }
+      if (staff.loginId) {
+        localStorage.setItem('staff_login_' + staffId, staff.loginId);
+      }
+      if (staff.password) {
+        localStorage.setItem('staff_password_' + staffId, staff.password);
+      }
     }
 
     return callSupabase(
       async () => {
+        if (AUTH_MODE && (staff.loginId || staff.password)) {
+          // ログインID・パスワードは Supabase Auth 側(管理者のみ、自社スタッフ限定の RPC)で変更する
+          const { error: credError } = await supabase.rpc('admin_update_staff_login', {
+            p_staff_id: staffId,
+            p_login_id: staff.loginId || null,
+            p_password: staff.password || null,
+          });
+          if (credError) throw credError;
+        }
         const { data: existingStaffData } = await supabase.from('staffs').select('completed_trainings').eq('id', staffId).single();
         let completedTrainings: string[] = [];
         if (existingStaffData && existingStaffData.completed_trainings) {
@@ -2181,6 +2439,10 @@ export const api = {
 
         const updatedStaff: Partial<Staff> = { ...staff, completedTrainings };
         const row = unmapStaff(updatedStaff);
+        if (AUTH_MODE) {
+          delete row.login_id;
+          delete row.password;
+        }
         const { error } = await supabase.from('staffs').update(row).eq('id', staffId);
         if (error) {
           const fallbackRow = { ...row };
@@ -2269,6 +2531,11 @@ export const api = {
   },
 
   updateCompanyStatus: async (companyId: string, status: 'pending' | 'approved' | 'rejected'): Promise<void> => {
+    if (AUTH_MODE) {
+      const { error } = await supabase.rpc('set_company_status', { p_company_id: companyId, p_status: status });
+      if (error) throw error;
+      return;
+    }
     localStorage.setItem('company_status_' + companyId, status);
     return callSupabase(
       async () => {
@@ -2286,9 +2553,10 @@ export const api = {
   },
 
   seedStaffAttendanceLogs: async (): Promise<void> => {
+    if (AUTH_MODE) return;
     return callSupabase(
       async () => {
-        const { data: staffs, error } = await supabase.from('staffs').select('*');
+        const { data: staffs, error } = await supabase.from('staffs').select(STAFF_SELECT);
         if (error || !staffs) return;
         for (const sRow of staffs) {
           const staff = mapStaff(sRow);

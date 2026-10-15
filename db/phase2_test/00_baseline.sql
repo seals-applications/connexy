@@ -2,9 +2,12 @@
 -- Supabase の auth スキーマ/ロールの最小スタブも含む。**本番では実行しない**(テスト用コンテナ専用)。
 
 create schema if not exists auth;
-create table auth.users (id uuid primary key default gen_random_uuid(), email text unique);
+create table auth.users (id uuid primary key default gen_random_uuid(), email text unique, encrypted_password text, updated_at timestamptz);
 create or replace function auth.uid() returns uuid language sql stable as $$
-  select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid
+  select coalesce(
+    nullif(current_setting('request.jwt.claim.sub', true), ''),
+    nullif(current_setting('request.jwt.claims', true), '')::jsonb ->> 'sub'
+  )::uuid
 $$;
 
 do $$ begin
@@ -19,12 +22,17 @@ create table public.companies (
 );
 create table public.staffs (
   id text primary key, user_id text references public.companies(id), name text, phone text,
+  masked_name text, base_location text, nearest_station text, preferred_area text, price numeric,
+  skills text[], carriers text[], experience text, pr_text text, has_certificate boolean,
   completed_trainings text[], login_id text, password text, role text
 );
 create table public.jobs (
   id text primary key, title text, author_id text references public.companies(id),
-  description text, detailed_description text, exact_location text,
-  allowed_company_ids text[], requirements text
+  description text not null default '', detailed_description text, exact_location text,
+  allowed_company_ids text[], requirements text[],
+  lat double precision, lng double precision, price numeric, location_name text, work_hours text,
+  role_type text, sales_channel text, carrier text, event_date text, application_deadline text,
+  work_location text, is_urgent boolean
 );
 create table public.talents (
   id text primary key, name text, description text, lat double precision, lng double precision,

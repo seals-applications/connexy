@@ -168,6 +168,23 @@ select t.eq('運営: 監査ログが見える(他社の閲覧記録を含む)', 
 select t.eq('運営: 付与の記録', (select count(*) >= 1 from public.audit_log where action = 'grant_job_access'), true);
 select t.eq('運営: 秘匿閲覧の記録は受注側 B・C のみ(掲載者自身は記録しない)', (select string_agg(distinct actor_company, ',' order by actor_company) from public.audit_log where action = 'job_secret_view'), 'cB,cC');
 
+
+-- ---- スタッフのパスワード再設定 ----
+select t.as_user(:'B');
+select t.works('B管理者: 自社スタッフのパスワードを再設定できる', $q$select public.admin_update_staff_login('sB2', null, 'newpass123')$q$);
+select t.as_super();
+select t.eq('パスワードが更新された(ハッシュ)', (select encrypted_password is not null and encrypted_password <> 'newpass123' from auth.users where email = 'sb2@accounts.connexy.invalid'), true);
+select t.as_user(:'B');
+select t.throws('B管理者: 短いパスワードは拒否', $q$select public.admin_update_staff_login('sB2', null, 'abc')$q$);
+select t.throws('B管理者: ログインID変更は未対応', $q$select public.admin_update_staff_login('sB2', 'other_id', null)$q$);
+select t.works('B管理者: ログインIDが同じなら通る', $q$select public.admin_update_staff_login('sB2', 'sb2', null)$q$);
+select t.as_user(:'C');
+select t.throws('C管理者: 他社スタッフには不可', $q$select public.admin_update_staff_login('sB2', null, 'hacked123')$q$);
+select t.as_user(:'B2');
+select t.throws('B一般スタッフ: 不可', $q$select public.admin_update_staff_login('sB3', null, 'hacked123')$q$);
+select t.as_anon();
+select t.throws('anon: 不可', $q$select public.admin_update_staff_login('sB2', null, 'hacked123')$q$);
+
 -- ---- 新規登録 ----
 select t.as_super();
 insert into auth.users (id, email) values ('00000000-0000-0000-0000-0000000000e1', 'newco@accounts.connexy.invalid');

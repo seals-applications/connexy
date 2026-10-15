@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { ANTISOCIAL_STATEMENT, ANTISOCIAL_VERSION } from '../utils/subcontractAgreement';
 import { api } from '../data/mockDb';
+import { AUTH_MODE } from '../lib/supabase';
 import type { User, Staff } from '../data/mockDb';
 
 interface LoginPageProps {
@@ -36,6 +37,8 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
   const [showDebug, setShowDebug] = useState(false);
 
   const loadCompanies = async () => {
+    // 認証モードでは未ログインのまま会社一覧は読めない(テスト用の簡易ログインも使わない)
+    if (AUTH_MODE) return;
     const list = await api.getUsers();
     setCompanies(list);
     try {
@@ -144,7 +147,14 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
       setActiveTab('login');
       loadCompanies();
     } catch (err) {
-      setError('申請登録中にエラーが発生しました。');
+      const message = String((err as { message?: string } | null)?.message || '');
+      if (AUTH_MODE && /already registered|already been registered/i.test(message)) {
+        setError('このログインIDは既に使われています。別のIDを指定してください。');
+      } else if (AUTH_MODE && /at least|weak|short/i.test(message)) {
+        setError('パスワードは6文字以上で入力してください。');
+      } else {
+        setError('申請登録中にエラーが発生しました。');
+      }
     } finally {
       setLoading(false);
     }
@@ -251,6 +261,7 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
                 {loading ? 'ログイン中...' : 'ログイン'}
               </button>
 
+              {!AUTH_MODE && (<>
               <div style={styles.divider}>
                 <span style={styles.dividerText}>テストアカウントで簡単ログイン</span>
               </div>
@@ -299,6 +310,7 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
                   </select>
                 </div>
               )}
+              </>)}
             </form>
           ) : (
             <form onSubmit={handleSignupSubmit} style={styles.form}>

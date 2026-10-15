@@ -27,3 +27,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Phase 2 アカウント移行で出力される初期パスワード一覧(コミット禁止)
+phase2_accounts_*.csv

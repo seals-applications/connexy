@@ -133,7 +133,9 @@ SBモバイルサービスとの業務委託基本契約書(v3.0)とアプリの
   - 未対応: 管理責任者が従事者の誓約状況を一覧で確認する画面、誓約・同意の取り下げ/再同意、電子署名法上の要件(本人確認・改ざん検知)は Phase 2 以降。
 - [ ] Phase 2: Supabase Auth + RLS(anon 全許可の解消)、`job_secrets` 分離、監査ログ ※これが済むまで実案件は載せない
   - [x] 2-1 DB側(`db/phase2_auth_rls.sql`、**未実行・アプリ側の切替と同時に適用すること**): `accounts`(auth.users⇔会社/スタッフ)、RLSヘルパー、全テーブルのポリシー、anon 全拒否、`companies/staffs` のパスワード・ログインID列と `jobs` の秘匿3列を列権限で読み取り不可に、`job_secrets`＋`job_access`＋`get_visible_job_secrets()`(閲覧を監査ログへ)、`grant_job_access`/`record_staff_pledge` 等のRPC、`audit_log`＋変更トリガー、`talents_public`(実名なしビュー)。使い捨てPostgresでの検証: `bash db/phase2_test/run.sh`(80項目、ロール別の見え方・誓約ゲート・改ざん防止・冪等性)。
-  - [ ] 2-2 クライアント側(`VITE_AUTH_MODE` フラグで切替、既定はレガシー)、アカウント移行スクリプト、切替手順書、平文パスワード列の削除
+  - [x] 2-2 クライアント側(PR #61): `VITE_AUTH_MODE=supabase`(GitHub のリポジトリ変数)で認証モード。ログイン/登録/スタッフ作成は Supabase Auth、機密列は列指定取得、秘匿項目は `job_secrets`＋RPC、確定時に `grant_job_access`、誓約はサーバーにも記録、ローカルのデモデータへはフォールバックしない・簡易ログイン非表示。移行スクリプト `db/phase2_migrate_accounts.mjs`、切替手順書 `db/PHASE2_CUTOVER.md`、後始末 `db/phase2_drop_plaintext.sql`。検証: `bash db/phase2_test/e2e/run.sh`(PostgREST+supabase-js、30項目)。
+  - [ ] **切替の実施(ユーザー作業)**: Supabase 復旧 → 検証用プロジェクトで通し確認 → 手順書どおり本番へ。**実案件はこの後に**。
+  - 未対応(認証モード): アプリ内の会社審査画面(現状はSQLで承認)、スタッフのログインID変更、会社プロフィールのDB保存化、パスワード忘れ時のリセット導線、実際の Supabase Auth での通し確認(ローカルでは GoTrue なしのため RLS/PostgREST までを検証)。
 - [ ] Phase 3: 従事者名簿(再委託欄つき)・作業報告書の出力、個人情報の同意、性別推定表示の廃止
 
 ### 🐛 発見済みバグ(未修正・要設計判断)

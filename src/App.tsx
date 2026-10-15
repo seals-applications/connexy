@@ -1,6 +1,7 @@
 import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { api } from './data/mockDb';
+import { supabase, AUTH_MODE } from './lib/supabase';
 import type { User } from './data/mockDb';
 import { BottomNav } from './components/BottomNav';
 import { HomePage } from './pages/HomePage';
@@ -44,8 +45,17 @@ function App() {
       setShowSettingsDrawer(true);
     };
     window.addEventListener('open-settings-menu', handleOpenSettings);
+
+    // 認証モード: セッションが切れた(別タブでログアウト・トークン失効など)らログイン画面に戻す
+    const authSubscription = AUTH_MODE
+      ? supabase.auth.onAuthStateChange((event) => {
+          if (event === 'SIGNED_OUT') checkUser();
+        }).data.subscription
+      : null;
+
     return () => {
       window.removeEventListener('open-settings-menu', handleOpenSettings);
+      authSubscription?.unsubscribe();
     };
   }, []);
 

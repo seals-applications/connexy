@@ -1354,6 +1354,10 @@ export function MessagePage() {
       });
     }
 
+    // 1.2 サーバー側(認証モード)で、この受注側に案件の詳細情報の閲覧権限を付与する。
+    //     誓約書への同意が済むまで担当者本人には開示されない。レガシーモードでは何もしない。
+    await api.grantJobAccess(job.id, agency.id, staffId ? [staffId] : [], approvalPatch);
+
     // 2. 承諾の登録をこの直接チャットに記録(リンク付き)
     const approvedSystemMsg = {
       id: 'sys_approved_' + Date.now(),
