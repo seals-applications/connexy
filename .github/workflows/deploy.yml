@@ -39,6 +39,8 @@ jobs:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
           VITE_GOOGLE_MAPS_API_KEY: ${{ secrets.VITE_GOOGLE_MAPS_API_KEY }}
+          # Phase 2: リポジトリ変数 VITE_AUTH_MODE=supabase で認証モード(RLS)に切り替え。未設定ならレガシー。手順は db/PHASE2_CUTOVER.md
+          VITE_AUTH_MODE: ${{ vars.VITE_AUTH_MODE }}
         
       - name: Setup Pages
         uses: actions/configure-pages@v4

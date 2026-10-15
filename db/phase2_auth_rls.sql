@@ -701,3 +701,30 @@ grant execute on function
   public.register_company(text, text, text, text, timestamptz, text), public.attach_staff_account(text, text, uuid),
   public.set_company_status(text, text)
   to authenticated;
+
+-- 8-8. 管理者が自社スタッフのパスワードを再設定する(ログインIDの変更は未対応: 変更するならスタッフを作り直す)
+create or replace function public.admin_update_staff_login(p_staff_id text, p_login_id text, p_password text)
+returns void
+language plpgsql security definer set search_path = public, extensions, auth, pg_temp as $$
+declare
+  s public.staffs;
+  a public.accounts;
+begin
+  if not public.app_is_company_admin() then raise exception 'forbidden'; end if;
+  select * into s from public.staffs where id = p_staff_id;
+  if not found or s.user_id is distinct from public.app_company_id() then raise exception 'forbidden: not your staff'; end if;
+  select * into a from public.accounts where staff_id = p_staff_id;
+  if not found then raise exception 'no login account for this staff'; end if;
+
+  if p_login_id is not null and lower(btrim(p_login_id)) <> a.login_id then
+    raise exception 'changing the login id is not supported';
+  end if;
+  if p_password is not null then
+    if char_length(p_password) < 6 then raise exception 'password too short'; end if;
+    update auth.users set encrypted_password = crypt(p_password, gen_salt('bf')), updated_at = now() where id = a.user_id;
+    perform public.audit_write('reset_staff_password', 'accounts', p_staff_id, null);
+  end if;
+end $$;
+
+revoke all on function public.admin_update_staff_login(text, text, text) from public, anon;
+grant execute on function public.admin_update_staff_login(text, text, text) to authenticated;
