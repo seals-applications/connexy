@@ -130,6 +130,7 @@ stateDiagram-v2
 - 不承諾、または期限超過(発注側の画面で自動検知)→ `cancelled`(理由を記録、相手に通知)。
 - 記録は `evaluations.jobStates[jobId].approval`(`JobApprovalInfo`)。証憑ファイル自体は保管せず参照情報のみ(ファイル保管は認証・ストレージ整備後)。
 - 元請けの名称はUIに出さない(「元請け」と表記)。実装: `src/utils/subcontractApproval.ts` / `src/components/SubcontractApprovalModal.tsx`。
+- 契約確定時に標準の二次委託契約書(`src/utils/subcontractAgreement.ts`)を生成し、現場グループチャットを `pledgeRequired` にする。担当者本人が従事者誓約書に同意するまで、チャットの内容と案件の詳細情報は開示しない(§3.5 の延長。詳細は todo.md Phase 1-3)。
 
 ### 3.4 契約書承認(稼働待ちのサブフラグ)
 

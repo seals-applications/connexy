@@ -11,6 +11,7 @@ import { extractArea, getCommonAreaName } from '../utils/maskingUtils';
 import { isWithinAreaFilter, distanceKm } from '../utils/areaFilter';
 import { getLinkedJobIds } from '../utils/jobStates';
 import { maskJobsForViewer, getCarrierLabel, generateJobTitle, getPublicLocationName, containsBrandName, findBrandNames, SECRET_DETAIL_NOTICE } from '../utils/jobMasking';
+import { POSTING_DECLARATION_ITEMS, DECLARATION_VERSION } from '../utils/subcontractAgreement';
 import { PREFECTURE_REGIONS, ALL_PREFECTURES, getCityArea, matchesPrefectureFilter } from '../utils/prefectures';
 import Autocomplete from 'react-google-autocomplete';
 import { useSessionState } from '../hooks/useSessionState';
@@ -128,6 +129,9 @@ export function SearchPage() {
   const [isCreateFormOpen, setIsCreateFormOpen] = useState(false);
   const [createFormType, setCreateFormType] = useState<'job' | 'talent'>('job');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  // 掲載時の宣言(案件を掲載する側)への同意。フォームを開くたびにリセットする
+  const [postingDeclared, setPostingDeclared] = useState(false);
+  const [csvDeclared, setCsvDeclared] = useState(false);
   const [, setIsEditingLocationName] = useState(false);
   const [mapSelectionKey, setMapSelectionKey] = useState(0);
   
@@ -464,6 +468,7 @@ export function SearchPage() {
     if (staffs.length > 0) setSelectedStaffId(staffs[0].id);
     setCreateFormType(mode);
     setIsEditingLocationName(false);
+    setPostingDeclared(false);
     setIsCreateFormOpen(true);
   };
 
@@ -607,9 +612,14 @@ export function SearchPage() {
     try {
       setIsRefreshing(true);
       let successCount = 0;
+      if (mode === 'job' && !csvDeclared) {
+        alert('掲載時の宣言への同意が必要です。');
+        setIsRefreshing(false);
+        return;
+      }
       for (const item of csvPreviewData.data) {
         if (mode === 'job') {
-          await api.addJob(item as Job);
+          await api.addJob({ ...(item as Job), declaration: { version: DECLARATION_VERSION, acceptedAt: new Date().toISOString(), acceptedBy: currentUser?.staffName || currentUser?.name } });
         } else {
           await api.addTalent(item as Talent);
         }
@@ -618,6 +628,7 @@ export function SearchPage() {
       alert(`${successCount}件のデータを一括登録しました`);
       setIsCsvModalOpen(false);
       setCsvPreviewData(null);
+      setCsvDeclared(false);
       await handleRefresh();
     } catch(err) {
       console.error(err);
@@ -646,6 +657,12 @@ export function SearchPage() {
     
     if (createFormType === 'job' && selectedJobDates.length === 0) {
       alert('開催日を1日以上選択してください。');
+      setIsSubmitting(false);
+      return;
+    }
+
+    if (createFormType === 'job' && !postingDeclared) {
+      alert('掲載時の宣言への同意が必要です。');
       setIsSubmitting(false);
       return;
     }
@@ -695,7 +712,12 @@ export function SearchPage() {
         isUrgent: formData.isUrgent,
         allowedCompanyIds: formData.isLimited && targetCompanyId ? [targetCompanyId] : undefined,
         dailyPrices,
-        expenses
+        expenses,
+        declaration: {
+          version: DECLARATION_VERSION,
+          acceptedAt: new Date().toISOString(),
+          acceptedBy: currentUser?.staffName || currentUser?.name,
+        }
       };
       const savedJob = await api.addJob(newJob);
       setJobs(prev => [...prev, savedJob]);
@@ -717,6 +739,7 @@ export function SearchPage() {
       });
       setIsSamePriceAllDates(true);
       setIsEditingLocationName(false);
+      setPostingDeclared(false);
     } else {
       const selectedStaff = myStaffs.find(s => s.id === selectedStaffId);
       if (!selectedStaff) {
@@ -3457,7 +3480,23 @@ export function SearchPage() {
               </>
             )}
 
-            <button type="submit" disabled={isSubmitting || (createFormType === 'talent' && (myStaffs.length === 0 || formData.selectedDates.length === 0))} style={{ padding: '14px', background: createFormType === 'job' ? 'var(--primary)' : '#10B981', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '16px', cursor: (isSubmitting || (createFormType === 'talent' && (myStaffs.length === 0 || formData.selectedDates.length === 0))) ? 'not-allowed' : 'pointer', marginTop: '16px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', opacity: (isSubmitting || (createFormType === 'talent' && (myStaffs.length === 0 || formData.selectedDates.length === 0))) ? 0.7 : 1 }}>
+            {createFormType === 'job' && (
+              <div style={{ background: '#FFFBEB', border: '1px solid #FDE68A', borderRadius: '12px', padding: '14px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#92400E', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>gavel</span>
+                  掲載時の宣言
+                </div>
+                <ol style={{ margin: 0, paddingLeft: '18px', fontSize: '12px', color: '#78350F', lineHeight: 1.7 }}>
+                  {POSTING_DECLARATION_ITEMS.map((t, i) => <li key={i}>{t}</li>)}
+                </ol>
+                <label style={{ display: 'flex', gap: '8px', alignItems: 'flex-start', fontSize: '12px', fontWeight: 'bold', color: '#78350F', cursor: 'pointer' }}>
+                  <input type="checkbox" checked={postingDeclared} onChange={e => setPostingDeclared(e.target.checked)} disabled={isSubmitting} style={{ marginTop: '3px' }} />
+                  上記すべてに同意します
+                </label>
+              </div>
+            )}
+
+            <button type="submit" disabled={isSubmitting || (createFormType === 'job' && !postingDeclared) || (createFormType === 'talent' && (myStaffs.length === 0 || formData.selectedDates.length === 0))} style={{ padding: '14px', background: createFormType === 'job' ? 'var(--primary)' : '#10B981', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '16px', cursor: (isSubmitting || (createFormType === 'job' && !postingDeclared) || (createFormType === 'talent' && (myStaffs.length === 0 || formData.selectedDates.length === 0))) ? 'not-allowed' : 'pointer', marginTop: '16px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', opacity: (isSubmitting || (createFormType === 'job' && !postingDeclared) || (createFormType === 'talent' && (myStaffs.length === 0 || formData.selectedDates.length === 0))) ? 0.7 : 1 }}>
               {isSubmitting ? '登録中...' : '掲示する'}
             </button>
           </form>
@@ -4220,13 +4259,26 @@ export function SearchPage() {
                   </table>
                 </div>
 
+                {mode === 'job' && (
+                  <div style={{ background: '#FFFBEB', border: '1px solid #FDE68A', borderRadius: '8px', padding: '12px', marginBottom: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#92400E' }}>掲載時の宣言</div>
+                    <ol style={{ margin: 0, paddingLeft: '18px', fontSize: '12px', color: '#78350F', lineHeight: 1.7 }}>
+                      {POSTING_DECLARATION_ITEMS.map((t, i) => <li key={i}>{t}</li>)}
+                    </ol>
+                    <label style={{ display: 'flex', gap: '8px', alignItems: 'flex-start', fontSize: '12px', fontWeight: 'bold', color: '#78350F', cursor: 'pointer' }}>
+                      <input type="checkbox" checked={csvDeclared} onChange={e => setCsvDeclared(e.target.checked)} style={{ marginTop: '3px' }} />
+                      上記すべてに同意します
+                    </label>
+                  </div>
+                )}
+
                 <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
-                  <button className="btn-outline" onClick={() => setCsvPreviewData(null)}>やり直す</button>
+                  <button className="btn-outline" onClick={() => { setCsvPreviewData(null); setCsvDeclared(false); }}>やり直す</button>
                   <button 
                     className="btn-primary" 
                     onClick={handleConfirmCsvRegistration}
-                    disabled={csvPreviewData.errors.length > 0}
-                    style={{ opacity: csvPreviewData.errors.length > 0 ? 0.5 : 1, cursor: csvPreviewData.errors.length > 0 ? 'not-allowed' : 'pointer' }}
+                    disabled={csvPreviewData.errors.length > 0 || (mode === 'job' && !csvDeclared)}
+                    style={{ opacity: (csvPreviewData.errors.length > 0 || (mode === 'job' && !csvDeclared)) ? 0.5 : 1, cursor: (csvPreviewData.errors.length > 0 || (mode === 'job' && !csvDeclared)) ? 'not-allowed' : 'pointer' }}
                   >
                     この内容で登録
                   </button>

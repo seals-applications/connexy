@@ -8,7 +8,9 @@ import { getPrimaryLinkedJobId, isJobLinkedToChat, getJobStaffId, getLinkedStaff
 import type { JobApprovalInfo } from '../utils/jobStates';
 import { calcApprovalDeadline, getApprovalDeadlineState } from '../utils/subcontractApproval';
 import { SubcontractApprovalModal } from '../components/SubcontractApprovalModal';
-import { OFFER_DETAILS_PLACEHOLDER } from '../utils/jobMasking';
+import { OFFER_DETAILS_PLACEHOLDER, getPublicLocationName } from '../utils/jobMasking';
+import { buildSubcontractAgreement, AGREEMENT_VERSION, PLEDGE_VERSION } from '../utils/subcontractAgreement';
+import { StaffPledgeModal } from '../components/StaffPledgeModal';
 import { isGroupChat as isGroupChatTask, isDirectChat as isDirectChatTask } from '../utils/contractTaskKind';
 import { getAddedMembers, getAddedMemberStaffIds, getHistoryCutoffMsgId } from '../utils/chatMembers';
 import type { AddedChatMember } from '../utils/chatMembers';
@@ -378,8 +380,16 @@ export function MessagePage() {
         let preview = '現場グループチャットが開設されました';
         let time = '';
         let isUnread = false;
+        // 従事者誓約書が必要で、本人が未誓約の間は、チャットの内容(プレビュー)を見せない
+        const gEvals = (task.evaluations || {}) as any;
+        const needsPledgeHere = !!gEvals.pledgeRequired && !!currentUser.staffId
+          && (gEvals.assignedStaffIds || []).includes(currentUser.staffId)
+          && !gEvals.pledges?.[currentUser.staffId];
+        if (needsPledgeHere) {
+          preview = '従事者誓約書への同意が必要です';
+        }
         if (lastMsg) {
-          preview = lastMsg.type === 'system' ? lastMsg.text : lastMsg.text;
+          if (!needsPledgeHere) preview = lastMsg.type === 'system' ? lastMsg.text : lastMsg.text;
           time = lastMsg.time || '';
           
           const isSystem = lastMsg.type === 'system';
@@ -579,6 +589,13 @@ export function MessagePage() {
   const messages = useMemo(() => {
     if (!activeChat) return [];
     const task = chatTasks.find(t => t.id === activeChat.id);
+    {
+      const ev = (task?.evaluations || {}) as any;
+      const sid = currentUser?.staffId;
+      if (activeChat.status === 'group' && ev.pledgeRequired && sid && (ev.assignedStaffIds || []).includes(sid) && !ev.pledges?.[sid]) {
+        return [];
+      }
+    }
     const taskMessages = (task?.evaluations as any)?.messages;
     let list: any[];
     if (taskMessages && Array.isArray(taskMessages) && taskMessages.length > 0) {
@@ -636,6 +653,26 @@ export function MessagePage() {
     [relatedJob, relatedTask],
   );
   const approvalDeadline = useMemo(() => getApprovalDeadlineState(approvalInfo), [approvalInfo]);
+
+  // 現場グループチャット: 担当として割り当てられた本人が、従事者誓約書に未同意か
+  const pledgeGate = useMemo(() => {
+    if (!activeChat || activeChat.status !== 'group' || !currentUser?.staffId) return null;
+    const task = chatTasks.find(t => t.id === activeChat.id);
+    const ev = (task?.evaluations || {}) as any;
+    if (!ev.pledgeRequired) return null;
+    if (!(ev.assignedStaffIds || []).includes(currentUser.staffId)) return null;
+    if (ev.pledges?.[currentUser.staffId]) return null;
+    const parts = activeChat.id.split('_'); // chat_group_<jobId>_<companyId>
+    const companyId = parts[3];
+    const company = allCompanies.find(c => c.id === companyId);
+    return {
+      taskId: activeChat.id,
+      companyName: company?.name || currentUser.name || '',
+      staffId: currentUser.staffId as string,
+      staffName: (currentUser.staffName as string) || '',
+      jobTitle: activeChat.title,
+    };
+  }, [activeChat, chatTasks, currentUser, allCompanies]);
 
   const workDateNear = useMemo(() => {
     if (!relatedTask || !relatedTask.date) return false;
@@ -1244,8 +1281,23 @@ export function MessagePage() {
       },
       agency_id: agency.id,
       client_id: job.authorId,
-      clientContractText: clientComp?.contractTemplate || '',
-      clientContractPdf: clientComp?.contractPdf || '',
+      // 契約書面は標準の二次委託契約(固定条項)。各社が登録している独自テンプレートは個別特約として末尾に付す。
+      clientContractText: buildSubcontractAgreement({
+        client: { name: clientComp?.name || task.clientName, address: clientComp?.address, representative: clientComp?.representativeName },
+        agency: { name: agency.name, address: agency.address, representative: agency.representativeName },
+        job: {
+          title: job.title,
+          jobCode: job.jobCode,
+          roleType: job.roleType,
+          eventDate: job.eventDate,
+          publicLocation: getPublicLocationName(job.locationName || job.exactLocation || ''),
+          price: job.price,
+        },
+        approval: approvalPatch,
+        staffNames: staff ? [staff.name] : [],
+        extraTerms: clientComp?.contractTemplate || '',
+      }),
+      clientContractPdf: '',
       clientContractApprovedByClient: false,
       clientContractApprovedByAgency: false,
       agencyContractText: agency.contractTemplate || '',
@@ -1273,6 +1325,7 @@ export function MessagePage() {
       await api.updateContractTaskStatus(groupChatId, 'confirmed', {
         ...existingEvals,
         assignedStaffIds,
+        pledgeRequired: true,
         messages: [...(existingEvals.messages || []), systemAddMsg]
       });
     } else {
@@ -1293,6 +1346,10 @@ export function MessagePage() {
       );
       await api.updateContractTaskStatus(groupChatId, 'confirmed', {
         assignedStaffIds: staffId ? [staffId] : [],
+        // 担当者は、従事者誓約書に同意するまで、グループチャットと詳細情報を見られない
+        pledgeRequired: true,
+        agreementVersion: AGREEMENT_VERSION,
+        pledgeVersion: PLEDGE_VERSION,
         messages: [welcomeMsg]
       });
     }
@@ -1348,6 +1405,17 @@ export function MessagePage() {
     }
 
     setChatTasks(await api.getContractTasks());
+  };
+
+  const handlePledgeAccept = async () => {
+    if (!pledgeGate) return;
+    await api.recordStaffPledge(pledgeGate.taskId, pledgeGate.staffId, {
+      version: PLEDGE_VERSION,
+      acceptedAt: new Date().toISOString(),
+      name: pledgeGate.staffName || currentUser?.name || '',
+    });
+    setChatTasks(await api.getContractTasks());
+    setJobs(await api.getJobsForViewer());
   };
 
   // 申請書を出力した事実(と注文書番号)を記録する
@@ -3711,6 +3779,17 @@ export function MessagePage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* 従事者誓約書(担当者本人が同意するまで、グループチャットと詳細情報は開示しない) */}
+      {pledgeGate && (
+        <StaffPledgeModal
+          companyName={pledgeGate.companyName}
+          staffName={pledgeGate.staffName}
+          jobTitle={pledgeGate.jobTitle}
+          onAccept={handlePledgeAccept}
+          onDecline={() => window.history.back()}
+        />
       )}
 
       {/* 元請け承諾(二次委託の事前承諾)モーダル。発注側のみ操作 */}

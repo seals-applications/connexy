@@ -186,6 +186,25 @@ export function getVisibleSecretJobIds(jobs: Job[], tasks: ContractTask[], user:
       if (!isStaffOnly || (user.staffName && t.workerName === user.staffName)) ids.add(t.jobId);
     }
   }
+
+  // 従事者誓約書が必要な案件(現場グループチャットが pledgeRequired)で、担当として割り当てられた本人が
+  // まだ誓約していない場合は、詳細情報を開示しない(自社案件の掲載者は対象外)。
+  if (user.staffId) {
+    for (const t of tasks) {
+      if (!t.id.startsWith('chat_group_')) continue;
+      const parts = t.id.split('_');
+      const jobId = parts[2];
+      const companyId = parts[3];
+      if (!jobId || companyId !== user.id) continue;
+      const ev = (t.evaluations as any) || {};
+      if (!ev.pledgeRequired) continue;
+      const assigned: string[] = ev.assignedStaffIds || [];
+      if (!assigned.includes(user.staffId) || ev.pledges?.[user.staffId]) continue;
+      const author = jobs.find((j) => j.id === jobId)?.authorId;
+      if (author === user.id) continue;
+      ids.delete(jobId);
+    }
+  }
   return ids;
 }
 

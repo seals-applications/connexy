@@ -26,6 +26,9 @@ export interface User {
   gender?: '男性' | '女性' | 'その他' | '無回答';
   contractTemplate?: string;
   contractPdf?: string;
+  /** 反社会的勢力に関する表明・保証への同意(アカウント登録時)。版と日時 */
+  antisocialAgreedAt?: string;
+  antisocialVersion?: string;
   favoriteJobIds?: string[];
   favoriteTalentIds?: string[];
   favoriteFolders?: {
@@ -89,6 +92,8 @@ export interface Job {
   jobCode?: string;
   /** 実行時のみ使う表示用フラグ。true = 詳細情報(店舗名・詳細住所・業務内容等)を伏せた公開版。保存しない */
   masked?: boolean;
+  /** 掲載時の宣言(元請けの事前承諾・秘匿情報を含めていない・同等義務を負わせる)への同意の記録。requirements に直列化して保存 */
+  declaration?: { version: string; acceptedAt: string; acceptedBy?: string };
 }
 
 // Hashing function to get consistent job codes for legacy seed jobs
@@ -261,6 +266,7 @@ const mapJob = (row: any): Job => {
   let expenses: Job['expenses'] = undefined;
   let status: 'active' | 'cancelled' = 'active';
   let jobCode: string | undefined = undefined;
+  let declaration: Job['declaration'] = undefined;
 
   const cleanRequirements = requirements.filter(req => {
     if (req === '__STATUS_CANCELLED__') {
@@ -285,6 +291,14 @@ const mapJob = (row: any): Job => {
     }
     if (req.startsWith('__JOB_CODE__::')) {
       jobCode = req.substring('__JOB_CODE__::'.length);
+      return false;
+    }
+    if (req.startsWith('__DECLARATION__::')) {
+      try {
+        declaration = JSON.parse(req.substring('__DECLARATION__::'.length));
+      } catch (e) {
+        console.error('Failed to parse declaration:', e);
+      }
       return false;
     }
     return true;
@@ -318,7 +332,8 @@ const mapJob = (row: any): Job => {
     dailyPrices,
     expenses,
     status,
-    jobCode
+    jobCode,
+    declaration
   };
 };
 
@@ -354,10 +369,14 @@ const unmapJob = (job: Partial<Job>): any => {
   if (job.jobCode) {
     requirements.push(`__JOB_CODE__::${job.jobCode}`);
   }
+  if (job.declaration) {
+    requirements.push(`__DECLARATION__::${JSON.stringify(job.declaration)}`);
+  }
   row.requirements = requirements;
 
   delete row.dailyPrices;
   delete row.expenses;
+  delete row.declaration;
 
   return row;
 };
@@ -1788,6 +1807,34 @@ export const api = {
     );
   },
 
+  // 従事者誓約書への同意を、現場グループチャットのタスクに記録する(evaluations.pledges[staffId])。
+  recordStaffPledge: async (
+    taskId: string,
+    staffId: string,
+    pledge: { version: string; acceptedAt: string; name: string },
+  ): Promise<void> => {
+    const applyLocal = (rawEvals: any) => {
+      const evals = rawEvals || {};
+      return { ...evals, pledges: { ...(evals.pledges || {}), [staffId]: pledge } };
+    };
+    return callSupabase(
+      async () => {
+        const { data } = await supabase.from('contract_tasks').select('evaluations').eq('id', taskId).single();
+        const evaluations = applyLocal(data?.evaluations);
+        const { error } = await supabase.from('contract_tasks').update({ evaluations }).eq('id', taskId);
+        if (error) throw error;
+      },
+      () => {
+        const list = getOfflineData('contract_tasks', defaultOfflineTasks);
+        const index = list.findIndex((t: any) => t.id === taskId);
+        if (index !== -1) {
+          list[index].evaluations = applyLocal(list[index].evaluations);
+          saveOfflineData('contract_tasks', list);
+        }
+      },
+    );
+  },
+
   // 案件ごとのステータス更新。evaluations.jobStates[jobId] を書き換え、
   // 後方互換のためチャット単位 status には「最も進んだ案件の状態」を書き戻す。
   // 詳細は src/utils/jobStates.ts / STATUS_MODEL.md §7。
@@ -2026,6 +2073,9 @@ export const api = {
     if (newUser.representativeName) {
       localStorage.setItem('company_rep_' + id, newUser.representativeName);
     }
+    if (newUser.antisocialAgreedAt) {
+      localStorage.setItem('company_antisocial_' + id, JSON.stringify({ at: newUser.antisocialAgreedAt, version: newUser.antisocialVersion }));
+    }
 
     return callSupabase(
       async () => {
@@ -2037,7 +2087,9 @@ export const api = {
           password: newUser.password,
           status: newUser.status,
           invoice_number: newUser.invoiceNumber,
-          representative_name: newUser.representativeName
+          representative_name: newUser.representativeName,
+          antisocial_agreed_at: newUser.antisocialAgreedAt,
+          antisocial_version: newUser.antisocialVersion
         };
         const { error } = await supabase.from('companies').insert([row]);
         if (error) {
@@ -2063,7 +2115,9 @@ export const api = {
           password: newUser.password,
           status: newUser.status,
           invoice_number: newUser.invoiceNumber,
-          representative_name: newUser.representativeName
+          representative_name: newUser.representativeName,
+          antisocial_agreed_at: newUser.antisocialAgreedAt,
+          antisocial_version: newUser.antisocialVersion
         };
         list.push(row);
         saveOfflineData('companies', list);
